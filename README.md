@@ -162,6 +162,65 @@ More detailed documentation of every endpoint will come..
 - GET `/api/v1/cars`
 - GET `/api/v1/cars/:CarID`
 - GET `/api/v1/cars/:CarID/battery-health`
+- GET `/api/v1/cars/:CarID/summaries/lifetime`
+  - Aggregates vehicle lifetime totals and consumption ratios server-side.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/summaries/drives`
+  - Aggregates drive totals and efficiency metrics server-side.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/summaries/charges`
+  - Aggregates charging totals, power, cost, and efficiency metrics server-side.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/dashboard/efficiency-series`
+  - Returns only the dashboard efficiency time series.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `limit` (optional, default `12`, max `100`)
+- GET `/api/v1/cars/:CarID/dashboard/monthly-distance`
+  - Returns only monthly distance buckets for dashboard charts.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `months` (optional, default `6`, max `24`)
+- GET `/api/v1/cars/:CarID/dashboard/monthly-charge-energy`
+  - Returns only monthly charge-energy buckets for dashboard and charging charts.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `months` (optional, default `6`, max `24`)
+- GET `/api/v1/cars/:CarID/dashboard/charge-locations`
+  - Returns only top charge locations by added energy.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `limit` (optional, default `4`, max `20`)
+- GET `/api/v1/cars/:CarID/charges/:ChargeID/interval`
+  - Returns the previous-charge to current-charge usage interval for one completed charge.
+  - Aggregates driven distance, rated range budget, range completion, consumed SOC, and estimated driving/parked/other battery energy on the API server.
+  - This avoids clients loading a month of charge history plus extra drive history just to render a single charge use breakdown.
+- GET `/api/v1/cars/:CarID/summary`
+  - Legacy compatibility endpoint. New clients should call the split `summaries/*` and `dashboard/*` endpoints above so each screen requests only the data it needs.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `include` (optional comma-separated list; accepted values: `all`, `lifetime`, `drives`, `charges`, `series`)
+    - `seriesLimit` (optional, legacy dashboard series only; default `12`, max `100`)
+    - `seriesMonths` (optional, legacy dashboard series only; default `6`, max `24`)
+    - `locationLimit` (optional, legacy dashboard series only; default `4`, max `20`)
+  - Aggregation ownership:
+    - Server-side: lifetime totals, drive summaries, charge summaries, efficiency series, monthly buckets, charge-location rankings, and charge-to-charge interval energy breakdowns.
+    - Client-side: detail route sampling and per-detail sample charts, because those are presentation-specific and based on already selected detail records.
+  - Additional optimization review:
+    - Good future API candidate: `GET /api/v1/cars/:CarID/drives/:DriveID/traffic-profile` if multiple clients need the same traffic classification from drive samples.
+    - Good future API candidate: `GET /api/v1/cars/:CarID/history/months` if clients need a lightweight month index before loading paged drive and charge history.
+    - Keep client-side: chart formatting, map viewport normalization, display categories, colors, and localized labels. Those are UI concerns and should not become API contracts.
 - GET `/api/v1/cars/:CarID/charges`
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)

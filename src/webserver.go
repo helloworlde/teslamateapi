@@ -138,9 +138,20 @@ func main() {
 			// v1 /api/v1/cars/:CarID/battery-health endpoints
 			v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
 
+			// v1 /api/v1/cars/:CarID/summary endpoints
+			v1.GET("/cars/:CarID/summary", TeslaMateAPICarsSummaryV1)
+			v1.GET("/cars/:CarID/summaries/lifetime", TeslaMateAPICarsLifetimeSummaryV1)
+			v1.GET("/cars/:CarID/summaries/drives", TeslaMateAPICarsDriveSummaryV1)
+			v1.GET("/cars/:CarID/summaries/charges", TeslaMateAPICarsChargeSummaryV1)
+			v1.GET("/cars/:CarID/dashboard/efficiency-series", TeslaMateAPICarsDashboardEfficiencySeriesV1)
+			v1.GET("/cars/:CarID/dashboard/monthly-distance", TeslaMateAPICarsDashboardMonthlyDistanceV1)
+			v1.GET("/cars/:CarID/dashboard/monthly-charge-energy", TeslaMateAPICarsDashboardMonthlyChargeEnergyV1)
+			v1.GET("/cars/:CarID/dashboard/charge-locations", TeslaMateAPICarsDashboardChargeLocationsV1)
+
 			// v1 /api/v1/cars/:CarID/charges endpoints
 			v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesV1)
 			v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
+			v1.GET("/cars/:CarID/charges/:ChargeID/interval", TeslaMateAPICarsChargeIntervalV1)
 			v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
 
 			// v1 /api/v1/cars/:CarID/command endpoints
@@ -181,7 +192,16 @@ func main() {
 	BasePathV1 := api.BasePath() + "/v1"
 	r.GET("/cars", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/summary", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/summaries/lifetime", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/summaries/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/summaries/charges", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/dashboard/efficiency-series", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/dashboard/monthly-distance", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/dashboard/monthly-charge-energy", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/dashboard/charge-locations", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/charges", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/charges/:ChargeID/interval", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/charges/:ChargeID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives/:DriveID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
