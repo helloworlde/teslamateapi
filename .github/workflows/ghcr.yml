@@ -34,7 +34,6 @@ jobs:
       image_name: ${{ steps.image.outputs.name }}
       docker_meta_json: ${{ steps.docker_meta.outputs.json }}
       docker_meta_labels: ${{ steps.docker_meta.outputs.labels }}
-      docker_meta_annotations: ${{ steps.docker_meta.outputs.annotations }}
 
     steps:
       - name: Image name (lowercase)
@@ -50,8 +49,6 @@ jobs:
           tags: |
             type=ref,event=tag
             type=ref,event=branch
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
   build:
     name: build (${{ matrix.platform }})
@@ -99,7 +96,6 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
-          annotations: ${{ needs.prepare.outputs.docker_meta_annotations }}
           tags: ${{ needs.prepare.outputs.image_name }}
           labels: ${{ needs.prepare.outputs.docker_meta_labels }}
           provenance: false
