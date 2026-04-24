@@ -17,8 +17,6 @@ import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 
 	docs "github.com/tobiasehlert/teslamateapi/src/docs"
 )
@@ -137,13 +135,10 @@ func main() {
 			v1.GET("/", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
 			})
+			v1.GET("/docs", serveScalarAPIReference)
 			v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+"/docs/swagger/index.html") })
-			v1.GET("/docs/swagger/*any", ginSwagger.WrapHandler(
-				swaggerFiles.Handler,
-				ginSwagger.URL(BasePathV1+"/docs/swagger/doc.json"),
-				ginSwagger.DefaultModelsExpandDepth(-1),
-				ginSwagger.DeepLinking(true),
-			))
+			v1.GET("/docs/swagger/index.html", serveScalarAPIReference)
+			v1.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
 
 			// v1 /api/v1/cars endpoints
 			v1.GET("/cars", TeslaMateAPICarsV1)

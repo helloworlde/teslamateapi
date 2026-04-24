@@ -1395,6 +1395,7 @@ func TeslaMateAPISummaryOptionsV1(c *gin.Context) {
 			"/api/v1/cars/:CarID/charts/charges/weekday-energy",
 			"/api/v1/cars/:CarID/charts/charges/hourly-starts",
 			"/api/v1/cars/:CarID/charts/activity/duration",
+			"/api/v1/docs",
 			"/api/v1/docs/swagger",
 		},
 	})

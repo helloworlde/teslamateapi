@@ -155,9 +155,10 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 More detailed documentation of every endpoint will come..
 
-Interactive API docs are auto-generated from Go annotation comments and served through standard `gin-swagger` middleware:
+Interactive API docs are auto-generated from Go annotation comments; HTML is produced with [scalar-go](https://github.com/watchakorn-18k/scalar-go) and [Scalar](https://github.com/scalar/scalar).
 
-- Swagger UI: `/api/v1/docs/swagger`
+- Scalar UI: `/api/v1/docs` or `/api/v1/docs/swagger` (latter redirects to `/api/v1/docs/swagger/index.html`)
+- Spec JSON (swag output): `/api/v1/docs/swagger/doc.json`
 
 To regenerate the Swagger docs after changing routes or handler annotations:
 
@@ -311,11 +312,10 @@ swag init -g swagger_info.go -d src -o src/docs
     - `endDate` (optional, use canonical UTC format in RFC3339)
 - GET `/api/v1/cars/:CarID/charts/activity/duration`
   - Returns duration totals by activity/state category for activity charts.
+- GET `/api/v1/docs`
+  - Scalar API reference (same spec as below).
 - GET `/api/v1/docs/swagger`
-  - Redirects to the standard `gin-swagger` UI for manual API testing.
-  - Supported parameters:
-    - `startDate` (optional, use canonical UTC format in RFC3339)
-    - `endDate` (optional, use canonical UTC format in RFC3339)
+  - Redirects to `/api/v1/docs/swagger/index.html` (Scalar); spec JSON at `/api/v1/docs/swagger/doc.json`.
 - GET `/api/v1/cars/:CarID/charges/:ChargeID/interval`
   - Returns the previous-charge to current-charge usage interval for one completed charge.
   - Aggregates driven distance, rated range budget, range completion, consumed SOC, and estimated driving/parked/other battery energy on the API server.
