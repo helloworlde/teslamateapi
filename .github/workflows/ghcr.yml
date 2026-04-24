@@ -150,5 +150,29 @@ jobs:
           IMAGE: ${{ needs.prepare.outputs.image_name }}
           DOCKER_META_JSON: ${{ needs.prepare.outputs.docker_meta_json }}
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_META_JSON") \
-            $(printf '%s@sha256:%s ' "$IMAGE" *)
+          set -euo pipefail
+
+          mapfile -t TAGS < <(jq -r '.tags[]' <<< "$DOCKER_META_JSON")
+          mapfile -t DIGESTS < <(find . -maxdepth 1 -type f -print | sed 's|^\./||' | grep -E '^[a-f0-9]{64}$' || true)
+
+          if [ "${#TAGS[@]}" -eq 0 ]; then
+            echo "No tags found in DOCKER_META_JSON"
+            exit 1
+          fi
+
+          if [ "${#DIGESTS[@]}" -eq 0 ]; then
+            echo "No digest files found in $PWD"
+            exit 1
+          fi
+
+          TAG_ARGS=()
+          for tag in "${TAGS[@]}"; do
+            TAG_ARGS+=("-t" "$tag")
+          done
+
+          SRC_ARGS=()
+          for digest in "${DIGESTS[@]}"; do
+            SRC_ARGS+=("${IMAGE}@sha256:${digest}")
+          done
+
+          docker buildx imagetools create "${TAG_ARGS[@]}" "${SRC_ARGS[@]}"
