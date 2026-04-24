@@ -1,0 +1,1215 @@
+basePath: /api
+definitions:
+  main.SwaggerDataResponse:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+    type: object
+  main.SwaggerErrorResponse:
+    properties:
+      error:
+        example: Unable to load summary.
+        type: string
+    type: object
+  main.SwaggerMessageResponse:
+    properties:
+      message:
+        example: pong
+        type: string
+      path:
+        example: /api/v1
+        type: string
+    type: object
+info:
+  contact: {}
+  description: RESTful API for TeslaMate-backed vehicle, charge, drive, summary, dashboard,
+    and insight data.
+  title: TeslaMateApi
+  version: "1.0"
+paths:
+  /:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerMessageResponse'
+      summary: API root
+      tags:
+      - System
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerMessageResponse'
+      summary: Health check
+      tags:
+      - System
+  /ping:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerMessageResponse'
+      summary: Ping
+      tags:
+      - System
+  /readyz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerMessageResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Readiness check
+      tags:
+      - System
+  /v1:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerMessageResponse'
+      summary: API v1 root
+      tags:
+      - System
+  /v1/cars:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: List cars
+      tags:
+      - Cars
+  /v1/cars/{CarID}:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Get car
+      tags:
+      - Cars
+  /v1/cars/{CarID}/activity-timeline:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Activity timeline
+      tags:
+      - Activity
+  /v1/cars/{CarID}/analytics/activity:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Activity analytics
+      tags:
+      - Analytics
+  /v1/cars/{CarID}/analytics/regeneration:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Regeneration analytics
+      tags:
+      - Analytics
+  /v1/cars/{CarID}/battery-health:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Battery health
+      tags:
+      - Cars
+  /v1/cars/{CarID}/calendars/drives:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Calendar year
+        in: query
+        name: year
+        type: integer
+      - description: Calendar month
+        in: query
+        name: month
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive calendar
+      tags:
+      - Calendar
+  /v1/cars/{CarID}/charges:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: List charges
+      tags:
+      - Charges
+  /v1/cars/{CarID}/charges/{ChargeID}:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Charge ID
+        in: path
+        name: ChargeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge details
+      tags:
+      - Charges
+  /v1/cars/{CarID}/charges/{ChargeID}/interval:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Charge ID
+        in: path
+        name: ChargeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge intervals
+      tags:
+      - Charges
+  /v1/cars/{CarID}/charges/current:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Current charge
+      tags:
+      - Charges
+  /v1/cars/{CarID}/charts/activity/duration:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Activity duration chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/charges/hourly-starts:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge hourly chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/charges/location-energy:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Location bucket limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge location chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/charges/monthly-energy:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Month bucket count
+        in: query
+        name: months
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge monthly energy chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/charges/weekday-energy:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge weekday chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/drives/hourly-starts:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive hourly chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/drives/monthly-distance:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Month bucket count
+        in: query
+        name: months
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive monthly distance chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/drives/weekday-distance:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive weekday chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/charts/efficiency:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Point limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Efficiency chart
+      tags:
+      - Charts
+  /v1/cars/{CarID}/command:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List command options
+      tags:
+      - Commands
+  /v1/cars/{CarID}/command/{Command}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Command name
+        in: path
+        name: Command
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Execute command
+      tags:
+      - Commands
+  /v1/cars/{CarID}/dashboards/charges:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge dashboards
+      tags:
+      - Dashboards
+  /v1/cars/{CarID}/dashboards/drives:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive dashboards
+      tags:
+      - Dashboards
+  /v1/cars/{CarID}/drives:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Minimum drive distance
+        in: query
+        name: minDistance
+        type: number
+      - description: Maximum drive distance
+        in: query
+        name: maxDistance
+        type: number
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: List drives
+      tags:
+      - Drives
+  /v1/cars/{CarID}/drives/{DriveID}:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Drive ID
+        in: path
+        name: DriveID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive details
+      tags:
+      - Drives
+  /v1/cars/{CarID}/insights:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Insight summary
+      tags:
+      - Insights
+  /v1/cars/{CarID}/insights/events:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: harsh_brake,charge_power_drop,sleep_interruption
+        in: query
+        name: types
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Insight events
+      tags:
+      - Insights
+  /v1/cars/{CarID}/logging:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get logging status
+      tags:
+      - Logging
+  /v1/cars/{CarID}/logging/{Command}:
+    put:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Logging command
+        in: path
+        name: Command
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update logging status
+      tags:
+      - Logging
+  /v1/cars/{CarID}/parking-sessions:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: online,offline,asleep
+        in: query
+        name: states
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Parking sessions
+      tags:
+      - Parking
+  /v1/cars/{CarID}/status:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Current vehicle status
+      tags:
+      - Status
+  /v1/cars/{CarID}/summaries:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: all, overview, lifetime, drives, charges, parking, analysis,
+          statistics, states, series
+        in: query
+        name: include
+        type: string
+      - description: Series item limit
+        in: query
+        name: seriesLimit
+        type: integer
+      - description: Series month bucket count
+        in: query
+        name: seriesMonths
+        type: integer
+      - description: Location bucket limit
+        in: query
+        name: locationLimit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Combined summaries
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/charges:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Charge summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/drives:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Drive summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/lifetime:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Lifetime summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/overview:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Overview summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/parking:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Parking summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/state-activity:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: State activity summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/summaries/statistics:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Statistics summary
+      tags:
+      - Summaries
+  /v1/cars/{CarID}/updates:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 start date
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 end date
+        in: query
+        name: endDate
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: List updates
+      tags:
+      - Updates
+  /v1/cars/{CarID}/wake_up:
+    post:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Wake up vehicle
+      tags:
+      - Commands
+  /v1/globalsettings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SwaggerErrorResponse'
+      summary: Global settings
+      tags:
+      - Settings
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

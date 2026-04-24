@@ -155,6 +155,16 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 More detailed documentation of every endpoint will come..
 
+Interactive API docs are auto-generated from Go annotation comments and served through standard `gin-swagger` middleware:
+
+- Swagger UI: `/api/v1/docs/swagger`
+
+To regenerate the Swagger docs after changing routes or handler annotations:
+
+```bash
+swag init -g swagger_info.go -d src -o src/docs
+```
+
 ### Available endpoints
 
 - GET `/api`
@@ -162,6 +172,28 @@ More detailed documentation of every endpoint will come..
 - GET `/api/v1/cars`
 - GET `/api/v1/cars/:CarID`
 - GET `/api/v1/cars/:CarID/battery-health`
+- GET `/api/v1/cars/:CarID/summaries`
+  - Combined summary endpoint for overview, lifetime, drive, charge, parking, statistics, state-activity, analytics, and chart-series payloads.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `include` (optional comma-separated list; accepted values: `all`, `overview`, `lifetime`, `drives`, `charges`, `parking`, `analysis`, `statistics`, `states`, `series`)
+    - `seriesLimit` (optional, combined summaries only; default `12`, max `100`)
+    - `seriesMonths` (optional, combined summaries only; default `6`, max `24`)
+    - `locationLimit` (optional, combined summaries only; default `4`, max `20`)
+- GET `/api/v1/cars/:CarID/summaries/overview`
+  - Returns a TeslaMate-style overview snapshot that combines drive, charge, parking, and lifetime efficiency totals.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/parking-sessions`
+  - Returns parking/state intervals derived from TeslaMate `states`.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `page` (optional, default `1`)
+    - `show` (optional, default `100`, max `500`)
+    - `states` (optional comma-separated list; accepted values: `online`, `offline`, `asleep`)
 - GET `/api/v1/cars/:CarID/summaries/lifetime`
   - Aggregates vehicle lifetime totals and consumption ratios server-side.
   - Supported parameters:
@@ -177,50 +209,117 @@ More detailed documentation of every endpoint will come..
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
-- GET `/api/v1/cars/:CarID/dashboard/efficiency-series`
-  - Returns only the dashboard efficiency time series.
+- GET `/api/v1/cars/:CarID/summaries/parking`
+  - Aggregates parking/state totals and duration distribution server-side.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/summaries/statistics`
+  - Aligns TeslaMate statistics dashboard metrics into one server-side summary response.
+  - Includes trip counts, charging counts, time driven, distance, max speed, average outside temperature, net/gross consumption, driving efficiency, consumption overhead, charging energy, and cost ratios.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/summaries/state-activity`
+  - Aggregates TeslaMate state and activity metrics including current state, last state change, parked share, and duration breakdown across parking, driving, charging, and update windows.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/analytics/activity`
+  - Returns weekday/hour usage analysis for drives, charging, and parking activity share.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/analytics/regeneration`
+  - Returns regeneration analysis, including recovered-energy estimates, regeneration duration, peak regeneration power, recovery share, and monthly recovery series.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/activity-timeline`
+  - Returns a unified TeslaMate-style event timeline across `states`, `drives`, `charging_processes`, and `updates`.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `page` (optional, default `1`)
+    - `show` (optional, default `100`, max `500`)
+- GET `/api/v1/cars/:CarID/dashboards/drives`
+  - Returns today, this week, this month, and this year drive boards in the user's configured TeslaMate timezone.
+  - Each period contains the same server-side drive summary contract so clients can render compact dashboard cards without recomputing date windows.
+- GET `/api/v1/cars/:CarID/dashboards/charges`
+  - Returns today, this week, this month, and this year charge boards in the user's configured TeslaMate timezone.
+- GET `/api/v1/cars/:CarID/insights`
+  - Returns an anomaly/event overview across harsh braking, unexpected charging power drops, and sleep interruptions.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/insights/events`
+  - Returns detected event-level insights.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `types` (optional comma-separated list; accepted values: `harsh_brake`, `charge_power_drop`, `sleep_interruption`)
+    - `page` (optional, default `1`)
+    - `show` (optional, default `100`, max `500`)
+- GET `/api/v1/cars/:CarID/calendars/drives`
+  - Returns a month calendar for drive activity, including per-day trip counts, duration, distance, first/last trip time, and total net energy consumed.
+  - Supported parameters:
+    - `year` (optional, default current year in TeslaMate timezone)
+    - `month` (optional, default current month in TeslaMate timezone)
+- GET `/api/v1/cars/:CarID/charts/efficiency`
+  - Returns the efficiency time series used by summary and chart views.
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `limit` (optional, default `12`, max `100`)
-- GET `/api/v1/cars/:CarID/dashboard/monthly-distance`
-  - Returns only monthly distance buckets for dashboard charts.
+- GET `/api/v1/cars/:CarID/charts/drives/monthly-distance`
+  - Returns monthly distance buckets for drive charts.
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `months` (optional, default `6`, max `24`)
-- GET `/api/v1/cars/:CarID/dashboard/monthly-charge-energy`
-  - Returns only monthly charge-energy buckets for dashboard and charging charts.
+- GET `/api/v1/cars/:CarID/charts/drives/weekday-distance`
+  - Returns weekday buckets for total driven distance.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/charts/drives/hourly-starts`
+  - Returns hourly buckets for drive start counts.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/charts/charges/monthly-energy`
+  - Returns monthly charge-energy buckets for charging charts.
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `months` (optional, default `6`, max `24`)
-- GET `/api/v1/cars/:CarID/dashboard/charge-locations`
-  - Returns only top charge locations by added energy.
+- GET `/api/v1/cars/:CarID/charts/charges/location-energy`
+  - Returns top charge locations by added energy.
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `limit` (optional, default `4`, max `20`)
+- GET `/api/v1/cars/:CarID/charts/charges/weekday-energy`
+  - Returns weekday buckets for charged energy.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/charts/charges/hourly-starts`
+  - Returns hourly buckets for charge start counts.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+- GET `/api/v1/cars/:CarID/charts/activity/duration`
+  - Returns duration totals by activity/state category for activity charts.
+- GET `/api/v1/docs/swagger`
+  - Redirects to the standard `gin-swagger` UI for manual API testing.
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
 - GET `/api/v1/cars/:CarID/charges/:ChargeID/interval`
   - Returns the previous-charge to current-charge usage interval for one completed charge.
   - Aggregates driven distance, rated range budget, range completion, consumed SOC, and estimated driving/parked/other battery energy on the API server.
   - This avoids clients loading a month of charge history plus extra drive history just to render a single charge use breakdown.
-- GET `/api/v1/cars/:CarID/summary`
-  - Legacy compatibility endpoint. New clients should call the split `summaries/*` and `dashboard/*` endpoints above so each screen requests only the data it needs.
-  - Supported parameters:
-    - `startDate` (optional, use canonical UTC format in RFC3339)
-    - `endDate` (optional, use canonical UTC format in RFC3339)
-    - `include` (optional comma-separated list; accepted values: `all`, `lifetime`, `drives`, `charges`, `series`)
-    - `seriesLimit` (optional, legacy dashboard series only; default `12`, max `100`)
-    - `seriesMonths` (optional, legacy dashboard series only; default `6`, max `24`)
-    - `locationLimit` (optional, legacy dashboard series only; default `4`, max `20`)
-  - Aggregation ownership:
-    - Server-side: lifetime totals, drive summaries, charge summaries, efficiency series, monthly buckets, charge-location rankings, and charge-to-charge interval energy breakdowns.
-    - Client-side: detail route sampling and per-detail sample charts, because those are presentation-specific and based on already selected detail records.
-  - Additional optimization review:
-    - Good future API candidate: `GET /api/v1/cars/:CarID/drives/:DriveID/traffic-profile` if multiple clients need the same traffic classification from drive samples.
-    - Good future API candidate: `GET /api/v1/cars/:CarID/history/months` if clients need a lightweight month index before loading paged drive and charge history.
-    - Keep client-side: chart formatting, map viewport normalization, display categories, colors, and localized labels. Those are UI concerns and should not become API contracts.
 - GET `/api/v1/cars/:CarID/charges`
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)

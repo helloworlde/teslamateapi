@@ -103,9 +103,14 @@ type TeslaMateSummaryFilters struct {
 type TeslaMateSummaryData struct {
 	Car                 TeslaMateSummaryCar         `json:"car"`
 	Filters             TeslaMateSummaryFilters     `json:"filters"`
+	Overview            *OverviewSummary            `json:"overview"`
 	LifetimeSummary     *LifetimeConsumptionSummary `json:"lifetime_summary"`
 	DriveSummary        *DriveHistorySummary        `json:"drive_summary"`
 	ChargeSummary       *ChargeHistorySummary       `json:"charge_summary"`
+	ParkingSummary      *ParkingHistorySummary      `json:"parking_summary"`
+	AnalysisSummary     *AnalysisSummary            `json:"analysis_summary"`
+	StatisticsSummary   *StatisticsSummary          `json:"statistics_summary"`
+	StateSummary        *StateSummary               `json:"state_summary"`
 	DashboardSeries     *DashboardSeriesSummary     `json:"dashboard_series"`
 	EfficiencySeries    []SummaryTimeSeriesPoint    `json:"efficiency_series"`
 	MonthlyDistance     []SummaryCategoryValue      `json:"monthly_distance"`
@@ -143,7 +148,7 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	}
 
 	var driveSummary *DriveHistorySummary
-	if include["drives"] || include["lifetime"] {
+	if include["drives"] || include["lifetime"] || include["overview"] || include["analysis"] || include["statistics"] {
 		driveSummary, err = fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
@@ -152,8 +157,17 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	}
 
 	var chargeSummary *ChargeHistorySummary
-	if include["charges"] || include["lifetime"] {
+	if include["charges"] || include["lifetime"] || include["overview"] || include["analysis"] || include["statistics"] {
 		chargeSummary, err = fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			return
+		}
+	}
+
+	var parkingSummary *ParkingHistorySummary
+	if include["parking"] || include["overview"] || include["analysis"] {
+		parkingSummary, err = fetchParkingHistorySummary(CarID, parsedStartDate, parsedEndDate, nil)
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
@@ -163,6 +177,38 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	var lifetimeSummary *LifetimeConsumptionSummary
 	if include["lifetime"] {
 		lifetimeSummary = makeLifetimeConsumptionSummary(driveSummary, chargeSummary)
+	}
+
+	var overviewSummary *OverviewSummary
+	if include["overview"] {
+		overviewSummary = makeOverviewSummary(driveSummary, chargeSummary, parkingSummary)
+	}
+
+	var analysisSummary *AnalysisSummary
+	if include["analysis"] {
+		analysisSummary, err = fetchAnalysisSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, driveSummary, chargeSummary, parkingSummary)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			return
+		}
+	}
+
+	var statisticsSummary *StatisticsSummary
+	if include["statistics"] {
+		statisticsSummary, err = fetchStatisticsSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature, driveSummary, chargeSummary)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			return
+		}
+	}
+
+	var stateSummary *StateSummary
+	if include["states"] {
+		stateSummary, err = fetchStateSummary(CarID, parsedStartDate, parsedEndDate)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			return
+		}
 	}
 
 	var dashboardSeries *DashboardSeriesSummary
@@ -201,10 +247,15 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 				EndDate:   summaryFilterDate(parsedEndDate),
 				Include:   summaryIncludeList(include),
 			},
-			LifetimeSummary: lifetimeSummary,
-			DriveSummary:    includedSummary(include, "drives", driveSummary),
-			ChargeSummary:   includedSummary(include, "charges", chargeSummary),
-			DashboardSeries: dashboardSeries,
+			Overview:          includedSummary(include, "overview", overviewSummary),
+			LifetimeSummary:   lifetimeSummary,
+			DriveSummary:      includedSummary(include, "drives", driveSummary),
+			ChargeSummary:     includedSummary(include, "charges", chargeSummary),
+			ParkingSummary:    includedSummary(include, "parking", parkingSummary),
+			AnalysisSummary:   includedSummary(include, "analysis", analysisSummary),
+			StatisticsSummary: includedSummary(include, "statistics", statisticsSummary),
+			StateSummary:      includedSummary(include, "states", stateSummary),
+			DashboardSeries:   dashboardSeries,
 			TeslaMateUnits: TeslaMateSummaryUnits{
 				UnitsLength:      unitsLength,
 				UnitsTemperature: unitsTemperature,
@@ -439,41 +490,66 @@ func TeslaMateAPICarsDashboardChargeLocationsV1(c *gin.Context) {
 
 func parseSummaryIncludes(raw string) map[string]bool {
 	include := map[string]bool{
-		"lifetime": false,
-		"drives":   false,
-		"charges":  false,
-		"series":   false,
+		"overview":   false,
+		"lifetime":   false,
+		"drives":     false,
+		"charges":    false,
+		"parking":    false,
+		"analysis":   false,
+		"statistics": false,
+		"states":     false,
+		"series":     false,
 	}
 
 	for _, part := range strings.Split(raw, ",") {
 		switch strings.ToLower(strings.TrimSpace(part)) {
 		case "", "all":
+			include["overview"] = true
 			include["lifetime"] = true
 			include["drives"] = true
 			include["charges"] = true
+			include["parking"] = true
+			include["analysis"] = true
+			include["statistics"] = true
+			include["states"] = true
+		case "overview", "summary":
+			include["overview"] = true
 		case "lifetime", "lifecycle":
 			include["lifetime"] = true
 		case "drive", "drives", "trips":
 			include["drives"] = true
 		case "charge", "charges", "charging":
 			include["charges"] = true
+		case "parking", "parked":
+			include["parking"] = true
+		case "analysis", "analytics", "insights":
+			include["analysis"] = true
+		case "statistics", "stats":
+			include["statistics"] = true
+		case "states", "state":
+			include["states"] = true
 		case "series", "dashboard", "charts":
 			include["series"] = true
 		}
 	}
 
-	if !include["lifetime"] && !include["drives"] && !include["charges"] && !include["series"] {
+	if !include["overview"] && !include["lifetime"] && !include["drives"] && !include["charges"] && !include["parking"] && !include["analysis"] && !include["statistics"] && !include["states"] && !include["series"] {
+		include["overview"] = true
 		include["lifetime"] = true
 		include["drives"] = true
 		include["charges"] = true
+		include["parking"] = true
+		include["analysis"] = true
+		include["statistics"] = true
+		include["states"] = true
 	}
 
 	return include
 }
 
 func summaryIncludeList(include map[string]bool) []string {
-	result := make([]string, 0, 4)
-	for _, item := range []string{"lifetime", "drives", "charges", "series"} {
+	result := make([]string, 0, 9)
+	for _, item := range []string{"overview", "lifetime", "drives", "charges", "parking", "analysis", "statistics", "states", "series"} {
 		if include[item] {
 			result = append(result, item)
 		}
@@ -1280,22 +1356,46 @@ func TeslaMateAPISummaryOptionsV1(c *gin.Context) {
 		"parameters": gin.H{
 			"startDate":     "optional RFC3339 date; filters records starting at or after this time",
 			"endDate":       "optional RFC3339 date; filters records ending at or before this time",
-			"include":       "legacy /summary only; optional comma-separated list: all, lifetime, drives, charges, series",
-			"limit":         "dashboard series/location endpoints; optional integer limit",
-			"months":        "dashboard monthly endpoints; optional integer month bucket count",
-			"seriesLimit":   "legacy /summary only; optional integer; default 12, max 100",
-			"seriesMonths":  "legacy /summary only; optional integer; default 6, max 24",
-			"locationLimit": "legacy /summary only; optional integer; default 4, max 20",
+			"include":       "combined /summaries only; optional comma-separated list: all, overview, lifetime, drives, charges, parking, analysis, statistics, states, series",
+			"limit":         "chart series/location endpoints; optional integer limit",
+			"months":        "chart monthly endpoints; optional integer month bucket count",
+			"seriesLimit":   "combined /summaries only; optional integer; default 12, max 100",
+			"seriesMonths":  "combined /summaries only; optional integer; default 6, max 24",
+			"locationLimit": "combined /summaries only; optional integer; default 4, max 20",
+			"types":         "insight events only; optional comma-separated list: harsh_brake, charge_power_drop, sleep_interruption",
+			"page":          "parking, state timeline, insight events; optional integer page number",
+			"show":          "parking, state timeline, insight events; optional integer page size",
+			"year":          "drive calendar only; optional integer year",
+			"month":         "drive calendar only; optional integer month (1-12)",
 		},
 		"endpoints": []string{
+			"/api/v1/cars/:CarID/summaries",
+			"/api/v1/cars/:CarID/summaries/overview",
+			"/api/v1/cars/:CarID/parking-sessions",
 			"/api/v1/cars/:CarID/summaries/lifetime",
 			"/api/v1/cars/:CarID/summaries/drives",
 			"/api/v1/cars/:CarID/summaries/charges",
-			"/api/v1/cars/:CarID/dashboard/efficiency-series",
-			"/api/v1/cars/:CarID/dashboard/monthly-distance",
-			"/api/v1/cars/:CarID/dashboard/monthly-charge-energy",
-			"/api/v1/cars/:CarID/dashboard/charge-locations",
-			"/api/v1/cars/:CarID/summary",
+			"/api/v1/cars/:CarID/summaries/parking",
+			"/api/v1/cars/:CarID/summaries/statistics",
+			"/api/v1/cars/:CarID/summaries/state-activity",
+			"/api/v1/cars/:CarID/analytics/activity",
+			"/api/v1/cars/:CarID/analytics/regeneration",
+			"/api/v1/cars/:CarID/activity-timeline",
+			"/api/v1/cars/:CarID/dashboards/drives",
+			"/api/v1/cars/:CarID/dashboards/charges",
+			"/api/v1/cars/:CarID/insights",
+			"/api/v1/cars/:CarID/insights/events",
+			"/api/v1/cars/:CarID/calendars/drives",
+			"/api/v1/cars/:CarID/charts/efficiency",
+			"/api/v1/cars/:CarID/charts/drives/monthly-distance",
+			"/api/v1/cars/:CarID/charts/drives/weekday-distance",
+			"/api/v1/cars/:CarID/charts/drives/hourly-starts",
+			"/api/v1/cars/:CarID/charts/charges/monthly-energy",
+			"/api/v1/cars/:CarID/charts/charges/location-energy",
+			"/api/v1/cars/:CarID/charts/charges/weekday-energy",
+			"/api/v1/cars/:CarID/charts/charges/hourly-starts",
+			"/api/v1/cars/:CarID/charts/activity/duration",
+			"/api/v1/docs/swagger",
 		},
 	})
 }
