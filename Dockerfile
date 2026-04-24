@@ -9,14 +9,14 @@ WORKDIR /go/src/
 
 # copy go mod files and sourcecode
 COPY go.mod go.sum ./
-COPY src/ .
+COPY src/ ./src/
 
 # download go mods and compile the program
 RUN go mod download && \
   CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
   -X 'main.apiVersion=${apiVersion}' \
-  " -o app ./...
+  " -o app ./src
 
 
 # get alpine container
