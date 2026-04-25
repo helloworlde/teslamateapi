@@ -233,7 +233,8 @@ paths:
   /v1/cars/{CarID}:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -251,7 +252,8 @@ paths:
   /v1/cars/{CarID}/analytics/activity:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -291,7 +293,8 @@ paths:
       description: Returns estimated regeneration metrics. Meta flags when values
         are estimated from available drive/position data.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -331,7 +334,8 @@ paths:
       description: Original compatible battery-health endpoint. Use `/v1/cars/{CarID}/charts/battery/health`
         for chart-friendly series.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -349,7 +353,8 @@ paths:
   /v1/cars/{CarID}/calendar/charges:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -387,7 +392,8 @@ paths:
   /v1/cars/{CarID}/calendar/drives:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -425,7 +431,8 @@ paths:
   /v1/cars/{CarID}/charges:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -461,7 +468,8 @@ paths:
   /v1/cars/{CarID}/charges/{ChargeID}:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -484,7 +492,8 @@ paths:
   /v1/cars/{CarID}/charges/{ChargeID}/details:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -519,7 +528,8 @@ paths:
   /v1/cars/{CarID}/charges/current:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -537,7 +547,8 @@ paths:
   /v1/cars/{CarID}/charts/battery/health:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -575,7 +586,8 @@ paths:
   /v1/cars/{CarID}/charts/battery/range:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -613,7 +625,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/cost:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -655,7 +668,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/efficiency:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -697,7 +711,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/energy:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -739,7 +754,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/location:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -781,7 +797,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/power:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -823,7 +840,8 @@ paths:
   /v1/cars/{CarID}/charts/charges/soc:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -861,7 +879,8 @@ paths:
   /v1/cars/{CarID}/charts/drives/distance:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -903,7 +922,8 @@ paths:
   /v1/cars/{CarID}/charts/drives/efficiency:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -945,7 +965,8 @@ paths:
   /v1/cars/{CarID}/charts/drives/energy:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -987,7 +1008,8 @@ paths:
   /v1/cars/{CarID}/charts/drives/speed:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1029,7 +1051,8 @@ paths:
   /v1/cars/{CarID}/charts/drives/temperature:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1071,7 +1094,8 @@ paths:
   /v1/cars/{CarID}/charts/mileage:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1109,7 +1133,8 @@ paths:
   /v1/cars/{CarID}/charts/overview:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1147,7 +1172,8 @@ paths:
   /v1/cars/{CarID}/charts/states/duration:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1187,7 +1213,8 @@ paths:
       description: Returns an explicit empty structure when TeslaMate schema does
         not allow a reliable vampire-drain calculation.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1225,7 +1252,8 @@ paths:
   /v1/cars/{CarID}/command:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1243,7 +1271,8 @@ paths:
   /v1/cars/{CarID}/command/{Command}:
     post:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1266,7 +1295,8 @@ paths:
   /v1/cars/{CarID}/drives:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1310,7 +1340,8 @@ paths:
   /v1/cars/{CarID}/drives/{DriveID}:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1333,7 +1364,8 @@ paths:
   /v1/cars/{CarID}/drives/{DriveID}/details:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1368,7 +1400,8 @@ paths:
   /v1/cars/{CarID}/insights:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1406,7 +1439,8 @@ paths:
   /v1/cars/{CarID}/insights/events:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1456,7 +1490,8 @@ paths:
   /v1/cars/{CarID}/logging:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1474,7 +1509,8 @@ paths:
   /v1/cars/{CarID}/logging/{Command}:
     put:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1497,7 +1533,8 @@ paths:
   /v1/cars/{CarID}/map/visited:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1536,7 +1573,8 @@ paths:
     get:
       description: TeslaMate Statistics dashboard aligned aggregate response.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1574,7 +1612,8 @@ paths:
   /v1/cars/{CarID}/status:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1595,7 +1634,8 @@ paths:
         parking, efficiency, cost, mileage, state snapshot, and vampire-drain availability
         in one payload.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1637,7 +1677,8 @@ paths:
       description: Returns drives, charges, states, and updates in one timeline ordered
         by time.
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1691,7 +1732,8 @@ paths:
   /v1/cars/{CarID}/updates:
     get:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true
@@ -1717,7 +1759,8 @@ paths:
   /v1/cars/{CarID}/wake_up:
     post:
       parameters:
-      - description: Car ID
+      - default: 1
+        description: Car ID
         in: path
         name: CarID
         required: true

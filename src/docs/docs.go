@@ -147,6 +147,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -175,6 +176,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -234,6 +236,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -293,6 +296,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -321,6 +325,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -379,6 +384,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -437,6 +443,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -489,6 +496,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -517,6 +525,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -552,6 +561,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -605,6 +615,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -663,6 +674,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -721,6 +733,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -785,6 +798,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -849,6 +863,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -913,6 +928,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -977,6 +993,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1041,6 +1058,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1099,6 +1117,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1163,6 +1182,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1227,6 +1247,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1291,6 +1312,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1355,6 +1377,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1419,6 +1442,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1477,6 +1501,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1535,6 +1560,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1594,6 +1620,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1652,6 +1679,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1680,6 +1708,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1715,6 +1744,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1779,6 +1809,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1814,6 +1845,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1867,6 +1899,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1925,6 +1958,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2001,6 +2035,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2029,6 +2064,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2064,6 +2100,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2123,6 +2160,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2181,6 +2219,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2210,6 +2249,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2269,6 +2309,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2351,6 +2392,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2391,6 +2433,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
