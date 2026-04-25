@@ -164,125 +164,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/analytics/activity": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Activity analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/analytics/regeneration": {
-            "get": {
-                "description": "Returns estimated regeneration metrics. Meta flags when values are estimated from available drive/position data.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Regeneration analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/battery-health": {
             "get": {
                 "description": "Original compatible battery-health endpoint. Use ` + "`" + `/v1/cars/{CarID}/charts/battery/health` + "`" + ` for chart-friendly series.",
@@ -313,15 +194,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/calendar/charges": {
+        "/v1/cars/{CarID}/calendar": {
             "get": {
+                "description": "Unified calendar endpoint for drives/charges metrics. Supports day, week, month buckets and returns summary + item list.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Charge calendar",
+                "summary": "Calendar",
                 "parameters": [
                     {
                         "type": "integer",
@@ -332,74 +214,29 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Calendar year",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Calendar month",
-                        "name": "month",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/calendar/drives": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive calendar",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Calendar year",
-                        "name": "year",
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "day|week|month",
+                        "name": "bucket",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Calendar month",
-                        "name": "month",
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -407,25 +244,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
@@ -471,6 +308,30 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Page size",
                         "name": "show",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size alias",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset alias",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date|-start_date|duration|-duration|cost|-cost|energy|-energy",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "summary,location,energy,cost",
+                        "name": "include",
                         "in": "query"
                     }
                 ],
@@ -549,1124 +410,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/charges/{ChargeID}/details": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge details context",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Charge ID",
-                        "name": "ChargeID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/battery/health": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Battery health chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/battery/range": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Battery range chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/cost": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge cost chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/efficiency": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge efficiency chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/energy": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge energy chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/location": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge location chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Location bucket count",
-                        "name": "show",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/power": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge power chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/charges/soc": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Charge SOC distribution chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/drives/distance": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive distance chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start; defaults to the last 365 days",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end; defaults to now",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/drives/efficiency": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive efficiency chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/drives/energy": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive energy chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/drives/speed": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive speed chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/drives/temperature": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive temperature chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/mileage": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Mileage chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/overview": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Overview charts",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start; defaults to the last 30 days",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end; defaults to now",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/states/duration": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "State duration chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/charts/vampire-drain": {
-            "get": {
-                "description": "Returns an explicit empty structure when TeslaMate schema does not allow a reliable vampire-drain calculation.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Vampire drain chart",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIChartResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/command": {
             "get": {
                 "produces": [
@@ -1732,6 +475,158 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/cars/{CarID}/dashboard": {
+            "get": {
+                "description": "Aggregated dashboard payload for app home. Returns statistics, calendar summary, optional series/distribution placeholders, and warnings in one request.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Dashboard",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "year|month|week|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "YYYY-MM-DD or RFC3339",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range end",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/distributions": {
+            "get": {
+                "description": "Distribution buckets for drive and charge behavior. Supports hour, duration, distance, speed, energy and power distributions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Distributions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated metrics: drive_start_hour,drive_duration,drive_distance,drive_speed,charge_start_hour,charge_duration,charge_energy,charge_power",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/cars/{CarID}/drives": {
             "get": {
                 "produces": [
@@ -1785,6 +680,30 @@ const docTemplate = `{
                         "description": "Page size",
                         "name": "show",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size alias",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset alias",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "summary,locations,energy",
+                        "name": "include",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1833,69 +752,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/drives/{DriveID}/details": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Drive details context",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Drive ID",
-                        "name": "DriveID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/insights": {
             "get": {
+                "description": "Baseline-comparison insights generated from current range versus previous equivalent range, including efficiency, cost, charging, battery and anomaly signals.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Insights summary",
+                "summary": "Insights",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1907,91 +773,34 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Date range start",
+                        "description": "range start",
                         "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/insights/events": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Insight events",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Date range end",
+                        "description": "range end",
                         "name": "endDate",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated insight types",
+                        "description": "comma separated types: efficiency,cost,charging,driving,battery,anomaly",
                         "name": "types",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
+                        "description": "insight count limit, 1-100, default 20",
+                        "name": "limit",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "show",
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1999,25 +808,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.APIListResponse"
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
@@ -2090,6 +899,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/map/visited": {
             "get": {
+                "description": "Visited geo points and map bounds for heatmap/coverage rendering.",
                 "produces": [
                     "application/json"
                 ],
@@ -2108,14 +918,22 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Date range start; defaults to the last 90 days",
+                        "description": "range start",
                         "name": "startDate",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Date range end; defaults to now",
+                        "description": "range end",
                         "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -2123,40 +941,40 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
             }
         },
-        "/v1/cars/{CarID}/statistics": {
+        "/v1/cars/{CarID}/series": {
             "get": {
-                "description": "TeslaMate Statistics dashboard aligned aggregate response.",
+                "description": "Unified time series endpoint with scope-aware metrics and chart metadata. Unsupported metric/scope pairs are skipped with warnings.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Statistics dashboard summary",
+                "summary": "Series",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2168,14 +986,40 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Date range start",
-                        "name": "startDate",
+                        "description": "drives|charges|battery|states|overview",
+                        "name": "scope",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Date range end",
+                        "description": "comma separated metrics: distance,efficiency,speed,energy,cost,power,soc,range,regeneration,vampire_drain",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "raw|hour|day|week|month|year",
+                        "name": "bucket",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
                         "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -2183,25 +1027,103 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/statistics": {
+            "get": {
+                "description": "Unified period statistics with explicit overview/drive/charge/battery sections, including efficiency, cost, energy and parking metrics.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Statistics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "year|month|week|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "YYYY-MM-DD or RFC3339",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range end",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
@@ -2236,76 +1158,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/summary": {
-            "get": {
-                "description": "New summary endpoint for third-party apps. Returns drive, charge, parking, efficiency, cost, mileage, state snapshot, and vampire-drain availability in one payload.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "Summary overview",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "RFC3339, offset values, decoded-space offsets, local datetime, or date-only. Encode + as %2B in URLs when possible.",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "RFC3339, offset values, decoded-space offsets, local datetime, or date-only. Date-only endDate is expanded to local end-of-day.",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIObjectResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/timeline": {
             "get": {
-                "description": "Returns drives, charges, states, and updates in one timeline ordered by time.",
+                "description": "Unified timeline feed for drive/charge/state activities with pagination.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Unified timeline",
+                "summary": "Timeline",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2317,38 +1179,34 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Date range start",
+                        "description": "range start",
                         "name": "startDate",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Date range end",
+                        "description": "range end",
                         "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size",
+                        "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "show",
+                        "description": "offset",
+                        "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "startDate|type",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "asc|desc",
-                        "name": "order",
+                        "description": "IANA timezone",
+                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -2356,25 +1214,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.APIListResponse"
+                            "$ref": "#/definitions/main.v1ListEnvelope"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/main.APIErrorResponse"
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
@@ -2471,191 +1329,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.APIChartPoint": {
-            "type": "object",
-            "properties": {
-                "label": {
-                    "type": "string"
-                },
-                "time": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.APIChartResponse": {
-            "type": "object",
-            "properties": {
-                "bucket": {
-                    "type": "string"
-                },
-                "car_id": {
-                    "type": "integer"
-                },
-                "meta": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "range": {
-                    "$ref": "#/definitions/main.APIRange"
-                },
-                "series": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.APIChartSeries"
-                    }
-                },
-                "timezone": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.APIChartSeries": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "points": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.APIChartPoint"
-                    }
-                },
-                "unit": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.APIErrorDetail": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "details": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.APIErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "$ref": "#/definitions/main.APIErrorDetail"
-                }
-            }
-        },
-        "main.APIListResponse": {
-            "type": "object",
-            "properties": {
-                "car_id": {
-                    "type": "integer"
-                },
-                "data": {
-                    "type": "array",
-                    "items": {}
-                },
-                "meta": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "pagination": {
-                    "$ref": "#/definitions/main.APIPagination"
-                },
-                "range": {
-                    "$ref": "#/definitions/main.APIRange"
-                },
-                "timezone": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.APIObjectResponse": {
-            "type": "object",
-            "properties": {
-                "car_id": {
-                    "type": "integer"
-                },
-                "data": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "meta": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "range": {
-                    "$ref": "#/definitions/main.APIRange"
-                },
-                "timezone": {
-                    "type": "string"
-                },
-                "unit": {
-                    "$ref": "#/definitions/main.APIUnits"
-                }
-            }
-        },
-        "main.APIPagination": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "type": "integer"
-                },
-                "show": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.APIRange": {
-            "type": "object",
-            "properties": {
-                "end": {
-                    "type": "string"
-                },
-                "start": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.APIUnits": {
-            "type": "object",
-            "properties": {
-                "consumption": {
-                    "type": "string"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "distance": {
-                    "type": "string"
-                },
-                "duration": {
-                    "type": "string"
-                },
-                "energy": {
-                    "type": "string"
-                },
-                "percentage": {
-                    "type": "string"
-                },
-                "speed": {
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "string"
-                }
-            }
-        },
         "main.SwaggerDataResponse": {
             "type": "object",
             "properties": {
@@ -2684,6 +1357,92 @@ const docTemplate = `{
                 "path": {
                     "type": "string",
                     "example": "/api/v1"
+                }
+            }
+        },
+        "main.v1Error": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.v1ErrorEnvelope": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/main.v1Error"
+                }
+            }
+        },
+        "main.v1ListEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "meta": {
+                    "$ref": "#/definitions/main.v1Meta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/main.v1Pagination"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {}
+                }
+            }
+        },
+        "main.v1Meta": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.v1ObjectEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "meta": {
+                    "$ref": "#/definitions/main.v1Meta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {}
+                }
+            }
+        },
+        "main.v1Pagination": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         }

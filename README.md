@@ -173,8 +173,8 @@ Local run on another port (optional): set **`TESLAMATEAPI_LISTEN_ADDR=:18088`** 
 ### Compatibility policy
 
 - All original TeslaMateApi endpoints listed below remain compatible.
-- Redesigned extension endpoints may introduce breaking changes.
-- Removed extension aliases include legacy `summaries/*`, `dashboards/*`, `activity-timeline`, `parking-sessions`, and the old chart aliases.
+- All redesigned extension endpoints are now unified under `/api/v1/cars/:CarID/*`.
+- Removed extension aliases include legacy `summary`, `analytics/*`, `calendar/*`, `charts/*`, `insights/events`, and other fragmented chart endpoints.
 
 ### Date parameters
 
@@ -238,37 +238,53 @@ Optional:
 - POST `/api/v1/cars/:CarID/wake_up`
 - GET `/api/v1/globalsettings`
 
-**Redesigned extension API**
+**Unified extension API**
 
-- GET `/api/v1/cars/:CarID/summary`
+- GET `/api/v1/cars/:CarID/dashboard`
+- GET `/api/v1/cars/:CarID/calendar`
 - GET `/api/v1/cars/:CarID/statistics`
-- GET `/api/v1/cars/:CarID/charts/overview`
-- GET `/api/v1/cars/:CarID/charts/drives/distance`
-- GET `/api/v1/cars/:CarID/charts/drives/energy`
-- GET `/api/v1/cars/:CarID/charts/drives/efficiency`
-- GET `/api/v1/cars/:CarID/charts/drives/speed`
-- GET `/api/v1/cars/:CarID/charts/drives/temperature`
-- GET `/api/v1/cars/:CarID/charts/charges/energy`
-- GET `/api/v1/cars/:CarID/charts/charges/cost`
-- GET `/api/v1/cars/:CarID/charts/charges/efficiency`
-- GET `/api/v1/cars/:CarID/charts/charges/power`
-- GET `/api/v1/cars/:CarID/charts/charges/location`
-- GET `/api/v1/cars/:CarID/charts/charges/soc`
-- GET `/api/v1/cars/:CarID/charts/battery/range`
-- GET `/api/v1/cars/:CarID/charts/battery/health`
-- GET `/api/v1/cars/:CarID/charts/states/duration`
-- GET `/api/v1/cars/:CarID/charts/vampire-drain`
-- GET `/api/v1/cars/:CarID/charts/mileage`
-- GET `/api/v1/cars/:CarID/drives/:DriveID/details`
-- GET `/api/v1/cars/:CarID/charges/:ChargeID/details`
-- GET `/api/v1/cars/:CarID/timeline`
-- GET `/api/v1/cars/:CarID/calendar/drives`
-- GET `/api/v1/cars/:CarID/calendar/charges`
-- GET `/api/v1/cars/:CarID/map/visited`
+- GET `/api/v1/cars/:CarID/series`
+- GET `/api/v1/cars/:CarID/distributions`
 - GET `/api/v1/cars/:CarID/insights`
-- GET `/api/v1/cars/:CarID/insights/events`
-- GET `/api/v1/cars/:CarID/analytics/activity`
-- GET `/api/v1/cars/:CarID/analytics/regeneration`
+- GET `/api/v1/cars/:CarID/timeline`
+- GET `/api/v1/cars/:CarID/map/visited`
+
+### Extension API purpose
+
+- `dashboard`: app 首页聚合数据，减少客户端请求次数。
+- `calendar`: 日历维度聚合（day/week/month）。
+- `statistics`: 年/月/周/自定义范围统计。
+- `series`: 统一时序曲线（替代碎片化 charts）。
+- `distributions`: 分布图数据（起步时间、时长等）。
+- `insights`: 可扩展洞察事件与摘要。
+- `timeline`: 时间线事件流（drive/charge/state）。
+- `map/visited`: 访问点、边界和热力图基础数据。
+
+### Units and warnings
+
+- 默认单位为 metric（km, km/h, kWh, Wh/km）。
+- 所有时间字段使用 RFC3339。
+- 无法可靠计算的字段返回 `null`，并通过 `warnings` 说明原因。
+- 禁止返回伪造值或用 `0` 冒充未知值。
+
+### Query examples
+
+```bash
+# 查询本月日历
+curl "http://localhost:8080/api/v1/cars/1/calendar?startDate=2026-04-01&endDate=2026-04-30&bucket=day&timezone=Asia/Shanghai"
+
+# 查询本月统计
+curl "http://localhost:8080/api/v1/cars/1/statistics?period=month&date=2026-04-01&timezone=Asia/Shanghai"
+
+# 查询本月里程和速度曲线
+curl "http://localhost:8080/api/v1/cars/1/series?scope=drives&metrics=distance,speed&bucket=day&startDate=2026-04-01&endDate=2026-04-30"
+
+# 查询充电时间分布
+curl "http://localhost:8080/api/v1/cars/1/distributions?metrics=charge_start_hour&startDate=2026-04-01&endDate=2026-04-30"
+
+# 查询洞察
+curl "http://localhost:8080/api/v1/cars/1/insights?startDate=2026-04-01&endDate=2026-04-30"
+```
 
 ### Verification
 

@@ -56,6 +56,10 @@ func swaggerBatteryHealth() {}
 // @Param endDate query string false "Supports RFC3339, offset values, decoded-space offsets, local datetime, and date-only values"
 // @Param page query int false "Page number"
 // @Param show query int false "Page size"
+// @Param limit query int false "Page size alias"
+// @Param offset query int false "Offset alias"
+// @Param sort query string false "start_date|-start_date|duration|-duration|cost|-cost|energy|-energy"
+// @Param include query string false "summary,location,energy,cost"
 // @Success 200 {object} SwaggerDataResponse
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/charges [get]
@@ -109,6 +113,10 @@ func swaggerExecuteCommand() {}
 // @Param maxDistance query number false "Maximum drive distance"
 // @Param page query int false "Page number"
 // @Param show query int false "Page size"
+// @Param limit query int false "Page size alias"
+// @Param offset query int false "Offset alias"
+// @Param sort query string false "start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency"
+// @Param include query string false "summary,locations,energy"
 // @Success 200 {object} SwaggerDataResponse
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/drives [get]
@@ -180,399 +188,135 @@ func swaggerWakeUp() {}
 // @Router /v1/globalsettings [get]
 func swaggerGlobalSettings() {}
 
-// @Summary Summary overview
-// @Description New summary endpoint for third-party apps. Returns drive, charge, parking, efficiency, cost, mileage, state snapshot, and vampire-drain availability in one payload.
+// @Summary Dashboard
+// @Description Aggregated dashboard payload for app home. Returns statistics, calendar summary, optional series/distribution placeholders, and warnings in one request.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "RFC3339, offset values, decoded-space offsets, local datetime, or date-only. Encode + as %2B in URLs when possible."
-// @Param endDate query string false "RFC3339, offset values, decoded-space offsets, local datetime, or date-only. Date-only endDate is expanded to local end-of-day."
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/summary [get]
-func swaggerSummaryV2() {}
+// @Param period query string false "year|month|week|custom"
+// @Param date query string false "YYYY-MM-DD or RFC3339"
+// @Param startDate query string false "custom range start"
+// @Param endDate query string false "custom range end"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/dashboard [get]
+func swaggerDashboardV2() {}
 
-// @Summary Statistics dashboard summary
-// @Description TeslaMate Statistics dashboard aligned aggregate response.
+// @Summary Calendar
+// @Description Unified calendar endpoint for drives/charges metrics. Supports day, week, month buckets and returns summary + item list.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param bucket query string false "day|week|month"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/calendar [get]
+func swaggerCalendarV2() {}
+
+// @Summary Statistics
+// @Description Unified period statistics with explicit overview/drive/charge/battery sections, including efficiency, cost, energy and parking metrics.
+// @Tags Extended API
+// @Produce json
+// @Param CarID path int true "Car ID" default(1)
+// @Param period query string false "year|month|week|custom"
+// @Param date query string false "YYYY-MM-DD or RFC3339"
+// @Param startDate query string false "custom range start"
+// @Param endDate query string false "custom range end"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
 // @Router /v1/cars/{CarID}/statistics [get]
 func swaggerStatisticsV2() {}
 
-// @Summary Overview charts
+// @Summary Series
+// @Description Unified time series endpoint with scope-aware metrics and chart metadata. Unsupported metric/scope pairs are skipped with warnings.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start; defaults to the last 30 days"
-// @Param endDate query string false "Date range end; defaults to now"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/overview [get]
-func swaggerChartsOverview() {}
+// @Param scope query string false "drives|charges|battery|states|overview"
+// @Param metrics query string false "comma separated metrics: distance,efficiency,speed,energy,cost,power,soc,range,regeneration,vampire_drain"
+// @Param bucket query string false "raw|hour|day|week|month|year"
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/series [get]
+func swaggerSeriesV2() {}
 
-// @Summary Drive distance chart
+// @Summary Distributions
+// @Description Distribution buckets for drive and charge behavior. Supports hour, duration, distance, speed, energy and power distributions.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start; defaults to the last 365 days"
-// @Param endDate query string false "Date range end; defaults to now"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/drives/distance [get]
-func swaggerDriveDistanceChart() {}
+// @Param metrics query string false "comma separated metrics: drive_start_hour,drive_duration,drive_distance,drive_speed,charge_start_hour,charge_duration,charge_energy,charge_power"
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/distributions [get]
+func swaggerDistributionsV2() {}
 
-// @Summary Drive energy chart
+// @Summary Insights
+// @Description Baseline-comparison insights generated from current range versus previous equivalent range, including efficiency, cost, charging, battery and anomaly signals.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/drives/energy [get]
-func swaggerDriveEnergyChart() {}
-
-// @Summary Drive efficiency chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/drives/efficiency [get]
-func swaggerDriveEfficiencyChart() {}
-
-// @Summary Drive speed chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/drives/speed [get]
-func swaggerDriveSpeedChart() {}
-
-// @Summary Drive temperature chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/drives/temperature [get]
-func swaggerDriveTemperatureChart() {}
-
-// @Summary Charge energy chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/energy [get]
-func swaggerChargeEnergyChart() {}
-
-// @Summary Charge cost chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/cost [get]
-func swaggerChargeCostChart() {}
-
-// @Summary Charge efficiency chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/efficiency [get]
-func swaggerChargeEfficiencyChart() {}
-
-// @Summary Charge power chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param bucket query string false "day|week|month|year"
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/power [get]
-func swaggerChargePowerChart() {}
-
-// @Summary Charge location chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Param show query int false "Location bucket count"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/location [get]
-func swaggerChargeLocationChart() {}
-
-// @Summary Charge SOC distribution chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/charges/soc [get]
-func swaggerChargeSOCChart() {}
-
-// @Summary Battery range chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/battery/range [get]
-func swaggerBatteryRangeChart() {}
-
-// @Summary Battery health chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/battery/health [get]
-func swaggerBatteryHealthChart() {}
-
-// @Summary State duration chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/states/duration [get]
-func swaggerStateDurationChart() {}
-
-// @Summary Vampire drain chart
-// @Description Returns an explicit empty structure when TeslaMate schema does not allow a reliable vampire-drain calculation.
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/vampire-drain [get]
-func swaggerVampireDrainChart() {}
-
-// @Summary Mileage chart
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIChartResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charts/mileage [get]
-func swaggerMileageChart() {}
-
-// @Summary Drive details context
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param DriveID path int true "Drive ID"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/drives/{DriveID}/details [get]
-func swaggerDriveDetailsV2() {}
-
-// @Summary Charge details context
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param ChargeID path int true "Charge ID"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/charges/{ChargeID}/details [get]
-func swaggerChargeDetailsV2() {}
-
-// @Summary Unified timeline
-// @Description Returns drives, charges, states, and updates in one timeline ordered by time.
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Param page query int false "Page number"
-// @Param show query int false "Page size"
-// @Param sort query string false "startDate|type"
-// @Param order query string false "asc|desc"
-// @Success 200 {object} APIListResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/timeline [get]
-func swaggerTimelineV2() {}
-
-// @Summary Drive calendar
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param year query int false "Calendar year"
-// @Param month query int false "Calendar month"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/calendar/drives [get]
-func swaggerDriveCalendarV2() {}
-
-// @Summary Charge calendar
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param year query int false "Calendar year"
-// @Param month query int false "Calendar month"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/calendar/charges [get]
-func swaggerChargeCalendarV2() {}
-
-// @Summary Visited map
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start; defaults to the last 90 days"
-// @Param endDate query string false "Date range end; defaults to now"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/map/visited [get]
-func swaggerVisitedMapV2() {}
-
-// @Summary Insights summary
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param types query string false "comma separated types: efficiency,cost,charging,driving,battery,anomaly"
+// @Param limit query int false "insight count limit, 1-100, default 20"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
 // @Router /v1/cars/{CarID}/insights [get]
 func swaggerInsightsV2() {}
 
-// @Summary Insight events
+// @Summary Timeline
+// @Description Unified timeline feed for drive/charge/state activities with pagination.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Param types query string false "Comma-separated insight types"
-// @Param page query int false "Page number"
-// @Param show query int false "Page size"
-// @Success 200 {object} APIListResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/insights/events [get]
-func swaggerInsightEventsV2() {}
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param limit query int false "page size"
+// @Param offset query int false "offset"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ListEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/timeline [get]
+func swaggerTimelineV2() {}
 
-// @Summary Activity analytics
+// @Summary Visited map
+// @Description Visited geo points and map bounds for heatmap/coverage rendering.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/analytics/activity [get]
-func swaggerActivityAnalyticsV2() {}
-
-// @Summary Regeneration analytics
-// @Description Returns estimated regeneration metrics. Meta flags when values are estimated from available drive/position data.
-// @Tags Extended API
-// @Produce json
-// @Param CarID path int true "Car ID" default(1)
-// @Param startDate query string false "Date range start"
-// @Param endDate query string false "Date range end"
-// @Success 200 {object} APIObjectResponse
-// @Failure 400 {object} APIErrorResponse
-// @Failure 404 {object} APIErrorResponse
-// @Failure 500 {object} APIErrorResponse
-// @Router /v1/cars/{CarID}/analytics/regeneration [get]
-func swaggerRegenerationAnalyticsV2() {}
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} v1ObjectEnvelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/map/visited [get]
+func swaggerVisitedMapV2() {}

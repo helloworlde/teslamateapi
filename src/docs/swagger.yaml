@@ -1,127 +1,5 @@
 basePath: /api
 definitions:
-  main.APIChartPoint:
-    properties:
-      label:
-        type: string
-      time:
-        type: string
-      value:
-        type: number
-    type: object
-  main.APIChartResponse:
-    properties:
-      bucket:
-        type: string
-      car_id:
-        type: integer
-      meta:
-        additionalProperties: {}
-        type: object
-      range:
-        $ref: '#/definitions/main.APIRange'
-      series:
-        items:
-          $ref: '#/definitions/main.APIChartSeries'
-        type: array
-      timezone:
-        type: string
-    type: object
-  main.APIChartSeries:
-    properties:
-      name:
-        type: string
-      points:
-        items:
-          $ref: '#/definitions/main.APIChartPoint'
-        type: array
-      unit:
-        type: string
-    type: object
-  main.APIErrorDetail:
-    properties:
-      code:
-        type: string
-      details:
-        additionalProperties: {}
-        type: object
-      message:
-        type: string
-    type: object
-  main.APIErrorResponse:
-    properties:
-      error:
-        $ref: '#/definitions/main.APIErrorDetail'
-    type: object
-  main.APIListResponse:
-    properties:
-      car_id:
-        type: integer
-      data:
-        items: {}
-        type: array
-      meta:
-        additionalProperties: {}
-        type: object
-      pagination:
-        $ref: '#/definitions/main.APIPagination'
-      range:
-        $ref: '#/definitions/main.APIRange'
-      timezone:
-        type: string
-    type: object
-  main.APIObjectResponse:
-    properties:
-      car_id:
-        type: integer
-      data:
-        additionalProperties: {}
-        type: object
-      meta:
-        additionalProperties: {}
-        type: object
-      range:
-        $ref: '#/definitions/main.APIRange'
-      timezone:
-        type: string
-      unit:
-        $ref: '#/definitions/main.APIUnits'
-    type: object
-  main.APIPagination:
-    properties:
-      page:
-        type: integer
-      show:
-        type: integer
-      total:
-        type: integer
-    type: object
-  main.APIRange:
-    properties:
-      end:
-        type: string
-      start:
-        type: string
-    type: object
-  main.APIUnits:
-    properties:
-      consumption:
-        type: string
-      currency:
-        type: string
-      distance:
-        type: string
-      duration:
-        type: string
-      energy:
-        type: string
-      percentage:
-        type: string
-      speed:
-        type: string
-      temperature:
-        type: string
-    type: object
   main.SwaggerDataResponse:
     properties:
       data:
@@ -142,6 +20,63 @@ definitions:
       path:
         example: /api/v1
         type: string
+    type: object
+  main.v1Error:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties: {}
+        type: object
+      message:
+        type: string
+    type: object
+  main.v1ErrorEnvelope:
+    properties:
+      error:
+        $ref: '#/definitions/main.v1Error'
+    type: object
+  main.v1ListEnvelope:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/main.v1Meta'
+      pagination:
+        $ref: '#/definitions/main.v1Pagination'
+      warnings:
+        items: {}
+        type: array
+    type: object
+  main.v1Meta:
+    properties:
+      car_id:
+        type: integer
+      generated_at:
+        type: string
+      timezone:
+        type: string
+      unit:
+        type: string
+      version:
+        type: string
+    type: object
+  main.v1ObjectEnvelope:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/main.v1Meta'
+      warnings:
+        items: {}
+        type: array
+    type: object
+  main.v1Pagination:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
     type: object
 info:
   contact: {}
@@ -249,86 +184,6 @@ paths:
       summary: Get car
       tags:
       - Compatible API
-  /v1/cars/{CarID}/analytics/activity:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Activity analytics
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/analytics/regeneration:
-    get:
-      description: Returns estimated regeneration metrics. Meta flags when values
-        are estimated from available drive/position data.
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Regeneration analytics
-      tags:
-      - Extended API
   /v1/cars/{CarID}/battery-health:
     get:
       description: Original compatible battery-health endpoint. Use `/v1/cars/{CarID}/charts/battery/health`
@@ -350,8 +205,10 @@ paths:
       summary: Battery health
       tags:
       - Compatible API
-  /v1/cars/{CarID}/calendar/charges:
+  /v1/cars/{CarID}/calendar:
     get:
+      description: Unified calendar endpoint for drives/charges metrics. Supports
+        day, week, month buckets and returns summary + item list.
       parameters:
       - default: 1
         description: Car ID
@@ -359,73 +216,44 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: Calendar year
+      - description: range start
         in: query
-        name: year
-        type: integer
-      - description: Calendar month
-        in: query
-        name: month
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge calendar
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/calendar/drives:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
+        name: startDate
         required: true
-        type: integer
-      - description: Calendar year
+        type: string
+      - description: range end
         in: query
-        name: year
-        type: integer
-      - description: Calendar month
+        name: endDate
+        required: true
+        type: string
+      - description: day|week|month
         in: query
-        name: month
-        type: integer
+        name: bucket
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.APIObjectResponse'
+            $ref: '#/definitions/main.v1ObjectEnvelope'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive calendar
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Calendar
       tags:
       - Extended API
   /v1/cars/{CarID}/charges:
@@ -455,6 +283,22 @@ paths:
         in: query
         name: show
         type: integer
+      - description: Page size alias
+        in: query
+        name: limit
+        type: integer
+      - description: Offset alias
+        in: query
+        name: offset
+        type: integer
+      - description: start_date|-start_date|duration|-duration|cost|-cost|energy|-energy
+        in: query
+        name: sort
+        type: string
+      - description: summary,location,energy,cost
+        in: query
+        name: include
+        type: string
       produces:
       - application/json
       responses:
@@ -489,42 +333,6 @@ paths:
       summary: Charge details
       tags:
       - Compatible API
-  /v1/cars/{CarID}/charges/{ChargeID}/details:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Charge ID
-        in: path
-        name: ChargeID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge details context
-      tags:
-      - Extended API
   /v1/cars/{CarID}/charges/current:
     get:
       parameters:
@@ -544,711 +352,6 @@ paths:
       summary: Current charge
       tags:
       - Compatible API
-  /v1/cars/{CarID}/charts/battery/health:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Battery health chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/battery/range:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Battery range chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/cost:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge cost chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/efficiency:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge efficiency chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/energy:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge energy chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/location:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      - description: Location bucket count
-        in: query
-        name: show
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge location chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/power:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge power chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/charges/soc:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Charge SOC distribution chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/drives/distance:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start; defaults to the last 365 days
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end; defaults to now
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive distance chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/drives/efficiency:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive efficiency chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/drives/energy:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive energy chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/drives/speed:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive speed chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/drives/temperature:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive temperature chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/mileage:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Mileage chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/overview:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start; defaults to the last 30 days
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end; defaults to now
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Overview charts
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/states/duration:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: State duration chart
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/charts/vampire-drain:
-    get:
-      description: Returns an explicit empty structure when TeslaMate schema does
-        not allow a reliable vampire-drain calculation.
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIChartResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Vampire drain chart
-      tags:
-      - Extended API
   /v1/cars/{CarID}/command:
     get:
       parameters:
@@ -1292,6 +395,111 @@ paths:
       summary: Execute command
       tags:
       - Compatible API
+  /v1/cars/{CarID}/dashboard:
+    get:
+      description: Aggregated dashboard payload for app home. Returns statistics,
+        calendar summary, optional series/distribution placeholders, and warnings
+        in one request.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: year|month|week|custom
+        in: query
+        name: period
+        type: string
+      - description: YYYY-MM-DD or RFC3339
+        in: query
+        name: date
+        type: string
+      - description: custom range start
+        in: query
+        name: startDate
+        type: string
+      - description: custom range end
+        in: query
+        name: endDate
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.v1ObjectEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Dashboard
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/distributions:
+    get:
+      description: Distribution buckets for drive and charge behavior. Supports hour,
+        duration, distance, speed, energy and power distributions.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: 'comma separated metrics: drive_start_hour,drive_duration,drive_distance,drive_speed,charge_start_hour,charge_duration,charge_energy,charge_power'
+        in: query
+        name: metrics
+        type: string
+      - description: range start
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: range end
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.v1ObjectEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Distributions
+      tags:
+      - Extended API
   /v1/cars/{CarID}/drives:
     get:
       parameters:
@@ -1327,6 +535,22 @@ paths:
         in: query
         name: show
         type: integer
+      - description: Page size alias
+        in: query
+        name: limit
+        type: integer
+      - description: Offset alias
+        in: query
+        name: offset
+        type: integer
+      - description: start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency
+        in: query
+        name: sort
+        type: string
+      - description: summary,locations,energy
+        in: query
+        name: include
+        type: string
       produces:
       - application/json
       responses:
@@ -1361,44 +585,11 @@ paths:
       summary: Drive details
       tags:
       - Compatible API
-  /v1/cars/{CarID}/drives/{DriveID}/details:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Drive ID
-        in: path
-        name: DriveID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Drive details context
-      tags:
-      - Extended API
   /v1/cars/{CarID}/insights:
     get:
+      description: Baseline-comparison insights generated from current range versus
+        previous equivalent range, including efficiency, cost, charging, battery and
+        anomaly signals.
       parameters:
       - default: 1
         description: Car ID
@@ -1406,85 +597,48 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: Date range start
+      - description: range start
         in: query
         name: startDate
-        type: string
-      - description: Date range end
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Insights summary
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/insights/events:
-    get:
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
         required: true
-        type: integer
-      - description: Date range start
-        in: query
-        name: startDate
         type: string
-      - description: Date range end
+      - description: range end
         in: query
         name: endDate
+        required: true
         type: string
-      - description: Comma-separated insight types
+      - description: 'comma separated types: efficiency,cost,charging,driving,battery,anomaly'
         in: query
         name: types
         type: string
-      - description: Page number
+      - description: insight count limit, 1-100, default 20
         in: query
-        name: page
+        name: limit
         type: integer
-      - description: Page size
+      - description: IANA timezone
         in: query
-        name: show
-        type: integer
+        name: timezone
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.APIListResponse'
+            $ref: '#/definitions/main.v1ObjectEnvelope'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Insight events
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Insights
       tags:
       - Extended API
   /v1/cars/{CarID}/logging:
@@ -1532,6 +686,7 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/map/visited:
     get:
+      description: Visited geo points and map bounds for heatmap/coverage rendering.
       parameters:
       - default: 1
         description: Car ID
@@ -1539,13 +694,19 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: Date range start; defaults to the last 90 days
+      - description: range start
         in: query
         name: startDate
+        required: true
         type: string
-      - description: Date range end; defaults to now
+      - description: range end
         in: query
         name: endDate
+        required: true
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
         type: string
       produces:
       - application/json
@@ -1553,25 +714,85 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.APIObjectResponse'
+            $ref: '#/definitions/main.v1ObjectEnvelope'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
       summary: Visited map
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/series:
+    get:
+      description: Unified time series endpoint with scope-aware metrics and chart
+        metadata. Unsupported metric/scope pairs are skipped with warnings.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: drives|charges|battery|states|overview
+        in: query
+        name: scope
+        type: string
+      - description: 'comma separated metrics: distance,efficiency,speed,energy,cost,power,soc,range,regeneration,vampire_drain'
+        in: query
+        name: metrics
+        type: string
+      - description: raw|hour|day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: range start
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: range end
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.v1ObjectEnvelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Series
       tags:
       - Extended API
   /v1/cars/{CarID}/statistics:
     get:
-      description: TeslaMate Statistics dashboard aligned aggregate response.
+      description: Unified period statistics with explicit overview/drive/charge/battery
+        sections, including efficiency, cost, energy and parking metrics.
       parameters:
       - default: 1
         description: Car ID
@@ -1579,13 +800,25 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: Date range start
+      - description: year|month|week|custom
+        in: query
+        name: period
+        type: string
+      - description: YYYY-MM-DD or RFC3339
+        in: query
+        name: date
+        type: string
+      - description: custom range start
         in: query
         name: startDate
         type: string
-      - description: Date range end
+      - description: custom range end
         in: query
         name: endDate
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
         type: string
       produces:
       - application/json
@@ -1593,20 +826,20 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.APIObjectResponse'
+            $ref: '#/definitions/main.v1ObjectEnvelope'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Statistics dashboard summary
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Statistics
       tags:
       - Extended API
   /v1/cars/{CarID}/status:
@@ -1628,54 +861,9 @@ paths:
       summary: Current vehicle status
       tags:
       - Compatible API
-  /v1/cars/{CarID}/summary:
-    get:
-      description: New summary endpoint for third-party apps. Returns drive, charge,
-        parking, efficiency, cost, mileage, state snapshot, and vampire-drain availability
-        in one payload.
-      parameters:
-      - default: 1
-        description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339, offset values, decoded-space offsets, local datetime,
-          or date-only. Encode + as %2B in URLs when possible.
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339, offset values, decoded-space offsets, local datetime,
-          or date-only. Date-only endDate is expanded to local end-of-day.
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.APIObjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Summary overview
-      tags:
-      - Extended API
   /v1/cars/{CarID}/timeline:
     get:
-      description: Returns drives, charges, states, and updates in one timeline ordered
-        by time.
+      description: Unified timeline feed for drive/charge/state activities with pagination.
       parameters:
       - default: 1
         description: Car ID
@@ -1683,29 +871,27 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: Date range start
+      - description: range start
         in: query
         name: startDate
+        required: true
         type: string
-      - description: Date range end
+      - description: range end
         in: query
         name: endDate
+        required: true
         type: string
-      - description: Page number
+      - description: page size
         in: query
-        name: page
+        name: limit
         type: integer
-      - description: Page size
+      - description: offset
         in: query
-        name: show
+        name: offset
         type: integer
-      - description: startDate|type
+      - description: IANA timezone
         in: query
-        name: sort
-        type: string
-      - description: asc|desc
-        in: query
-        name: order
+        name: timezone
         type: string
       produces:
       - application/json
@@ -1713,20 +899,20 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.APIListResponse'
+            $ref: '#/definitions/main.v1ListEnvelope'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
+            $ref: '#/definitions/main.v1ErrorEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.APIErrorResponse'
-      summary: Unified timeline
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Timeline
       tags:
       - Extended API
   /v1/cars/{CarID}/updates:

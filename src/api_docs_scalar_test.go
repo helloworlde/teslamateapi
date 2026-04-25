@@ -13,10 +13,13 @@ import (
 func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 	s := docs.SwaggerInfo.ReadDoc()
 	for _, sub := range []string{
+		"/v1/cars/{CarID}/dashboard",
+		"/v1/cars/{CarID}/calendar",
 		"/v1/cars/{CarID}/statistics",
-		"/v1/cars/{CarID}/summary",
+		"/v1/cars/{CarID}/series",
+		"/v1/cars/{CarID}/distributions",
 		"/v1/cars/{CarID}/timeline",
-		"/v1/cars/{CarID}/insights/events",
+		"/v1/cars/{CarID}/insights",
 	} {
 		if !strings.Contains(s, sub) {
 			t.Fatalf("OpenAPI doc missing %q", sub)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -19,6 +20,10 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	// query options to modify query when collecting data
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
+	limit := convertStringToInteger(c.DefaultQuery("limit", "0"))
+	offset := convertStringToInteger(c.DefaultQuery("offset", "0"))
+	sortRaw := strings.TrimSpace(c.DefaultQuery("sort", "-start_date"))
+	_ = c.Query("include")
 
 	// get startDate and endDate from query parameters
 	parsedStartDate, err := parseDateParam(c.Query("startDate"))
@@ -121,13 +126,41 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
-	if ResultPage > 0 {
-		ResultPage--
-	} else {
+	if limit > 0 {
+		ResultShow = limit
 		ResultPage = 0
+		if offset > 0 {
+			ResultPage = offset
+		}
+	} else {
+		// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
+		if ResultPage > 0 {
+			ResultPage--
+		} else {
+			ResultPage = 0
+		}
+		ResultPage = (ResultPage * ResultShow)
 	}
-	ResultPage = (ResultPage * ResultShow)
+
+	orderBy := "start_date DESC"
+	switch sortRaw {
+	case "start_date":
+		orderBy = "start_date ASC"
+	case "-start_date":
+		orderBy = "start_date DESC"
+	case "distance":
+		orderBy = "distance ASC"
+	case "-distance":
+		orderBy = "distance DESC"
+	case "duration":
+		orderBy = "duration_min ASC"
+	case "-duration":
+		orderBy = "duration_min DESC"
+	case "efficiency":
+		orderBy = "consumption_net ASC"
+	case "-efficiency":
+		orderBy = "consumption_net DESC"
+	}
 
 	// getting data from database
 	query := `
@@ -235,8 +268,8 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	}
 
 	query += fmt.Sprintf(`
-        ORDER BY start_date DESC
-        LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
+        ORDER BY %s
+        LIMIT $%d OFFSET $%d;`, orderBy, paramIndex, paramIndex+1)
 
 	queryParams = append(queryParams, ResultShow, ResultPage)
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -63,18 +62,14 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		routes[route.Method+" "+route.Path] = true
 	}
 	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/summary",
+		"GET /api/v1/cars/:CarID/dashboard",
+		"GET /api/v1/cars/:CarID/calendar",
 		"GET /api/v1/cars/:CarID/statistics",
+		"GET /api/v1/cars/:CarID/series",
+		"GET /api/v1/cars/:CarID/distributions",
+		"GET /api/v1/cars/:CarID/insights",
 		"GET /api/v1/cars/:CarID/timeline",
-		"GET /api/v1/cars/:CarID/calendar/drives",
-		"GET /api/v1/cars/:CarID/calendar/charges",
 		"GET /api/v1/cars/:CarID/map/visited",
-		"GET /api/v1/cars/:CarID/charts/drives/distance",
-		"GET /api/v1/cars/:CarID/charts/charges/location",
-		"GET /api/v1/cars/:CarID/charts/battery/range",
-		"GET /api/v1/cars/:CarID/charts/vampire-drain",
-		"GET /api/v1/cars/:CarID/drives/:DriveID/details",
-		"GET /api/v1/cars/:CarID/charges/:ChargeID/details",
 	} {
 		if !routes[key] {
 			t.Fatalf("missing route %s", key)
@@ -85,6 +80,9 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/activity-timeline",
 		"GET /api/v1/cars/:CarID/dashboards/drives",
 		"GET /api/v1/cars/:CarID/parking-sessions",
+		"GET /api/v1/cars/:CarID/charts/drives/distance",
+		"GET /api/v1/cars/:CarID/calendar/drives",
+		"GET /api/v1/cars/:CarID/calendar/charges",
 	} {
 		if routes[key] {
 			t.Fatalf("unexpected legacy route %s", key)
@@ -92,23 +90,19 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 	}
 }
 
-func TestSummaryInvalidDateResponse(t *testing.T) {
+func TestDashboardInvalidDateFallback(t *testing.T) {
 	oldTZ := appUsersTimezone
 	appUsersTimezone = time.FixedZone("CST", 8*3600)
 	defer func() { appUsersTimezone = oldTZ }()
-	r := buildTestRouter()
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/summary?startDate=not-a-date", nil)
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/dashboard?period=custom&startDate=not-a-date&endDate=2026-04-01", nil)
+	dr, warnings := parseDateRangeWithMonthFallback(c, "month")
+	if dr.Period != "month" {
+		t.Fatalf("expected month fallback, got %s", dr.Period)
 	}
-	var body APIErrorResponse
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-		t.Fatal(err)
-	}
-	if body.Error.Code != "invalid_date" {
-		t.Fatalf("unexpected code: %+v", body.Error)
+	if len(warnings) == 0 {
+		t.Fatal("expected fallback warning")
 	}
 }
 
@@ -131,33 +125,14 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 	r := buildTestRouter()
 	carID := getEnvAsInt("TESLAMATEAPI_ENDPOINT_CAR_ID", 1)
 	paths := []string{
-		"/api/v1/cars/%d/summary",
+		"/api/v1/cars/%d/dashboard",
+		"/api/v1/cars/%d/calendar?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/statistics",
-		"/api/v1/cars/%d/charts/overview",
-		"/api/v1/cars/%d/charts/drives/distance?bucket=month",
-		"/api/v1/cars/%d/charts/drives/energy?bucket=month",
-		"/api/v1/cars/%d/charts/drives/efficiency?bucket=month",
-		"/api/v1/cars/%d/charts/drives/speed?bucket=month",
-		"/api/v1/cars/%d/charts/drives/temperature?bucket=month",
-		"/api/v1/cars/%d/charts/charges/energy?bucket=month",
-		"/api/v1/cars/%d/charts/charges/cost?bucket=month",
-		"/api/v1/cars/%d/charts/charges/efficiency?bucket=month",
-		"/api/v1/cars/%d/charts/charges/power?bucket=month",
-		"/api/v1/cars/%d/charts/charges/location",
-		"/api/v1/cars/%d/charts/charges/soc",
-		"/api/v1/cars/%d/charts/battery/range",
-		"/api/v1/cars/%d/charts/battery/health",
-		"/api/v1/cars/%d/charts/states/duration",
-		"/api/v1/cars/%d/charts/vampire-drain",
-		"/api/v1/cars/%d/charts/mileage",
-		"/api/v1/cars/%d/timeline",
-		"/api/v1/cars/%d/calendar/drives",
-		"/api/v1/cars/%d/calendar/charges",
+		"/api/v1/cars/%d/series?startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",
+		"/api/v1/cars/%d/distributions?startDate=2026-04-01&endDate=2026-04-30&metrics=drive_start_hour",
+		"/api/v1/cars/%d/insights?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v1/cars/%d/timeline?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/map/visited",
-		"/api/v1/cars/%d/insights",
-		"/api/v1/cars/%d/insights/events",
-		"/api/v1/cars/%d/analytics/activity",
-		"/api/v1/cars/%d/analytics/regeneration",
 	}
 	for _, pattern := range paths {
 		w := httptest.NewRecorder()
