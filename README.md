@@ -116,6 +116,7 @@ Basically the same environment variables for the database, mqqt and timezone nee
 | **DATABASE_SSL**              | string  | _disable_                     |
 | **DATABASE_SSL_CA_CERT_FILE** | string  |                               |
 | **DEBUG_MODE**                | boolean | _false_                       |
+| **TESLAMATEAPI_LISTEN_ADDR**  | string  | _:8080_                       |
 | **DISABLE_MQTT**              | boolean | _false_                       |
 | **MQTT_TLS**                  | boolean | _false_                       |
 | **MQTT_PORT**                 | integer | _1883 (if TLS is true: 8883)_ |
@@ -155,18 +156,37 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 More detailed documentation of every endpoint will come..
 
-Interactive API docs are auto-generated from Go annotation comments; HTML is produced with [scalar-go](https://github.com/watchakorn-18k/scalar-go) and [Scalar](https://github.com/scalar/scalar).
+Interactive API docs are auto-generated from Go annotation comments; HTML is produced with [scalar-go](https://github.com/watchakorn-18k/scalar-go) and [Scalar](https://github.com/scalar/scalar) (Scalar API Reference, not Swagger UI).
 
-- Scalar UI: `/api/v1/docs` or `/api/v1/docs/swagger` (latter redirects to `/api/v1/docs/swagger/index.html`)
-- Spec JSON (swag output): `/api/v1/docs/swagger/doc.json`
+- Scalar API Reference: `/api/v1/docs` or `/api/v1/docs/swagger/index.html` (compatible path; same Scalar page)
+- OpenAPI JSON: `/api/v1/docs/openapi.json` (same document as the legacy path below)
+- Legacy OpenAPI JSON path (still supported): `/api/v1/docs/swagger/doc.json`
+- `/api/v1/docs/swagger` redirects to `/api/v1/docs/swagger/index.html`
 
-To regenerate the Swagger docs after changing routes or handler annotations:
+To regenerate OpenAPI JSON after changing routes or handler annotations:
 
 ```bash
+go install github.com/swaggo/swag/cmd/swag@latest
 swag init -g swagger_info.go -d src -o src/docs
 ```
 
+Local run on another port (optional): set **`TESLAMATEAPI_LISTEN_ADDR=:18088`** (default **`:8080`**).
+
+### Data correctness check (not just HTTP 200)
+
+Integration test against a real Postgres DB: compares `fetchDriveHistorySummary` / `fetchChargeHistorySummary` to **independent SQL** with the same date filters (`COUNT(*)`, `SUM(distance)`, `SUM(charge_energy_added)`).
+
+```bash
+export TESLAMATEAPI_DATACHECK=1
+# same DATABASE_* and TZ as when running TeslaMateApi
+go test ./src -run TestDatacheckSummaryVsReferenceSQL -count=1 -v
+```
+
+Optional: `TESLAMATEAPI_DATACHECK_CAR_ID` (default `1`), `TESLAMATEAPI_DATACHECK_START_DATE` / `TESLAMATEAPI_DATACHECK_END_DATE` (same parsing rules as API query params).
+
 ### Available endpoints
+
+Summary-related extensions use **`GET /api/v1/cars/:CarID/summaries`** and **`GET /api/v1/cars/:CarID/summaries/...`** only (no `/summary` or duplicate `/analytics/overview` style aliases). **`GET /api/v1/cars/:CarID/analytics/*`** exposes **`activity`** and **`regeneration`** only. Command catalog: **`GET /api/v1/cars/:CarID/command`** only.
 
 - GET `/api`
 - GET `/api/v1`
@@ -178,7 +198,8 @@ swag init -g swagger_info.go -d src -o src/docs
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
-    - `include` (optional comma-separated list; accepted values: `all`, `overview`, `lifetime`, `drives`, `charges`, `parking`, `analysis`, `statistics`, `states`, `series`)
+    - `include` (optional comma-separated list; accepted values: `all`, `overview`, `lifetime`, `drives`, `charges`, `parking`, `analysis`, `statistics`, `states`, `insights`, `series`; `dashboard`/`charts` map to `series`)
+    - Unknown `include` values return HTTP 400.
     - `seriesLimit` (optional, combined summaries only; default `12`, max `100`)
     - `seriesMonths` (optional, combined summaries only; default `6`, max `24`)
     - `locationLimit` (optional, combined summaries only; default `4`, max `20`)
@@ -196,10 +217,11 @@ swag init -g swagger_info.go -d src -o src/docs
     - `show` (optional, default `100`, max `500`)
     - `states` (optional comma-separated list; accepted values: `online`, `offline`, `asleep`)
 - GET `/api/v1/cars/:CarID/summaries/lifetime`
-  - Aggregates vehicle lifetime totals and consumption ratios server-side.
+  - Selected-period “lifetime-style” totals (drive + charge aggregates for the requested window). When `startDate`/`endDate` are set, this is **not** an unbounded true lifetime.
   - Supported parameters:
-    - `startDate` (optional, use canonical UTC format in RFC3339)
-    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `startDate` (optional, RFC3339 or local `YYYY-MM-DD HH:mm:ss` interpreted in `TZ`)
+    - `endDate` (optional)
+    - `ignoreDateRange=true` (optional): ignore `startDate`/`endDate` and aggregate from all history (use with care on large databases)
 - GET `/api/v1/cars/:CarID/summaries/drives`
   - Aggregates drive totals and efficiency metrics server-side.
   - Supported parameters:
@@ -244,7 +266,7 @@ swag init -g swagger_info.go -d src -o src/docs
     - `page` (optional, default `1`)
     - `show` (optional, default `100`, max `500`)
 - GET `/api/v1/cars/:CarID/dashboards/drives`
-  - Returns today, this week, this month, and this year drive boards in the user's configured TeslaMate timezone.
+  - Returns today, this week, this month, and this year drive boards in the user's configured TeslaMate timezone (`TZ`). **Week starts on Monday (ISO week).**
   - Each period contains the same server-side drive summary contract so clients can render compact dashboard cards without recomputing date windows.
 - GET `/api/v1/cars/:CarID/dashboards/charges`
   - Returns today, this week, this month, and this year charge boards in the user's configured TeslaMate timezone.
@@ -258,7 +280,7 @@ swag init -g swagger_info.go -d src -o src/docs
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
-    - `types` (optional comma-separated list; accepted values: `harsh_brake`, `charge_power_drop`, `sleep_interruption`)
+    - `types` (optional comma-separated list; accepted values include `harsh_brake`, `charge_power_drop`, `sleep_interruption`, `low_speed_trip`, `congestion_like_trip`, `high_consumption_drive`, `low_efficiency_charge`, `abnormal_charge`, `deep_discharge`; unknown values return HTTP 400)
     - `page` (optional, default `1`)
     - `show` (optional, default `100`, max `500`)
 - GET `/api/v1/cars/:CarID/calendars/drives`
@@ -313,9 +335,11 @@ swag init -g swagger_info.go -d src -o src/docs
 - GET `/api/v1/cars/:CarID/charts/activity/duration`
   - Returns duration totals by activity/state category for activity charts.
 - GET `/api/v1/docs`
-  - Scalar API reference (same spec as below).
+  - Scalar API Reference (same OpenAPI as below).
+- GET `/api/v1/docs/openapi.json`
+  - OpenAPI 3 JSON (primary path).
 - GET `/api/v1/docs/swagger`
-  - Redirects to `/api/v1/docs/swagger/index.html` (Scalar); spec JSON at `/api/v1/docs/swagger/doc.json`.
+  - Redirects to `/api/v1/docs/swagger/index.html` (Scalar); OpenAPI JSON remains at `/api/v1/docs/swagger/doc.json` for compatibility.
 - GET `/api/v1/cars/:CarID/charges/:ChargeID/interval`
   - Returns the previous-charge to current-charge usage interval for one completed charge.
   - Aggregates driven distance, rated range budget, range completion, consumed SOC, and estimated driving/parked/other battery energy on the API server.
@@ -346,7 +370,21 @@ swag init -g swagger_info.go -d src -o src/docs
 - GET `/api/readyz`
 
 > [!TIP]
-> Canonical UTC format in RFC3339, e.g. `2006-01-02T15:04:05Z` or `2006-01-02T15:04:05+07:00`
+> Use RFC3339 for `startDate` / `endDate`, e.g. `2006-01-02T15:04:05Z` or `2006-04-02T10:55:30+08:00`. In query strings the `+` in a numeric timezone **must** be encoded as `%2B` (otherwise it becomes a space). Example: `startDate=2026-04-01T00:00:00%2B08:00`. The API also accepts a space before the offset after decoding (e.g. `...30 08:00`) and local `YYYY-MM-DD HH:mm:ss` interpreted in `TZ`.
+
+Example requests:
+
+```bash
+curl "http://localhost:8080/api/v1/cars/1/summaries?include=overview,drives,charges&startDate=2026-04-01T00:00:00%2B08:00&endDate=2026-04-24T23:59:59%2B08:00"
+
+curl "http://localhost:8080/api/v1/cars/1/summaries/statistics?startDate=2026-04-01T00:00:00%2B08:00&endDate=2026-04-24T23:59:59%2B08:00"
+
+curl "http://localhost:8080/api/v1/cars/1/analytics/activity?startDate=2026-04-01T00:00:00%2B08:00&endDate=2026-04-24T23:59:59%2B08:00"
+
+curl "http://localhost:8080/api/v1/cars/1/insights/events?types=high_consumption_drive,low_efficiency_charge&page=1&show=50"
+
+curl "http://localhost:8080/api/v1/cars/1/charts/efficiency?limit=12"
+```
 
 ### Authentication
 

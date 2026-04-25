@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -17,40 +18,47 @@ type HistorySummaryCoverage struct {
 }
 
 type DriveHistorySummary struct {
-	Coverage            HistorySummaryCoverage `json:"coverage"`
-	DriveCount          int                    `json:"drive_count"`
-	TotalDurationMin    int                    `json:"total_duration_min"`
-	TotalDistance       float64                `json:"total_distance"`
-	LongestDistance     *float64               `json:"longest_distance"`
-	LongestDurationMin  *int                   `json:"longest_duration_min"`
-	AverageDistance     *float64               `json:"average_distance"`
-	AverageDurationMin  *float64               `json:"average_duration_min"`
-	AverageSpeed        *float64               `json:"average_speed"`
-	TotalEnergyConsumed *float64               `json:"total_energy_consumed"`
-	AverageConsumption  *float64               `json:"average_consumption"`
-	BestConsumption     *float64               `json:"best_consumption"`
-	WorstConsumption    *float64               `json:"worst_consumption"`
-	MaxSpeed            *int                   `json:"max_speed"`
-	PeakDrivePower      *int                   `json:"peak_drive_power"`
-	PeakRegenPower      *int                   `json:"peak_regen_power"`
+	Coverage                 HistorySummaryCoverage `json:"coverage"`
+	DriveCount               int                    `json:"drive_count"`
+	TotalDurationMin         int                    `json:"total_duration_min"`
+	TotalDistance            float64                `json:"total_distance"`
+	LongestDistance          *float64               `json:"longest_distance"`
+	LongestDurationMin       *int                   `json:"longest_duration_min"`
+	AverageDistance          *float64               `json:"average_distance"`
+	AverageDurationMin       *float64               `json:"average_duration_min"`
+	AverageSpeed             *float64               `json:"average_speed"`
+	TotalEnergyConsumed      *float64               `json:"total_energy_consumed"`
+	AverageConsumption       *float64               `json:"average_consumption"`
+	BestConsumption          *float64               `json:"best_consumption"`
+	WorstConsumption         *float64               `json:"worst_consumption"`
+	MaxSpeed                 *int                   `json:"max_speed"`
+	PeakDrivePower           *int                   `json:"peak_drive_power"`
+	PeakRegenPower           *int                   `json:"peak_regen_power"`
+	LowSpeedTripCount        int                    `json:"low_speed_trip_count"`
+	CongestionLikeTripCount  int                    `json:"congestion_like_trip_count"`
+	HighConsumptionTripCount int                    `json:"high_consumption_trip_count"`
 }
 
 type ChargeHistorySummary struct {
-	Coverage           HistorySummaryCoverage `json:"coverage"`
-	ChargeCount        int                    `json:"charge_count"`
-	TotalDurationMin   int                    `json:"total_duration_min"`
-	TotalEnergyAdded   float64                `json:"total_energy_added"`
-	TotalEnergyUsed    *float64               `json:"total_energy_used"`
-	LongestDurationMin *int                   `json:"longest_duration_min"`
-	LargestEnergyAdded *float64               `json:"largest_energy_added"`
-	AverageEnergyAdded *float64               `json:"average_energy_added"`
-	AverageDurationMin *float64               `json:"average_duration_min"`
-	AveragePower       *float64               `json:"average_power"`
-	MaxPower           *int                   `json:"max_power"`
-	ChargingEfficiency *float64               `json:"charging_efficiency"`
-	TotalCost          *float64               `json:"total_cost"`
-	AverageCost        *float64               `json:"average_cost"`
-	HighestCost        *float64               `json:"highest_cost"`
+	Coverage                 HistorySummaryCoverage `json:"coverage"`
+	ChargeCount              int                    `json:"charge_count"`
+	TotalDurationMin         int                    `json:"total_duration_min"`
+	TotalEnergyAdded         float64                `json:"total_energy_added"`
+	TotalEnergyUsed          *float64               `json:"total_energy_used"`
+	LongestDurationMin       *int                   `json:"longest_duration_min"`
+	LargestEnergyAdded       *float64               `json:"largest_energy_added"`
+	AverageEnergyAdded       *float64               `json:"average_energy_added"`
+	AverageDurationMin       *float64               `json:"average_duration_min"`
+	AveragePower             *float64               `json:"average_power"`
+	MaxPower                 *int                   `json:"max_power"`
+	ChargingEfficiency       *float64               `json:"charging_efficiency"`
+	TotalCost                *float64               `json:"total_cost"`
+	AverageCost              *float64               `json:"average_cost"`
+	HighestCost              *float64               `json:"highest_cost"`
+	AverageCostPerKwh        *float64               `json:"average_cost_per_kwh"`
+	CostPer100Distance       *float64               `json:"cost_per_100_distance"`
+	LowEfficiencyChargeCount int                    `json:"low_efficiency_charge_count"`
+	AbnormalChargeCount      int                    `json:"abnormal_charge_count"`
 }
 
 type LifetimeConsumptionSummary struct {
@@ -78,10 +86,12 @@ type SummaryTimeSeriesPoint struct {
 }
 
 type SummaryCategoryValue struct {
-	ID     string  `json:"id"`
-	Label  string  `json:"label"`
-	Period string  `json:"period,omitempty"`
-	Value  float64 `json:"value"`
+	ID     string         `json:"id"`
+	Label  string         `json:"label"`
+	Period string         `json:"period,omitempty"`
+	Value  float64        `json:"value"`
+	Unit   string         `json:"unit,omitempty"`
+	Extra  map[string]any `json:"extra,omitempty"`
 }
 
 type TeslaMateSummaryCar struct {
@@ -90,8 +100,11 @@ type TeslaMateSummaryCar struct {
 }
 
 type TeslaMateSummaryUnits struct {
-	UnitsLength      string `json:"unit_of_length"`
-	UnitsTemperature string `json:"unit_of_temperature"`
+	UnitsLength           string `json:"unit_of_length"`
+	UnitsTemperature      string `json:"unit_of_temperature"`
+	UnitOfSpeed           string `json:"unit_of_speed"`
+	UnitOfConsumption     string `json:"unit_of_consumption"`
+	UnitOfCostPerDistance string `json:"unit_of_cost_per_distance"`
 }
 
 type TeslaMateSummaryFilters struct {
@@ -111,6 +124,7 @@ type TeslaMateSummaryData struct {
 	AnalysisSummary     *AnalysisSummary            `json:"analysis_summary"`
 	StatisticsSummary   *StatisticsSummary          `json:"statistics_summary"`
 	StateSummary        *StateSummary               `json:"state_summary"`
+	InsightSummary      *InsightSummary             `json:"insight_summary,omitempty"`
 	DashboardSeries     *DashboardSeriesSummary     `json:"dashboard_series"`
 	EfficiencySeries    []SummaryTimeSeriesPoint    `json:"efficiency_series"`
 	MonthlyDistance     []SummaryCategoryValue      `json:"monthly_distance"`
@@ -131,19 +145,31 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 		CarsSummaryError3 = "Invalid summary parameter."
 	)
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
+	CarID, err := parseCarID(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError2, err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
 		return
 	}
 
-	include := parseSummaryIncludes(c.DefaultQuery("include", "all"))
+	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError2, err.Error())
+		return
+	}
+
+	include, err := parseSummaryIncludes(c.DefaultQuery("include", ""))
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
+		return
+	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusNotFound, "TeslaMateAPICarsSummaryV1", "Car not found.", "")
+			return
+		}
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 		return
 	}
 
@@ -151,16 +177,16 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	if include["drives"] || include["lifetime"] || include["overview"] || include["analysis"] || include["statistics"] {
 		driveSummary, err = fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
 
 	var chargeSummary *ChargeHistorySummary
 	if include["charges"] || include["lifetime"] || include["overview"] || include["analysis"] || include["statistics"] {
-		chargeSummary, err = fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate)
+		chargeSummary, err = fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -169,7 +195,7 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	if include["parking"] || include["overview"] || include["analysis"] {
 		parkingSummary, err = fetchParkingHistorySummary(CarID, parsedStartDate, parsedEndDate, nil)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -181,14 +207,14 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 
 	var overviewSummary *OverviewSummary
 	if include["overview"] {
-		overviewSummary = makeOverviewSummary(driveSummary, chargeSummary, parkingSummary)
+		overviewSummary = makeOverviewSummary(driveSummary, chargeSummary, parkingSummary, summaryFilterDate(parsedStartDate), summaryFilterDate(parsedEndDate))
 	}
 
 	var analysisSummary *AnalysisSummary
 	if include["analysis"] {
 		analysisSummary, err = fetchAnalysisSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, driveSummary, chargeSummary, parkingSummary)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -197,7 +223,7 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	if include["statistics"] {
 		statisticsSummary, err = fetchStatisticsSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature, driveSummary, chargeSummary)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -206,7 +232,16 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	if include["states"] {
 		stateSummary, err = fetchStateSummary(CarID, parsedStartDate, parsedEndDate)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			return
+		}
+	}
+
+	var insightSummary *InsightSummary
+	if include["insights"] {
+		insightSummary, err = fetchInsightSummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -215,23 +250,23 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 	if include["series"] {
 		seriesLimit, err := parseSummaryPositiveIntParam(c.Query("seriesLimit"), 12, 1, 100)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
 			return
 		}
 		seriesMonths, err := parseSummaryPositiveIntParam(c.Query("seriesMonths"), 6, 1, 24)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
 			return
 		}
 		locationLimit, err := parseSummaryPositiveIntParam(c.Query("locationLimit"), 4, 1, 20)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, "TeslaMateAPICarsSummaryV1", CarsSummaryError3, err.Error())
 			return
 		}
 
 		dashboardSeries, err = fetchDashboardSeriesSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, seriesLimit, seriesMonths, locationLimit)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, "TeslaMateAPICarsSummaryV1", CarsSummaryError1, err.Error())
 			return
 		}
 	}
@@ -255,11 +290,9 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 			AnalysisSummary:   includedSummary(include, "analysis", analysisSummary),
 			StatisticsSummary: includedSummary(include, "statistics", statisticsSummary),
 			StateSummary:      includedSummary(include, "states", stateSummary),
+			InsightSummary:    includedSummary(include, "insights", insightSummary),
 			DashboardSeries:   dashboardSeries,
-			TeslaMateUnits: TeslaMateSummaryUnits{
-				UnitsLength:      unitsLength,
-				UnitsTemperature: unitsTemperature,
-			},
+			TeslaMateUnits:    buildSummaryUnits(unitsLength, unitsTemperature),
 		},
 	}
 
@@ -269,27 +302,35 @@ func TeslaMateAPICarsSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsLifetimeSummaryV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsLifetimeSummaryV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
+	CarID, err := parseCarID(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
 		return
 	}
 
+	ignoreDateRange := strings.EqualFold(strings.TrimSpace(c.Query("ignoreDateRange")), "true") || convertStringToBool(c.Query("ignoreDateRange"))
+	parsedStartDate, parsedEndDate := "", ""
+	if !ignoreDateRange {
+		parsedStartDate, parsedEndDate, err = parseSummaryDateRange(c)
+		if err != nil {
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
+			return
+		}
+	}
+
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load lifetime summary.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load lifetime summary.") {
 		return
 	}
 
 	driveSummary, err := fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load lifetime summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load lifetime summary.", err.Error())
 		return
 	}
-	chargeSummary, err := fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate)
+	chargeSummary, err := fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load lifetime summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load lifetime summary.", err.Error())
 		return
 	}
 
@@ -303,21 +344,24 @@ func TeslaMateAPICarsLifetimeSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsDriveSummaryV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDriveSummaryV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive summary.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load drive summary.") {
 		return
 	}
 	driveSummary, err := fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load drive summary.", err.Error())
 		return
 	}
 
@@ -331,21 +375,24 @@ func TeslaMateAPICarsDriveSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsChargeSummaryV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsChargeSummaryV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge summary.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load charge summary.") {
 		return
 	}
-	chargeSummary, err := fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate)
+	chargeSummary, err := fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load charge summary.", err.Error())
 		return
 	}
 
@@ -359,26 +406,29 @@ func TeslaMateAPICarsChargeSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsDashboardEfficiencySeriesV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDashboardEfficiencySeriesV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 	limit, err := parseSummaryPositiveIntParam(c.Query("limit"), 12, 1, 100)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid dashboard parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid dashboard parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard efficiency series.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load dashboard efficiency series.") {
 		return
 	}
 	series, err := fetchDashboardEfficiencySeries(CarID, parsedStartDate, parsedEndDate, unitsLength, limit)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard efficiency series.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load dashboard efficiency series.", err.Error())
 		return
 	}
 
@@ -392,26 +442,29 @@ func TeslaMateAPICarsDashboardEfficiencySeriesV1(c *gin.Context) {
 func TeslaMateAPICarsDashboardMonthlyDistanceV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDashboardMonthlyDistanceV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 	months, err := parseSummaryPositiveIntParam(c.Query("months"), 6, 1, 24)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid dashboard parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid dashboard parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard monthly distance.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load dashboard monthly distance.") {
 		return
 	}
 	items, err := fetchDashboardMonthlyDistance(CarID, parsedStartDate, parsedEndDate, unitsLength, months)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard monthly distance.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load dashboard monthly distance.", err.Error())
 		return
 	}
 
@@ -425,26 +478,29 @@ func TeslaMateAPICarsDashboardMonthlyDistanceV1(c *gin.Context) {
 func TeslaMateAPICarsDashboardMonthlyChargeEnergyV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDashboardMonthlyChargeEnergyV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 	months, err := parseSummaryPositiveIntParam(c.Query("months"), 6, 1, 24)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid dashboard parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid dashboard parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard monthly charge energy.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load dashboard monthly charge energy.") {
 		return
 	}
 	items, err := fetchDashboardMonthlyChargeEnergy(CarID, parsedStartDate, parsedEndDate, months)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard monthly charge energy.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load dashboard monthly charge energy.", err.Error())
 		return
 	}
 
@@ -458,26 +514,29 @@ func TeslaMateAPICarsDashboardMonthlyChargeEnergyV1(c *gin.Context) {
 func TeslaMateAPICarsDashboardChargeLocationsV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDashboardChargeLocationsV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 	limit, err := parseSummaryPositiveIntParam(c.Query("limit"), 4, 1, 20)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid dashboard parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid dashboard parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard charge locations.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load dashboard charge locations.") {
 		return
 	}
 	items, err := fetchDashboardChargeLocations(CarID, parsedStartDate, parsedEndDate, limit)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load dashboard charge locations.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load dashboard charge locations.", err.Error())
 		return
 	}
 
@@ -488,7 +547,30 @@ func TeslaMateAPICarsDashboardChargeLocationsV1(c *gin.Context) {
 	}))
 }
 
-func parseSummaryIncludes(raw string) map[string]bool {
+func summaryIncludeSetAllNoSeries(include map[string]bool) {
+	for k := range include {
+		include[k] = false
+	}
+	include["overview"] = true
+	include["lifetime"] = true
+	include["drives"] = true
+	include["charges"] = true
+	include["parking"] = true
+	include["analysis"] = true
+	include["statistics"] = true
+	include["states"] = true
+}
+
+func summaryIncludeAny(include map[string]bool) bool {
+	for _, v := range include {
+		if v {
+			return true
+		}
+	}
+	return false
+}
+
+func parseSummaryIncludes(raw string) (map[string]bool, error) {
 	include := map[string]bool{
 		"overview":   false,
 		"lifetime":   false,
@@ -499,19 +581,21 @@ func parseSummaryIncludes(raw string) map[string]bool {
 		"statistics": false,
 		"states":     false,
 		"series":     false,
+		"insights":   false,
 	}
-
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		summaryIncludeSetAllNoSeries(include)
+		return include, nil
+	}
 	for _, part := range strings.Split(raw, ",") {
-		switch strings.ToLower(strings.TrimSpace(part)) {
-		case "", "all":
-			include["overview"] = true
-			include["lifetime"] = true
-			include["drives"] = true
-			include["charges"] = true
-			include["parking"] = true
-			include["analysis"] = true
-			include["statistics"] = true
-			include["states"] = true
+		key := strings.ToLower(strings.TrimSpace(part))
+		if key == "" {
+			continue
+		}
+		switch key {
+		case "all":
+			summaryIncludeSetAllNoSeries(include)
 		case "overview", "summary":
 			include["overview"] = true
 		case "lifetime", "lifecycle":
@@ -522,34 +606,29 @@ func parseSummaryIncludes(raw string) map[string]bool {
 			include["charges"] = true
 		case "parking", "parked":
 			include["parking"] = true
-		case "analysis", "analytics", "insights":
+		case "analysis", "analytics":
 			include["analysis"] = true
+		case "insights":
+			include["insights"] = true
 		case "statistics", "stats":
 			include["statistics"] = true
 		case "states", "state":
 			include["states"] = true
 		case "series", "dashboard", "charts":
 			include["series"] = true
+		default:
+			return nil, fmt.Errorf("unknown include value %q", key)
 		}
 	}
-
-	if !include["overview"] && !include["lifetime"] && !include["drives"] && !include["charges"] && !include["parking"] && !include["analysis"] && !include["statistics"] && !include["states"] && !include["series"] {
-		include["overview"] = true
-		include["lifetime"] = true
-		include["drives"] = true
-		include["charges"] = true
-		include["parking"] = true
-		include["analysis"] = true
-		include["statistics"] = true
-		include["states"] = true
+	if !summaryIncludeAny(include) {
+		summaryIncludeSetAllNoSeries(include)
 	}
-
-	return include
+	return include, nil
 }
 
 func summaryIncludeList(include map[string]bool) []string {
-	result := make([]string, 0, 9)
-	for _, item := range []string{"overview", "lifetime", "drives", "charges", "parking", "analysis", "statistics", "states", "series"} {
+	result := make([]string, 0, 10)
+	for _, item := range []string{"overview", "lifetime", "drives", "charges", "parking", "analysis", "statistics", "states", "insights", "series"} {
 		if include[item] {
 			result = append(result, item)
 		}
@@ -562,18 +641,6 @@ func includedSummary[T any](include map[string]bool, key string, summary *T) *T 
 		return summary
 	}
 	return nil
-}
-
-func parseSummaryDateRange(c *gin.Context) (string, string, error) {
-	parsedStartDate, err := parseDateParam(c.Query("startDate"))
-	if err != nil {
-		return "", "", err
-	}
-	parsedEndDate, err := parseDateParam(c.Query("endDate"))
-	if err != nil {
-		return "", "", err
-	}
-	return parsedStartDate, parsedEndDate, nil
 }
 
 func makeSummaryResponseData(
@@ -593,10 +660,7 @@ func makeSummaryResponseData(
 			StartDate: summaryFilterDate(parsedStartDate),
 			EndDate:   summaryFilterDate(parsedEndDate),
 		},
-		TeslaMateUnits: TeslaMateSummaryUnits{
-			UnitsLength:      unitsLength,
-			UnitsTemperature: unitsTemperature,
-		},
+		TeslaMateUnits: buildSummaryUnits(unitsLength, unitsTemperature),
 	}
 }
 
@@ -656,6 +720,14 @@ func fetchSummaryMetadata(CarID int) (string, string, NullString, error) {
 }
 
 func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate string, unitsLength string) (*DriveHistorySummary, error) {
+	lowSpeedKmh := 15.0
+	congestionKmh := 10.0
+	minCongestionDistKm := 1.0
+	if unitsLength == "mi" {
+		lowSpeedKmh = 10.0 * 1.609344
+		congestionKmh = 6.0 * 1.609344
+		minCongestionDistKm = 0.6 * 1.609344
+	}
 	query := `
 		WITH filtered_drives AS (
 			SELECT
@@ -694,7 +766,7 @@ func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate s
 	queryParams := []any{CarID}
 	paramIndex := 2
 	query, queryParams, paramIndex = appendSummaryDateFilters(query, queryParams, paramIndex, "drives", parsedStartDate, parsedEndDate)
-	query += `
+	query += fmt.Sprintf(`
 		),
 		aggregated_drives AS (
 			SELECT
@@ -722,43 +794,62 @@ func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate s
 			FROM filtered_drives
 		)
 		SELECT
-			drive_count,
-			total_duration_min,
-			total_distance,
-			longest_distance,
-			longest_duration_min,
-			average_distance,
-			average_duration_min,
-			average_speed,
-			total_energy_consumed,
-			average_consumption,
-			best_consumption,
-			worst_consumption,
-			max_speed,
-			peak_drive_power,
-			peak_regen_power,
-			coverage_start,
-			coverage_end
-		FROM aggregated_drives;`
+			agg.drive_count,
+			agg.total_duration_min,
+			agg.total_distance,
+			agg.longest_distance,
+			agg.longest_duration_min,
+			agg.average_distance,
+			agg.average_duration_min,
+			agg.average_speed,
+			agg.total_energy_consumed,
+			agg.average_consumption,
+			agg.best_consumption,
+			agg.worst_consumption,
+			agg.max_speed,
+			agg.peak_drive_power,
+			agg.peak_regen_power,
+			agg.coverage_start,
+			agg.coverage_end,
+			(SELECT COUNT(*)::int FROM filtered_drives fd
+			 WHERE fd.duration_min >= 10
+			   AND fd.duration_min > 0
+			   AND COALESCE(fd.distance, 0) > 0
+			   AND (fd.distance / (fd.duration_min::float8 / 60.0)) < %g
+			) AS low_speed_trip_count,
+			(SELECT COUNT(*)::int FROM filtered_drives fd
+			 WHERE fd.duration_min > 0
+			   AND COALESCE(fd.distance, 0) >= %g
+			   AND (fd.distance / (fd.duration_min::float8 / 60.0)) < %g
+			) AS congestion_like_trip_count,
+			(SELECT COUNT(*)::int FROM filtered_drives fd
+			 WHERE fd.consumption_net IS NOT NULL
+			   AND agg.average_consumption IS NOT NULL
+			   AND fd.consumption_net > agg.average_consumption * 1.5
+			) AS high_consumption_trip_count
+		FROM aggregated_drives agg;`, lowSpeedKmh, minCongestionDistKm, congestionKmh)
 
 	var (
-		driveCount          int
-		totalDurationMin    int
-		totalDistance       float64
-		longestDistance     sql.NullFloat64
-		longestDurationMin  sql.NullInt64
-		averageDistance     sql.NullFloat64
-		averageDurationMin  sql.NullFloat64
-		averageSpeed        sql.NullFloat64
-		totalEnergyConsumed sql.NullFloat64
-		averageConsumption  sql.NullFloat64
-		bestConsumption     sql.NullFloat64
-		worstConsumption    sql.NullFloat64
-		maxSpeed            sql.NullInt64
-		peakDrivePower      sql.NullInt64
-		peakRegenPower      sql.NullInt64
-		coverageStart       sql.NullString
-		coverageEnd         sql.NullString
+		driveCount               int
+		totalDurationMin         int
+		totalDistance            float64
+		longestDistance          sql.NullFloat64
+		longestDurationMin       sql.NullInt64
+		averageDistance          sql.NullFloat64
+		averageDurationMin       sql.NullFloat64
+		averageSpeed             sql.NullFloat64
+		totalEnergyConsumed      sql.NullFloat64
+		averageConsumption       sql.NullFloat64
+		bestConsumption          sql.NullFloat64
+		worstConsumption         sql.NullFloat64
+		maxSpeed                 sql.NullInt64
+		peakDrivePower           sql.NullInt64
+		peakRegenPower           sql.NullInt64
+		coverageStart            sql.NullString
+		coverageEnd              sql.NullString
+		lowSpeedTripCount        int
+		congestionLikeTripCount  int
+		highConsumptionTripCount int
 	)
 
 	err := db.QueryRow(query, queryParams...).Scan(
@@ -779,21 +870,27 @@ func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate s
 		&peakRegenPower,
 		&coverageStart,
 		&coverageEnd,
+		&lowSpeedTripCount,
+		&congestionLikeTripCount,
+		&highConsumptionTripCount,
 	)
 	if err != nil {
 		return nil, err
 	}
 	if driveCount == 0 {
-		return nil, nil
+		return &DriveHistorySummary{
+			Coverage: HistorySummaryCoverage{},
+		}, nil
 	}
 
 	if unitsLength == "mi" {
 		totalDistance = kilometersToMiles(totalDistance)
 		longestDistance = kilometersToMilesSqlNullFloat64(longestDistance)
 		averageDistance = kilometersToMilesSqlNullFloat64(averageDistance)
-		averageSpeed = kilometersToMilesSqlNullFloat64(averageSpeed)
-		bestConsumption = kilometersToMilesSqlNullFloat64(bestConsumption)
-		worstConsumption = kilometersToMilesSqlNullFloat64(worstConsumption)
+		averageSpeed = kmhToMphNull(averageSpeed)
+		averageConsumption = whPerKmToWhPerMiNull(averageConsumption)
+		bestConsumption = whPerKmToWhPerMiNull(bestConsumption)
+		worstConsumption = whPerKmToWhPerMiNull(worstConsumption)
 		maxSpeed = kilometersToMilesSqlNullInt64(maxSpeed)
 	}
 
@@ -802,25 +899,28 @@ func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate s
 			StartDate: timeZoneStringPointer(coverageStart),
 			EndDate:   timeZoneStringPointer(coverageEnd),
 		},
-		DriveCount:          driveCount,
-		TotalDurationMin:    totalDurationMin,
-		TotalDistance:       totalDistance,
-		LongestDistance:     floatPointer(longestDistance),
-		LongestDurationMin:  intPointer(longestDurationMin),
-		AverageDistance:     floatPointer(averageDistance),
-		AverageDurationMin:  floatPointer(averageDurationMin),
-		AverageSpeed:        floatPointer(averageSpeed),
-		TotalEnergyConsumed: floatPointer(totalEnergyConsumed),
-		AverageConsumption:  floatPointer(averageConsumption),
-		BestConsumption:     floatPointer(bestConsumption),
-		WorstConsumption:    floatPointer(worstConsumption),
-		MaxSpeed:            intPointer(maxSpeed),
-		PeakDrivePower:      intPointer(peakDrivePower),
-		PeakRegenPower:      intPointer(peakRegenPower),
+		DriveCount:               driveCount,
+		TotalDurationMin:         totalDurationMin,
+		TotalDistance:            totalDistance,
+		LongestDistance:          floatPointer(longestDistance),
+		LongestDurationMin:       intPointer(longestDurationMin),
+		AverageDistance:          floatPointer(averageDistance),
+		AverageDurationMin:       floatPointer(averageDurationMin),
+		AverageSpeed:             floatPointer(averageSpeed),
+		TotalEnergyConsumed:      floatPointer(totalEnergyConsumed),
+		AverageConsumption:       floatPointer(averageConsumption),
+		BestConsumption:          floatPointer(bestConsumption),
+		WorstConsumption:         floatPointer(worstConsumption),
+		MaxSpeed:                 intPointer(maxSpeed),
+		PeakDrivePower:           intPointer(peakDrivePower),
+		PeakRegenPower:           intPointer(peakRegenPower),
+		LowSpeedTripCount:        lowSpeedTripCount,
+		CongestionLikeTripCount:  congestionLikeTripCount,
+		HighConsumptionTripCount: highConsumptionTripCount,
 	}, nil
 }
 
-func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate string) (*ChargeHistorySummary, error) {
+func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate string, unitsLength string) (*ChargeHistorySummary, error) {
 	query := `
 		WITH filtered_charges AS (
 			SELECT
@@ -834,7 +934,7 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 					COALESCE(charging_processes.charge_energy_added, 0),
 					0
 				) AS charge_energy_used,
-				COALESCE(charging_processes.cost, 0) AS cost
+				charging_processes.cost AS cost
 			FROM charging_processes
 			WHERE charging_processes.car_id=$1 AND charging_processes.end_date IS NOT NULL`
 
@@ -842,6 +942,21 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 	paramIndex := 2
 	query, queryParams, paramIndex = appendSummaryDateFilters(query, queryParams, paramIndex, "charging_processes", parsedStartDate, parsedEndDate)
 	query += `
+		),
+		charge_quality AS (
+			SELECT
+				COUNT(*) FILTER (WHERE
+					COALESCE(charge_energy_added, 0) <= 0
+					OR (duration_min >= 120 AND COALESCE(charge_energy_added, 0) < 1)
+					OR (charge_energy_used > 0 AND charge_energy_added > 0 AND (charge_energy_added / charge_energy_used) < 0.6)
+					OR (charge_energy_used > 0 AND charge_energy_added > 0 AND (charge_energy_added / charge_energy_used) > 1.1)
+					OR (cost IS NOT NULL AND cost < 0)
+				)::int AS abnormal_charge_count,
+				COUNT(*) FILTER (WHERE
+					charge_energy_used > 0 AND charge_energy_added > 0
+					AND ((charge_energy_added / charge_energy_used) < 0.6 OR (charge_energy_added / charge_energy_used) > 1.1)
+				)::int AS low_efficiency_charge_count
+			FROM filtered_charges
 		),
 		aggregated_charges AS (
 			SELECT
@@ -863,19 +978,19 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 					THEN SUM(charge_energy_added) / SUM(charge_energy_used)
 					ELSE NULL
 				END AS charging_efficiency,
-				NULLIF(SUM(CASE WHEN cost > 0 THEN cost ELSE 0 END), 0) AS total_cost,
+				NULLIF(SUM(CASE WHEN cost IS NOT NULL AND cost > 0 THEN cost ELSE 0 END), 0) AS total_cost,
 				CASE
-					WHEN COUNT(CASE WHEN cost > 0 THEN 1 ELSE NULL END) > 0
-					THEN SUM(CASE WHEN cost > 0 THEN cost ELSE 0 END) / COUNT(CASE WHEN cost > 0 THEN 1 ELSE NULL END)
+					WHEN COUNT(CASE WHEN cost IS NOT NULL AND cost > 0 THEN 1 ELSE NULL END) > 0
+					THEN SUM(CASE WHEN cost IS NOT NULL AND cost > 0 THEN cost ELSE 0 END) / COUNT(CASE WHEN cost IS NOT NULL AND cost > 0 THEN 1 ELSE NULL END)
 					ELSE NULL
 				END AS average_cost,
-				MAX(CASE WHEN cost > 0 THEN cost ELSE NULL END) AS highest_cost,
+				MAX(CASE WHEN cost IS NOT NULL AND cost > 0 THEN cost ELSE NULL END) AS highest_cost,
 				MIN(start_date) AS coverage_start,
 				MAX(end_date) AS coverage_end
 			FROM filtered_charges
 		),
 		peak_power AS (
-			SELECT MAX(charges.charger_power) AS max_power
+			SELECT MAX(NULLIF(charges.charger_power, 0)) AS max_power
 			FROM filtered_charges
 			LEFT JOIN charges ON charges.charging_process_id = filtered_charges.id
 		)
@@ -895,26 +1010,30 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 			average_cost,
 			highest_cost,
 			coverage_start,
-			coverage_end
-		FROM aggregated_charges, peak_power;`
+			coverage_end,
+			cq.abnormal_charge_count,
+			cq.low_efficiency_charge_count
+		FROM aggregated_charges, peak_power, charge_quality cq;`
 
 	var (
-		chargeCount        int
-		totalDurationMin   int
-		totalEnergyAdded   float64
-		totalEnergyUsed    sql.NullFloat64
-		longestDurationMin sql.NullInt64
-		largestEnergyAdded sql.NullFloat64
-		averageEnergyAdded sql.NullFloat64
-		averageDurationMin sql.NullFloat64
-		averagePower       sql.NullFloat64
-		maxPower           sql.NullInt64
-		chargingEfficiency sql.NullFloat64
-		totalCost          sql.NullFloat64
-		averageCost        sql.NullFloat64
-		highestCost        sql.NullFloat64
-		coverageStart      sql.NullString
-		coverageEnd        sql.NullString
+		chargeCount              int
+		totalDurationMin         int
+		totalEnergyAdded         float64
+		totalEnergyUsed          sql.NullFloat64
+		longestDurationMin       sql.NullInt64
+		largestEnergyAdded       sql.NullFloat64
+		averageEnergyAdded       sql.NullFloat64
+		averageDurationMin       sql.NullFloat64
+		averagePower             sql.NullFloat64
+		maxPower                 sql.NullInt64
+		chargingEfficiency       sql.NullFloat64
+		totalCost                sql.NullFloat64
+		averageCost              sql.NullFloat64
+		highestCost              sql.NullFloat64
+		coverageStart            sql.NullString
+		coverageEnd              sql.NullString
+		abnormalChargeCount      int
+		lowEfficiencyChargeCount int
 	)
 
 	err := db.QueryRow(query, queryParams...).Scan(
@@ -934,12 +1053,35 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 		&highestCost,
 		&coverageStart,
 		&coverageEnd,
+		&abnormalChargeCount,
+		&lowEfficiencyChargeCount,
 	)
 	if err != nil {
 		return nil, err
 	}
 	if chargeCount == 0 {
-		return nil, nil
+		return &ChargeHistorySummary{
+			Coverage: HistorySummaryCoverage{},
+		}, nil
+	}
+
+	periodDriveKm, err := fetchPeriodDriveDistanceKm(CarID, parsedStartDate, parsedEndDate)
+	if err != nil {
+		return nil, err
+	}
+	var averageCostPerKwh *float64
+	if totalEnergyAdded > 0 && totalCost.Valid && totalCost.Float64 > 0 {
+		v := totalCost.Float64 / totalEnergyAdded
+		averageCostPerKwh = &v
+	}
+	var costPer100 *float64
+	denom := periodDriveKm
+	if unitsLength == "mi" && denom > 0 {
+		denom = kilometersToMiles(denom)
+	}
+	if denom > 0 && totalCost.Valid && totalCost.Float64 > 0 {
+		v := totalCost.Float64 / denom * 100.0
+		costPer100 = &v
 	}
 
 	return &ChargeHistorySummary{
@@ -947,21 +1089,43 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 			StartDate: timeZoneStringPointer(coverageStart),
 			EndDate:   timeZoneStringPointer(coverageEnd),
 		},
-		ChargeCount:        chargeCount,
-		TotalDurationMin:   totalDurationMin,
-		TotalEnergyAdded:   totalEnergyAdded,
-		TotalEnergyUsed:    floatPointer(totalEnergyUsed),
-		LongestDurationMin: intPointer(longestDurationMin),
-		LargestEnergyAdded: floatPointer(largestEnergyAdded),
-		AverageEnergyAdded: floatPointer(averageEnergyAdded),
-		AverageDurationMin: floatPointer(averageDurationMin),
-		AveragePower:       floatPointer(averagePower),
-		MaxPower:           intPointer(maxPower),
-		ChargingEfficiency: floatPointer(chargingEfficiency),
-		TotalCost:          floatPointer(totalCost),
-		AverageCost:        floatPointer(averageCost),
-		HighestCost:        floatPointer(highestCost),
+		ChargeCount:              chargeCount,
+		TotalDurationMin:         totalDurationMin,
+		TotalEnergyAdded:         totalEnergyAdded,
+		TotalEnergyUsed:          floatPointer(totalEnergyUsed),
+		LongestDurationMin:       intPointer(longestDurationMin),
+		LargestEnergyAdded:       floatPointer(largestEnergyAdded),
+		AverageEnergyAdded:       floatPointer(averageEnergyAdded),
+		AverageDurationMin:       floatPointer(averageDurationMin),
+		AveragePower:             floatPointer(averagePower),
+		MaxPower:                 intPointer(maxPower),
+		ChargingEfficiency:       floatPointer(chargingEfficiency),
+		TotalCost:                floatPointer(totalCost),
+		AverageCost:              floatPointer(averageCost),
+		HighestCost:              floatPointer(highestCost),
+		AverageCostPerKwh:        averageCostPerKwh,
+		CostPer100Distance:       costPer100,
+		LowEfficiencyChargeCount: lowEfficiencyChargeCount,
+		AbnormalChargeCount:      abnormalChargeCount,
 	}, nil
+}
+
+func fetchPeriodDriveDistanceKm(CarID int, parsedStartDate string, parsedEndDate string) (float64, error) {
+	q := `
+		SELECT COALESCE(SUM(GREATEST(COALESCE(drives.distance, 0), 0)), 0)::float8
+		FROM drives
+		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL`
+	params := []any{CarID}
+	idx := 2
+	q, params, idx = appendSummaryDateFilters(q, params, idx, "drives", parsedStartDate, parsedEndDate)
+	var dist sql.NullFloat64
+	if err := db.QueryRow(q, params...).Scan(&dist); err != nil {
+		return 0, err
+	}
+	if !dist.Valid {
+		return 0, nil
+	}
+	return dist.Float64, nil
 }
 
 func fetchDashboardSeriesSummary(
@@ -1058,7 +1222,7 @@ func fetchDashboardEfficiencySeries(CarID int, parsedStartDate string, parsedEnd
 			return nil, err
 		}
 		if unitsLength == "mi" {
-			value = kilometersToMiles(value)
+			value = whPerKmToWhPerMi(value)
 		}
 		points = append(points, SummaryTimeSeriesPoint{
 			ID:    strconv.Itoa(id),
@@ -1124,7 +1288,8 @@ func fetchDashboardMonthlyDistance(CarID int, parsedStartDate string, parsedEndD
 		items = append(items, SummaryCategoryValue{
 			ID:     "distance-" + period,
 			Label:  label,
-			Period: period,
+			Period: "month",
+			Unit:   chartDistanceUnit(unitsLength),
 			Value:  value,
 		})
 	}
@@ -1183,7 +1348,8 @@ func fetchDashboardMonthlyChargeEnergy(CarID int, parsedStartDate string, parsed
 		items = append(items, SummaryCategoryValue{
 			ID:     "charge-energy-" + period,
 			Label:  label,
-			Period: period,
+			Period: "month",
+			Unit:   "kWh",
 			Value:  value,
 		})
 	}
@@ -1356,12 +1522,12 @@ func TeslaMateAPISummaryOptionsV1(c *gin.Context) {
 		"parameters": gin.H{
 			"startDate":     "optional RFC3339 date; filters records starting at or after this time",
 			"endDate":       "optional RFC3339 date; filters records ending at or before this time",
-			"include":       "combined /summaries only; optional comma-separated list: all, overview, lifetime, drives, charges, parking, analysis, statistics, states, series",
+			"include":       "combined GET /summaries only; optional comma-separated list: all, overview, lifetime, drives, charges, parking, analysis, statistics, states, series",
 			"limit":         "chart series/location endpoints; optional integer limit",
 			"months":        "chart monthly endpoints; optional integer month bucket count",
-			"seriesLimit":   "combined /summaries only; optional integer; default 12, max 100",
-			"seriesMonths":  "combined /summaries only; optional integer; default 6, max 24",
-			"locationLimit": "combined /summaries only; optional integer; default 4, max 20",
+			"seriesLimit":   "combined GET /summaries only; optional integer; default 12, max 100",
+			"seriesMonths":  "combined GET /summaries only; optional integer; default 6, max 24",
+			"locationLimit": "combined GET /summaries only; optional integer; default 4, max 20",
 			"types":         "insight events only; optional comma-separated list: harsh_brake, charge_power_drop, sleep_interruption",
 			"page":          "parking, state timeline, insight events; optional integer page number",
 			"show":          "parking, state timeline, insight events; optional integer page size",
@@ -1369,6 +1535,7 @@ func TeslaMateAPISummaryOptionsV1(c *gin.Context) {
 			"month":         "drive calendar only; optional integer month (1-12)",
 		},
 		"endpoints": []string{
+			"/api/v1/summaries/options",
 			"/api/v1/cars/:CarID/summaries",
 			"/api/v1/cars/:CarID/summaries/overview",
 			"/api/v1/cars/:CarID/parking-sessions",
@@ -1395,7 +1562,9 @@ func TeslaMateAPISummaryOptionsV1(c *gin.Context) {
 			"/api/v1/cars/:CarID/charts/charges/weekday-energy",
 			"/api/v1/cars/:CarID/charts/charges/hourly-starts",
 			"/api/v1/cars/:CarID/charts/activity/duration",
+			"/api/v1/cars/:CarID/charges/:ChargeID/interval",
 			"/api/v1/docs",
+			"/api/v1/docs/openapi.json",
 			"/api/v1/docs/swagger",
 		},
 	})

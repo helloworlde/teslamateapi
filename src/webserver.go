@@ -135,7 +135,9 @@ func main() {
 			v1.GET("/", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
 			})
+			v1.GET("/summaries/options", TeslaMateAPISummaryOptionsV1)
 			v1.GET("/docs", serveScalarAPIReference)
+			v1.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
 			v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+"/docs/swagger/index.html") })
 			v1.GET("/docs/swagger/index.html", serveScalarAPIReference)
 			v1.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
@@ -165,12 +167,12 @@ func main() {
 			v1.GET("/cars/:CarID/insights", TeslaMateAPICarsInsightSummaryV1)
 			v1.GET("/cars/:CarID/insights/events", TeslaMateAPICarsInsightEventsV1)
 			v1.GET("/cars/:CarID/calendars/drives", TeslaMateAPICarsDriveCalendarV1)
-			v1.GET("/cars/:CarID/charts/efficiency", TeslaMateAPICarsChartEfficiencyV1)
-			v1.GET("/cars/:CarID/charts/drives/monthly-distance", TeslaMateAPICarsChartDriveMonthlyDistanceV1)
+			v1.GET("/cars/:CarID/charts/efficiency", TeslaMateAPICarsDashboardEfficiencySeriesV1)
+			v1.GET("/cars/:CarID/charts/drives/monthly-distance", TeslaMateAPICarsDashboardMonthlyDistanceV1)
 			v1.GET("/cars/:CarID/charts/drives/weekday-distance", TeslaMateAPICarsChartDriveWeekdayV1)
 			v1.GET("/cars/:CarID/charts/drives/hourly-starts", TeslaMateAPICarsChartDriveHourlyV1)
-			v1.GET("/cars/:CarID/charts/charges/monthly-energy", TeslaMateAPICarsChartChargeMonthlyEnergyV1)
-			v1.GET("/cars/:CarID/charts/charges/location-energy", TeslaMateAPICarsChartChargeLocationsV1)
+			v1.GET("/cars/:CarID/charts/charges/monthly-energy", TeslaMateAPICarsDashboardMonthlyChargeEnergyV1)
+			v1.GET("/cars/:CarID/charts/charges/location-energy", TeslaMateAPICarsDashboardChargeLocationsV1)
 			v1.GET("/cars/:CarID/charts/charges/weekday-energy", TeslaMateAPICarsChartChargeWeekdayV1)
 			v1.GET("/cars/:CarID/charts/charges/hourly-starts", TeslaMateAPICarsChartChargeHourlyV1)
 			v1.GET("/cars/:CarID/charts/activity/duration", TeslaMateAPICarsChartStateDurationV1)
@@ -183,7 +185,6 @@ func main() {
 
 			// v1 /api/v1/cars/:CarID/command endpoints
 			v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
-			v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandV1)
 			v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
 
 			// v1 /api/v1/cars/:CarID/drives endpoints
@@ -254,8 +255,9 @@ func main() {
 	r.GET("/globalsettings", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 
 	// build the http server
+	listenAddr := getEnv("TESLAMATEAPI_LISTEN_ADDR", ":8080")
 	server := &http.Server{
-		Addr:    ":8080", // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+		Addr:    listenAddr,
 		Handler: r,
 	}
 
@@ -277,6 +279,7 @@ func main() {
 		}
 	}()
 
+	log.Printf("[info] TeslaMateAPI listening on %s", listenAddr)
 	// run the server
 	if err := server.ListenAndServe(); err != nil {
 		if err == http.ErrServerClosed {
@@ -378,19 +381,22 @@ func parseDateParam(datestring string) (string, error) {
 		return "", nil
 	}
 
-	// RFC3339 formats first — includes Z or timezone offset
+	datestring = repairDateQueryParam(datestring)
+
 	if t, err := time.Parse(time.RFC3339, datestring); err == nil {
 		return t.UTC().Format(dbTimestampFormat), nil
 	}
+	if t, err := time.Parse(time.RFC3339Nano, datestring); err == nil {
+		return t.UTC().Format(dbTimestampFormat), nil
+	}
 
-	// DateTime format (2006-01-02 15:04:05) without timezone info, interpret in user's timezone
-	normalizedDateString := strings.ReplaceAll(datestring, "T", " ")
-	if t, err := time.ParseInLocation(time.DateTime, normalizedDateString, appUsersTimezone); err == nil {
+	localDateTime := strings.Replace(datestring, "T", " ", 1)
+	if t, err := time.ParseInLocation(time.DateTime, localDateTime, appUsersTimezone); err == nil {
 		return t.UTC().Format(dbTimestampFormat), nil
 	}
 
 	sanitizedInput := strings.NewReplacer("\n", "\\n", "\r", "\\r", "\t", "\\t").Replace(datestring)
-	return "", fmt.Errorf("invalid date format: %s, please use RFC3339 format", sanitizedInput)
+	return "", fmt.Errorf("invalid date format: %q (use RFC3339, e.g. 2026-04-02T10:55:30+08:00; encode + as %%2B in query strings)", sanitizedInput)
 }
 
 // getEnv func - read an environment or return a default value

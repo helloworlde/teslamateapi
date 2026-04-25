@@ -9,6 +9,10 @@ import (
 	docs "github.com/tobiasehlert/teslamateapi/src/docs"
 )
 
+func serveOpenAPIDocumentJSON(c *gin.Context) {
+	serveSwaggerDocJSON(c)
+}
+
 func serveSwaggerDocJSON(c *gin.Context) {
 	c.Header("Content-Type", "application/json; charset=utf-8")
 	c.String(http.StatusOK, docs.SwaggerInfo.ReadDoc())
@@ -16,7 +20,11 @@ func serveSwaggerDocJSON(c *gin.Context) {
 
 func serveScalarAPIReference(c *gin.Context) {
 	html, err := scalar.ApiReferenceHTML(&scalar.Options{
-		SpecContent: docs.SwaggerInfo.ReadDoc(),
+		SpecURL:       "/api/v1/docs/openapi.json",
+		SpecContent:   docs.SwaggerInfo.ReadDoc(),
+		Theme:         scalar.ThemeDefault,
+		Layout:        scalar.LayoutModern,
+		BaseServerURL: "/api",
 		CustomOptions: scalar.CustomOptions{
 			PageTitle: "TeslaMateApi",
 		},

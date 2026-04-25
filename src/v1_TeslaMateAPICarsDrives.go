@@ -308,7 +308,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			drive.RangeRated.EndRange = kilometersToMiles(drive.RangeRated.EndRange)
 			drive.RangeRated.RangeDiff = kilometersToMiles(drive.RangeRated.RangeDiff)
 			if drive.ConsumptionNet != nil {
-				*drive.ConsumptionNet = kilometersToMiles(*drive.ConsumptionNet)
+				*drive.ConsumptionNet = whPerKmToWhPerMi(*drive.ConsumptionNet)
 			}
 		}
 		// converting values based of settings UnitsTemperature

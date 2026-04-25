@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,16 +47,19 @@ type dashboardWindowInternal struct {
 func TeslaMateAPICarsDriveDashboardsV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDriveDashboardsV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
+	CarID, err := parseCarID(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive dashboards.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
+	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load drive dashboards.") {
 		return
 	}
 
 	dashboards, err := fetchDriveDashboards(CarID, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive dashboards.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load drive dashboards.", err.Error())
 		return
 	}
 
@@ -68,16 +72,19 @@ func TeslaMateAPICarsDriveDashboardsV1(c *gin.Context) {
 func TeslaMateAPICarsChargeDashboardsV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsChargeDashboardsV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
+	CarID, err := parseCarID(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge dashboards.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
+	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load charge dashboards.") {
 		return
 	}
 
-	dashboards, err := fetchChargeDashboards(CarID)
+	dashboards, err := fetchChargeDashboards(CarID, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge dashboards.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load charge dashboards.", err.Error())
 		return
 	}
 
@@ -115,12 +122,12 @@ func fetchDriveDashboards(CarID int, unitsLength string) (*DriveDashboardSet, er
 	return result, nil
 }
 
-func fetchChargeDashboards(CarID int) (*ChargeDashboardSet, error) {
+func fetchChargeDashboards(CarID int, unitsLength string) (*ChargeDashboardSet, error) {
 	windows := makeDashboardWindows()
 	result := &ChargeDashboardSet{}
 
 	for _, window := range windows {
-		summary, err := fetchChargeHistorySummary(CarID, window.StartUTC, window.EndUTC)
+		summary, err := fetchChargeHistorySummary(CarID, window.StartUTC, window.EndUTC, unitsLength)
 		if err != nil {
 			return nil, err
 		}

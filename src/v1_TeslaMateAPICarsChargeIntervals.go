@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"errors"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -50,17 +52,29 @@ type chargeIntervalRow struct {
 func TeslaMateAPICarsChargeIntervalV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsChargeIntervalV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	ChargeID := convertStringToInteger(c.Param("ChargeID"))
-
-	current, unitsLength, unitsTemperature, carName, carEfficiency, err := fetchChargeIntervalCurrentCharge(CarID, ChargeID)
+	CarID, err := parseCarID(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge interval.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
+	chargeID, err := parseChargeID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid ChargeID parameter.", err.Error())
+		return
+	}
+
+	current, unitsLength, unitsTemperature, carName, carEfficiency, err := fetchChargeIntervalCurrentCharge(CarID, chargeID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusNotFound, actionName, "Charge not found.", "")
+			return
+		}
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load charge interval.", err.Error())
 		return
 	}
 
 	data := makeSummaryResponseData(CarID, carName, "", "", unitsLength, unitsTemperature)
-	summary := ChargeIntervalSummary{ChargeID: ChargeID}
+	summary := ChargeIntervalSummary{ChargeID: chargeID}
 
 	if !current.StartDate.Valid {
 		TeslaMateAPIHandleSuccessResponse(c, actionName, focusedSummaryResponse(data, gin.H{
@@ -77,7 +91,7 @@ func TeslaMateAPICarsChargeIntervalV1(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge interval.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load charge interval.", err.Error())
 		return
 	}
 
@@ -85,7 +99,7 @@ func TeslaMateAPICarsChargeIntervalV1(c *gin.Context) {
 	summary.PreviousChargeID = &previousID
 	summary.Interval, summary.EnergyBreakdown, err = makeChargeIntervalSummary(current, previous, CarID, carEfficiency, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load charge interval.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load charge interval.", err.Error())
 		return
 	}
 

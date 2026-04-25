@@ -2,23 +2,25 @@ package main
 
 import (
 	"database/sql"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type DriveCalendarDay struct {
-	Date                string   `json:"date"`
-	Day                 int      `json:"day"`
-	Weekday             int      `json:"weekday"`
-	IsCurrentMonth      bool     `json:"is_current_month"`
-	IsToday             bool     `json:"is_today"`
-	DriveCount          int      `json:"drive_count"`
-	TotalDurationMin    int      `json:"total_duration_min"`
-	TotalDistance       float64  `json:"total_distance"`
-	TotalEnergyConsumed *float64 `json:"total_energy_consumed"`
-	FirstDriveAt        *string  `json:"first_drive_at"`
-	LastDriveAt         *string  `json:"last_drive_at"`
+	Date               string   `json:"date"`
+	DriveCount         int      `json:"drive_count"`
+	DurationMin        int      `json:"duration_min"`
+	Distance           float64  `json:"distance"`
+	EnergyConsumed     *float64 `json:"energy_consumed,omitempty"`
+	AverageConsumption *float64 `json:"average_consumption,omitempty"`
+	FirstDriveStart    *string  `json:"first_drive_start,omitempty"`
+	LastDriveEnd       *string  `json:"last_drive_end,omitempty"`
+	Day                int      `json:"day,omitempty"`
+	Weekday            int      `json:"weekday,omitempty"`
+	IsCurrentMonth     bool     `json:"is_current_month,omitempty"`
+	IsToday            bool     `json:"is_today,omitempty"`
 }
 
 type DriveCalendarMonth struct {
@@ -49,27 +51,30 @@ type TeslaMateDriveCalendarJSONData struct {
 func TeslaMateAPICarsDriveCalendarV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsDriveCalendarV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	year, err := parseSummaryPositiveIntParam(c.Query("year"), time.Now().In(appUsersTimezone).Year(), 2012, 2100)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid calendar parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid calendar parameter.", err.Error())
 		return
 	}
 	month, err := parseSummaryPositiveIntParam(c.Query("month"), int(time.Now().In(appUsersTimezone).Month()), 1, 12)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid calendar parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid calendar parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive calendar.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load drive calendar.") {
 		return
 	}
 
 	calendar, err := fetchDriveCalendarMonth(CarID, year, month, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load drive calendar.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load drive calendar.", err.Error())
 		return
 	}
 
@@ -83,11 +88,8 @@ func TeslaMateAPICarsDriveCalendarV1(c *gin.Context) {
 				Year:  year,
 				Month: month,
 			},
-			Calendar: calendar,
-			TeslaMateUnits: TeslaMateSummaryUnits{
-				UnitsLength:      unitsLength,
-				UnitsTemperature: unitsTemperature,
-			},
+			Calendar:       calendar,
+			TeslaMateUnits: buildSummaryUnits(unitsLength, unitsTemperature),
 		},
 	}
 
@@ -137,6 +139,7 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 		TotalEnergyConsumed *float64
 		FirstDriveAt        *string
 		LastDriveAt         *string
+		AverageConsumption  *float64
 	}
 
 	aggregates := map[string]dayAggregate{}
@@ -160,12 +163,21 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 			return DriveCalendarMonth{}, err
 		}
 
+		energyPtr := floatPointer(totalEnergyConsumed)
+		distKm := aggregate.TotalDistance
 		if unitsLength == "mi" {
 			aggregate.TotalDistance = kilometersToMiles(aggregate.TotalDistance)
 		}
-		aggregate.TotalEnergyConsumed = floatPointer(totalEnergyConsumed)
+		aggregate.TotalEnergyConsumed = energyPtr
 		aggregate.FirstDriveAt = timeZoneStringPointer(firstDriveAt)
 		aggregate.LastDriveAt = timeZoneStringPointer(lastDriveAt)
+		if energyPtr != nil && distKm > 0 && *energyPtr > 0 {
+			v := *energyPtr / distKm * 1000.0
+			if unitsLength == "mi" {
+				v = whPerKmToWhPerMi(v)
+			}
+			aggregate.AverageConsumption = &v
+		}
 		aggregates[localDate] = aggregate
 	}
 	if err := rows.Err(); err != nil {
@@ -186,11 +198,12 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 		}
 		if exists {
 			day.DriveCount = aggregate.DriveCount
-			day.TotalDurationMin = aggregate.TotalDurationMin
-			day.TotalDistance = aggregate.TotalDistance
-			day.TotalEnergyConsumed = aggregate.TotalEnergyConsumed
-			day.FirstDriveAt = aggregate.FirstDriveAt
-			day.LastDriveAt = aggregate.LastDriveAt
+			day.DurationMin = aggregate.TotalDurationMin
+			day.Distance = aggregate.TotalDistance
+			day.EnergyConsumed = aggregate.TotalEnergyConsumed
+			day.AverageConsumption = aggregate.AverageConsumption
+			day.FirstDriveStart = aggregate.FirstDriveAt
+			day.LastDriveEnd = aggregate.LastDriveAt
 		}
 		days = append(days, day)
 	}

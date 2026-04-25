@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -11,15 +12,24 @@ import (
 )
 
 type InsightEventMetrics struct {
-	SpeedBeforeKph  *float64 `json:"speed_before,omitempty"`
-	SpeedAfterKph   *float64 `json:"speed_after,omitempty"`
-	SpeedDropKph    *float64 `json:"speed_drop,omitempty"`
-	DecelerationMS2 *float64 `json:"deceleration_ms2,omitempty"`
-	PowerBeforeKw   *float64 `json:"power_before_kw,omitempty"`
-	PowerAfterKw    *float64 `json:"power_after_kw,omitempty"`
-	PowerDropKw     *float64 `json:"power_drop_kw,omitempty"`
-	WakeDurationMin *float64 `json:"wake_duration_min,omitempty"`
-	BatteryLevel    *int     `json:"battery_level,omitempty"`
+	SpeedBeforeKph     *float64 `json:"speed_before,omitempty"`
+	SpeedAfterKph      *float64 `json:"speed_after,omitempty"`
+	SpeedDropKph       *float64 `json:"speed_drop,omitempty"`
+	DecelerationMS2    *float64 `json:"deceleration_ms2,omitempty"`
+	PowerBeforeKw      *float64 `json:"power_before_kw,omitempty"`
+	PowerAfterKw       *float64 `json:"power_after_kw,omitempty"`
+	PowerDropKw        *float64 `json:"power_drop_kw,omitempty"`
+	WakeDurationMin    *float64 `json:"wake_duration_min,omitempty"`
+	BatteryLevel       *int     `json:"battery_level,omitempty"`
+	DurationMin        *int     `json:"duration_min,omitempty"`
+	Distance           *float64 `json:"distance,omitempty"`
+	AvgSpeed           *float64 `json:"avg_speed,omitempty"`
+	Consumption        *float64 `json:"consumption,omitempty"`
+	AverageConsumption *float64 `json:"average_consumption,omitempty"`
+	DeltaPercent       *float64 `json:"delta_percent,omitempty"`
+	Efficiency         *float64 `json:"efficiency,omitempty"`
+	EnergyAdded        *float64 `json:"energy_added,omitempty"`
+	EnergyUsed         *float64 `json:"energy_used,omitempty"`
 }
 
 type InsightEvent struct {
@@ -37,11 +47,17 @@ type InsightEvent struct {
 }
 
 type InsightSummary struct {
-	Coverage               HistorySummaryCoverage `json:"coverage"`
-	TotalEvents            int                    `json:"total_events"`
-	HarshBrakeCount        int                    `json:"harsh_brake_count"`
-	ChargePowerDropCount   int                    `json:"charge_power_drop_count"`
-	SleepInterruptionCount int                    `json:"sleep_interruption_count"`
+	Coverage                  HistorySummaryCoverage `json:"coverage"`
+	TotalEvents               int                    `json:"total_events"`
+	HarshBrakeCount           int                    `json:"harsh_brake_count"`
+	ChargePowerDropCount      int                    `json:"charge_power_drop_count"`
+	SleepInterruptionCount    int                    `json:"sleep_interruption_count"`
+	LowSpeedTripCount         int                    `json:"low_speed_trip_count"`
+	CongestionLikeTripCount   int                    `json:"congestion_like_trip_count"`
+	HighConsumptionDriveCount int                    `json:"high_consumption_drive_count"`
+	LowEfficiencyChargeCount  int                    `json:"low_efficiency_charge_count"`
+	AbnormalChargeCount       int                    `json:"abnormal_charge_count"`
+	DeepDischargeCount        int                    `json:"deep_discharge_count"`
 }
 
 type InsightEventFilters struct {
@@ -65,28 +81,33 @@ type TeslaMateInsightEventsJSONData struct {
 
 type insightEventInternal struct {
 	SortDate time.Time
+	SortType string
+	SortID   int
 	Event    InsightEvent
 }
 
 func TeslaMateAPICarsInsightSummaryV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsInsightSummaryV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load insight summary.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load insight summary.") {
 		return
 	}
 
 	summary, err := fetchInsightSummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load insight summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load insight summary.", err.Error())
 		return
 	}
 
@@ -99,40 +120,37 @@ func TeslaMateAPICarsInsightSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsInsightEventsV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsInsightEventsV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	page := convertStringToInteger(c.DefaultQuery("page", "1"))
-	show := convertStringToInteger(c.DefaultQuery("show", "100"))
-	if page <= 0 {
-		page = 1
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
 	}
-	if show <= 0 {
-		show = 100
-	}
-	if show > 500 {
-		show = 500
+	page, show, err := parsePaginationParams(c, 1, 100, 500)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid pagination parameter.", err.Error())
+		return
 	}
 
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	types, err := parseInsightTypes(c.Query("types"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid insight parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid insight parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load insight events.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load insight events.") {
 		return
 	}
 
 	events, err := fetchInsightEvents(CarID, parsedStartDate, parsedEndDate, unitsLength, types, page, show)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load insight events.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load insight events.", err.Error())
 		return
 	}
 
@@ -149,11 +167,8 @@ func TeslaMateAPICarsInsightEventsV1(c *gin.Context) {
 				Page:      page,
 				Show:      show,
 			},
-			Events: events,
-			TeslaMateUnits: TeslaMateSummaryUnits{
-				UnitsLength:      unitsLength,
-				UnitsTemperature: unitsTemperature,
-			},
+			Events:         events,
+			TeslaMateUnits: buildSummaryUnits(unitsLength, unitsTemperature),
 		},
 	}
 
@@ -167,7 +182,7 @@ func fetchInsightSummary(CarID int, parsedStartDate string, parsedEndDate string
 	}
 
 	if len(events) == 0 {
-		return nil, nil
+		return &InsightSummary{Coverage: HistorySummaryCoverage{}}, nil
 	}
 
 	var (
@@ -185,6 +200,18 @@ func fetchInsightSummary(CarID int, parsedStartDate string, parsedEndDate string
 			summary.ChargePowerDropCount++
 		case "sleep_interruption":
 			summary.SleepInterruptionCount++
+		case "low_speed_trip":
+			summary.LowSpeedTripCount++
+		case "congestion_like_trip":
+			summary.CongestionLikeTripCount++
+		case "high_consumption_drive":
+			summary.HighConsumptionDriveCount++
+		case "low_efficiency_charge":
+			summary.LowEfficiencyChargeCount++
+		case "abnormal_charge":
+			summary.AbnormalChargeCount++
+		case "deep_discharge":
+			summary.DeepDischargeCount++
 		}
 
 		startCopy := event.StartDate
@@ -204,13 +231,26 @@ func fetchInsightSummary(CarID int, parsedStartDate string, parsedEndDate string
 }
 
 func fetchInsightEvents(CarID int, parsedStartDate string, parsedEndDate string, unitsLength string, insightTypes []string, page int, show int) ([]InsightEvent, error) {
-	filter := map[string]bool{
-		"harsh_brake":        len(insightTypes) == 0,
-		"charge_power_drop":  len(insightTypes) == 0,
-		"sleep_interruption": len(insightTypes) == 0,
+	allowed := map[string]bool{
+		"harsh_brake":            true,
+		"charge_power_drop":      true,
+		"sleep_interruption":     true,
+		"low_speed_trip":         true,
+		"congestion_like_trip":   true,
+		"high_consumption_drive": true,
+		"low_efficiency_charge":  true,
+		"abnormal_charge":        true,
+		"deep_discharge":         true,
 	}
-	for _, item := range insightTypes {
-		filter[item] = true
+	filter := map[string]bool{}
+	if len(insightTypes) == 0 {
+		for k := range allowed {
+			filter[k] = true
+		}
+	} else {
+		for _, item := range insightTypes {
+			filter[item] = true
+		}
 	}
 
 	allEvents := make([]insightEventInternal, 0)
@@ -235,9 +275,58 @@ func fetchInsightEvents(CarID int, parsedStartDate string, parsedEndDate string,
 		}
 		allEvents = append(allEvents, items...)
 	}
+	if filter["low_speed_trip"] {
+		items, err := fetchLowSpeedTripInsightEvents(CarID, parsedStartDate, parsedEndDate, unitsLength)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
+	if filter["congestion_like_trip"] {
+		items, err := fetchCongestionLikeTripInsightEvents(CarID, parsedStartDate, parsedEndDate, unitsLength)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
+	if filter["high_consumption_drive"] {
+		items, err := fetchHighConsumptionDriveInsightEvents(CarID, parsedStartDate, parsedEndDate, unitsLength)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
+	if filter["low_efficiency_charge"] {
+		items, err := fetchLowEfficiencyChargeInsightEvents(CarID, parsedStartDate, parsedEndDate)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
+	if filter["abnormal_charge"] {
+		items, err := fetchAbnormalChargeInsightEvents(CarID, parsedStartDate, parsedEndDate)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
+	if filter["deep_discharge"] {
+		items, err := fetchDeepDischargeDriveInsightEvents(CarID, parsedStartDate, parsedEndDate)
+		if err != nil {
+			return nil, err
+		}
+		allEvents = append(allEvents, items...)
+	}
 
-	sort.Slice(allEvents, func(i int, j int) bool {
-		return allEvents[i].SortDate.After(allEvents[j].SortDate)
+	sort.SliceStable(allEvents, func(i int, j int) bool {
+		ti, tj := allEvents[i].SortDate, allEvents[j].SortDate
+		if !ti.Equal(tj) {
+			return ti.After(tj)
+		}
+		if allEvents[i].SortType != allEvents[j].SortType {
+			return allEvents[i].SortType < allEvents[j].SortType
+		}
+		return allEvents[i].SortID < allEvents[j].SortID
 	})
 
 	offset := (page - 1) * show
@@ -344,7 +433,7 @@ func fetchHarshBrakeEvents(CarID int, parsedStartDate string, parsedEndDate stri
 		speedAfterCopy := speedAfter
 		speedDropCopy := speedDrop
 		decelerationCopy := decelerationMS2
-		result = append(result, insightEventInternal{
+		internal := insightEventInternal{
 			SortDate: eventTime,
 			Event: InsightEvent{
 				EventID:     fmt.Sprintf("harsh-brake-%d", positionID),
@@ -361,7 +450,8 @@ func fetchHarshBrakeEvents(CarID int, parsedStartDate string, parsedEndDate stri
 					DecelerationMS2: &decelerationCopy,
 				},
 			},
-		})
+		}
+		result = append(result, appendInsightSort(internal, positionID))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -441,7 +531,7 @@ func fetchChargePowerDropEvents(CarID int, parsedStartDate string, parsedEndDate
 		powerAfterCopy := powerAfter
 		powerDropCopy := powerDrop
 		batteryLevelCopy := batteryLevel
-		result = append(result, insightEventInternal{
+		internal := insightEventInternal{
 			SortDate: eventTime,
 			Event: InsightEvent{
 				EventID:     fmt.Sprintf("charge-power-drop-%d", sampleID),
@@ -458,7 +548,8 @@ func fetchChargePowerDropEvents(CarID int, parsedStartDate string, parsedEndDate
 					BatteryLevel:  &batteryLevelCopy,
 				},
 			},
-		})
+		}
+		result = append(result, appendInsightSort(internal, sampleID))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -551,7 +642,7 @@ func fetchSleepInterruptionEvents(CarID int, parsedStartDate string, parsedEndDa
 
 		stateIDCopy := stateID
 		wakeDurationCopy := wakeDurationMin
-		result = append(result, insightEventInternal{
+		internal := insightEventInternal{
 			SortDate: eventTime,
 			Event: InsightEvent{
 				EventID:     fmt.Sprintf("sleep-interruption-%d", stateID),
@@ -566,7 +657,8 @@ func fetchSleepInterruptionEvents(CarID int, parsedStartDate string, parsedEndDa
 					WakeDurationMin: &wakeDurationCopy,
 				},
 			},
-		})
+		}
+		result = append(result, appendInsightSort(internal, stateID))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -580,12 +672,18 @@ func parseInsightTypes(raw string) ([]string, error) {
 	}
 
 	allowed := map[string]bool{
-		"harsh_brake":        true,
-		"charge_power_drop":  true,
-		"sleep_interruption": true,
+		"harsh_brake":            true,
+		"charge_power_drop":      true,
+		"sleep_interruption":     true,
+		"low_speed_trip":         true,
+		"congestion_like_trip":   true,
+		"high_consumption_drive": true,
+		"low_efficiency_charge":  true,
+		"abnormal_charge":        true,
+		"deep_discharge":         true,
 	}
 
-	result := make([]string, 0, 3)
+	result := make([]string, 0, 12)
 	seen := map[string]bool{}
 	for _, part := range strings.Split(raw, ",") {
 		value := strings.TrimSpace(strings.ToLower(part))

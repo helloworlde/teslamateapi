@@ -521,7 +521,7 @@ func TeslaMateAPICarsDriveCalendarDocV1(c *gin.Context) {
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/charts/efficiency [get]
 func TeslaMateAPICarsChartEfficiencyDocV1(c *gin.Context) {
-	TeslaMateAPICarsChartEfficiencyV1(c)
+	TeslaMateAPICarsDashboardEfficiencySeriesV1(c)
 }
 
 // TeslaMateAPICarsChartDriveMonthlyDistanceDocV1 godoc
@@ -536,7 +536,7 @@ func TeslaMateAPICarsChartEfficiencyDocV1(c *gin.Context) {
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/charts/drives/monthly-distance [get]
 func TeslaMateAPICarsChartDriveMonthlyDistanceDocV1(c *gin.Context) {
-	TeslaMateAPICarsChartDriveMonthlyDistanceV1(c)
+	TeslaMateAPICarsDashboardMonthlyDistanceV1(c)
 }
 
 // TeslaMateAPICarsChartDriveWeekdayDocV1 godoc
@@ -579,7 +579,7 @@ func TeslaMateAPICarsChartDriveHourlyDocV1(c *gin.Context) {
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/charts/charges/monthly-energy [get]
 func TeslaMateAPICarsChartChargeMonthlyEnergyDocV1(c *gin.Context) {
-	TeslaMateAPICarsChartChargeMonthlyEnergyV1(c)
+	TeslaMateAPICarsDashboardMonthlyChargeEnergyV1(c)
 }
 
 // TeslaMateAPICarsChartChargeLocationDocV1 godoc
@@ -594,7 +594,7 @@ func TeslaMateAPICarsChartChargeMonthlyEnergyDocV1(c *gin.Context) {
 // @Failure 200 {object} SwaggerErrorResponse
 // @Router /v1/cars/{CarID}/charts/charges/location-energy [get]
 func TeslaMateAPICarsChartChargeLocationDocV1(c *gin.Context) {
-	TeslaMateAPICarsChartChargeLocationsV1(c)
+	TeslaMateAPICarsDashboardChargeLocationsV1(c)
 }
 
 // TeslaMateAPICarsChartChargeWeekdayDocV1 godoc

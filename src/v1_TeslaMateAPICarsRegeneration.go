@@ -3,48 +3,55 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type RegenerationSummary struct {
 	Coverage                     HistorySummaryCoverage `json:"coverage"`
+	MetricsEstimated             bool                   `json:"metrics_estimated"`
 	DriveCountWithRegeneration   int                    `json:"drive_count_with_regeneration"`
 	RegenerationEventCount       int                    `json:"regeneration_event_count"`
-	TotalRecoveredEnergy         *float64               `json:"total_recovered_energy"`
-	AverageRecoveredEnergy       *float64               `json:"average_recovered_energy"`
+	TotalRecoveredEnergy         *float64               `json:"total_recovered_energy,omitempty"`
+	EstimatedRecoveredEnergyKwh  *float64               `json:"estimated_recovered_energy,omitempty"`
+	AverageRecoveredEnergy       *float64               `json:"average_recovered_energy,omitempty"`
 	TotalRegenerationDurationMin int                    `json:"total_regeneration_duration_min"`
-	MaxPeakRegenerationPower     *float64               `json:"max_peak_regeneration_power"`
-	AveragePeakRegenerationPower *float64               `json:"average_peak_regeneration_power"`
-	RecoveryShare                *float64               `json:"recovery_share"`
+	MaxPeakRegenerationPower     *float64               `json:"max_peak_regeneration_power,omitempty"`
+	AveragePeakRegenerationPower *float64               `json:"average_peak_regeneration_power,omitempty"`
+	RecoveryShare                *float64               `json:"recovery_share,omitempty"`
+	RegenEnergyPer100Distance    *float64               `json:"estimated_regen_energy_per_100_distance,omitempty"`
 	MonthlyRecoveredEnergy       []SummaryCategoryValue `json:"monthly_recovered_energy"`
 }
 
 func TeslaMateAPICarsRegenerationInsightsV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsRegenerationInsightsV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load regeneration insights.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load regeneration insights.") {
 		return
 	}
 
 	driveSummary, err := fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load regeneration insights.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load regeneration insights.", err.Error())
 		return
 	}
 
-	regenerationSummary, err := fetchRegenerationSummary(CarID, parsedStartDate, parsedEndDate, driveSummary)
+	regenerationSummary, err := fetchRegenerationSummary(CarID, parsedStartDate, parsedEndDate, driveSummary, unitsLength)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load regeneration insights.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load regeneration insights.", err.Error())
 		return
 	}
 
@@ -54,7 +61,7 @@ func TeslaMateAPICarsRegenerationInsightsV1(c *gin.Context) {
 	}))
 }
 
-func fetchRegenerationSummary(CarID int, parsedStartDate string, parsedEndDate string, driveSummary *DriveHistorySummary) (*RegenerationSummary, error) {
+func fetchRegenerationSummary(CarID int, parsedStartDate string, parsedEndDate string, driveSummary *DriveHistorySummary, unitsLength string) (*RegenerationSummary, error) {
 	query := `
 		WITH position_samples AS (
 			SELECT
@@ -150,22 +157,30 @@ func fetchRegenerationSummary(CarID int, parsedStartDate string, parsedEndDate s
 	}
 
 	if driveCountWithRegeneration == 0 && len(monthlyRecoveredEnergy) == 0 {
-		return nil, nil
+		return &RegenerationSummary{MetricsEstimated: true, MonthlyRecoveredEnergy: monthlyRecoveredEnergy}, nil
 	}
 
+	estEnergy := floatPointer(totalRecoveredEnergy)
 	summary := &RegenerationSummary{
+		MetricsEstimated: true,
 		Coverage: HistorySummaryCoverage{
 			StartDate: timeZoneStringPointer(coverageStart),
 			EndDate:   timeZoneStringPointer(coverageEnd),
 		},
 		DriveCountWithRegeneration:   driveCountWithRegeneration,
 		RegenerationEventCount:       regenerationEventCount,
-		TotalRecoveredEnergy:         floatPointer(totalRecoveredEnergy),
+		TotalRecoveredEnergy:         estEnergy,
+		EstimatedRecoveredEnergyKwh:  estEnergy,
 		AverageRecoveredEnergy:       floatPointer(averageRecoveredEnergy),
 		TotalRegenerationDurationMin: totalRegenerationDurationMin,
 		MaxPeakRegenerationPower:     floatPointer(maxPeakRegenerationPower),
 		AveragePeakRegenerationPower: floatPointer(averagePeakRegenerationPower),
 		MonthlyRecoveredEnergy:       monthlyRecoveredEnergy,
+	}
+
+	if driveSummary != nil && driveSummary.TotalDistance > 0 && totalRecoveredEnergy.Valid && totalRecoveredEnergy.Float64 > 0 {
+		v := totalRecoveredEnergy.Float64 / driveSummary.TotalDistance * 100.0
+		summary.RegenEnergyPer100Distance = &v
 	}
 
 	if driveSummary != nil && driveSummary.TotalEnergyConsumed != nil && totalRecoveredEnergy.Valid {

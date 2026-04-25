@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -58,22 +59,25 @@ type TeslaMateParkingJSONData struct {
 func TeslaMateAPICarsParkingSummaryV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsParkingSummaryV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
+	}
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load parking summary.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load parking summary.") {
 		return
 	}
 
 	summary, err := fetchParkingHistorySummary(CarID, parsedStartDate, parsedEndDate, nil)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load parking summary.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load parking summary.", err.Error())
 		return
 	}
 
@@ -88,40 +92,37 @@ func TeslaMateAPICarsParkingSummaryV1(c *gin.Context) {
 func TeslaMateAPICarsParkingV1(c *gin.Context) {
 	const actionName = "TeslaMateAPICarsParkingV1"
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	page := convertStringToInteger(c.DefaultQuery("page", "1"))
-	show := convertStringToInteger(c.DefaultQuery("show", "100"))
-	if page <= 0 {
-		page = 1
+	CarID, err := parseCarID(c)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
+		return
 	}
-	if show <= 0 {
-		show = 100
-	}
-	if show > 500 {
-		show = 500
+	page, show, err := parsePaginationParams(c, 1, 100, 500)
+	if err != nil {
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid pagination parameter.", err.Error())
+		return
 	}
 
 	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid date format.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
 		return
 	}
 
 	parkingStates, err := parseParkingStates(c.Query("states"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Invalid parking parameter.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid parking parameter.", err.Error())
 		return
 	}
 
 	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load parking history.", err.Error())
+	if respondSummaryMetadataError(c, actionName, err, "Unable to load parking history.") {
 		return
 	}
 
 	parking, err := fetchParkingPeriods(CarID, parsedStartDate, parsedEndDate, parkingStates, page, show)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, actionName, "Unable to load parking history.", err.Error())
+		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load parking history.", err.Error())
 		return
 	}
 
@@ -138,11 +139,8 @@ func TeslaMateAPICarsParkingV1(c *gin.Context) {
 				Page:      page,
 				Show:      show,
 			},
-			Parking: parking,
-			TeslaMateUnits: TeslaMateSummaryUnits{
-				UnitsLength:      unitsLength,
-				UnitsTemperature: unitsTemperature,
-			},
+			Parking:        parking,
+			TeslaMateUnits: buildSummaryUnits(unitsLength, unitsTemperature),
 		},
 	}
 
@@ -309,7 +307,10 @@ func fetchParkingHistorySummary(CarID int, parsedStartDate string, parsedEndDate
 		return nil, err
 	}
 	if sessionCount == 0 {
-		return nil, nil
+		return &ParkingHistorySummary{
+			Coverage:       HistorySummaryCoverage{},
+			StateBreakdown: []ParkingStateBreakdown{},
+		}, nil
 	}
 
 	breakdownQuery := baseQuery + `
