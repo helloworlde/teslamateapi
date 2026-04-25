@@ -145,7 +145,7 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 	aggregates := map[string]dayAggregate{}
 	for rows.Next() {
 		var (
-			localDate           string
+			localDate           time.Time
 			aggregate           dayAggregate
 			totalEnergyConsumed sql.NullFloat64
 			firstDriveAt        sql.NullString
@@ -163,6 +163,8 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 			return DriveCalendarMonth{}, err
 		}
 
+		dateKey := localDate.Format("2006-01-02")
+
 		energyPtr := floatPointer(totalEnergyConsumed)
 		distKm := aggregate.TotalDistance
 		if unitsLength == "mi" {
@@ -178,7 +180,7 @@ func fetchDriveCalendarMonth(CarID int, year int, month int, unitsLength string)
 			}
 			aggregate.AverageConsumption = &v
 		}
-		aggregates[localDate] = aggregate
+		aggregates[dateKey] = aggregate
 	}
 	if err := rows.Err(); err != nil {
 		return DriveCalendarMonth{}, err

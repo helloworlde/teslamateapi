@@ -1390,18 +1390,19 @@ func fetchChargeCalendarMonth(carID int, year int, month int) (chargeCalendarMon
 	aggregates := map[string]chargeCalendarDay{}
 	for rows.Next() {
 		var day chargeCalendarDay
-		var localDate string
+		var localDate time.Time
 		var cost sql.NullFloat64
 		var firstAt sql.NullString
 		var lastAt sql.NullString
 		if err := rows.Scan(&localDate, &day.ChargeCount, &day.DurationMin, &day.EnergyAdded, &cost, &firstAt, &lastAt); err != nil {
 			return chargeCalendarMonth{}, err
 		}
-		day.Date = localDate
+		dateKey := localDate.Format("2006-01-02")
+		day.Date = dateKey
 		day.Cost = floatPointer(cost)
 		day.FirstChargeStart = timeZoneStringPointer(firstAt)
 		day.LastChargeEnd = timeZoneStringPointer(lastAt)
-		aggregates[localDate] = day
+		aggregates[dateKey] = day
 	}
 	if err := rows.Err(); err != nil {
 		return chargeCalendarMonth{}, err
@@ -1420,7 +1421,14 @@ func fetchChargeCalendarMonth(carID int, year int, month int) (chargeCalendarMon
 		day.IsToday = current.Year() == nowLocal.Year() && current.YearDay() == nowLocal.YearDay()
 		days = append(days, day)
 	}
-	return chargeCalendarMonth{Year: year, Month: month, MonthName: startLocal.Month().String(), StartDate: startUTC, EndDate: endLocal.Add(-time.Second).UTC().Format(dbTimestampFormat), Days: days}, nil
+	return chargeCalendarMonth{
+		Year:      year,
+		Month:     month,
+		MonthName: startLocal.Month().String(),
+		StartDate: startLocal.Format(time.RFC3339),
+		EndDate:   endLocal.Add(-time.Second).Format(time.RFC3339),
+		Days:      days,
+	}, nil
 }
 
 func fetchVisitedMap(carID int, startUTC, endUTC string, limit int) ([]visitedPoint, *visitedBounds, bool, error) {

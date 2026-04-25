@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"slices"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -257,8 +258,22 @@ func TeslaMateAPIHandleSuccessResponse(c *gin.Context, s string, j interface{}) 
 }
 
 func getTimeInTimeZone(datestring string) string {
-	// parsing datestring into dbTimestampFormat
-	t, _ := time.Parse(dbTimestampFormat, datestring)
+	datestring = strings.TrimSpace(datestring)
+	if datestring == "" {
+		return ""
+	}
+
+	// Parse RFC3339/db timestamps first; fallback to API parser.
+	t, err := time.Parse(dbTimestampFormat, datestring)
+	if err != nil {
+		t, err = parseAPITime(datestring, time.UTC)
+		if err != nil {
+			if gin.IsDebugging() {
+				log.Println("[warning] getTimeInTimeZone - unable to parse", datestring, "returning raw value")
+			}
+			return datestring
+		}
+	}
 
 	// formatting in users location in RFC3339 format
 	ReturnDate := t.In(appUsersTimezone).Format(time.RFC3339)
