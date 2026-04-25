@@ -13,7 +13,9 @@ import (
 func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 	s := docs.SwaggerInfo.ReadDoc()
 	for _, sub := range []string{
-		"/v1/cars/{CarID}/summaries/statistics",
+		"/v1/cars/{CarID}/statistics",
+		"/v1/cars/{CarID}/summary",
+		"/v1/cars/{CarID}/timeline",
 		"/v1/cars/{CarID}/insights/events",
 	} {
 		if !strings.Contains(s, sub) {
@@ -53,18 +55,17 @@ func TestDocsRoutesReturnContent(t *testing.T) {
 	}
 }
 
-func TestSummariesOptionsRoute(t *testing.T) {
+func TestDocsRouteAliases(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/v1/summaries/options", TeslaMateAPISummaryOptionsV1)
+	registerDocsRoutes(r.Group("/api/v1"), "/api/v1")
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/summaries/options", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("status %d", w.Code)
-	}
-	if !strings.Contains(w.Body.String(), `"endpoints"`) || !strings.Contains(w.Body.String(), `/api/v1/summaries/options`) {
-		t.Fatalf("unexpected body: %s", w.Body.String())
+	for _, path := range []string{"/api/v1/docs", "/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s status %d", path, w.Code)
+		}
 	}
 }

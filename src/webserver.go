@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"slices"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -135,77 +134,9 @@ func main() {
 			v1.GET("/", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
 			})
-			v1.GET("/summaries/options", TeslaMateAPISummaryOptionsV1)
-			v1.GET("/docs", serveScalarAPIReference)
-			v1.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
-			v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+"/docs/swagger/index.html") })
-			v1.GET("/docs/swagger/index.html", serveScalarAPIReference)
-			v1.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
-
-			// v1 /api/v1/cars endpoints
-			v1.GET("/cars", TeslaMateAPICarsV1)
-			v1.GET("/cars/:CarID", TeslaMateAPICarsV1)
-
-			// v1 /api/v1/cars/:CarID/battery-health endpoints
-			v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
-
-			// v1 /api/v1/cars/:CarID/summary endpoints
-			v1.GET("/cars/:CarID/parking-sessions", TeslaMateAPICarsParkingV1)
-			v1.GET("/cars/:CarID/summaries", TeslaMateAPICarsSummaryV1)
-			v1.GET("/cars/:CarID/summaries/overview", TeslaMateAPICarsOverviewV1)
-			v1.GET("/cars/:CarID/summaries/lifetime", TeslaMateAPICarsLifetimeSummaryV1)
-			v1.GET("/cars/:CarID/summaries/drives", TeslaMateAPICarsDriveSummaryV1)
-			v1.GET("/cars/:CarID/summaries/charges", TeslaMateAPICarsChargeSummaryV1)
-			v1.GET("/cars/:CarID/summaries/parking", TeslaMateAPICarsParkingSummaryV1)
-			v1.GET("/cars/:CarID/summaries/statistics", TeslaMateAPICarsStatisticsSummaryV1)
-			v1.GET("/cars/:CarID/summaries/state-activity", TeslaMateAPICarsStateSummaryV1)
-			v1.GET("/cars/:CarID/analytics/activity", TeslaMateAPICarsAnalyticsV1)
-			v1.GET("/cars/:CarID/analytics/regeneration", TeslaMateAPICarsRegenerationInsightsV1)
-			v1.GET("/cars/:CarID/activity-timeline", TeslaMateAPICarsStateTimelineV1)
-			v1.GET("/cars/:CarID/dashboards/drives", TeslaMateAPICarsDriveDashboardsV1)
-			v1.GET("/cars/:CarID/dashboards/charges", TeslaMateAPICarsChargeDashboardsV1)
-			v1.GET("/cars/:CarID/insights", TeslaMateAPICarsInsightSummaryV1)
-			v1.GET("/cars/:CarID/insights/events", TeslaMateAPICarsInsightEventsV1)
-			v1.GET("/cars/:CarID/calendars/drives", TeslaMateAPICarsDriveCalendarV1)
-			v1.GET("/cars/:CarID/charts/efficiency", TeslaMateAPICarsDashboardEfficiencySeriesV1)
-			v1.GET("/cars/:CarID/charts/drives/monthly-distance", TeslaMateAPICarsDashboardMonthlyDistanceV1)
-			v1.GET("/cars/:CarID/charts/drives/weekday-distance", TeslaMateAPICarsChartDriveWeekdayV1)
-			v1.GET("/cars/:CarID/charts/drives/hourly-starts", TeslaMateAPICarsChartDriveHourlyV1)
-			v1.GET("/cars/:CarID/charts/charges/monthly-energy", TeslaMateAPICarsDashboardMonthlyChargeEnergyV1)
-			v1.GET("/cars/:CarID/charts/charges/location-energy", TeslaMateAPICarsDashboardChargeLocationsV1)
-			v1.GET("/cars/:CarID/charts/charges/weekday-energy", TeslaMateAPICarsChartChargeWeekdayV1)
-			v1.GET("/cars/:CarID/charts/charges/hourly-starts", TeslaMateAPICarsChartChargeHourlyV1)
-			v1.GET("/cars/:CarID/charts/activity/duration", TeslaMateAPICarsChartStateDurationV1)
-
-			// v1 /api/v1/cars/:CarID/charges endpoints
-			v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesV1)
-			v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
-			v1.GET("/cars/:CarID/charges/:ChargeID/interval", TeslaMateAPICarsChargeIntervalV1)
-			v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
-
-			// v1 /api/v1/cars/:CarID/command endpoints
-			v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
-			v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
-
-			// v1 /api/v1/cars/:CarID/drives endpoints
-			v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
-			v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
-
-			// v1 /api/v1/cars/:CarID/logging endpoints
-			v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
-			v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
-
-			// v1 /api/v1/cars/:CarID/status endpoints
-			v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusRouteV1)
-
-			// v1 /api/v1/cars/:CarID/updates endpoints
-			v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
-
-			// v1 /api/v1/cars/:CarID/wake_up endpoints
-			v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
-
-			// v1 /api/v1/globalsettings endpoints
-			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
+			registerDocsRoutes(v1, BasePathV1)
+			registerCompatibleV1Routes(v1)
+			registerExtendedV1Routes(v1)
 		}
 
 		// /api/ping endpoint
@@ -216,43 +147,7 @@ func main() {
 		api.GET("/readyz", readyz)
 	}
 
-	// TeslaMateApi endpoints (before versioning)
-	r.GET("/cars", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/parking-sessions", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/overview", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/lifetime", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/charges", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/parking", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/statistics", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/summaries/state-activity", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/analytics/activity", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/analytics/regeneration", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/activity-timeline", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/dashboards/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/dashboards/charges", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/insights", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/insights/events", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/calendars/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/efficiency", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/drives/monthly-distance", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/drives/weekday-distance", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/drives/hourly-starts", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/charges/monthly-energy", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/charges/location-energy", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/charges/weekday-energy", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/charges/hourly-starts", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charts/activity/duration", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charges", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charges/:ChargeID/interval", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/charges/:ChargeID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/drives/:DriveID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/status", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/updates", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/globalsettings", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	registerLegacyRedirects(r, BasePathV1)
 
 	// build the http server
 	listenAddr := getEnv("TESLAMATEAPI_LISTEN_ADDR", ":8080")
@@ -380,23 +275,11 @@ func parseDateParam(datestring string) (string, error) {
 	if datestring == "" {
 		return "", nil
 	}
-
-	datestring = repairDateQueryParam(datestring)
-
-	if t, err := time.Parse(time.RFC3339, datestring); err == nil {
-		return t.UTC().Format(dbTimestampFormat), nil
+	t, err := parseAPITime(datestring, appUsersTimezone)
+	if err != nil {
+		return "", err
 	}
-	if t, err := time.Parse(time.RFC3339Nano, datestring); err == nil {
-		return t.UTC().Format(dbTimestampFormat), nil
-	}
-
-	localDateTime := strings.Replace(datestring, "T", " ", 1)
-	if t, err := time.ParseInLocation(time.DateTime, localDateTime, appUsersTimezone); err == nil {
-		return t.UTC().Format(dbTimestampFormat), nil
-	}
-
-	sanitizedInput := strings.NewReplacer("\n", "\\n", "\r", "\\r", "\t", "\\t").Replace(datestring)
-	return "", fmt.Errorf("invalid date format: %q (use RFC3339, e.g. 2026-04-02T10:55:30+08:00; encode + as %%2B in query strings)", sanitizedInput)
+	return t.UTC().Format(dbTimestampFormat), nil
 }
 
 // getEnv func - read an environment or return a default value

@@ -1,5 +1,127 @@
 basePath: /api
 definitions:
+  main.APIChartPoint:
+    properties:
+      label:
+        type: string
+      time:
+        type: string
+      value:
+        type: number
+    type: object
+  main.APIChartResponse:
+    properties:
+      bucket:
+        type: string
+      car_id:
+        type: integer
+      meta:
+        additionalProperties: {}
+        type: object
+      range:
+        $ref: '#/definitions/main.APIRange'
+      series:
+        items:
+          $ref: '#/definitions/main.APIChartSeries'
+        type: array
+      timezone:
+        type: string
+    type: object
+  main.APIChartSeries:
+    properties:
+      name:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/main.APIChartPoint'
+        type: array
+      unit:
+        type: string
+    type: object
+  main.APIErrorDetail:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties: {}
+        type: object
+      message:
+        type: string
+    type: object
+  main.APIErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/main.APIErrorDetail'
+    type: object
+  main.APIListResponse:
+    properties:
+      car_id:
+        type: integer
+      data:
+        items: {}
+        type: array
+      meta:
+        additionalProperties: {}
+        type: object
+      pagination:
+        $ref: '#/definitions/main.APIPagination'
+      range:
+        $ref: '#/definitions/main.APIRange'
+      timezone:
+        type: string
+    type: object
+  main.APIObjectResponse:
+    properties:
+      car_id:
+        type: integer
+      data:
+        additionalProperties: {}
+        type: object
+      meta:
+        additionalProperties: {}
+        type: object
+      range:
+        $ref: '#/definitions/main.APIRange'
+      timezone:
+        type: string
+      unit:
+        $ref: '#/definitions/main.APIUnits'
+    type: object
+  main.APIPagination:
+    properties:
+      page:
+        type: integer
+      show:
+        type: integer
+      total:
+        type: integer
+    type: object
+  main.APIRange:
+    properties:
+      end:
+        type: string
+      start:
+        type: string
+    type: object
+  main.APIUnits:
+    properties:
+      consumption:
+        type: string
+      currency:
+        type: string
+      distance:
+        type: string
+      duration:
+        type: string
+      energy:
+        type: string
+      percentage:
+        type: string
+      speed:
+        type: string
+      temperature:
+        type: string
+    type: object
   main.SwaggerDataResponse:
     properties:
       data:
@@ -23,8 +145,12 @@ definitions:
     type: object
 info:
   contact: {}
-  description: RESTful API for TeslaMate-backed vehicle, charge, drive, summary, dashboard,
-    and insight data.
+  description: RESTful API for TeslaMate-backed vehicle, charge, drive, statistics,
+    chart, timeline, and insight data. Original TeslaMateApi routes remain compatible;
+    redesigned extension routes may introduce breaking changes. Date query parameters
+    support RFC3339, timezone offsets, decoded-space offsets, local datetime, and
+    date-only formats. When using `+08:00` in URLs, prefer `%2B08:00`, though decoded-space
+    offsets are also accepted.
   title: TeslaMateApi
   version: "1.0"
 paths:
@@ -103,7 +229,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: List cars
       tags:
-      - Cars
+      - Compatible API
   /v1/cars/{CarID}:
     get:
       parameters:
@@ -121,41 +247,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Get car
       tags:
-      - Cars
-  /v1/cars/{CarID}/activity-timeline:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: show
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Activity timeline
-      tags:
-      - Activity
+      - Compatible API
   /v1/cars/{CarID}/analytics/activity:
     get:
       parameters:
@@ -164,11 +256,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -178,23 +270,37 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: Activity analytics
       tags:
-      - Analytics
+      - Extended API
   /v1/cars/{CarID}/analytics/regeneration:
     get:
+      description: Returns estimated regeneration metrics. Meta flags when values
+        are estimated from available drive/position data.
       parameters:
       - description: Car ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -204,12 +310,26 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: Regeneration analytics
       tags:
-      - Analytics
+      - Extended API
   /v1/cars/{CarID}/battery-health:
     get:
+      description: Original compatible battery-health endpoint. Use `/v1/cars/{CarID}/charts/battery/health`
+        for chart-friendly series.
       parameters:
       - description: Car ID
         in: path
@@ -225,8 +345,8 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Battery health
       tags:
-      - Cars
-  /v1/cars/{CarID}/calendars/drives:
+      - Compatible API
+  /v1/cars/{CarID}/calendar/charges:
     get:
       parameters:
       - description: Car ID
@@ -248,10 +368,60 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge calendar
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/calendar/drives:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Calendar year
+        in: query
+        name: year
+        type: integer
+      - description: Calendar month
+        in: query
+        name: month
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: Drive calendar
       tags:
-      - Calendar
+      - Extended API
   /v1/cars/{CarID}/charges:
     get:
       parameters:
@@ -260,11 +430,13 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Supports RFC3339, offset values, decoded-space offsets, local
+          datetime, and date-only values
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Supports RFC3339, offset values, decoded-space offsets, local
+          datetime, and date-only values
         in: query
         name: endDate
         type: string
@@ -285,7 +457,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: List charges
       tags:
-      - Charges
+      - Compatible API
   /v1/cars/{CarID}/charges/{ChargeID}:
     get:
       parameters:
@@ -308,8 +480,8 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Charge details
       tags:
-      - Charges
-  /v1/cars/{CarID}/charges/{ChargeID}/interval:
+      - Compatible API
+  /v1/cars/{CarID}/charges/{ChargeID}/details:
     get:
       parameters:
       - description: Car ID
@@ -328,10 +500,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge intervals
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge details context
       tags:
-      - Charges
+      - Extended API
   /v1/cars/{CarID}/charges/current:
     get:
       parameters:
@@ -349,8 +533,8 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Current charge
       tags:
-      - Charges
-  /v1/cars/{CarID}/charts/activity/duration:
+      - Compatible API
+  /v1/cars/{CarID}/charts/battery/health:
     get:
       parameters:
       - description: Car ID
@@ -358,11 +542,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -372,11 +556,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Activity duration chart
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Battery health chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/charges/hourly-starts:
+      - Extended API
+  /v1/cars/{CarID}/charts/battery/range:
     get:
       parameters:
       - description: Car ID
@@ -384,11 +580,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -398,11 +594,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge hourly chart
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Battery range chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/charges/location-energy:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/cost:
     get:
       parameters:
       - description: Car ID
@@ -410,17 +618,143 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
-      - description: Location bucket limit
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge cost chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/efficiency:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: day|week|month|year
         in: query
-        name: limit
+        name: bucket
+        type: string
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge efficiency chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/energy:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge energy chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/location:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      - description: Location bucket count
+        in: query
+        name: show
         type: integer
       produces:
       - application/json
@@ -428,11 +762,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: Charge location chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/charges/monthly-energy:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/power:
     get:
       parameters:
       - description: Car ID
@@ -440,41 +786,15 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      - description: Month bucket count
-        in: query
-        name: months
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge monthly energy chart
-      tags:
-      - Charts
-  /v1/cars/{CarID}/charts/charges/weekday-energy:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -484,11 +804,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge weekday chart
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge power chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/drives/hourly-starts:
+      - Extended API
+  /v1/cars/{CarID}/charts/charges/soc:
     get:
       parameters:
       - description: Car ID
@@ -496,11 +828,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -510,41 +842,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Drive hourly chart
-      tags:
-      - Charts
-  /v1/cars/{CarID}/charts/drives/monthly-distance:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      - description: Month bucket count
-        in: query
-        name: months
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Drive monthly distance chart
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Charge SOC distribution chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/drives/weekday-distance:
+      - Extended API
+  /v1/cars/{CarID}/charts/drives/distance:
     get:
       parameters:
       - description: Car ID
@@ -552,11 +866,15 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start; defaults to the last 365 days
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end; defaults to now
         in: query
         name: endDate
         type: string
@@ -566,11 +884,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Drive weekday chart
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive distance chart
       tags:
-      - Charts
-  /v1/cars/{CarID}/charts/efficiency:
+      - Extended API
+  /v1/cars/{CarID}/charts/drives/efficiency:
     get:
       parameters:
       - description: Car ID
@@ -578,28 +908,320 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
-      - description: Point limit
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Efficiency chart
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive efficiency chart
       tags:
-      - Charts
+      - Extended API
+  /v1/cars/{CarID}/charts/drives/energy:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive energy chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/drives/speed:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive speed chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/drives/temperature:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: day|week|month|year
+        in: query
+        name: bucket
+        type: string
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive temperature chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/mileage:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Mileage chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/overview:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start; defaults to the last 30 days
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end; defaults to now
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Overview charts
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/states/duration:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: State duration chart
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/charts/vampire-drain:
+    get:
+      description: Returns an explicit empty structure when TeslaMate schema does
+        not allow a reliable vampire-drain calculation.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIChartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Vampire drain chart
+      tags:
+      - Extended API
   /v1/cars/{CarID}/command:
     get:
       parameters:
@@ -615,15 +1237,11 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.SwaggerErrorResponse'
-      security:
-      - BearerAuth: []
       summary: List command options
       tags:
-      - Commands
+      - Compatible API
   /v1/cars/{CarID}/command/{Command}:
     post:
-      consumes:
-      - application/json
       parameters:
       - description: Car ID
         in: path
@@ -642,47 +1260,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.SwaggerErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Execute command
       tags:
-      - Commands
-  /v1/cars/{CarID}/dashboards/charges:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge dashboards
-      tags:
-      - Dashboards
-  /v1/cars/{CarID}/dashboards/drives:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Drive dashboards
-      tags:
-      - Dashboards
+      - Compatible API
   /v1/cars/{CarID}/drives:
     get:
       parameters:
@@ -691,11 +1271,13 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Supports RFC3339, offset values, decoded-space offsets, local
+          datetime, and date-only values
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Supports RFC3339, offset values, decoded-space offsets, local
+          datetime, and date-only values
         in: query
         name: endDate
         type: string
@@ -724,7 +1306,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: List drives
       tags:
-      - Drives
+      - Compatible API
   /v1/cars/{CarID}/drives/{DriveID}:
     get:
       parameters:
@@ -747,7 +1329,42 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Drive details
       tags:
-      - Drives
+      - Compatible API
+  /v1/cars/{CarID}/drives/{DriveID}/details:
+    get:
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Drive ID
+        in: path
+        name: DriveID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Drive details context
+      tags:
+      - Extended API
   /v1/cars/{CarID}/insights:
     get:
       parameters:
@@ -756,11 +1373,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
@@ -770,10 +1387,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Insight summary
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Insights summary
       tags:
-      - Insights
+      - Extended API
   /v1/cars/{CarID}/insights/events:
     get:
       parameters:
@@ -782,15 +1411,15 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
         type: string
-      - description: harsh_brake,charge_power_drop,sleep_interruption
+      - description: Comma-separated insight types
         in: query
         name: types
         type: string
@@ -808,10 +1437,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APIListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: Insight events
       tags:
-      - Insights
+      - Extended API
   /v1/cars/{CarID}/logging:
     get:
       parameters:
@@ -827,11 +1468,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.SwaggerErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Get logging status
       tags:
-      - Logging
+      - Compatible API
   /v1/cars/{CarID}/logging/{Command}:
     put:
       parameters:
@@ -852,12 +1491,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.SwaggerErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Update logging status
       tags:
-      - Logging
-  /v1/cars/{CarID}/parking-sessions:
+      - Compatible API
+  /v1/cars/{CarID}/map/visited:
     get:
       parameters:
       - description: Car ID
@@ -865,36 +1502,75 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start; defaults to the last 90 days
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end; defaults to now
         in: query
         name: endDate
         type: string
-      - description: online,offline,asleep
-        in: query
-        name: states
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: show
-        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Parking sessions
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Visited map
       tags:
-      - Parking
+      - Extended API
+  /v1/cars/{CarID}/statistics:
+    get:
+      description: TeslaMate Statistics dashboard aligned aggregate response.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Date range start
+        in: query
+        name: startDate
+        type: string
+      - description: Date range end
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Statistics dashboard summary
+      tags:
+      - Extended API
   /v1/cars/{CarID}/status:
     get:
       parameters:
@@ -912,63 +1588,25 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Current vehicle status
       tags:
-      - Status
-  /v1/cars/{CarID}/summaries:
+      - Compatible API
+  /v1/cars/{CarID}/summary:
     get:
+      description: New summary endpoint for third-party apps. Returns drive, charge,
+        parking, efficiency, cost, mileage, state snapshot, and vampire-drain availability
+        in one payload.
       parameters:
       - description: Car ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: RFC3339, offset values, decoded-space offsets, local datetime,
+          or date-only. Encode + as %2B in URLs when possible.
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      - description: all, overview, lifetime, drives, charges, parking, analysis,
-          statistics, states, series
-        in: query
-        name: include
-        type: string
-      - description: Series item limit
-        in: query
-        name: seriesLimit
-        type: integer
-      - description: Series month bucket count
-        in: query
-        name: seriesMonths
-        type: integer
-      - description: Location bucket limit
-        in: query
-        name: locationLimit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Combined summaries
-      tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/charges:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
+      - description: RFC3339, offset values, decoded-space offsets, local datetime,
+          or date-only. Date-only endDate is expanded to local end-of-day.
         in: query
         name: endDate
         type: string
@@ -978,25 +1616,55 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Charge summary
+            $ref: '#/definitions/main.APIObjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Summary overview
       tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/drives:
+      - Extended API
+  /v1/cars/{CarID}/timeline:
     get:
+      description: Returns drives, charges, states, and updates in one timeline ordered
+        by time.
       parameters:
       - description: Car ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
+      - description: Date range start
         in: query
         name: startDate
         type: string
-      - description: RFC3339 end date
+      - description: Date range end
         in: query
         name: endDate
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: show
+        type: integer
+      - description: startDate|type
+        in: query
+        name: sort
+        type: string
+      - description: asc|desc
+        in: query
+        name: order
         type: string
       produces:
       - application/json
@@ -1004,140 +1672,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Drive summary
-      tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/lifetime:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/main.APIListResponse'
+        "400":
+          description: Bad Request
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Lifetime summary
-      tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/overview:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Overview summary
-      tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/parking:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Parking summary
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: Unified timeline
       tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/state-activity:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: State activity summary
-      tags:
-      - Summaries
-  /v1/cars/{CarID}/summaries/statistics:
-    get:
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
-      summary: Statistics summary
-      tags:
-      - Summaries
+      - Extended API
   /v1/cars/{CarID}/updates:
     get:
       parameters:
@@ -1146,14 +1696,6 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: RFC3339 start date
-        in: query
-        name: startDate
-        type: string
-      - description: RFC3339 end date
-        in: query
-        name: endDate
-        type: string
       - description: Page number
         in: query
         name: page
@@ -1171,7 +1713,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: List updates
       tags:
-      - Updates
+      - Compatible API
   /v1/cars/{CarID}/wake_up:
     post:
       parameters:
@@ -1187,11 +1729,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.SwaggerErrorResponse'
-      security:
-      - BearerAuth: []
       summary: Wake up vehicle
       tags:
-      - Commands
+      - Compatible API
   /v1/globalsettings:
     get:
       produces:
@@ -1203,7 +1743,7 @@ paths:
             $ref: '#/definitions/main.SwaggerErrorResponse'
       summary: Global settings
       tags:
-      - Settings
+      - Compatible API
 schemes:
 - http
 - https

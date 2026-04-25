@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -91,13 +92,54 @@ func parsePositiveIntQuery(raw string, defaultValue, minValue, maxValue int) (in
 }
 
 func parseSummaryDateRange(c *gin.Context) (string, string, error) {
-	parsedStartDate, err := parseDateParam(c.Query("startDate"))
+	return parseDateRangeValues(c.Query("startDate"), c.Query("endDate"), appUsersTimezone)
+}
+
+func parseDateRangeValues(startRaw string, endRaw string, loc *time.Location) (string, string, error) {
+	startUTC, err := parseDateParam(startRaw)
 	if err != nil {
 		return "", "", err
 	}
-	parsedEndDate, err := parseDateParam(c.Query("endDate"))
+	endUTC, err := parseDateParam(endRaw)
 	if err != nil {
 		return "", "", err
 	}
-	return parsedStartDate, parsedEndDate, nil
+	if isDateOnlyValue(endRaw) && endUTC != "" {
+		endTime, err := parseAPITime(endRaw, loc)
+		if err != nil {
+			return "", "", err
+		}
+		endUTC = endTime.Add(24*time.Hour - time.Second).UTC().Format(dbTimestampFormat)
+	}
+	return startUTC, endUTC, nil
+}
+
+func parseSortOrder(c *gin.Context, allowed map[string]string, defaultSort string) (string, string, error) {
+	sortValue := strings.TrimSpace(c.DefaultQuery("sort", defaultSort))
+	orderValue := strings.ToLower(strings.TrimSpace(c.DefaultQuery("order", "desc")))
+	if orderValue == "" {
+		orderValue = "desc"
+	}
+	if orderValue != "asc" && orderValue != "desc" {
+		return "", "", fmt.Errorf("order must be asc or desc")
+	}
+	column, ok := allowed[sortValue]
+	if !ok {
+		return "", "", fmt.Errorf("unsupported sort %q", sortValue)
+	}
+	return column, orderValue, nil
+}
+
+func parseBucketParam(c *gin.Context, defaultBucket string) (string, error) {
+	bucket := strings.ToLower(strings.TrimSpace(c.DefaultQuery("bucket", defaultBucket)))
+	switch bucket {
+	case "day", "week", "month", "year":
+		return bucket, nil
+	default:
+		return "", fmt.Errorf("bucket must be one of day, week, month, year")
+	}
+}
+
+func parseSeriesLimitParam(c *gin.Context, key string, defaultValue, maxValue int) (int, error) {
+	return parsePositiveIntQuery(c.DefaultQuery(key, strconv.Itoa(defaultValue)), defaultValue, 1, maxValue)
 }
