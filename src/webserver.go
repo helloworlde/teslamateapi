@@ -405,7 +405,7 @@ func checkArrayContainsString(s []string, e string) bool {
 // @Summary Health check
 // @Tags System
 // @Produce json
-// @Success 200 {object} SwaggerMessageResponse
+// @Success 200 {object} APISystemMessageResponse
 // @Router /healthz [get]
 func healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusText(http.StatusOK)})
@@ -415,8 +415,8 @@ func healthz(c *gin.Context) {
 // @Summary Readiness check
 // @Tags System
 // @Produce json
-// @Success 200 {object} SwaggerMessageResponse
-// @Failure 503 {object} SwaggerErrorResponse
+// @Success 200 {object} APISystemMessageResponse
+// @Failure 503 {object} APISystemErrorBody
 // @Router /readyz [get]
 func readyz(c *gin.Context) {
 	if isReady == nil || !isReady.Load().(bool) {

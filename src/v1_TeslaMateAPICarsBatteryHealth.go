@@ -10,37 +10,6 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	var CarsBatteryHealthError1 = "Unable to load battery health data."
 	CarID := convertStringToInteger(c.Param("CarID"))
 
-	// creating structs for /cars/<CarID>/battery-health
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// BatteryHealth struct - child of Data
-	type BatteryHealth struct {
-		MaxRange                float64 `json:"max_range"`                 // float64
-		CurrentRange            float64 `json:"current_range"`             // float64
-		MaxCapacity             float64 `json:"max_capacity"`              // float64
-		CurrentCapacity         float64 `json:"current_capacity"`          // float64
-		RatedEfficiency         float64 `json:"rated_efficiency"`          // float64
-		BatteryHealthPercentage float64 `json:"battery_health_percentage"` // float64
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		BatteryHealth  BatteryHealth  `json:"battery_health"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
 	var (
 		CarName                       NullString
@@ -272,8 +241,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		return
 	}
 
-	// Create battery health object
-	batteryHealth := BatteryHealth{
+	batteryHealth := BatteryHealthV1Metrics{
 		CurrentCapacity:         CurrentCapacity,
 		MaxCapacity:             MaxCapacity,
 		RatedEfficiency:         Efficiency,
@@ -300,14 +268,14 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.CurrentRange = kilometersToMiles(batteryHealth.CurrentRange)
 	}
 
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := BatteryHealthV1Envelope{
+		Data: BatteryHealthV1Data{
+			Car: CarRefV1{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			BatteryHealth: batteryHealth,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: UnitsLengthTempV1{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

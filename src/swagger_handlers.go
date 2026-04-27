@@ -3,38 +3,38 @@ package main
 // @Summary API root
 // @Tags System
 // @Produce json
-// @Success 200 {object} SwaggerMessageResponse
+// @Success 200 {object} APISystemMessageResponse
 // @Router / [get]
 func swaggerAPIRoot() {}
 
 // @Summary API v1 root
 // @Tags System
 // @Produce json
-// @Success 200 {object} SwaggerMessageResponse
+// @Success 200 {object} APISystemMessageResponse
 // @Router /v1 [get]
 func swaggerAPIV1Root() {}
 
 // @Summary Ping
 // @Tags System
 // @Produce json
-// @Success 200 {object} SwaggerMessageResponse
+// @Success 200 {object} APISystemMessageResponse
 // @Router /ping [get]
 func swaggerPing() {}
 
 // @Summary List cars
+// @Description Returns all cars. Nullable DB fields may appear as empty string or 0 in JSON. Legacy: some failures still return HTTP 200 with JSON body containing only an error string field.
 // @Tags Compatible API
 // @Produce json
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} CarsV1Envelope
 // @Router /v1/cars [get]
 func swaggerCars() {}
 
 // @Summary Get car
+// @Description Returns the matching car in data.cars (usually one item). Legacy: some failures still return HTTP 200 with JSON body containing only an error string field.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} CarsV1Envelope
 // @Router /v1/cars/{CarID} [get]
 func swaggerCar() {}
 
@@ -43,8 +43,7 @@ func swaggerCar() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} BatteryHealthV1Envelope
 // @Router /v1/cars/{CarID}/battery-health [get]
 func swaggerBatteryHealth() {}
 
@@ -60,8 +59,7 @@ func swaggerBatteryHealth() {}
 // @Param offset query int false "Offset alias"
 // @Param sort query string false "start_date|-start_date|duration|-duration|cost|-cost|energy|-energy"
 // @Param include query string false "summary,location,energy,cost"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} ChargesListV1Envelope
 // @Router /v1/cars/{CarID}/charges [get]
 func swaggerCharges() {}
 
@@ -69,8 +67,7 @@ func swaggerCharges() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} CurrentChargeV1Envelope
 // @Router /v1/cars/{CarID}/charges/current [get]
 func swaggerCurrentCharge() {}
 
@@ -79,8 +76,7 @@ func swaggerCurrentCharge() {}
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
 // @Param ChargeID path int true "Charge ID"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} ChargeDetailsV1Envelope
 // @Router /v1/cars/{CarID}/charges/{ChargeID} [get]
 func swaggerChargeDetails() {}
 
@@ -88,8 +84,7 @@ func swaggerChargeDetails() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} EnabledCommandsV1Envelope
 // @Router /v1/cars/{CarID}/command [get]
 func swaggerCommandCatalog() {}
 
@@ -98,8 +93,7 @@ func swaggerCommandCatalog() {}
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
 // @Param Command path string true "Command name"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} TeslaPassthroughJSONBody
 // @Router /v1/cars/{CarID}/command/{Command} [post]
 func swaggerExecuteCommand() {}
 
@@ -117,8 +111,7 @@ func swaggerExecuteCommand() {}
 // @Param offset query int false "Offset alias"
 // @Param sort query string false "start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency"
 // @Param include query string false "summary,locations,energy"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} DrivesListV1Envelope
 // @Router /v1/cars/{CarID}/drives [get]
 func swaggerDrives() {}
 
@@ -127,8 +120,7 @@ func swaggerDrives() {}
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
 // @Param DriveID path int true "Drive ID"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} DriveDetailsV1Envelope
 // @Router /v1/cars/{CarID}/drives/{DriveID} [get]
 func swaggerDriveDetails() {}
 
@@ -136,8 +128,7 @@ func swaggerDriveDetails() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} EnabledCommandsV1Envelope
 // @Router /v1/cars/{CarID}/logging [get]
 func swaggerLoggingGet() {}
 
@@ -146,8 +137,7 @@ func swaggerLoggingGet() {}
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
 // @Param Command path string true "Logging command"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} TeslaPassthroughJSONBody
 // @Router /v1/cars/{CarID}/logging/{Command} [put]
 func swaggerLoggingPut() {}
 
@@ -155,8 +145,7 @@ func swaggerLoggingPut() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} CarStatusV1Envelope
 // @Router /v1/cars/{CarID}/status [get]
 func swaggerStatus() {}
 
@@ -166,8 +155,7 @@ func swaggerStatus() {}
 // @Param CarID path int true "Car ID" default(1)
 // @Param page query int false "Page number"
 // @Param show query int false "Page size"
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} UpdatesListV1Envelope
 // @Router /v1/cars/{CarID}/updates [get]
 func swaggerUpdates() {}
 
@@ -175,16 +163,14 @@ func swaggerUpdates() {}
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} TeslaPassthroughJSONBody
 // @Router /v1/cars/{CarID}/wake_up [post]
 func swaggerWakeUp() {}
 
 // @Summary Global settings
 // @Tags Compatible API
 // @Produce json
-// @Success 200 {object} SwaggerDataResponse
-// @Failure 200 {object} SwaggerErrorResponse
+// @Success 200 {object} GlobalsettingsV1Envelope
 // @Router /v1/globalsettings [get]
 func swaggerGlobalSettings() {}
 

@@ -1,18 +1,12 @@
 basePath: /api
 definitions:
-  main.SwaggerDataResponse:
-    properties:
-      data:
-        additionalProperties: true
-        type: object
-    type: object
-  main.SwaggerErrorResponse:
+  main.APISystemErrorBody:
     properties:
       error:
         example: Unable to load summary.
         type: string
     type: object
-  main.SwaggerMessageResponse:
+  main.APISystemMessageResponse:
     properties:
       message:
         example: pong
@@ -20,6 +14,961 @@ definitions:
       path:
         example: /api/v1
         type: string
+    type: object
+  main.BatteryHealthV1Data:
+    properties:
+      battery_health:
+        $ref: '#/definitions/main.BatteryHealthV1Metrics'
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.BatteryHealthV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.BatteryHealthV1Data'
+    type: object
+  main.BatteryHealthV1Metrics:
+    properties:
+      battery_health_percentage:
+        type: number
+      current_capacity:
+        type: number
+      current_range:
+        type: number
+      max_capacity:
+        type: number
+      max_range:
+        type: number
+      rated_efficiency:
+        type: number
+    type: object
+  main.CarGeodataV1:
+    properties:
+      geofence:
+        type: string
+      latitude:
+        type: number
+      location:
+        $ref: '#/definitions/main.CarLocationV1'
+      longitude:
+        type: number
+    type: object
+  main.CarLocationV1:
+    properties:
+      latitude:
+        type: number
+      longitude:
+        type: number
+    type: object
+  main.CarMQTTStatusPayloadV1:
+    properties:
+      battery_details:
+        $ref: '#/definitions/main.StatusBatteryV1'
+      car_details:
+        $ref: '#/definitions/main.StatusCarDetailsV1'
+      car_exterior:
+        $ref: '#/definitions/main.StatusCarExteriorV1'
+      car_geodata:
+        $ref: '#/definitions/main.CarGeodataV1'
+      car_status:
+        $ref: '#/definitions/main.StatusCarFlagsV1'
+      car_versions:
+        $ref: '#/definitions/main.StatusVersionsV1'
+      charging_details:
+        $ref: '#/definitions/main.StatusChargingV1'
+      climate_details:
+        $ref: '#/definitions/main.StatusClimateV1'
+      display_name:
+        type: string
+      driving_details:
+        $ref: '#/definitions/main.StatusDrivingV1'
+      odometer:
+        type: number
+      state:
+        type: string
+      state_since:
+        type: string
+      tpms_details:
+        $ref: '#/definitions/main.StatusTPMSV1'
+    type: object
+  main.CarRefV1:
+    properties:
+      car_id:
+        type: integer
+      car_name:
+        type: string
+    type: object
+  main.CarStatusV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      status:
+        $ref: '#/definitions/main.CarMQTTStatusPayloadV1'
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempPressureV1'
+    type: object
+  main.CarStatusV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.CarStatusV1Data'
+    type: object
+  main.CarsV1Car:
+    properties:
+      car_details:
+        $ref: '#/definitions/main.CarsV1CarDetails'
+      car_exterior:
+        $ref: '#/definitions/main.CarsV1CarExterior'
+      car_id:
+        example: 1
+        type: integer
+      car_settings:
+        $ref: '#/definitions/main.CarsV1CarSettings'
+      name:
+        example: My Tesla
+        type: string
+      teslamate_details:
+        $ref: '#/definitions/main.CarsV1TeslaMateMeta'
+      teslamate_stats:
+        $ref: '#/definitions/main.CarsV1TeslaMateStats'
+    type: object
+  main.CarsV1CarDetails:
+    properties:
+      efficiency:
+        example: 145
+        type: number
+      eid:
+        example: 123456789
+        type: integer
+      model:
+        example: Model 3
+        type: string
+      trim_badging:
+        example: ""
+        type: string
+      vid:
+        example: 987654321
+        type: integer
+      vin:
+        example: 5YJ3E1EA1KF000000
+        type: string
+    type: object
+  main.CarsV1CarExterior:
+    properties:
+      exterior_color:
+        type: string
+      spoiler_type:
+        type: string
+      wheel_type:
+        type: string
+    type: object
+  main.CarsV1CarSettings:
+    properties:
+      free_supercharging:
+        type: boolean
+      req_not_unlocked:
+        type: boolean
+      suspend_after_idle_min:
+        example: 10
+        type: integer
+      suspend_min:
+        example: 15
+        type: integer
+      use_streaming_api:
+        type: boolean
+    type: object
+  main.CarsV1Data:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/main.CarsV1Car'
+        type: array
+    type: object
+  main.CarsV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.CarsV1Data'
+    type: object
+  main.CarsV1TeslaMateMeta:
+    properties:
+      inserted_at:
+        example: "2026-04-01T12:00:00+08:00"
+        type: string
+      updated_at:
+        example: "2026-04-01T12:00:00+08:00"
+        type: string
+    type: object
+  main.CarsV1TeslaMateStats:
+    properties:
+      total_charges:
+        example: 120
+        type: integer
+      total_drives:
+        example: 340
+        type: integer
+      total_updates:
+        example: 5
+        type: integer
+    type: object
+  main.ChargeBatteryStartCurrentV1:
+    properties:
+      current_battery_level:
+        type: integer
+      start_battery_level:
+        type: integer
+    type: object
+  main.ChargeBatteryStartEndV1:
+    properties:
+      end_battery_level:
+        type: integer
+      start_battery_level:
+        type: integer
+    type: object
+  main.ChargeChargerHardwareV1:
+    properties:
+      charger_actual_current:
+        type: integer
+      charger_phases:
+        type: integer
+      charger_pilot_current:
+        type: integer
+      charger_power:
+        type: integer
+      charger_voltage:
+        type: integer
+    type: object
+  main.ChargeDetailBatteryInfoV1:
+    properties:
+      battery_heater:
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        type: boolean
+      ideal_battery_range:
+        type: number
+      rated_battery_range:
+        type: number
+    type: object
+  main.ChargeDetailFullV1:
+    properties:
+      address:
+        type: string
+      battery_details:
+        $ref: '#/definitions/main.ChargeBatteryStartEndV1'
+      charge_details:
+        items:
+          $ref: '#/definitions/main.ChargeDetailRowV1'
+        type: array
+      charge_energy_added:
+        type: number
+      charge_energy_used:
+        type: number
+      charge_id:
+        type: integer
+      cost:
+        type: number
+      duration_min:
+        type: integer
+      duration_str:
+        type: string
+      end_date:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      odometer:
+        type: number
+      outside_temp_avg:
+        type: number
+      range_ideal:
+        $ref: '#/definitions/main.ChargeRangeStartEndV1'
+      range_rated:
+        $ref: '#/definitions/main.ChargeRangeStartEndV1'
+      start_date:
+        type: string
+    type: object
+  main.ChargeDetailRowV1:
+    properties:
+      battery_info:
+        $ref: '#/definitions/main.ChargeDetailBatteryInfoV1'
+      battery_level:
+        type: integer
+      charge_energy_added:
+        type: number
+      charger_details:
+        $ref: '#/definitions/main.ChargeChargerHardwareV1'
+      conn_charge_cable:
+        type: string
+      date:
+        type: string
+      detail_id:
+        type: integer
+      fast_charger_info:
+        $ref: '#/definitions/main.ChargeFastChargerDetailV1'
+      not_enough_power_to_heat:
+        type: boolean
+      outside_temp:
+        type: number
+      usable_battery_level:
+        type: integer
+    type: object
+  main.ChargeDetailsV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      charge:
+        $ref: '#/definitions/main.ChargeDetailFullV1'
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.ChargeDetailsV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.ChargeDetailsV1Data'
+    type: object
+  main.ChargeFastChargerCurrentV1:
+    properties:
+      fast_charger_brand:
+        type: string
+      fast_charger_present:
+        type: boolean
+      fast_charger_type:
+        type: string
+    type: object
+  main.ChargeFastChargerDetailV1:
+    properties:
+      fast_charger_brand:
+        type: string
+      fast_charger_present:
+        type: boolean
+      fast_charger_type:
+        type: string
+    type: object
+  main.ChargeListItemV1:
+    properties:
+      address:
+        type: string
+      battery_details:
+        $ref: '#/definitions/main.ChargeBatteryStartEndV1'
+      charge_energy_added:
+        type: number
+      charge_energy_used:
+        type: number
+      charge_id:
+        type: integer
+      cost:
+        type: number
+      duration_min:
+        type: integer
+      duration_str:
+        type: string
+      end_date:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      odometer:
+        type: number
+      outside_temp_avg:
+        type: number
+      range_ideal:
+        $ref: '#/definitions/main.ChargeRangeStartEndV1'
+      range_rated:
+        $ref: '#/definitions/main.ChargeRangeStartEndV1'
+      start_date:
+        type: string
+    type: object
+  main.ChargeRangeStartEndV1:
+    properties:
+      end_range:
+        type: number
+      start_range:
+        type: number
+    type: object
+  main.ChargeRatedRangeProgressV1:
+    properties:
+      added_range:
+        type: number
+      current_range:
+        type: number
+      start_range:
+        type: number
+    type: object
+  main.ChargesListV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      charges:
+        items:
+          $ref: '#/definitions/main.ChargeListItemV1'
+        type: array
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.ChargesListV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.ChargesListV1Data'
+    type: object
+  main.CurrentChargeBatteryInfoV1:
+    properties:
+      battery_heater:
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        type: boolean
+      rated_battery_range:
+        type: number
+    type: object
+  main.CurrentChargeDetailRowV1:
+    properties:
+      battery_info:
+        $ref: '#/definitions/main.CurrentChargeBatteryInfoV1'
+      battery_level:
+        type: integer
+      charge_energy_added:
+        type: number
+      charger_details:
+        $ref: '#/definitions/main.ChargeChargerHardwareV1'
+      conn_charge_cable: {}
+      date:
+        type: string
+      detail_id:
+        type: integer
+      fast_charger_info:
+        $ref: '#/definitions/main.ChargeFastChargerCurrentV1'
+      not_enough_power_to_heat:
+        type: boolean
+      outside_temp:
+        type: number
+      usable_battery_level:
+        type: integer
+    type: object
+  main.CurrentChargeV1:
+    properties:
+      address:
+        type: string
+      battery_details:
+        $ref: '#/definitions/main.ChargeBatteryStartCurrentV1'
+      charge_details:
+        items:
+          $ref: '#/definitions/main.CurrentChargeDetailRowV1'
+        type: array
+      charge_energy_added:
+        type: number
+      charge_id:
+        type: integer
+      cost:
+        type: number
+      duration_min:
+        type: integer
+      duration_str:
+        type: string
+      is_charging:
+        type: boolean
+      odometer:
+        type: number
+      outside_temp_avg:
+        type: number
+      rated_range:
+        $ref: '#/definitions/main.ChargeRatedRangeProgressV1'
+      start_date:
+        type: string
+    type: object
+  main.CurrentChargeV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      charge:
+        $ref: '#/definitions/main.CurrentChargeV1'
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.CurrentChargeV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.CurrentChargeV1Data'
+    type: object
+  main.DriveBatteryWindowV1:
+    properties:
+      end_battery_level:
+        type: integer
+      end_usable_battery_level:
+        type: integer
+      is_sufficiently_precise:
+        type: boolean
+      reduced_range:
+        type: boolean
+      start_battery_level:
+        type: integer
+      start_usable_battery_level:
+        type: integer
+    type: object
+  main.DriveDetailFullV1:
+    properties:
+      battery_details:
+        $ref: '#/definitions/main.DriveBatteryWindowV1'
+      consumption_net:
+        type: number
+      drive_details:
+        items:
+          $ref: '#/definitions/main.DrivePositionRowV1'
+        type: array
+      drive_id:
+        type: integer
+      duration_min:
+        type: integer
+      duration_str:
+        type: string
+      end_address:
+        type: string
+      end_date:
+        type: string
+      energy_consumed_net:
+        type: number
+      inside_temp_avg:
+        type: number
+      odometer_details:
+        $ref: '#/definitions/main.DriveOdometerV1'
+      outside_temp_avg:
+        type: number
+      power_max:
+        type: integer
+      power_min:
+        type: integer
+      range_ideal:
+        $ref: '#/definitions/main.DriveRangeIdealRatedV1'
+      range_rated:
+        $ref: '#/definitions/main.DriveRangeIdealRatedV1'
+      speed_avg:
+        type: number
+      speed_max:
+        type: integer
+      start_address:
+        type: string
+      start_date:
+        type: string
+    type: object
+  main.DriveDetailsV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      drive:
+        $ref: '#/definitions/main.DriveDetailFullV1'
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.DriveDetailsV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.DriveDetailsV1Data'
+    type: object
+  main.DriveListItemV1:
+    properties:
+      battery_details:
+        $ref: '#/definitions/main.DriveBatteryWindowV1'
+      consumption_net:
+        type: number
+      drive_id:
+        type: integer
+      duration_min:
+        type: integer
+      duration_str:
+        type: string
+      end_address:
+        type: string
+      end_date:
+        type: string
+      energy_consumed_net:
+        type: number
+      inside_temp_avg:
+        type: number
+      odometer_details:
+        $ref: '#/definitions/main.DriveOdometerV1'
+      outside_temp_avg:
+        type: number
+      power_max:
+        type: integer
+      power_min:
+        type: integer
+      range_ideal:
+        $ref: '#/definitions/main.DriveRangeIdealRatedV1'
+      range_rated:
+        $ref: '#/definitions/main.DriveRangeIdealRatedV1'
+      speed_avg:
+        type: number
+      speed_max:
+        type: integer
+      start_address:
+        type: string
+      start_date:
+        type: string
+    type: object
+  main.DriveOdometerV1:
+    properties:
+      odometer_distance:
+        type: number
+      odometer_end:
+        type: number
+      odometer_start:
+        type: number
+    type: object
+  main.DrivePositionBatteryV1:
+    properties:
+      battery_heater:
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        type: boolean
+      est_battery_range:
+        type: number
+      ideal_battery_range:
+        type: number
+      rated_battery_range:
+        type: number
+    type: object
+  main.DrivePositionClimateV1:
+    properties:
+      driver_temp_setting:
+        type: number
+      fan_status:
+        type: integer
+      inside_temp:
+        type: number
+      is_climate_on:
+        type: boolean
+      is_front_defroster_on:
+        type: boolean
+      is_rear_defroster_on:
+        type: boolean
+      outside_temp:
+        type: number
+      passenger_temp_setting:
+        type: number
+    type: object
+  main.DrivePositionRowV1:
+    properties:
+      battery_info:
+        $ref: '#/definitions/main.DrivePositionBatteryV1'
+      battery_level:
+        type: integer
+      climate_info:
+        $ref: '#/definitions/main.DrivePositionClimateV1'
+      date:
+        type: string
+      detail_id:
+        type: integer
+      elevation:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+      odometer:
+        type: number
+      power:
+        type: integer
+      speed:
+        type: integer
+      usable_battery_level:
+        type: integer
+    type: object
+  main.DriveRangeIdealRatedV1:
+    properties:
+      end_range:
+        type: number
+      range_diff:
+        type: number
+      start_range:
+        type: number
+    type: object
+  main.DrivesListV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      drives:
+        items:
+          $ref: '#/definitions/main.DriveListItemV1'
+        type: array
+      units:
+        $ref: '#/definitions/main.UnitsLengthTempV1'
+    type: object
+  main.DrivesListV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.DrivesListV1Data'
+    type: object
+  main.EnabledCommandsV1Envelope:
+    properties:
+      enabled_commands:
+        items:
+          type: string
+        type: array
+    type: object
+  main.GlobalsettingsV1AccountInfo:
+    properties:
+      inserted_at:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  main.GlobalsettingsV1Data:
+    properties:
+      settings:
+        $ref: '#/definitions/main.GlobalsettingsV1Settings'
+    type: object
+  main.GlobalsettingsV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.GlobalsettingsV1Data'
+    type: object
+  main.GlobalsettingsV1GUI:
+    properties:
+      language:
+        type: string
+      preferred_range:
+        type: string
+    type: object
+  main.GlobalsettingsV1Settings:
+    properties:
+      account_info:
+        $ref: '#/definitions/main.GlobalsettingsV1AccountInfo'
+      setting_id:
+        type: integer
+      teslamate_units:
+        $ref: '#/definitions/main.GlobalsettingsV1Units'
+      teslamate_urls:
+        $ref: '#/definitions/main.GlobalsettingsV1URLs'
+      teslamate_webgui:
+        $ref: '#/definitions/main.GlobalsettingsV1GUI'
+    type: object
+  main.GlobalsettingsV1URLs:
+    properties:
+      base_url:
+        type: string
+      grafana_url:
+        type: string
+    type: object
+  main.GlobalsettingsV1Units:
+    properties:
+      unit_of_length:
+        type: string
+      unit_of_temperature:
+        type: string
+    type: object
+  main.StatusActiveRouteV1:
+    properties:
+      destination:
+        type: string
+      distance_to_arrival:
+        type: number
+      energy_at_arrival:
+        type: integer
+      location:
+        $ref: '#/definitions/main.CarLocationV1'
+      minutes_to_arrival:
+        type: number
+      traffic_minutes_delay:
+        type: number
+    type: object
+  main.StatusBatteryV1:
+    properties:
+      battery_level:
+        type: integer
+      est_battery_range:
+        type: number
+      ideal_battery_range:
+        type: number
+      rated_battery_range:
+        type: number
+      usable_battery_level:
+        type: integer
+    type: object
+  main.StatusCarDetailsV1:
+    properties:
+      model:
+        type: string
+      trim_badging:
+        type: string
+    type: object
+  main.StatusCarExteriorV1:
+    properties:
+      exterior_color:
+        type: string
+      spoiler_type:
+        type: string
+      wheel_type:
+        type: string
+    type: object
+  main.StatusCarFlagsV1:
+    properties:
+      center_display_state:
+        type: integer
+      doors_open:
+        type: boolean
+      driver_front_door_open:
+        type: boolean
+      driver_rear_door_open:
+        type: boolean
+      frunk_open:
+        type: boolean
+      healthy:
+        type: boolean
+      is_user_present:
+        type: boolean
+      locked:
+        type: boolean
+      passenger_front_door_open:
+        type: boolean
+      passenger_rear_door_open:
+        type: boolean
+      sentry_mode:
+        type: boolean
+      trunk_open:
+        type: boolean
+      windows_open:
+        type: boolean
+    type: object
+  main.StatusChargingV1:
+    properties:
+      charge_current_request:
+        type: integer
+      charge_current_request_max:
+        type: integer
+      charge_energy_added:
+        type: number
+      charge_limit_soc:
+        type: integer
+      charge_port_door_open:
+        type: boolean
+      charger_actual_current:
+        type: number
+      charger_phases:
+        type: integer
+      charger_power:
+        type: number
+      charger_voltage:
+        type: integer
+      charging_state:
+        type: string
+      plugged_in:
+        type: boolean
+      scheduled_charging_start_time:
+        type: string
+      time_to_full_charge:
+        type: number
+    type: object
+  main.StatusClimateV1:
+    properties:
+      climate_keeper_mode:
+        type: string
+      inside_temp:
+        type: number
+      is_climate_on:
+        type: boolean
+      is_preconditioning:
+        type: boolean
+      outside_temp:
+        type: number
+    type: object
+  main.StatusDrivingV1:
+    properties:
+      active_route:
+        $ref: '#/definitions/main.StatusActiveRouteV1'
+      active_route_destination:
+        type: string
+      active_route_latitude:
+        type: number
+      active_route_longitude:
+        type: number
+      elevation:
+        type: integer
+      heading:
+        type: integer
+      power:
+        type: integer
+      shift_state:
+        type: string
+      speed:
+        type: integer
+    type: object
+  main.StatusTPMSV1:
+    properties:
+      tpms_pressure_fl:
+        type: number
+      tpms_pressure_fr:
+        type: number
+      tpms_pressure_rl:
+        type: number
+      tpms_pressure_rr:
+        type: number
+      tpms_soft_warning_fl:
+        type: boolean
+      tpms_soft_warning_fr:
+        type: boolean
+      tpms_soft_warning_rl:
+        type: boolean
+      tpms_soft_warning_rr:
+        type: boolean
+    type: object
+  main.StatusVersionsV1:
+    properties:
+      update_available:
+        type: boolean
+      update_version:
+        type: string
+      version:
+        type: string
+    type: object
+  main.TeslaPassthroughJSONBody:
+    additionalProperties: true
+    type: object
+  main.UnitsLengthTempPressureV1:
+    properties:
+      unit_of_length:
+        type: string
+      unit_of_pressure:
+        type: string
+      unit_of_temperature:
+        type: string
+    type: object
+  main.UnitsLengthTempV1:
+    properties:
+      unit_of_length:
+        type: string
+      unit_of_temperature:
+        type: string
+    type: object
+  main.UpdatesListItemV1:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+      update_id:
+        type: integer
+      version:
+        type: string
+    type: object
+  main.UpdatesListV1Data:
+    properties:
+      car:
+        $ref: '#/definitions/main.CarRefV1'
+      updates:
+        items:
+          $ref: '#/definitions/main.UpdatesListItemV1'
+        type: array
+    type: object
+  main.UpdatesListV1Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.UpdatesListV1Data'
     type: object
   main.v1Error:
     properties:
@@ -97,7 +1046,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerMessageResponse'
+            $ref: '#/definitions/main.APISystemMessageResponse'
       summary: API root
       tags:
       - System
@@ -109,7 +1058,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerMessageResponse'
+            $ref: '#/definitions/main.APISystemMessageResponse'
       summary: Health check
       tags:
       - System
@@ -121,7 +1070,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerMessageResponse'
+            $ref: '#/definitions/main.APISystemMessageResponse'
       summary: Ping
       tags:
       - System
@@ -133,11 +1082,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerMessageResponse'
+            $ref: '#/definitions/main.APISystemMessageResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.APISystemErrorBody'
       summary: Readiness check
       tags:
       - System
@@ -149,24 +1098,30 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerMessageResponse'
+            $ref: '#/definitions/main.APISystemMessageResponse'
       summary: API v1 root
       tags:
       - System
   /v1/cars:
     get:
+      description: 'Returns all cars. Nullable DB fields may appear as empty string
+        or 0 in JSON. Legacy: some failures still return HTTP 200 with JSON body containing
+        only an error string field.'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.CarsV1Envelope'
       summary: List cars
       tags:
       - Compatible API
   /v1/cars/{CarID}:
     get:
+      description: 'Returns the matching car in data.cars (usually one item). Legacy:
+        some failures still return HTTP 200 with JSON body containing only an error
+        string field.'
       parameters:
       - default: 1
         description: Car ID
@@ -180,7 +1135,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.CarsV1Envelope'
       summary: Get car
       tags:
       - Compatible API
@@ -201,7 +1156,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.BatteryHealthV1Envelope'
       summary: Battery health
       tags:
       - Compatible API
@@ -305,7 +1260,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.ChargesListV1Envelope'
       summary: List charges
       tags:
       - Compatible API
@@ -329,7 +1284,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.ChargeDetailsV1Envelope'
       summary: Charge details
       tags:
       - Compatible API
@@ -348,7 +1303,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.CurrentChargeV1Envelope'
       summary: Current charge
       tags:
       - Compatible API
@@ -367,7 +1322,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.EnabledCommandsV1Envelope'
       summary: List command options
       tags:
       - Compatible API
@@ -391,7 +1346,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
       summary: Execute command
       tags:
       - Compatible API
@@ -557,7 +1512,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.DrivesListV1Envelope'
       summary: List drives
       tags:
       - Compatible API
@@ -581,7 +1536,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.DriveDetailsV1Envelope'
       summary: Drive details
       tags:
       - Compatible API
@@ -656,7 +1611,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.EnabledCommandsV1Envelope'
       summary: Get logging status
       tags:
       - Compatible API
@@ -680,7 +1635,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
       summary: Update logging status
       tags:
       - Compatible API
@@ -857,7 +1812,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.CarStatusV1Envelope'
       summary: Current vehicle status
       tags:
       - Compatible API
@@ -938,7 +1893,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.UpdatesListV1Envelope'
       summary: List updates
       tags:
       - Compatible API
@@ -957,7 +1912,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
       summary: Wake up vehicle
       tags:
       - Compatible API
@@ -969,7 +1924,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.SwaggerErrorResponse'
+            $ref: '#/definitions/main.GlobalsettingsV1Envelope'
       summary: Global settings
       tags:
       - Compatible API

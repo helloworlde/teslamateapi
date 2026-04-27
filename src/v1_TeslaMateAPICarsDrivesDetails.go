@@ -20,112 +20,10 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 	CarID := convertStringToInteger(c.Param("CarID"))
 	DriveID := convertStringToInteger(c.Param("DriveID"))
 
-	// creating structs for /cars/<CarID>/drives/<DriveID>
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// OdometerDetails struct - child of Drives
-	type OdometerDetails struct {
-		OdometerStart    float64 `json:"odometer_start"`    // float64
-		OdometerEnd      float64 `json:"odometer_end"`      // float64
-		OdometerDistance float64 `json:"odometer_distance"` // float64
-	}
-	// BatteryDetails struct - child of Drives
-	type BatteryDetails struct {
-		StartUsableBatteryLevel int  `json:"start_usable_battery_level"` // int
-		StartBatteryLevel       int  `json:"start_battery_level"`        // int
-		EndUsableBatteryLevel   int  `json:"end_usable_battery_level"`   // int
-		EndBatteryLevel         int  `json:"end_battery_level"`          // int
-		ReducedRange            bool `json:"reduced_range"`              // bool
-		IsSufficientlyPrecise   bool `json:"is_sufficiently_precise"`    // bool
-	}
-	// PreferredRange struct - child of Drives
-	type PreferredRange struct {
-		StartRange float64 `json:"start_range"` // float64
-		EndRange   float64 `json:"end_range"`   // float64
-		RangeDiff  float64 `json:"range_diff"`  // float64
-	}
-	// ClimateInfo struct - child of DriveDetails
-	type ClimateInfo struct {
-		InsideTemp           NullFloat64 `json:"inside_temp"`            // numeric(4,1)
-		OutsideTemp          NullFloat64 `json:"outside_temp"`           // numeric(4,1)
-		IsClimateOn          NullBool    `json:"is_climate_on"`          // boolean
-		FanStatus            NullInt64   `json:"fan_status"`             // integer
-		DriverTempSetting    NullFloat64 `json:"driver_temp_setting"`    // numeric(4,1)
-		PassengerTempSetting NullFloat64 `json:"passenger_temp_setting"` // numeric(4,1)
-		IsRearDefrosterOn    NullBool    `json:"is_rear_defroster_on"`   // boolean
-		IsFrontDefrosterOn   NullBool    `json:"is_front_defroster_on"`  // boolean
-	}
-	// BatteryInfo struct - child of DriveDetails
-	type BatteryInfo struct {
-		EstBatteryRange      NullFloat64 `json:"est_battery_range"`       // numeric(6,2)
-		IdealBatteryRange    NullFloat64 `json:"ideal_battery_range"`     // numeric(6,2)
-		RatedBatteryRange    NullFloat64 `json:"rated_battery_range"`     // numeric(6,2)
-		BatteryHeater        NullBool    `json:"battery_heater"`          // boolean
-		BatteryHeaterOn      NullBool    `json:"battery_heater_on"`       // boolean
-		BatteryHeaterNoPower NullBool    `json:"battery_heater_no_power"` // boolean
-	}
-	// DriveDetails struct - child of Drive
-	type DriveDetails struct {
-		DetailID           int         `json:"detail_id"`            // integer
-		Date               string      `json:"date"`                 // timestamp without time zone
-		Latitude           float64     `json:"latitude"`             // numeric(8,6)
-		Longitude          float64     `json:"longitude"`            // numeric(9,6)
-		Speed              int         `json:"speed"`                // smallint
-		Power              int         `json:"power"`                // smallint
-		Odometer           float64     `json:"odometer"`             // double precision
-		BatteryLevel       int         `json:"battery_level"`        // smallint
-		UsableBatteryLevel NullInt64   `json:"usable_battery_level"` // smallint
-		Elevation          NullInt64   `json:"elevation"`            // smallint
-		ClimateInfo        ClimateInfo `json:"climate_info"`         // struct
-		BatteryInfo        BatteryInfo `json:"battery_info"`         // struct
-	}
-	// Drive struct - child of Data
-	type Drive struct {
-		DriveID           int             `json:"drive_id"`            // int
-		StartDate         string          `json:"start_date"`          // string
-		EndDate           string          `json:"end_date"`            // string
-		StartAddress      string          `json:"start_address"`       // string
-		EndAddress        string          `json:"end_address"`         // string
-		OdometerDetails   OdometerDetails `json:"odometer_details"`    // OdometerDetails
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		SpeedMax          int             `json:"speed_max"`           // int
-		SpeedAvg          float64         `json:"speed_avg"`           // float64
-		PowerMax          int             `json:"power_max"`           // int
-		PowerMin          int             `json:"power_min"`           // int
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange  `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange  `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		InsideTempAvg     float64         `json:"inside_temp_avg"`     // float64
-		EnergyConsumedNet *float64        `json:"energy_consumed_net"` // Energy consumed (net) in kWh
-		ConsumptionNet    *float64        `json:"consumption_net"`     // Ø Consumption (net) per distance unit
-		DriveDetails      []DriveDetails  `json:"drive_details"`       // struct
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		Drive          Drive          `json:"drive"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
-	// creating required vars
 	var (
 		CarName                       NullString
-		drive                         Drive
-		DriveDetailsData              []DriveDetails
+		drive                         DriveDetailFullV1
+		DriveDetailsData              []DrivePositionRowV1
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -304,7 +202,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating drivedetails object based on struct
-		drivedetails := DriveDetails{}
+		drivedetails := DrivePositionRowV1{}
 
 		// scanning row and putting values into the drive
 		err = rows.Scan(
@@ -370,16 +268,14 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		return
 	}
 
-	//
-	// build the data-blob
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := DriveDetailsV1Envelope{
+		Data: DriveDetailsV1Data{
+			Car: CarRefV1{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			Drive: drive,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: UnitsLengthTempV1{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

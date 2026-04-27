@@ -30,7 +30,7 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 
 	// if request method is GET return list of commands
 	if c.Request.Method == http.MethodGet {
-		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsLoggingV1", gin.H{"enabled_commands": allowList})
+		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsLoggingV1", EnabledCommandsV1Envelope{EnabledCommands: allowList})
 		return
 	}
 

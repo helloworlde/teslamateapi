@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -24,6 +25,50 @@ func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 		if !strings.Contains(s, sub) {
 			t.Fatalf("OpenAPI doc missing %q", sub)
 		}
+	}
+}
+
+func TestOpenAPIGetCar200SchemaIsCarsEnvelope(t *testing.T) {
+	raw := docs.SwaggerInfo.ReadDoc()
+	var root map[string]any
+	if err := json.Unmarshal([]byte(raw), &root); err != nil {
+		t.Fatalf("parse openapi: %v", err)
+	}
+	paths, _ := root["paths"].(map[string]any)
+	for _, p := range []string{"/v1/cars", "/v1/cars/{CarID}"} {
+		node, ok := paths[p].(map[string]any)
+		if !ok {
+			t.Fatalf("missing path %q", p)
+		}
+		get, ok := node["get"].(map[string]any)
+		if !ok {
+			t.Fatalf("path %q missing get", p)
+		}
+		responses, ok := get["responses"].(map[string]any)
+		if !ok {
+			t.Fatalf("path %q missing responses", p)
+		}
+		r200, ok := responses["200"].(map[string]any)
+		if !ok {
+			t.Fatalf("path %q missing 200", p)
+		}
+		schema, ok := r200["schema"].(map[string]any)
+		if !ok {
+			t.Fatalf("path %q 200 missing schema", p)
+		}
+		ref, _ := schema["$ref"].(string)
+		if want := "#/definitions/main.CarsV1Envelope"; ref != want {
+			t.Fatalf("path %q 200 schema ref = %q want %q", p, ref, want)
+		}
+	}
+	defs, _ := root["definitions"].(map[string]any)
+	def, ok := defs["main.CarsV1Envelope"].(map[string]any)
+	if !ok {
+		t.Fatal("missing definitions.main.CarsV1Envelope")
+	}
+	props, _ := def["properties"].(map[string]any)
+	if props["data"] == nil {
+		t.Fatal("CarsV1Envelope.properties.data missing")
 	}
 }
 

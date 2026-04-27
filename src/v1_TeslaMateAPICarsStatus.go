@@ -445,159 +445,10 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		return
 	}
 
-	// creating structs for /cars
-	// BatteryDetails struct - child of MQTTInformation
-	type BatteryDetails struct {
-		EstBatteryRange    float64 `json:"est_battery_range"`    // 372.5 - Estimated Range in km
-		RatedBatteryRange  float64 `json:"rated_battery_range"`  // 401.63 - Rated Range in km
-		IdealBatteryRange  float64 `json:"ideal_battery_range"`  // 335.79 - Ideal Range in km
-		BatteryLevel       int     `json:"battery_level"`        // 88 - Battery Level Percentage
-		UsableBatteryLevel int     `json:"usable_battery_level"` // 85 - Usable battery level percentage
-	}
-	// CarDetails struct - child of MQTTInformation
-	type CarDetails struct {
-		Model       string `json:"model"`        // character varying(255)
-		TrimBadging string `json:"trim_badging"` // P100D - Trim badging
-	}
-	// CarExterior struct - child of MQTTInformation
-	type CarExterior struct {
-		ExteriorColor string `json:"exterior_color"` // DeepBlue - The exterior color
-		SpoilerType   string `json:"spoiler_type"`   // None - The spoiler type
-		WheelType     string `json:"wheel_type"`     // Pinwheel18 - The wheel type
-	}
-	// CarLocation struct - child of multiple structs
-	type CarLocation struct {
-		Latitude  float64 `json:"latitude"`  // 35.278131 - Last reported car latitude
-		Longitude float64 `json:"longitude"` // 29.744801 - Last reported car longitude
-	}
-	// CarGeodata struct - child of MQTTInformation
-	type CarGeodata struct {
-		Geofence  string      `json:"geofence"`  // Home - The name of the Geo-fence, if one exists at the current position
-		Location  CarLocation `json:"location"`  // struct
-		Latitude  float64     `json:"latitude"`  // DEPRECATED 35.278131 - Last reported car latitude
-		Longitude float64     `json:"longitude"` // DEPRECATED 29.744801 - Last reported car longitude
-	}
-	// CarStatus struct - child of MQTTInformation
-	type CarStatus struct {
-		Healthy                bool `json:"healthy"`                   // true - Health status of the logger for that vehicle
-		Locked                 bool `json:"locked"`                    // true - Indicates if the car is locked
-		SentryMode             bool `json:"sentry_mode"`               // false - Indicates if Sentry Mode is active
-		WindowsOpen            bool `json:"windows_open"`              // false - Indicates if any of the windows are open
-		DoorsOpen              bool `json:"doors_open"`                // false - Indicates if any of the doors are open
-		DriverFrontDoorOpen    bool `json:"driver_front_door_open"`    // false - Indicates if the driver-side front door is open
-		DriverRearDoorOpen     bool `json:"driver_rear_door_open"`     // false - Indicates if the driver-side rear door is open
-		PassengerFrontDoorOpen bool `json:"passenger_front_door_open"` // false - Indicates if the passenger-side front door is open
-		PassengerRearDoorOpen  bool `json:"passenger_rear_door_open"`  // false - Indicates if the passenger-side rear door is open
-		TrunkOpen              bool `json:"trunk_open"`                // false - Indicates if the trunk is open
-		FrunkOpen              bool `json:"frunk_open"`                // false - Indicates if the frunk is open
-		IsUserPresent          bool `json:"is_user_present"`           // false - Indicates if a user is present in the vehicle
-		CenterDisplayState     int  `json:"center_display_state"`      // 0 - Center Display State
-	}
-	// CarVersions struct - child of MQTTInformation
-	type CarVersions struct {
-		Version         string `json:"version"`          // 2019.32.12.2 - Software Version
-		UpdateAvailable bool   `json:"update_available"` // false - Indicates if a software update is available
-		UpdateVersion   string `json:"update_version"`   // 2019.32.12.3 - Software version of the available update
-	}
-	// ChargingDetails struct - child of MQTTInformation
-	type ChargingDetails struct {
-		PluggedIn                  bool    `json:"plugged_in"`                    // true - If car is currently plugged into a charger
-		ChargingState              string  `json:"charging_state"`                // "Charging" - Indicates if the car is currently charging
-		ChargeEnergyAdded          float64 `json:"charge_energy_added"`           // 5.06 - Last added energy in kWh
-		ChargeLimitSoc             int     `json:"charge_limit_soc"`              // 90 - Charge Limit Configured in Percentage
-		ChargePortDoorOpen         bool    `json:"charge_port_door_open"`         // true - Indicates if the charger door is open
-		ChargerActualCurrent       float64 `json:"charger_actual_current"`        // 2.05 - Current amperage supplied by charger
-		ChargerPhases              int     `json:"charger_phases"`                // 3 - Number of charger power phases (1-3)
-		ChargerPower               float64 `json:"charger_power"`                 // 48.9 - Charger Power
-		ChargerVoltage             int     `json:"charger_voltage"`               // 240 - Charger Voltage
-		ChargeCurrentRequest       int     `json:"charge_current_request"`        // 40 - How many amps the car wants
-		ChargeCurrentRequestMax    int     `json:"charge_current_request_max"`    // 40 - How many amps the car can have
-		ScheduledChargingStartTime string  `json:"scheduled_charging_start_time"` // 2019-02-29T23:00:07Z - Start time of the scheduled charge
-		TimeToFullCharge           float64 `json:"time_to_full_charge"`           // 1.83 - Hours remaining to full charge
-	}
-	// ClimateDetails struct - child of MQTTInformation
-	type ClimateDetails struct {
-		IsClimateOn       bool    `json:"is_climate_on"`       // true - Indicates if the climate control is on
-		InsideTemp        float64 `json:"inside_temp"`         // 20.8 - Inside Temperature in °C
-		OutsideTemp       float64 `json:"outside_temp"`        // 18.4 - Temperature in °C
-		IsPreconditioning bool    `json:"is_preconditioning"`  // false - Indicates if the vehicle is being preconditioned
-		ClimateKeeperMode string  `json:"climate_keeper_mode"` // dog - Climate Keeper Mode
-	}
-	// ActiveRouteDetails struct - child of DrivingDetails
-	type ActiveRouteDetails struct {
-		Destination         string      `json:"destination"`           // Home - Navigation destination name
-		EnergyAtArrival     int         `json:"energy_at_arrival"`     // 73 - Energy at arrival in kWh
-		DistanceToArrival   float64     `json:"distance_to_arrival"`   // 10.437077034 - Distance to arrival in km
-		MinutesToArrival    float64     `json:"minutes_to_arrival"`    // 23.466667 - Minutes to arrival
-		TrafficMinutesDelay float64     `json:"traffic_minutes_delay"` // 0.0 - Traffic delay in minutes
-		Location            CarLocation `json:"location"`              // struct
-	}
-	// DrivingDetails struct - child of MQTTInformation
-	type DrivingDetails struct {
-		ActiveRoute            ActiveRouteDetails `json:"active_route"`             // struct
-		ActiveRouteDestination string             `json:"active_route_destination"` // DEPRECATED Home - Navigation destination name
-		ActiveRouteLatitude    float64            `json:"active_route_latitude"`    // DEPRECATED 35.278131 - Navigation destination latitude
-		ActiveRouteLongitude   float64            `json:"active_route_longitude"`   // DEPRECATED 29.744801 - Navigation destination longitude
-		ShiftState             string             `json:"shift_state"`              // D - Current/Last Shift State (D/N/R/P)
-		Power                  int                `json:"power"`                    // -9 Current battery power in watts. Positive value on discharge, negative value on charge
-		Speed                  int                `json:"speed"`                    // 12 - Current Speed in km/h
-		Heading                int                `json:"heading"`                  // 340 - Last reported car direction
-		Elevation              int                `json:"elevation"`                // 70 - Current elevation above sea level in meters
-	}
-	// TpmsDetails struct - child of MQTTInformation
-	type TpmsDetails struct {
-		TpmsPressureFL    float64 `json:"tpms_pressure_fl"`     // 2.9 - Tire pressure measure in BAR, front left tire
-		TpmsPressureFR    float64 `json:"tpms_pressure_fr"`     // 2.8 - Tire pressure measure in BAR, front right tire
-		TpmsPressureRL    float64 `json:"tpms_pressure_rl"`     // 2.9 - Tire pressure measure in BAR, rear left tire
-		TpmsPressureRR    float64 `json:"tpms_pressure_rr"`     // 2.8 - Tire pressure measure in BAR, rear right tire
-		TpmsSoftWarningFL bool    `json:"tpms_soft_warning_fl"` // true  - Indicates if the Tire pressure measure is soft warning, front left tire
-		TpmsSoftWarningFR bool    `json:"tpms_soft_warning_fr"` // false - Indicates if the Tire pressure measure is soft warning, front right tire
-		TpmsSoftWarningRL bool    `json:"tpms_soft_warning_rl"` // false - Indicates if the Tire pressure measure is soft warning, rear left tire
-		TpmsSoftWarningRR bool    `json:"tpms_soft_warning_rr"` // false - Indicates if the Tire pressure measure is soft warning, rear right tire
-	}
-	// MQTTInformation struct - child of Cars
-	type MQTTInformation struct {
-		DisplayName     string          `json:"display_name"`     // Blue Thunder - Vehicle Name
-		State           string          `json:"state"`            // asleep - Status of the vehicle (e.g. online, asleep, charging)
-		StateSince      string          `json:"state_since"`      // 2019-02-29T23:00:07Z - Date of the last status change
-		Odometer        float64         `json:"odometer"`         // 1653 - Car odometer in km
-		CarStatus       CarStatus       `json:"car_status"`       // struct
-		CarDetails      CarDetails      `json:"car_details"`      // struct
-		CarExterior     CarExterior     `json:"car_exterior"`     // struct
-		CarGeodata      CarGeodata      `json:"car_geodata"`      // struct
-		CarVersions     CarVersions     `json:"car_versions"`     // struct
-		DrivingDetails  DrivingDetails  `json:"driving_details"`  // struct
-		ClimateDetails  ClimateDetails  `json:"climate_details"`  // struct
-		BatteryDetails  BatteryDetails  `json:"battery_details"`  // struct
-		ChargingDetails ChargingDetails `json:"charging_details"` // struct
-		TpmsDetails     TpmsDetails     `json:"tpms_details"`     // struct
-	}
-	// Cars struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsPressure    string `json:"unit_of_pressure"`    // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car             Car             `json:"car"`
-		MQTTInformation MQTTInformation `json:"status"`
-		TeslaMateUnits  TeslaMateUnits  `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
 	var (
-		CarData                                      Car
-		MQTTInformationData                          MQTTInformation
+		CarData                                      CarRefV1
+		MQTTInformationData                          CarMQTTStatusPayloadV1
 		UnitsLength, UnitsPressure, UnitsTemperature string
 	)
 
@@ -638,13 +489,13 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 	MQTTInformationData.CarExterior.WheelType = stat.MQTTDataWheelType
 	MQTTInformationData.CarExterior.SpoilerType = stat.MQTTDataSpoilerType
 	MQTTInformationData.CarGeodata.Geofence = stat.MQTTDataGeofence
-	MQTTInformationData.CarGeodata.Location = CarLocation(stat.MQTTDataLocation)
+	MQTTInformationData.CarGeodata.Location = CarLocationV1{Latitude: stat.MQTTDataLocation.Latitude, Longitude: stat.MQTTDataLocation.Longitude}
 	MQTTInformationData.DrivingDetails.ActiveRoute.Destination = stat.MQTTDataActiveRoute.Destination
 	MQTTInformationData.DrivingDetails.ActiveRoute.EnergyAtArrival = stat.MQTTDataActiveRoute.EnergyAtArrival
 	MQTTInformationData.DrivingDetails.ActiveRoute.DistanceToArrival = stat.MQTTDataActiveRoute.DistanceToArrival
 	MQTTInformationData.DrivingDetails.ActiveRoute.MinutesToArrival = stat.MQTTDataActiveRoute.MinutesToArrival
 	MQTTInformationData.DrivingDetails.ActiveRoute.TrafficMinutesDelay = stat.MQTTDataActiveRoute.TrafficMinutesDelay
-	MQTTInformationData.DrivingDetails.ActiveRoute.Location = CarLocation(stat.MQTTDataActiveRoute.Location)
+	MQTTInformationData.DrivingDetails.ActiveRoute.Location = CarLocationV1{Latitude: stat.MQTTDataActiveRoute.Location.Latitude, Longitude: stat.MQTTDataActiveRoute.Location.Longitude}
 	MQTTInformationData.DrivingDetails.ShiftState = stat.MQTTDataShiftState
 	MQTTInformationData.DrivingDetails.Power = stat.MQTTDataPower
 	MQTTInformationData.DrivingDetails.Speed = stat.MQTTDataSpeed
@@ -729,13 +580,11 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 	MQTTInformationData.StateSince = getTimeInTimeZone(MQTTInformationData.StateSince)
 	MQTTInformationData.ChargingDetails.ScheduledChargingStartTime = getTimeInTimeZone(MQTTInformationData.ChargingDetails.ScheduledChargingStartTime)
 
-	//
-	// build the data-blob
-	jsonData := JSONData{
-		Data{
+	jsonData := CarStatusV1Envelope{
+		Data: CarStatusV1Data{
 			Car:             CarData,
 			MQTTInformation: MQTTInformationData,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: UnitsLengthTempPressureV1{
 				UnitsLength:      UnitsLength,
 				UnitsPressure:    UnitsPressure,
 				UnitsTemperature: UnitsTemperature,

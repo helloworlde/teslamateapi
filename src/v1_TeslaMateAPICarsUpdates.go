@@ -17,33 +17,9 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
 
-	// creating structs for /cars/<CarID>/updates
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// Updates struct - child of Data
-	type Updates struct {
-		UpdateID  int    `json:"update_id"`  // smallint
-		StartDate string `json:"start_date"` // string
-		EndDate   string `json:"end_date"`   // string
-		Version   string `json:"version"`    // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car     Car       `json:"car"`
-		Updates []Updates `json:"updates"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
-	// creating required vars
 	var (
-		UpdatesData []Updates
-		CarData     Car
+		UpdatesData []UpdatesListItemV1
+		CarData     CarRefV1
 	)
 
 	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
@@ -83,7 +59,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating update object based on struct
-		update := Updates{}
+		update := UpdatesListItemV1{}
 
 		// scanning row and putting values into the update
 		err = rows.Scan(
@@ -116,10 +92,8 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 		return
 	}
 
-	//
-	// build the data-blob
-	jsonData := JSONData{
-		Data{
+	jsonData := UpdatesListV1Envelope{
+		Data: UpdatesListV1Data{
 			Car:     CarData,
 			Updates: UpdatesData,
 		},

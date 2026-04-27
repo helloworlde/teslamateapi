@@ -8,3 +8,6 @@ package main
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+//
+// @tag.name Compatible API
+// @tag.description Original TeslaMateApi-compatible routes. Many handlers still return HTTP 200 on failure with a JSON object containing an error string; success payloads are endpoint-specific.

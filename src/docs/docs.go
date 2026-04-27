@@ -28,7 +28,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerMessageResponse"
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
                         }
                     }
                 }
@@ -47,7 +47,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerMessageResponse"
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
                         }
                     }
                 }
@@ -66,7 +66,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerMessageResponse"
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
                         }
                     }
                 }
@@ -85,13 +85,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerMessageResponse"
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
                         }
                     },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.APISystemErrorBody"
                         }
                     }
                 }
@@ -110,7 +110,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerMessageResponse"
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
                         }
                     }
                 }
@@ -118,6 +118,7 @@ const docTemplate = `{
         },
         "/v1/cars": {
             "get": {
+                "description": "Returns all cars. Nullable DB fields may appear as empty string or 0 in JSON. Legacy: some failures still return HTTP 200 with JSON body containing only an error string field.",
                 "produces": [
                     "application/json"
                 ],
@@ -129,7 +130,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.CarsV1Envelope"
                         }
                     }
                 }
@@ -137,6 +138,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}": {
             "get": {
+                "description": "Returns the matching car in data.cars (usually one item). Legacy: some failures still return HTTP 200 with JSON body containing only an error string field.",
                 "produces": [
                     "application/json"
                 ],
@@ -158,7 +160,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.CarsV1Envelope"
                         }
                     }
                 }
@@ -188,7 +190,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.BatteryHealthV1Envelope"
                         }
                     }
                 }
@@ -339,7 +341,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.ChargesListV1Envelope"
                         }
                     }
                 }
@@ -368,7 +370,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.CurrentChargeV1Envelope"
                         }
                     }
                 }
@@ -404,7 +406,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.ChargeDetailsV1Envelope"
                         }
                     }
                 }
@@ -433,7 +435,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.EnabledCommandsV1Envelope"
                         }
                     }
                 }
@@ -469,7 +471,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
                         }
                     }
                 }
@@ -710,7 +712,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.DrivesListV1Envelope"
                         }
                     }
                 }
@@ -746,7 +748,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.DriveDetailsV1Envelope"
                         }
                     }
                 }
@@ -855,7 +857,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.EnabledCommandsV1Envelope"
                         }
                     }
                 }
@@ -891,7 +893,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
                         }
                     }
                 }
@@ -1152,7 +1154,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.CarStatusV1Envelope"
                         }
                     }
                 }
@@ -1273,7 +1275,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.UpdatesListV1Envelope"
                         }
                     }
                 }
@@ -1302,7 +1304,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
                         }
                     }
                 }
@@ -1321,7 +1323,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.SwaggerErrorResponse"
+                            "$ref": "#/definitions/main.GlobalsettingsV1Envelope"
                         }
                     }
                 }
@@ -1329,16 +1331,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.SwaggerDataResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "additionalProperties": true
-                }
-            }
-        },
-        "main.SwaggerErrorResponse": {
+        "main.APISystemErrorBody": {
             "type": "object",
             "properties": {
                 "error": {
@@ -1347,7 +1340,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.SwaggerMessageResponse": {
+        "main.APISystemMessageResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1357,6 +1350,1466 @@ const docTemplate = `{
                 "path": {
                     "type": "string",
                     "example": "/api/v1"
+                }
+            }
+        },
+        "main.BatteryHealthV1Data": {
+            "type": "object",
+            "properties": {
+                "battery_health": {
+                    "$ref": "#/definitions/main.BatteryHealthV1Metrics"
+                },
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.BatteryHealthV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.BatteryHealthV1Data"
+                }
+            }
+        },
+        "main.BatteryHealthV1Metrics": {
+            "type": "object",
+            "properties": {
+                "battery_health_percentage": {
+                    "type": "number"
+                },
+                "current_capacity": {
+                    "type": "number"
+                },
+                "current_range": {
+                    "type": "number"
+                },
+                "max_capacity": {
+                    "type": "number"
+                },
+                "max_range": {
+                    "type": "number"
+                },
+                "rated_efficiency": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.CarGeodataV1": {
+            "type": "object",
+            "properties": {
+                "geofence": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "location": {
+                    "$ref": "#/definitions/main.CarLocationV1"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.CarLocationV1": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.CarMQTTStatusPayloadV1": {
+            "type": "object",
+            "properties": {
+                "battery_details": {
+                    "$ref": "#/definitions/main.StatusBatteryV1"
+                },
+                "car_details": {
+                    "$ref": "#/definitions/main.StatusCarDetailsV1"
+                },
+                "car_exterior": {
+                    "$ref": "#/definitions/main.StatusCarExteriorV1"
+                },
+                "car_geodata": {
+                    "$ref": "#/definitions/main.CarGeodataV1"
+                },
+                "car_status": {
+                    "$ref": "#/definitions/main.StatusCarFlagsV1"
+                },
+                "car_versions": {
+                    "$ref": "#/definitions/main.StatusVersionsV1"
+                },
+                "charging_details": {
+                    "$ref": "#/definitions/main.StatusChargingV1"
+                },
+                "climate_details": {
+                    "$ref": "#/definitions/main.StatusClimateV1"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "driving_details": {
+                    "$ref": "#/definitions/main.StatusDrivingV1"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "state_since": {
+                    "type": "string"
+                },
+                "tpms_details": {
+                    "$ref": "#/definitions/main.StatusTPMSV1"
+                }
+            }
+        },
+        "main.CarRefV1": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "car_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.CarStatusV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "status": {
+                    "$ref": "#/definitions/main.CarMQTTStatusPayloadV1"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempPressureV1"
+                }
+            }
+        },
+        "main.CarStatusV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.CarStatusV1Data"
+                }
+            }
+        },
+        "main.CarsV1Car": {
+            "type": "object",
+            "properties": {
+                "car_details": {
+                    "$ref": "#/definitions/main.CarsV1CarDetails"
+                },
+                "car_exterior": {
+                    "$ref": "#/definitions/main.CarsV1CarExterior"
+                },
+                "car_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "car_settings": {
+                    "$ref": "#/definitions/main.CarsV1CarSettings"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "My Tesla"
+                },
+                "teslamate_details": {
+                    "$ref": "#/definitions/main.CarsV1TeslaMateMeta"
+                },
+                "teslamate_stats": {
+                    "$ref": "#/definitions/main.CarsV1TeslaMateStats"
+                }
+            }
+        },
+        "main.CarsV1CarDetails": {
+            "type": "object",
+            "properties": {
+                "efficiency": {
+                    "type": "number",
+                    "example": 145
+                },
+                "eid": {
+                    "type": "integer",
+                    "example": 123456789
+                },
+                "model": {
+                    "type": "string",
+                    "example": "Model 3"
+                },
+                "trim_badging": {
+                    "type": "string",
+                    "example": ""
+                },
+                "vid": {
+                    "type": "integer",
+                    "example": 987654321
+                },
+                "vin": {
+                    "type": "string",
+                    "example": "5YJ3E1EA1KF000000"
+                }
+            }
+        },
+        "main.CarsV1CarExterior": {
+            "type": "object",
+            "properties": {
+                "exterior_color": {
+                    "type": "string"
+                },
+                "spoiler_type": {
+                    "type": "string"
+                },
+                "wheel_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.CarsV1CarSettings": {
+            "type": "object",
+            "properties": {
+                "free_supercharging": {
+                    "type": "boolean"
+                },
+                "req_not_unlocked": {
+                    "type": "boolean"
+                },
+                "suspend_after_idle_min": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "suspend_min": {
+                    "type": "integer",
+                    "example": 15
+                },
+                "use_streaming_api": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.CarsV1Data": {
+            "type": "object",
+            "properties": {
+                "cars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.CarsV1Car"
+                    }
+                }
+            }
+        },
+        "main.CarsV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.CarsV1Data"
+                }
+            }
+        },
+        "main.CarsV1TeslaMateMeta": {
+            "type": "object",
+            "properties": {
+                "inserted_at": {
+                    "type": "string",
+                    "example": "2026-04-01T12:00:00+08:00"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-04-01T12:00:00+08:00"
+                }
+            }
+        },
+        "main.CarsV1TeslaMateStats": {
+            "type": "object",
+            "properties": {
+                "total_charges": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "total_drives": {
+                    "type": "integer",
+                    "example": 340
+                },
+                "total_updates": {
+                    "type": "integer",
+                    "example": 5
+                }
+            }
+        },
+        "main.ChargeBatteryStartCurrentV1": {
+            "type": "object",
+            "properties": {
+                "current_battery_level": {
+                    "type": "integer"
+                },
+                "start_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.ChargeBatteryStartEndV1": {
+            "type": "object",
+            "properties": {
+                "end_battery_level": {
+                    "type": "integer"
+                },
+                "start_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.ChargeChargerHardwareV1": {
+            "type": "object",
+            "properties": {
+                "charger_actual_current": {
+                    "type": "integer"
+                },
+                "charger_phases": {
+                    "type": "integer"
+                },
+                "charger_pilot_current": {
+                    "type": "integer"
+                },
+                "charger_power": {
+                    "type": "integer"
+                },
+                "charger_voltage": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.ChargeDetailBatteryInfoV1": {
+            "type": "object",
+            "properties": {
+                "battery_heater": {
+                    "type": "boolean"
+                },
+                "battery_heater_no_power": {
+                    "type": "boolean"
+                },
+                "battery_heater_on": {
+                    "type": "boolean"
+                },
+                "ideal_battery_range": {
+                    "type": "number"
+                },
+                "rated_battery_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.ChargeDetailFullV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "battery_details": {
+                    "$ref": "#/definitions/main.ChargeBatteryStartEndV1"
+                },
+                "charge_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ChargeDetailRowV1"
+                    }
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charge_energy_used": {
+                    "type": "number"
+                },
+                "charge_id": {
+                    "type": "integer"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "duration_str": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "outside_temp_avg": {
+                    "type": "number"
+                },
+                "range_ideal": {
+                    "$ref": "#/definitions/main.ChargeRangeStartEndV1"
+                },
+                "range_rated": {
+                    "$ref": "#/definitions/main.ChargeRangeStartEndV1"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ChargeDetailRowV1": {
+            "type": "object",
+            "properties": {
+                "battery_info": {
+                    "$ref": "#/definitions/main.ChargeDetailBatteryInfoV1"
+                },
+                "battery_level": {
+                    "type": "integer"
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charger_details": {
+                    "$ref": "#/definitions/main.ChargeChargerHardwareV1"
+                },
+                "conn_charge_cable": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "detail_id": {
+                    "type": "integer"
+                },
+                "fast_charger_info": {
+                    "$ref": "#/definitions/main.ChargeFastChargerDetailV1"
+                },
+                "not_enough_power_to_heat": {
+                    "type": "boolean"
+                },
+                "outside_temp": {
+                    "type": "number"
+                },
+                "usable_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.ChargeDetailsV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "charge": {
+                    "$ref": "#/definitions/main.ChargeDetailFullV1"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.ChargeDetailsV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.ChargeDetailsV1Data"
+                }
+            }
+        },
+        "main.ChargeFastChargerCurrentV1": {
+            "type": "object",
+            "properties": {
+                "fast_charger_brand": {
+                    "type": "string"
+                },
+                "fast_charger_present": {
+                    "type": "boolean"
+                },
+                "fast_charger_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ChargeFastChargerDetailV1": {
+            "type": "object",
+            "properties": {
+                "fast_charger_brand": {
+                    "type": "string"
+                },
+                "fast_charger_present": {
+                    "type": "boolean"
+                },
+                "fast_charger_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ChargeListItemV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "battery_details": {
+                    "$ref": "#/definitions/main.ChargeBatteryStartEndV1"
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charge_energy_used": {
+                    "type": "number"
+                },
+                "charge_id": {
+                    "type": "integer"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "duration_str": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "outside_temp_avg": {
+                    "type": "number"
+                },
+                "range_ideal": {
+                    "$ref": "#/definitions/main.ChargeRangeStartEndV1"
+                },
+                "range_rated": {
+                    "$ref": "#/definitions/main.ChargeRangeStartEndV1"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ChargeRangeStartEndV1": {
+            "type": "object",
+            "properties": {
+                "end_range": {
+                    "type": "number"
+                },
+                "start_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.ChargeRatedRangeProgressV1": {
+            "type": "object",
+            "properties": {
+                "added_range": {
+                    "type": "number"
+                },
+                "current_range": {
+                    "type": "number"
+                },
+                "start_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.ChargesListV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "charges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ChargeListItemV1"
+                    }
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.ChargesListV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.ChargesListV1Data"
+                }
+            }
+        },
+        "main.CurrentChargeBatteryInfoV1": {
+            "type": "object",
+            "properties": {
+                "battery_heater": {
+                    "type": "boolean"
+                },
+                "battery_heater_no_power": {
+                    "type": "boolean"
+                },
+                "battery_heater_on": {
+                    "type": "boolean"
+                },
+                "rated_battery_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.CurrentChargeDetailRowV1": {
+            "type": "object",
+            "properties": {
+                "battery_info": {
+                    "$ref": "#/definitions/main.CurrentChargeBatteryInfoV1"
+                },
+                "battery_level": {
+                    "type": "integer"
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charger_details": {
+                    "$ref": "#/definitions/main.ChargeChargerHardwareV1"
+                },
+                "conn_charge_cable": {},
+                "date": {
+                    "type": "string"
+                },
+                "detail_id": {
+                    "type": "integer"
+                },
+                "fast_charger_info": {
+                    "$ref": "#/definitions/main.ChargeFastChargerCurrentV1"
+                },
+                "not_enough_power_to_heat": {
+                    "type": "boolean"
+                },
+                "outside_temp": {
+                    "type": "number"
+                },
+                "usable_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.CurrentChargeV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "battery_details": {
+                    "$ref": "#/definitions/main.ChargeBatteryStartCurrentV1"
+                },
+                "charge_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.CurrentChargeDetailRowV1"
+                    }
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charge_id": {
+                    "type": "integer"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "duration_str": {
+                    "type": "string"
+                },
+                "is_charging": {
+                    "type": "boolean"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "outside_temp_avg": {
+                    "type": "number"
+                },
+                "rated_range": {
+                    "$ref": "#/definitions/main.ChargeRatedRangeProgressV1"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.CurrentChargeV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "charge": {
+                    "$ref": "#/definitions/main.CurrentChargeV1"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.CurrentChargeV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.CurrentChargeV1Data"
+                }
+            }
+        },
+        "main.DriveBatteryWindowV1": {
+            "type": "object",
+            "properties": {
+                "end_battery_level": {
+                    "type": "integer"
+                },
+                "end_usable_battery_level": {
+                    "type": "integer"
+                },
+                "is_sufficiently_precise": {
+                    "type": "boolean"
+                },
+                "reduced_range": {
+                    "type": "boolean"
+                },
+                "start_battery_level": {
+                    "type": "integer"
+                },
+                "start_usable_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.DriveDetailFullV1": {
+            "type": "object",
+            "properties": {
+                "battery_details": {
+                    "$ref": "#/definitions/main.DriveBatteryWindowV1"
+                },
+                "consumption_net": {
+                    "type": "number"
+                },
+                "drive_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.DrivePositionRowV1"
+                    }
+                },
+                "drive_id": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "duration_str": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "energy_consumed_net": {
+                    "type": "number"
+                },
+                "inside_temp_avg": {
+                    "type": "number"
+                },
+                "odometer_details": {
+                    "$ref": "#/definitions/main.DriveOdometerV1"
+                },
+                "outside_temp_avg": {
+                    "type": "number"
+                },
+                "power_max": {
+                    "type": "integer"
+                },
+                "power_min": {
+                    "type": "integer"
+                },
+                "range_ideal": {
+                    "$ref": "#/definitions/main.DriveRangeIdealRatedV1"
+                },
+                "range_rated": {
+                    "$ref": "#/definitions/main.DriveRangeIdealRatedV1"
+                },
+                "speed_avg": {
+                    "type": "number"
+                },
+                "speed_max": {
+                    "type": "integer"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.DriveDetailsV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "drive": {
+                    "$ref": "#/definitions/main.DriveDetailFullV1"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.DriveDetailsV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.DriveDetailsV1Data"
+                }
+            }
+        },
+        "main.DriveListItemV1": {
+            "type": "object",
+            "properties": {
+                "battery_details": {
+                    "$ref": "#/definitions/main.DriveBatteryWindowV1"
+                },
+                "consumption_net": {
+                    "type": "number"
+                },
+                "drive_id": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "duration_str": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "energy_consumed_net": {
+                    "type": "number"
+                },
+                "inside_temp_avg": {
+                    "type": "number"
+                },
+                "odometer_details": {
+                    "$ref": "#/definitions/main.DriveOdometerV1"
+                },
+                "outside_temp_avg": {
+                    "type": "number"
+                },
+                "power_max": {
+                    "type": "integer"
+                },
+                "power_min": {
+                    "type": "integer"
+                },
+                "range_ideal": {
+                    "$ref": "#/definitions/main.DriveRangeIdealRatedV1"
+                },
+                "range_rated": {
+                    "$ref": "#/definitions/main.DriveRangeIdealRatedV1"
+                },
+                "speed_avg": {
+                    "type": "number"
+                },
+                "speed_max": {
+                    "type": "integer"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.DriveOdometerV1": {
+            "type": "object",
+            "properties": {
+                "odometer_distance": {
+                    "type": "number"
+                },
+                "odometer_end": {
+                    "type": "number"
+                },
+                "odometer_start": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.DrivePositionBatteryV1": {
+            "type": "object",
+            "properties": {
+                "battery_heater": {
+                    "type": "boolean"
+                },
+                "battery_heater_no_power": {
+                    "type": "boolean"
+                },
+                "battery_heater_on": {
+                    "type": "boolean"
+                },
+                "est_battery_range": {
+                    "type": "number"
+                },
+                "ideal_battery_range": {
+                    "type": "number"
+                },
+                "rated_battery_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.DrivePositionClimateV1": {
+            "type": "object",
+            "properties": {
+                "driver_temp_setting": {
+                    "type": "number"
+                },
+                "fan_status": {
+                    "type": "integer"
+                },
+                "inside_temp": {
+                    "type": "number"
+                },
+                "is_climate_on": {
+                    "type": "boolean"
+                },
+                "is_front_defroster_on": {
+                    "type": "boolean"
+                },
+                "is_rear_defroster_on": {
+                    "type": "boolean"
+                },
+                "outside_temp": {
+                    "type": "number"
+                },
+                "passenger_temp_setting": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.DrivePositionRowV1": {
+            "type": "object",
+            "properties": {
+                "battery_info": {
+                    "$ref": "#/definitions/main.DrivePositionBatteryV1"
+                },
+                "battery_level": {
+                    "type": "integer"
+                },
+                "climate_info": {
+                    "$ref": "#/definitions/main.DrivePositionClimateV1"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "detail_id": {
+                    "type": "integer"
+                },
+                "elevation": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "power": {
+                    "type": "integer"
+                },
+                "speed": {
+                    "type": "integer"
+                },
+                "usable_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.DriveRangeIdealRatedV1": {
+            "type": "object",
+            "properties": {
+                "end_range": {
+                    "type": "number"
+                },
+                "range_diff": {
+                    "type": "number"
+                },
+                "start_range": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.DrivesListV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "drives": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.DriveListItemV1"
+                    }
+                },
+                "units": {
+                    "$ref": "#/definitions/main.UnitsLengthTempV1"
+                }
+            }
+        },
+        "main.DrivesListV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.DrivesListV1Data"
+                }
+            }
+        },
+        "main.EnabledCommandsV1Envelope": {
+            "type": "object",
+            "properties": {
+                "enabled_commands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "main.GlobalsettingsV1AccountInfo": {
+            "type": "object",
+            "properties": {
+                "inserted_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.GlobalsettingsV1Data": {
+            "type": "object",
+            "properties": {
+                "settings": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1Settings"
+                }
+            }
+        },
+        "main.GlobalsettingsV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1Data"
+                }
+            }
+        },
+        "main.GlobalsettingsV1GUI": {
+            "type": "object",
+            "properties": {
+                "language": {
+                    "type": "string"
+                },
+                "preferred_range": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.GlobalsettingsV1Settings": {
+            "type": "object",
+            "properties": {
+                "account_info": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1AccountInfo"
+                },
+                "setting_id": {
+                    "type": "integer"
+                },
+                "teslamate_units": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1Units"
+                },
+                "teslamate_urls": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1URLs"
+                },
+                "teslamate_webgui": {
+                    "$ref": "#/definitions/main.GlobalsettingsV1GUI"
+                }
+            }
+        },
+        "main.GlobalsettingsV1URLs": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "grafana_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.GlobalsettingsV1Units": {
+            "type": "object",
+            "properties": {
+                "unit_of_length": {
+                    "type": "string"
+                },
+                "unit_of_temperature": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatusActiveRouteV1": {
+            "type": "object",
+            "properties": {
+                "destination": {
+                    "type": "string"
+                },
+                "distance_to_arrival": {
+                    "type": "number"
+                },
+                "energy_at_arrival": {
+                    "type": "integer"
+                },
+                "location": {
+                    "$ref": "#/definitions/main.CarLocationV1"
+                },
+                "minutes_to_arrival": {
+                    "type": "number"
+                },
+                "traffic_minutes_delay": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.StatusBatteryV1": {
+            "type": "object",
+            "properties": {
+                "battery_level": {
+                    "type": "integer"
+                },
+                "est_battery_range": {
+                    "type": "number"
+                },
+                "ideal_battery_range": {
+                    "type": "number"
+                },
+                "rated_battery_range": {
+                    "type": "number"
+                },
+                "usable_battery_level": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.StatusCarDetailsV1": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string"
+                },
+                "trim_badging": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatusCarExteriorV1": {
+            "type": "object",
+            "properties": {
+                "exterior_color": {
+                    "type": "string"
+                },
+                "spoiler_type": {
+                    "type": "string"
+                },
+                "wheel_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatusCarFlagsV1": {
+            "type": "object",
+            "properties": {
+                "center_display_state": {
+                    "type": "integer"
+                },
+                "doors_open": {
+                    "type": "boolean"
+                },
+                "driver_front_door_open": {
+                    "type": "boolean"
+                },
+                "driver_rear_door_open": {
+                    "type": "boolean"
+                },
+                "frunk_open": {
+                    "type": "boolean"
+                },
+                "healthy": {
+                    "type": "boolean"
+                },
+                "is_user_present": {
+                    "type": "boolean"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "passenger_front_door_open": {
+                    "type": "boolean"
+                },
+                "passenger_rear_door_open": {
+                    "type": "boolean"
+                },
+                "sentry_mode": {
+                    "type": "boolean"
+                },
+                "trunk_open": {
+                    "type": "boolean"
+                },
+                "windows_open": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.StatusChargingV1": {
+            "type": "object",
+            "properties": {
+                "charge_current_request": {
+                    "type": "integer"
+                },
+                "charge_current_request_max": {
+                    "type": "integer"
+                },
+                "charge_energy_added": {
+                    "type": "number"
+                },
+                "charge_limit_soc": {
+                    "type": "integer"
+                },
+                "charge_port_door_open": {
+                    "type": "boolean"
+                },
+                "charger_actual_current": {
+                    "type": "number"
+                },
+                "charger_phases": {
+                    "type": "integer"
+                },
+                "charger_power": {
+                    "type": "number"
+                },
+                "charger_voltage": {
+                    "type": "integer"
+                },
+                "charging_state": {
+                    "type": "string"
+                },
+                "plugged_in": {
+                    "type": "boolean"
+                },
+                "scheduled_charging_start_time": {
+                    "type": "string"
+                },
+                "time_to_full_charge": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.StatusClimateV1": {
+            "type": "object",
+            "properties": {
+                "climate_keeper_mode": {
+                    "type": "string"
+                },
+                "inside_temp": {
+                    "type": "number"
+                },
+                "is_climate_on": {
+                    "type": "boolean"
+                },
+                "is_preconditioning": {
+                    "type": "boolean"
+                },
+                "outside_temp": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.StatusDrivingV1": {
+            "type": "object",
+            "properties": {
+                "active_route": {
+                    "$ref": "#/definitions/main.StatusActiveRouteV1"
+                },
+                "active_route_destination": {
+                    "type": "string"
+                },
+                "active_route_latitude": {
+                    "type": "number"
+                },
+                "active_route_longitude": {
+                    "type": "number"
+                },
+                "elevation": {
+                    "type": "integer"
+                },
+                "heading": {
+                    "type": "integer"
+                },
+                "power": {
+                    "type": "integer"
+                },
+                "shift_state": {
+                    "type": "string"
+                },
+                "speed": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.StatusTPMSV1": {
+            "type": "object",
+            "properties": {
+                "tpms_pressure_fl": {
+                    "type": "number"
+                },
+                "tpms_pressure_fr": {
+                    "type": "number"
+                },
+                "tpms_pressure_rl": {
+                    "type": "number"
+                },
+                "tpms_pressure_rr": {
+                    "type": "number"
+                },
+                "tpms_soft_warning_fl": {
+                    "type": "boolean"
+                },
+                "tpms_soft_warning_fr": {
+                    "type": "boolean"
+                },
+                "tpms_soft_warning_rl": {
+                    "type": "boolean"
+                },
+                "tpms_soft_warning_rr": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.StatusVersionsV1": {
+            "type": "object",
+            "properties": {
+                "update_available": {
+                    "type": "boolean"
+                },
+                "update_version": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.TeslaPassthroughJSONBody": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "main.UnitsLengthTempPressureV1": {
+            "type": "object",
+            "properties": {
+                "unit_of_length": {
+                    "type": "string"
+                },
+                "unit_of_pressure": {
+                    "type": "string"
+                },
+                "unit_of_temperature": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.UnitsLengthTempV1": {
+            "type": "object",
+            "properties": {
+                "unit_of_length": {
+                    "type": "string"
+                },
+                "unit_of_temperature": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.UpdatesListItemV1": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "update_id": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.UpdatesListV1Data": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/main.CarRefV1"
+                },
+                "updates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.UpdatesListItemV1"
+                    }
+                }
+            }
+        },
+        "main.UpdatesListV1Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.UpdatesListV1Data"
                 }
             }
         },

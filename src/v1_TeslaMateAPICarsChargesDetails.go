@@ -20,100 +20,10 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 	CarID := convertStringToInteger(c.Param("CarID"))
 	ChargeID := convertStringToInteger(c.Param("ChargeID"))
 
-	// creating structs for /cars/<CarID>/charges/<ChargeID>
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// BatteryDetails struct - child of Charges
-	type BatteryDetails struct {
-		StartBatteryLevel int `json:"start_battery_level"` // int
-		EndBatteryLevel   int `json:"end_battery_level"`   // int
-	}
-	// PreferredRange struct - child of Charges
-	type PreferredRange struct {
-		StartRange float64 `json:"start_range"` // float64
-		EndRange   float64 `json:"end_range"`   // float64
-	}
-	// ChargerDetails struct - child of ChargeDetails
-	type ChargerDetails struct {
-		ChargerActualCurrent int `json:"charger_actual_current"` // int
-		ChargerPhases        int `json:"charger_phases"`         // int
-		ChargerPilotCurrent  int `json:"charger_pilot_current"`  // int
-		ChargerPower         int `json:"charger_power"`          // int
-		ChargerVoltage       int `json:"charger_voltage"`        // int
-	}
-	// FastChargerInfo struct - child of ChargeDetails
-	type FastChargerInfo struct {
-		FastChargerPresent bool       `json:"fast_charger_present"` // bool
-		FastChargerBrand   NullString `json:"fast_charger_brand"`   // string
-		FastChargerType    string     `json:"fast_charger_type"`    // string
-
-	}
-	// BatteryInfo struct - child of ChargeDetails
-	type BatteryInfo struct {
-		IdealBatteryRange    float64  `json:"ideal_battery_range"`     // float64
-		RatedBatteryRange    float64  `json:"rated_battery_range"`     // float64
-		BatteryHeater        bool     `json:"battery_heater"`          // bool
-		BatteryHeaterOn      bool     `json:"battery_heater_on"`       // bool
-		BatteryHeaterNoPower NullBool `json:"battery_heater_no_power"` // bool
-	}
-	// ChargeDetails struct - child of Charge
-	type ChargeDetails struct {
-		DetailID             int             `json:"detail_id"`                // integer
-		Date                 string          `json:"date"`                     // string
-		BatteryLevel         int             `json:"battery_level"`            // int
-		UsableBatteryLevel   int             `json:"usable_battery_level"`     // int
-		ChargeEnergyAdded    float64         `json:"charge_energy_added"`      // float64
-		NotEnoughPowerToHeat NullBool        `json:"not_enough_power_to_heat"` // bool
-		ChargerDetails       ChargerDetails  `json:"charger_details"`          // struct
-		BatteryInfo          BatteryInfo     `json:"battery_info"`             // struct
-		ConnChargeCable      string          `json:"conn_charge_cable"`        // string
-		FastChargerInfo      FastChargerInfo `json:"fast_charger_info"`        // struct
-		OutsideTemp          float64         `json:"outside_temp"`             // float64
-	}
-	// Charge struct - child of Data
-	type Charge struct {
-		ChargeID          int             `json:"charge_id"`           // int
-		StartDate         string          `json:"start_date"`          // string
-		EndDate           string          `json:"end_date"`            // string
-		Address           string          `json:"address"`             // string
-		ChargeEnergyAdded float64         `json:"charge_energy_added"` // float64
-		ChargeEnergyUsed  float64         `json:"charge_energy_used"`  // float64
-		Cost              float64         `json:"cost"`                // float64
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange  `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange  `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		Odometer          float64         `json:"odometer"`            // float64
-		Latitude          float64         `json:"latitude"`            // float64
-		Longitude         float64         `json:"longitude"`           // float64
-		ChargeDetails     []ChargeDetails `json:"charge_details"`      // struct
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		Charge         Charge         `json:"charge"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
-	// creating required vars
 	var (
 		CarName                       NullString
-		charge                        Charge
-		ChargeDetailsData             []ChargeDetails
+		charge                        ChargeDetailFullV1
+		ChargeDetailsData             []ChargeDetailRowV1
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -249,7 +159,7 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating chargedetails object based on struct
-		chargedetails := ChargeDetails{}
+		chargedetails := ChargeDetailRowV1{}
 
 		// scanning row and putting values into the drive
 		err = rows.Scan(
@@ -307,16 +217,14 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		return
 	}
 
-	//
-	// build the data-blob
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := ChargeDetailsV1Envelope{
+		Data: ChargeDetailsV1Data{
+			Car: CarRefV1{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			Charge: charge,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: UnitsLengthTempV1{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

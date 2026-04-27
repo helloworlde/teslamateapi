@@ -7,52 +7,50 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type GlobalsettingsV1AccountInfo struct {
+	InsertedAt string `json:"inserted_at"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
+type GlobalsettingsV1Units struct {
+	UnitsLength      string `json:"unit_of_length"`
+	UnitsTemperature string `json:"unit_of_temperature"`
+}
+
+type GlobalsettingsV1GUI struct {
+	PreferredRange string `json:"preferred_range"`
+	Language       string `json:"language"`
+}
+
+type GlobalsettingsV1URLs struct {
+	BaseURL    string `json:"base_url"`
+	GrafanaURL string `json:"grafana_url"`
+}
+
+type GlobalsettingsV1Settings struct {
+	SettingID      int                         `json:"setting_id"`
+	AccountInfo    GlobalsettingsV1AccountInfo `json:"account_info"`
+	TeslaMateUnits GlobalsettingsV1Units       `json:"teslamate_units"`
+	TeslaMateGUI   GlobalsettingsV1GUI         `json:"teslamate_webgui"`
+	TeslaMateURLs  GlobalsettingsV1URLs        `json:"teslamate_urls"`
+}
+
+type GlobalsettingsV1Data struct {
+	Settings GlobalsettingsV1Settings `json:"settings"`
+}
+
+type GlobalsettingsV1Envelope struct {
+	Data GlobalsettingsV1Data `json:"data"`
+}
+
 // TeslaMateAPIGlobalsettingsV1 func
 func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 
 	// define error messages
 	var CarsGlobalsettingsError1 = "Unable to load settings."
 
-	// creating structs for /globalsettings
-	// AccountInfo struct - child of GlobalSettings
-	type AccountInfo struct {
-		InsertedAt string `json:"inserted_at"` // string
-		UpdatedAt  string `json:"updated_at"`  // string
-	}
-	// TeslaMateUnits struct - child of GlobalSettings
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// TeslaMateGUI struct - child of GlobalSettings
-	type TeslaMateGUI struct {
-		PreferredRange string `json:"preferred_range"` // string
-		Language       string `json:"language"`        // string
-	}
-	// TeslaMateURLs struct - child of GlobalSettings
-	type TeslaMateURLs struct {
-		BaseURL    string `json:"base_url"`    // string
-		GrafanaURL string `json:"grafana_url"` // string
-	}
-	// GlobalSettings struct - child of Data
-	type GlobalSettings struct {
-		SettingID      int            `json:"setting_id"`       // smallint
-		AccountInfo    AccountInfo    `json:"account_info"`     // struct
-		TeslaMateUnits TeslaMateUnits `json:"teslamate_units"`  // struct
-		TeslaMateGUI   TeslaMateGUI   `json:"teslamate_webgui"` // struct
-		TeslaMateURLs  TeslaMateURLs  `json:"teslamate_urls"`   // struct
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		GlobalSettings GlobalSettings `json:"settings"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
-	var globalSetting GlobalSettings
+	var globalSetting GlobalsettingsV1Settings
 
 	// getting data from database
 	query := `
@@ -99,11 +97,9 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 	globalSetting.AccountInfo.InsertedAt = getTimeInTimeZone(globalSetting.AccountInfo.InsertedAt)
 	globalSetting.AccountInfo.UpdatedAt = getTimeInTimeZone(globalSetting.AccountInfo.UpdatedAt)
 
-	//
-	// build the data-blob
-	jsonData := JSONData{
-		Data{
-			GlobalSettings: globalSetting,
+	jsonData := GlobalsettingsV1Envelope{
+		Data: GlobalsettingsV1Data{
+			Settings: globalSetting,
 		},
 	}
 
