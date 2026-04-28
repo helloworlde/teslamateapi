@@ -168,7 +168,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/battery-health": {
             "get": {
-                "description": "Original compatible battery-health endpoint. Use ` + "`" + `/v1/cars/{CarID}/charts/battery/health` + "`" + ` for chart-friendly series.",
+                "description": "Original compatible battery-health endpoint. Use ` + "`" + `/v1/cars/{CarID}/series/battery?metrics=range,soc` + "`" + ` for chart-friendly battery series.",
                 "produces": [
                     "application/json"
                 ],
@@ -219,15 +219,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -557,16 +555,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/distributions": {
+        "/v1/cars/{CarID}/distributions/charges": {
             "get": {
-                "description": "Distribution buckets for drive and charge behavior. Supports hour, duration, distance, speed, energy and power distributions.",
+                "description": "Charge distribution buckets for start hour, weekday, energy, duration, power and cost. Buckets are ordered and include zero-count gaps.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Distributions",
+                "summary": "Charge distributions",
                 "parameters": [
                     {
                         "type": "integer",
@@ -578,7 +576,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "comma separated metrics: drive_start_hour,drive_duration,drive_distance,drive_speed,charge_start_hour,charge_duration,charge_energy,charge_power",
+                        "description": "comma separated metrics: start_hour,weekday,energy,duration,power,cost",
                         "name": "metrics",
                         "in": "query"
                     },
@@ -586,15 +584,85 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.DistributionsV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/distributions/drives": {
+            "get": {
+                "description": "Drive distribution buckets for start hour, weekday, distance, duration, speed and efficiency. Buckets are ordered and include zero-count gaps.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Drive distributions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated metrics: start_hour,weekday,distance,duration,speed,efficiency",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -779,15 +847,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -859,15 +925,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
@@ -1000,15 +1064,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -1045,16 +1107,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/cars/{CarID}/series": {
+        "/v1/cars/{CarID}/series/battery": {
             "get": {
-                "description": "Unified time series endpoint with scope-aware metrics and chart metadata. Unsupported metric/scope pairs are skipped with warnings.",
+                "description": "Battery time series for state of charge and rated range.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Extended API"
                 ],
-                "summary": "Series",
+                "summary": "Battery series",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1066,13 +1128,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "drives|charges|battery|states|overview",
-                        "name": "scope",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "comma separated metrics: distance,efficiency,speed,energy,cost,power,soc,range,regeneration,vampire_drain",
+                        "description": "comma separated metrics: soc,range",
                         "name": "metrics",
                         "in": "query"
                     },
@@ -1086,15 +1142,247 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SeriesV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/series/charges": {
+            "get": {
+                "description": "Charge time series with charge-only metrics and chart metadata.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Charge series",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated metrics: energy,power,cost,soc",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "raw|hour|day|week|month|year",
+                        "name": "bucket",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SeriesV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/series/drives": {
+            "get": {
+                "description": "Drive time series with drive-only metrics and chart metadata.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Drive series",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated metrics: distance,efficiency,speed,energy,regeneration",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "raw|hour|day|week|month|year",
+                        "name": "bucket",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SeriesV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/series/states": {
+            "get": {
+                "description": "State-derived time series for parking energy / vampire drain.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "State series",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated metrics: vampire_drain",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "raw|hour|day|week|month|year",
+                        "name": "bucket",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -1339,15 +1627,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range start",
                         "name": "startDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",
@@ -2500,6 +2786,10 @@ const docTemplate = `{
                 },
                 "range": {
                     "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "drives"
                 }
             }
         },
@@ -2894,11 +3184,11 @@ const docTemplate = `{
             "properties": {
                 "code": {
                     "type": "string",
-                    "example": "date_range_fallback"
+                    "example": "query_timeout"
                 },
                 "message": {
                     "type": "string",
-                    "example": "invalid or missing date range, fallback to current month"
+                    "example": "optional aggregate query timed out"
                 },
                 "metric": {
                     "type": "string",

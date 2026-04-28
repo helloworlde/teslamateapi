@@ -852,7 +852,9 @@ func fetchDriveHistorySummary(CarID int, parsedStartDate string, parsedEndDate s
 		highConsumptionTripCount int
 	)
 
-	err := db.QueryRow(query, queryParams...).Scan(
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	err := db.QueryRowContext(queryCtx, query, queryParams...).Scan(
 		&driveCount,
 		&totalDurationMin,
 		&totalDistance,
@@ -1036,7 +1038,9 @@ func fetchChargeHistorySummary(CarID int, parsedStartDate string, parsedEndDate 
 		lowEfficiencyChargeCount int
 	)
 
-	err := db.QueryRow(query, queryParams...).Scan(
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	err := db.QueryRowContext(queryCtx, query, queryParams...).Scan(
 		&chargeCount,
 		&totalDurationMin,
 		&totalEnergyAdded,
@@ -1119,7 +1123,9 @@ func fetchPeriodDriveDistanceKm(CarID int, parsedStartDate string, parsedEndDate
 	idx := 2
 	q, params, idx = appendSummaryDateFilters(q, params, idx, "drives", parsedStartDate, parsedEndDate)
 	var dist sql.NullFloat64
-	if err := db.QueryRow(q, params...).Scan(&dist); err != nil {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, q, params...).Scan(&dist); err != nil {
 		return 0, err
 	}
 	if !dist.Valid {
@@ -1205,7 +1211,9 @@ func fetchDashboardEfficiencySeries(CarID int, parsedStartDate string, parsedEnd
 		ORDER BY start_date ASC;`, paramIndex)
 	queryParams = append(queryParams, limit)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -1266,7 +1274,9 @@ func fetchDashboardMonthlyDistance(CarID int, parsedStartDate string, parsedEndD
 		ORDER BY month ASC;`, paramIndex)
 	queryParams = append(queryParams, limit)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -1329,7 +1339,9 @@ func fetchDashboardMonthlyChargeEnergy(CarID int, parsedStartDate string, parsed
 		ORDER BY month ASC;`, paramIndex)
 	queryParams = append(queryParams, limit)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -1392,7 +1404,9 @@ func fetchDashboardChargeLocations(CarID int, parsedStartDate string, parsedEndD
 		LIMIT $%d;`, paramIndex)
 	queryParams = append(queryParams, limit)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -1428,7 +1442,7 @@ func appendSummaryDateFilters(query string, queryParams []any, paramIndex int, t
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND %s.end_date <= $%d", table, paramIndex)
+		query += fmt.Sprintf(" AND %s.end_date < $%d", table, paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}

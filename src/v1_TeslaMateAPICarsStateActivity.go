@@ -347,7 +347,7 @@ func fetchAverageOutsideTemp(CarID int, parsedStartDate string, parsedEndDate st
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND drives.end_date <= $%d", paramIndex)
+		query += fmt.Sprintf(" AND drives.end_date < $%d", paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}
@@ -365,7 +365,7 @@ func fetchAverageOutsideTemp(CarID int, parsedStartDate string, parsedEndDate st
 		chargeParamIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND charging_processes.end_date <= $%d", chargeParamIndex)
+		query += fmt.Sprintf(" AND charging_processes.end_date < $%d", chargeParamIndex)
 	}
 
 	query += `
@@ -374,7 +374,9 @@ func fetchAverageOutsideTemp(CarID int, parsedStartDate string, parsedEndDate st
 		FROM samples;`
 
 	var value sql.NullFloat64
-	if err := db.QueryRow(query, queryParams...).Scan(&value); err != nil {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, query, queryParams...).Scan(&value); err != nil {
 		return nil, err
 	}
 	if !value.Valid {
@@ -563,7 +565,9 @@ func fetchStateTimeline(CarID int, parsedStartDate string, parsedEndDate string,
 		LIMIT $%d OFFSET $%d;`, len(queryParams)+1, len(queryParams)+2)
 	queryParams = append(queryParams, show, offset)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -613,7 +617,9 @@ func fetchStateBreakdown(CarID int, parsedStartDate string, parsedEndDate string
 
 	var coverageStart sql.NullString
 	var coverageEnd sql.NullString
-	if err := db.QueryRow(baseQuery+`
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, baseQuery+`
 		SELECT
 			MIN(start_date),
 			MAX(COALESCE(end_date, NOW() AT TIME ZONE 'UTC'))
@@ -621,7 +627,7 @@ func fetchStateBreakdown(CarID int, parsedStartDate string, parsedEndDate string
 		return nil, HistorySummaryCoverage{}, 0, err
 	}
 
-	rows, err := db.Query(baseQuery+`
+	rows, err := db.QueryContext(queryCtx, baseQuery+`
 		SELECT
 			state,
 			COUNT(*)::int AS session_count,
@@ -681,7 +687,9 @@ func fetchParkedShare(CarID int, parsedStartDate string, parsedEndDate string) (
 	query, queryParams, _ = appendStateTimelineDateFilters(query, queryParams, 2, "drives.start_date", "drives.end_date", parsedStartDate, parsedEndDate)
 
 	var value sql.NullFloat64
-	if err := db.QueryRow(query, queryParams...).Scan(&value); err != nil {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, query, queryParams...).Scan(&value); err != nil {
 		return nil, err
 	}
 	if !value.Valid {
@@ -777,7 +785,7 @@ func appendStateTimelineDateFilters(
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND COALESCE(%s, NOW() AT TIME ZONE 'UTC') <= $%d", endExpr, paramIndex)
+		query += fmt.Sprintf(" AND COALESCE(%s, NOW() AT TIME ZONE 'UTC') < $%d", endExpr, paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}

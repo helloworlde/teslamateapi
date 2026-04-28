@@ -78,8 +78,12 @@ These routes were present before the redesign and are no longer registered:
 - `GET /api/v1/cars/:CarID/dashboard`
 - `GET /api/v1/cars/:CarID/calendar`
 - `GET /api/v1/cars/:CarID/statistics`
-- `GET /api/v1/cars/:CarID/series`
-- `GET /api/v1/cars/:CarID/distributions`
+- `GET /api/v1/cars/:CarID/series/drives`
+- `GET /api/v1/cars/:CarID/series/charges`
+- `GET /api/v1/cars/:CarID/series/battery`
+- `GET /api/v1/cars/:CarID/series/states`
+- `GET /api/v1/cars/:CarID/distributions/drives`
+- `GET /api/v1/cars/:CarID/distributions/charges`
 - `GET /api/v1/cars/:CarID/insights`
 - `GET /api/v1/cars/:CarID/timeline`
 - `GET /api/v1/cars/:CarID/map/visited`
@@ -93,12 +97,11 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 - `dashboard` -> `DashboardV2Envelope`
 - `calendar` -> `CalendarV2Envelope`
 - `statistics` -> `StatisticsV2Envelope`
-- `series` -> `SeriesV2Envelope`
-- `distributions` -> `DistributionsV2Envelope`
+- `series/*` -> `SeriesV2Envelope`
+- `distributions/*` -> `DistributionsV2Envelope`
 - `insights` -> `InsightsV2Envelope`
 - `timeline` -> `TimelineV2Envelope`
 - `map/visited` -> `VisitedMapV2Envelope`
-- `locations` -> `LocationsV2Envelope`
 
 ## Audit findings
 
@@ -106,21 +109,21 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 
 - `summaries/*` and `dashboards/*` overlapped heavily in meaning.
 - `activity-timeline` and `timeline` represented the same conceptual resource; the dashboard-specific name was removed.
-- Calendar naming was normalized from `calendars/drives` to `calendar/drives` and extended with `calendar/charges`.
+- Calendar data was normalized into one `calendar` resource with query-driven buckets and optional metrics, instead of separate drive/charge calendar aliases.
 - Chart endpoints were renamed to stable nouns and metric names instead of implementation-specific aliases like `monthly-distance`.
 
 ### Third-party app suitability
 
 - Old summary and dashboard routes forced clients to know which alias carried which subset of metrics.
-- The redesign separates summary/statistics/chart/timeline/detail concerns and provides render-friendly chart series.
-- New list endpoints expose consistent pagination fields: `page`, `show`, and `total`.
+- The redesign separates summary/statistics/domain-specific series/domain-specific distributions/timeline concerns and provides render-friendly chart series.
+- New list endpoints expose consistent `limit`, `offset`, and `total` pagination fields.
 
 ### SQL and filtering findings
 
 - Date parsing previously rejected offset values after URL decoding converted `+` to a space.
 - Several chart aliases encoded bucket semantics in the path instead of query parameters; bucket selection is now explicit.
-- Query helpers now consistently apply `car_id` and date filters in the database layer used by the redesigned routes.
-- Open-ended or unsupported calculations such as vampire drain are returned as explicit empty structures with limitations instead of guessed values.
+- Query helpers now consistently apply `car_id` and timezone-aware half-open date filters in the database layer used by the redesigned routes.
+- Expensive derived calculations such as parking energy / vampire drain and regeneration are bounded with query timeouts and return warnings instead of blocking aggregate responses indefinitely.
 
 ### Units and empty data
 
@@ -139,7 +142,7 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 ### Merge
 
 - `summaries/overview`, `summaries/drives`, `summaries/charges`, `summaries/parking`, and `summaries/state-activity` into `summary` and `statistics`.
-- `dashboards/drives` and `dashboards/charges` into `summary`, `statistics`, and `charts/*`.
+- `dashboards/drives` and `dashboards/charges` into `summary`, `statistics`, `series`, and `distributions`.
 - `activity-timeline` into `timeline`.
 
 ### Delete
@@ -174,8 +177,8 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 ## Data definitions and limits
 
 - `startDate` / `endDate` accept RFC3339, timezone offset, decoded-space offset, local datetime, and date-only formats.
-- Date-only `endDate` values are expanded to local end-of-day for redesigned range parsing.
-- Chart endpoints default to bounded time windows to avoid unbounded scans.
+- Date-only `endDate` values are expanded to local end-of-day for redesigned range parsing, then translated into half-open SQL filters.
+- Series and distribution endpoints default to bounded time windows to avoid unbounded scans.
 - `map/visited` limits points and reports truncation in metadata.
-- `vampire-drain` returns an empty structure with limitations until a reliable calculation path is available.
+- `vampire_drain` is derived from state windows and battery/range samples where available; expensive queries are time-boxed and return `null` plus warnings when the data is unavailable or too slow.
 - Distances use TeslaMate settings-derived `km` or `mi`; speeds use `km/h` or `mi/h`; consumption uses `Wh/km` or `Wh/mi`; energy uses `kWh`.

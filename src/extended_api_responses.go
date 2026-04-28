@@ -9,8 +9,8 @@ type ExtendedResponseMeta struct {
 }
 
 type ExtendedWarning struct {
-	Code    string `json:"code" example:"date_range_fallback"`
-	Message string `json:"message" example:"invalid or missing date range, fallback to current month"`
+	Code    string `json:"code" example:"query_timeout"`
+	Message string `json:"message" example:"optional aggregate query timed out"`
 	Metric  string `json:"metric,omitempty" example:"distance"`
 	Scope   string `json:"scope,omitempty" example:"drives"`
 }
@@ -320,6 +320,7 @@ type DistributionsV2Envelope struct {
 
 type DistributionsV2Data struct {
 	CarID         int                    `json:"car_id"`
+	Scope         string                 `json:"scope" example:"drives"`
 	Range         ExtendedRange          `json:"range"`
 	Distributions []MetricDistributionV2 `json:"distributions"`
 }

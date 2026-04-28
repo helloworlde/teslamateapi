@@ -250,8 +250,12 @@ Optional:
 - GET `/api/v1/cars/:CarID/dashboard`
 - GET `/api/v1/cars/:CarID/calendar`
 - GET `/api/v1/cars/:CarID/statistics`
-- GET `/api/v1/cars/:CarID/series`
-- GET `/api/v1/cars/:CarID/distributions`
+- GET `/api/v1/cars/:CarID/series/drives`
+- GET `/api/v1/cars/:CarID/series/charges`
+- GET `/api/v1/cars/:CarID/series/battery`
+- GET `/api/v1/cars/:CarID/series/states`
+- GET `/api/v1/cars/:CarID/distributions/drives`
+- GET `/api/v1/cars/:CarID/distributions/charges`
 - GET `/api/v1/cars/:CarID/insights`
 - GET `/api/v1/cars/:CarID/timeline`
 - GET `/api/v1/cars/:CarID/map/visited`
@@ -263,8 +267,8 @@ Optional:
 - `dashboard`: app 首页聚合数据，减少客户端请求次数。
 - `calendar`: 日历维度聚合（day/week/month）。
 - `statistics`: 年/月/周/自定义范围统计。
-- `series`: 统一时序曲线（替代碎片化 charts）。
-- `distributions`: 分布图数据（起步时间、时长等）。
+- `series/*`: 按领域拆分的时序曲线（drives/charges/battery/states）。
+- `distributions/*`: 按领域拆分的分布图数据，bucket 固定排序并补齐 0 值。
 - `insights`: 可扩展洞察事件与摘要。
 - `timeline`: 时间线事件流（drive/charge/state）。
 - `locations`: 地点聚合（驾驶起终点、充电地点、次数、能量、费用、坐标）。
@@ -287,10 +291,10 @@ curl "http://localhost:8080/api/v1/cars/1/calendar?startDate=2026-04-01&endDate=
 curl "http://localhost:8080/api/v1/cars/1/statistics?period=month&date=2026-04-01&timezone=Asia/Shanghai"
 
 # 查询本月里程和速度曲线
-curl "http://localhost:8080/api/v1/cars/1/series?scope=drives&metrics=distance,speed&bucket=day&startDate=2026-04-01&endDate=2026-04-30"
+curl "http://localhost:8080/api/v1/cars/1/series/drives?metrics=distance,speed&bucket=day&startDate=2026-04-01&endDate=2026-04-30"
 
 # 查询充电时间分布
-curl "http://localhost:8080/api/v1/cars/1/distributions?metrics=charge_start_hour&startDate=2026-04-01&endDate=2026-04-30"
+curl "http://localhost:8080/api/v1/cars/1/distributions/charges?metrics=start_hour&startDate=2026-04-01&endDate=2026-04-30"
 
 # 查询洞察
 curl "http://localhost:8080/api/v1/cars/1/insights?startDate=2026-04-01&endDate=2026-04-30"
@@ -299,9 +303,7 @@ curl "http://localhost:8080/api/v1/cars/1/insights?startDate=2026-04-01&endDate=
 ### Verification
 
 - Static and unit validation: `go test ./...` and `go vet ./...`
-- HTTP verification script: `scripts/verify-api.sh`
 - Redesign notes: `docs/api-redesign.md`
-- Validation notes and run results: `docs/api-verification.md`
 
 ## Security information
 

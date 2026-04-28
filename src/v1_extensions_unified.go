@@ -35,7 +35,12 @@ var metricRegistry = map[string]metricDef{
 }
 
 func TeslaMateAPICarsDashboardV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "month")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid dashboard range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsDashboardV2")
 	if !ok {
 		return
@@ -109,7 +114,12 @@ func TeslaMateAPICarsDashboardV2(c *gin.Context) {
 }
 
 func TeslaMateAPICarsCalendarV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid calendar range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsCalendarV2")
 	if !ok {
 		return
@@ -142,7 +152,12 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 }
 
 func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "month")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid statistics range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedStatisticsV2")
 	if !ok {
 		return
@@ -271,12 +286,27 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
 }
 
-func TeslaMateAPICarsSeriesV2(c *gin.Context) {
-	scope := strings.ToLower(strings.TrimSpace(c.DefaultQuery("scope", "drives")))
+func TeslaMateAPICarsDriveSeriesV2(c *gin.Context) {
+	writeScopedSeries(c, "drives", []string{"distance", "speed", "efficiency", "energy", "regeneration"})
+}
+
+func TeslaMateAPICarsChargeSeriesV2(c *gin.Context) {
+	writeScopedSeries(c, "charges", []string{"energy", "power", "cost", "soc"})
+}
+
+func TeslaMateAPICarsBatterySeriesV2(c *gin.Context) {
+	writeScopedSeries(c, "battery", []string{"soc", "range"})
+}
+
+func TeslaMateAPICarsStateSeriesV2(c *gin.Context) {
+	writeScopedSeries(c, "states", []string{"vampire_drain"})
+}
+
+func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 	bucket := strings.ToLower(strings.TrimSpace(c.DefaultQuery("bucket", "day")))
 	metrics := parseCSV(c.Query("metrics"))
 	if len(metrics) == 0 {
-		metrics = defaultSeriesMetrics(scope)
+		metrics = defaultMetrics
 	}
 	switch bucket {
 	case "raw", "hour", "day", "week", "month", "year":
@@ -284,7 +314,12 @@ func TeslaMateAPICarsSeriesV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_bucket", "bucket must be raw|hour|day|week|month|year", nil)
 		return
 	}
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid series range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsSeriesV2")
 	if !ok {
 		return
@@ -292,13 +327,9 @@ func TeslaMateAPICarsSeriesV2(c *gin.Context) {
 	startUTC, endUTC := dbTimeRange(dr)
 	series := make([]any, 0, len(metrics))
 	for _, metric := range metrics {
-		def, ok := metricRegistry[metric]
+		def, ok := metricDefinition(scope, metric)
 		if !ok {
 			warnings = append(warnings, map[string]any{"code": "unsupported_metric", "message": "unsupported metric", "metric": metric})
-			continue
-		}
-		if def.Scope != scope && scope != "overview" {
-			warnings = append(warnings, map[string]any{"code": "scope_metric_mismatch", "message": "metric does not belong to current scope", "scope": scope, "metric": metric})
 			continue
 		}
 		points, err := fetchMetricSeries(ctx.CarID, scope, metric, bucket, startUTC, endUTC, ctx.UnitsLength)
@@ -323,20 +354,64 @@ func TeslaMateAPICarsSeriesV2(c *gin.Context) {
 	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
 }
 
-func TeslaMateAPICarsDistributionsV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+func metricDefinition(scope, metric string) (metricDef, bool) {
+	defs := map[string]map[string]metricDef{
+		"drives": {
+			"distance":     {Key: "distance", Name: "drive_distance", Unit: "km", Scope: "drives", ChartType: "bar"},
+			"efficiency":   {Key: "efficiency", Name: "drive_efficiency", Unit: "Wh/km", Scope: "drives", ChartType: "line"},
+			"speed":        {Key: "speed", Name: "drive_speed", Unit: "km/h", Scope: "drives", ChartType: "line"},
+			"energy":       {Key: "energy", Name: "drive_energy", Unit: "kWh", Scope: "drives", ChartType: "area"},
+			"regeneration": {Key: "regeneration", Name: "drive_regeneration", Unit: "kWh", Scope: "drives", ChartType: "area"},
+		},
+		"charges": {
+			"energy": {Key: "energy", Name: "charge_energy", Unit: "kWh", Scope: "charges", ChartType: "bar"},
+			"power":  {Key: "power", Name: "charge_power", Unit: "kW", Scope: "charges", ChartType: "line"},
+			"cost":   {Key: "cost", Name: "charge_cost", Unit: "currency", Scope: "charges", ChartType: "bar"},
+			"soc":    {Key: "soc", Name: "charge_end_soc", Unit: "%", Scope: "charges", ChartType: "line"},
+		},
+		"battery": {
+			"soc":   {Key: "soc", Name: "battery_soc", Unit: "%", Scope: "battery", ChartType: "line"},
+			"range": {Key: "range", Name: "battery_rated_range", Unit: "km", Scope: "battery", ChartType: "line"},
+		},
+		"states": {
+			"vampire_drain": {Key: "vampire_drain", Name: "vampire_drain", Unit: "kWh", Scope: "states", ChartType: "bar"},
+		},
+	}
+	scopeDefs, ok := defs[scope]
+	if !ok {
+		return metricDef{}, false
+	}
+	def, ok := scopeDefs[metric]
+	return def, ok
+}
+
+func TeslaMateAPICarsDriveDistributionsV2(c *gin.Context) {
+	writeScopedDistributions(c, "drives", []string{"start_hour", "weekday", "distance", "duration", "speed", "efficiency"})
+}
+
+func TeslaMateAPICarsChargeDistributionsV2(c *gin.Context) {
+	writeScopedDistributions(c, "charges", []string{"start_hour", "weekday", "energy", "duration", "power", "cost"})
+}
+
+func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []string) {
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid distribution range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsDistributionsV2")
 	if !ok {
 		return
 	}
 	metrics := parseCSV(c.Query("metrics"))
 	if len(metrics) == 0 {
-		metrics = []string{"drive_start_hour", "drive_distance", "drive_duration", "charge_start_hour", "charge_energy"}
+		metrics = defaultMetrics
 	}
 	startUTC, endUTC := dbTimeRange(dr)
 	distributions := make([]any, 0, len(metrics))
 	for _, metric := range metrics {
-		item, err := fetchDistribution(ctx.CarID, metric, startUTC, endUTC)
+		item, err := fetchDistribution(ctx.CarID, scope, metric, startUTC, endUTC)
 		if err != nil {
 			warnings = append(warnings, nonFatalWarning("distribution_query_failed", "failed to load distribution", map[string]any{"metric": metric}, err))
 			continue
@@ -345,13 +420,19 @@ func TeslaMateAPICarsDistributionsV2(c *gin.Context) {
 	}
 	writeV1Object(c, map[string]any{
 		"car_id":        ctx.CarID,
+		"scope":         scope,
 		"range":         buildRangeDTO(dr),
 		"distributions": distributions,
 	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
 }
 
 func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid insight range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedInsightsV2")
 	if !ok {
 		return
@@ -390,7 +471,12 @@ func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_pagination", err.Error(), nil)
 		return
 	}
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid timeline range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedTimelineV2")
 	if !ok {
 		return
@@ -423,7 +509,12 @@ func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
 }
 
 func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid visited map range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsMapVisitedUnifiedV2")
 	if !ok {
 		return
@@ -472,7 +563,12 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 }
 
 func TeslaMateAPICarsLocationsV2(c *gin.Context) {
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid locations range", map[string]any{"reason": err.Error()})
+		return
+	}
+	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsLocationsV2")
 	if !ok {
 		return
@@ -525,7 +621,7 @@ func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map
 			LEFT JOIN addresses start_address ON start_address.id = drives.start_address_id
 			LEFT JOIN geofences start_geofence ON start_geofence.id = drives.start_geofence_id
 			LEFT JOIN positions start_position ON start_position.id = drives.start_position_id
-			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3
+			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 			UNION ALL
 			SELECT
 				COALESCE(
@@ -547,7 +643,7 @@ func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map
 			LEFT JOIN addresses end_address ON end_address.id = drives.end_address_id
 			LEFT JOIN geofences end_geofence ON end_geofence.id = drives.end_geofence_id
 			LEFT JOIN positions end_position ON end_position.id = drives.end_position_id
-			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3
+			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 			UNION ALL
 			SELECT
 				COALESCE(
@@ -569,7 +665,7 @@ func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map
 			LEFT JOIN addresses address ON address.id = charging_processes.address_id
 			LEFT JOIN geofences geofence ON geofence.id = charging_processes.geofence_id
 			LEFT JOIN positions position ON position.id = charging_processes.position_id
-			WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date <= $3
+			WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
 		),
 		location_agg AS (
 			SELECT
@@ -593,7 +689,9 @@ func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map
 		WHERE location IS NOT NULL
 		ORDER BY (drive_start_count + drive_end_count + charge_count) DESC, last_seen DESC
 		LIMIT $4`
-	rows, err := db.Query(query, carID, startUTC, endUTC, limit)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, limit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -726,7 +824,9 @@ func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature stri
 		chargeStart, chargeEnd                                sql.NullString
 		chargeEnergyAdded, chargeEnergyUsed, chargeCost       sql.NullFloat64
 	)
-	if err := db.QueryRow(query, carID).Scan(
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, query, carID).Scan(
 		&positionDate,
 		&latitude,
 		&longitude,
@@ -805,7 +905,9 @@ func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature stri
 }
 
 func fetchDashboardRecentDrives(carID int, unitsLength, unitsTemperature string, limit int) ([]map[string]any, error) {
-	rows, err := db.Query(`
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, `
 		SELECT drives.id, drives.start_date, drives.end_date,
 			COALESCE(start_geofence.name, CONCAT_WS(', ', COALESCE(start_address.name, NULLIF(CONCAT_WS(' ', start_address.road, start_address.house_number), '')), start_address.city)) AS start_address,
 			COALESCE(end_geofence.name, CONCAT_WS(', ', COALESCE(end_address.name, NULLIF(CONCAT_WS(' ', end_address.road, end_address.house_number), '')), end_address.city)) AS end_address,
@@ -874,7 +976,9 @@ func fetchDashboardRecentDrives(carID int, unitsLength, unitsTemperature string,
 }
 
 func fetchDashboardRecentCharges(carID int, unitsLength, unitsTemperature string, limit int) ([]map[string]any, error) {
-	rows, err := db.Query(`
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, `
 		SELECT charging_processes.id, charging_processes.start_date, charging_processes.end_date,
 			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(address.name, NULLIF(CONCAT_WS(' ', address.road, address.house_number), '')), address.city)) AS location,
 			GREATEST(COALESCE(charging_processes.duration_min, 0), 0)::int,
@@ -947,7 +1051,9 @@ func fetchDashboardRecentCharges(carID int, unitsLength, unitsTemperature string
 }
 
 func fetchDashboardRecentUpdates(carID int, limit int) ([]map[string]any, error) {
-	rows, err := db.Query(`
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, `
 		SELECT id, start_date, end_date, version
 		FROM updates
 		WHERE car_id = $1 AND version IS NOT NULL
@@ -1011,13 +1117,21 @@ func fetchDashboardMetricSeries(carID int, startUTC, endUTC, unitsLength string)
 }
 
 func fetchDashboardDistributions(carID int, startUTC, endUTC string) ([]any, []any) {
-	metrics := []string{"drive_start_hour", "drive_distance", "drive_duration", "charge_start_hour", "charge_energy", "charge_power"}
-	distributions := make([]any, 0, len(metrics))
+	specs := []struct {
+		Scope  string
+		Metric string
+	}{
+		{Scope: "drives", Metric: "start_hour"},
+		{Scope: "drives", Metric: "distance"},
+		{Scope: "charges", Metric: "start_hour"},
+		{Scope: "charges", Metric: "energy"},
+	}
+	distributions := make([]any, 0, len(specs))
 	warnings := make([]any, 0)
-	for _, metric := range metrics {
-		item, err := fetchDistribution(carID, metric, startUTC, endUTC)
+	for _, spec := range specs {
+		item, err := fetchDistribution(carID, spec.Scope, spec.Metric, startUTC, endUTC)
 		if err != nil {
-			warnings = append(warnings, nonFatalWarning("dashboard_distribution_unavailable", "failed to load dashboard distribution", map[string]any{"metric": metric}, err))
+			warnings = append(warnings, nonFatalWarning("dashboard_distribution_unavailable", "failed to load dashboard distribution", map[string]any{"scope": spec.Scope, "metric": spec.Metric}, err))
 			continue
 		}
 		distributions = append(distributions, item)
@@ -1102,14 +1216,14 @@ func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[
 		WITH start_pos AS (
 			SELECT battery_level, rated_battery_range_km
 			FROM positions
-			WHERE car_id = $1 AND date >= $2 AND date <= $3
+			WHERE car_id = $1 AND date >= $2 AND date < $3
 			ORDER BY date ASC
 			LIMIT 1
 		),
 		end_pos AS (
 			SELECT battery_level, rated_battery_range_km
 			FROM positions
-			WHERE car_id = $1 AND date >= $2 AND date <= $3
+			WHERE car_id = $1 AND date >= $2 AND date < $3
 			ORDER BY date DESC
 			LIMIT 1
 		)
@@ -1124,7 +1238,9 @@ func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[
 		rangeStart sql.NullFloat64
 		rangeEnd   sql.NullFloat64
 	)
-	if err := db.QueryRow(query, carID, startUTC, endUTC).Scan(&socStart, &socEnd, &rangeStart, &rangeEnd); err != nil {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, query, carID, startUTC, endUTC).Scan(&socStart, &socEnd, &rangeStart, &rangeEnd); err != nil {
 		return nil, err
 	}
 	startRange := any(nil)
@@ -1170,7 +1286,7 @@ func fetchParkingEnergyTotal(carID int, startUTC, endUTC string) (*float64, erro
 			WHERE s.car_id = $1
 				AND s.state::text IN ('online', 'offline', 'asleep')
 				AND s.start_date >= $2
-				AND COALESCE(s.end_date, NOW() AT TIME ZONE 'UTC') <= $3
+				AND COALESCE(s.end_date, NOW() AT TIME ZONE 'UTC') < $3
 		),
 		energy_rows AS (
 			SELECT
@@ -1222,7 +1338,7 @@ func fetchParkingEnergyByBucketWithTimeout(carID int, startUTC, endUTC, trunc st
 			WHERE s.car_id = $1
 				AND s.state::text IN ('online', 'offline', 'asleep')
 				AND s.start_date >= $2
-				AND COALESCE(s.end_date, NOW() AT TIME ZONE 'UTC') <= $3
+				AND COALESCE(s.end_date, NOW() AT TIME ZONE 'UTC') < $3
 		),
 		energy_rows AS (
 			SELECT
@@ -1303,7 +1419,7 @@ func fetchRegeneratedEnergyByBucketWithTimeout(carID int, startUTC, endUTC, trun
 			WHERE drives.car_id = $1
 				AND drives.end_date IS NOT NULL
 				AND drives.start_date >= $2
-				AND drives.end_date <= $3
+				AND drives.end_date < $3
 		)
 		SELECT
 			bucket_date,
@@ -1410,7 +1526,7 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 				), 0)::float8 AS drive_energy_kwh
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
+			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
 			GROUP BY bucket
 		),
 		charges_agg AS (
@@ -1419,7 +1535,7 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 				COALESCE(SUM(charge_energy_added), 0)::float8 AS charge_energy_kwh,
 				NULLIF(SUM(CASE WHEN cost > 0 THEN cost ELSE 0 END), 0)::float8 AS charge_cost
 			FROM charging_processes
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
+			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
 			GROUP BY bucket
 		)
 		SELECT TO_CHAR(COALESCE(d.bucket, c.bucket), 'YYYY-MM-DD') AS bucket_date,
@@ -1433,7 +1549,9 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 		FROM drives_agg d
 		FULL JOIN charges_agg c ON d.bucket = c.bucket
 		ORDER BY bucket_date ASC`, trunc, trunc)
-	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1609,36 +1727,36 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, units
 	var query string
 	switch metric {
 	case "distance":
-		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(distance)::float8 FROM drives WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(distance)::float8 FROM drives WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 	case "efficiency":
-		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, CASE WHEN SUM(distance) > 0 THEN SUM(CASE WHEN (start_rated_range_km-end_rated_range_km) > 0 THEN (start_rated_range_km-end_rated_range_km) * cars.efficiency ELSE 0 END) / SUM(distance) * 1000.0 ELSE NULL END::float8 FROM drives LEFT JOIN cars ON cars.id = drives.car_id WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, CASE WHEN SUM(distance) > 0 THEN SUM(CASE WHEN (start_rated_range_km-end_rated_range_km) > 0 THEN (start_rated_range_km-end_rated_range_km) * cars.efficiency ELSE 0 END) / SUM(distance) * 1000.0 ELSE NULL END::float8 FROM drives LEFT JOIN cars ON cars.id = drives.car_id WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 	case "energy":
 		if scope == "charges" {
-			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(charge_energy_added)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(charge_energy_added)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 		} else {
-			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(CASE WHEN (start_rated_range_km-end_rated_range_km) > 0 THEN (start_rated_range_km-end_rated_range_km) * cars.efficiency ELSE 0 END)::float8 FROM drives LEFT JOIN cars ON cars.id = drives.car_id WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, SUM(CASE WHEN (start_rated_range_km-end_rated_range_km) > 0 THEN (start_rated_range_km-end_rated_range_km) * cars.efficiency ELSE 0 END)::float8 FROM drives LEFT JOIN cars ON cars.id = drives.car_id WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 		}
 	case "cost":
-		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, NULLIF(SUM(CASE WHEN cost > 0 THEN cost ELSE 0 END),0)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, NULLIF(SUM(CASE WHEN cost > 0 THEN cost ELSE 0 END),0)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 	case "speed":
-		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, CASE WHEN SUM(duration_min) > 0 THEN SUM(distance)/(SUM(duration_min)/60.0) ELSE NULL END::float8 FROM drives WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, CASE WHEN SUM(duration_min) > 0 THEN SUM(distance)/(SUM(duration_min)/60.0) ELSE NULL END::float8 FROM drives WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 	case "power":
-		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(NULLIF(charges.charger_power,0))::float8 FROM charging_processes LEFT JOIN charges ON charges.charging_process_id = charging_processes.id WHERE charging_processes.car_id=$1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(NULLIF(charges.charger_power,0))::float8 FROM charging_processes LEFT JOIN charges ON charges.charging_process_id = charging_processes.id WHERE charging_processes.car_id=$1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 	case "soc":
 		if scope == "charges" {
-			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(end_battery_level)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3 GROUP BY t ORDER BY t`, bucketExpr)
+			query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(end_battery_level)::float8 FROM charging_processes WHERE car_id=$1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 GROUP BY t ORDER BY t`, bucketExpr)
 		} else {
-			query = `SELECT TO_CHAR(date_trunc('day', timezone($4, date)), 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(battery_level)::float8 FROM positions WHERE car_id=$1 AND date >= $2 AND date <= $3 GROUP BY t ORDER BY t`
+			query = `SELECT TO_CHAR(date_trunc('day', timezone($4, date)), 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(battery_level)::float8 FROM positions WHERE car_id=$1 AND date >= $2 AND date < $3 GROUP BY t ORDER BY t`
 		}
 	case "range":
-		query = `SELECT TO_CHAR(date_trunc('day', timezone($4, date)), 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(rated_battery_range_km)::float8 FROM positions WHERE car_id=$1 AND date >= $2 AND date <= $3 AND rated_battery_range_km IS NOT NULL GROUP BY t ORDER BY t`
+		query = `SELECT TO_CHAR(date_trunc('day', timezone($4, date)), 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(rated_battery_range_km)::float8 FROM positions WHERE car_id=$1 AND date >= $2 AND date < $3 AND rated_battery_range_km IS NOT NULL GROUP BY t ORDER BY t`
 	case "regeneration":
 		query = `WITH regen AS (
 			SELECT TO_CHAR(date_trunc('day', timezone($4, positions.date)), 'YYYY-MM-DD"T"HH24:MI:SS') AS t,
 				ABS(LEAST(COALESCE(positions.power, 0)::float8, 0)) AS pkw,
 				EXTRACT(EPOCH FROM (positions.date - LAG(positions.date) OVER (PARTITION BY drives.id ORDER BY positions.id))) AS ds
 			FROM drives INNER JOIN positions ON positions.drive_id = drives.id
-			WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3
+			WHERE drives.car_id=$1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		)
 		SELECT t, SUM(pkw * ds / 3600.0)::float8 FROM regen WHERE ds > 0 AND ds <= 300 AND pkw > 0 GROUP BY t ORDER BY t`
 	case "vampire_drain":
@@ -1659,7 +1777,9 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, units
 	default:
 		return []map[string]any{}, nil
 	}
-	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, err
 	}
@@ -1683,172 +1803,231 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, units
 	return convertMetricSeriesUnits(result, metric, unitsLength), nil
 }
 
-func fetchDistribution(carID int, metric, startUTC, endUTC string) (map[string]any, error) {
-	switch metric {
-	case "drive_start_hour":
-		rows, err := db.Query(`
-			SELECT EXTRACT(HOUR FROM timezone($4, start_date))::int AS hour, COUNT(*)::int
-			FROM drives
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY hour ORDER BY hour ASC`, carID, startUTC, endUTC, appUsersTimezone.String())
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		buckets := make([]any, 0)
-		for rows.Next() {
-			var hour, count int
-			if err := rows.Scan(&hour, &count); err != nil {
-				return nil, err
-			}
-			buckets = append(buckets, map[string]any{
-				"label": fmt.Sprintf("%02d:00-%02d:00", hour, (hour+1)%24),
-				"from":  hour,
-				"to":    hour + 1,
-				"count": count,
-				"value": count,
-			})
-		}
-		return map[string]any{
-			"metric":     metric,
-			"name":       "drive_start_hour",
-			"unit":       "count",
-			"chart_type": "bar",
-			"buckets":    buckets,
-		}, rows.Err()
-	case "drive_duration":
+func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {
+	switch scope + ":" + metric {
+	case "drives:start_hour":
+		return fetchHourDistribution("drives", "drives.start_date", carID, startUTC, endUTC, "drive_start_hour")
+	case "drives:weekday":
+		return fetchWeekdayDistribution("drives", "drives.start_date", carID, startUTC, endUTC, "drive_weekday")
+	case "drives:distance":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN duration_min < 10 THEN '0-10'
-				WHEN duration_min < 20 THEN '10-20'
-				WHEN duration_min < 40 THEN '20-40'
-				WHEN duration_min < 60 THEN '40-60'
-				ELSE '60+'
-			END AS label,
-			COUNT(*)::int
-			FROM drives
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "drive_duration", "count")
-	case "drive_distance":
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
+					(4, '20-50', 20.0, 50.0), (5, '50+', 50.0, NULL)
+			),
+			filtered AS (
+				SELECT GREATEST(COALESCE(distance, 0), 0)::float8 AS value
+				FROM drives
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "drive_distance", "drive_distance", "count")
+	case "drives:duration":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN distance < 5 THEN '0-5'
-				WHEN distance < 10 THEN '5-10'
-				WHEN distance < 20 THEN '10-20'
-				WHEN distance < 50 THEN '20-50'
-				ELSE '50+'
-			END AS label,
-			COUNT(*)::int
-			FROM drives
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "drive_distance", "count")
-	case "drive_speed":
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-40', 20.0, 40.0),
+					(4, '40-60', 40.0, 60.0), (5, '60+', 60.0, NULL)
+			),
+			filtered AS (
+				SELECT GREATEST(COALESCE(duration_min, 0), 0)::float8 AS value
+				FROM drives
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "drive_duration", "drive_duration", "count")
+	case "drives:speed":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN speed_max < 20 THEN '0-20'
-				WHEN speed_max < 40 THEN '20-40'
-				WHEN speed_max < 60 THEN '40-60'
-				WHEN speed_max < 100 THEN '60-100'
-				ELSE '100+'
-			END AS label,
-			COUNT(*)::int
-			FROM drives
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "drive_speed", "count")
-	case "charge_start_hour":
-		rows, err := db.Query(`
-			SELECT EXTRACT(HOUR FROM timezone($4, start_date))::int AS hour, COUNT(*)::int
-			FROM charging_processes
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY hour ORDER BY hour ASC`, carID, startUTC, endUTC, appUsersTimezone.String())
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		buckets := make([]any, 0)
-		for rows.Next() {
-			var hour, count int
-			if err := rows.Scan(&hour, &count); err != nil {
-				return nil, err
-			}
-			buckets = append(buckets, map[string]any{
-				"label": fmt.Sprintf("%02d:00-%02d:00", hour, (hour+1)%24),
-				"from":  hour,
-				"to":    hour + 1,
-				"count": count,
-				"value": count,
-			})
-		}
-		return map[string]any{
-			"metric":     metric,
-			"name":       "charge_start_hour",
-			"unit":       "count",
-			"chart_type": "bar",
-			"buckets":    buckets,
-		}, rows.Err()
-	case "charge_duration":
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-20', 0.0, 20.0), (2, '20-40', 20.0, 40.0), (3, '40-60', 40.0, 60.0),
+					(4, '60-100', 60.0, 100.0), (5, '100+', 100.0, NULL)
+			),
+			filtered AS (
+				SELECT COALESCE(speed_max, 0)::float8 AS value
+				FROM drives
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "drive_speed", "drive_speed", "count")
+	case "drives:efficiency":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN duration_min < 30 THEN '0-30'
-				WHEN duration_min < 60 THEN '30-60'
-				WHEN duration_min < 120 THEN '60-120'
-				WHEN duration_min < 240 THEN '120-240'
-				ELSE '240+'
-			END AS label,
-			COUNT(*)::int
-			FROM charging_processes
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "charge_duration", "count")
-	case "charge_energy":
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-120', 0.0, 120.0), (2, '120-160', 120.0, 160.0), (3, '160-200', 160.0, 200.0),
+					(4, '200-260', 200.0, 260.0), (5, '260+', 260.0, NULL)
+			),
+			filtered AS (
+				SELECT CASE
+					WHEN drives.distance > 0 AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0
+					THEN ((drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance) * 1000.0
+					ELSE NULL
+				END::float8 AS value
+				FROM drives
+				LEFT JOIN cars ON cars.id = drives.car_id
+				WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "drive_efficiency", "drive_efficiency", "count")
+	case "charges:start_hour":
+		return fetchHourDistribution("charging_processes", "charging_processes.start_date", carID, startUTC, endUTC, "charge_start_hour")
+	case "charges:weekday":
+		return fetchWeekdayDistribution("charging_processes", "charging_processes.start_date", carID, startUTC, endUTC, "charge_weekday")
+	case "charges:energy":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN charge_energy_added < 10 THEN '0-10'
-				WHEN charge_energy_added < 20 THEN '10-20'
-				WHEN charge_energy_added < 40 THEN '20-40'
-				WHEN charge_energy_added < 70 THEN '40-70'
-				ELSE '70+'
-			END AS label,
-			COUNT(*)::int
-			FROM charging_processes
-			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "charge_energy", "count")
-	case "charge_power":
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-40', 20.0, 40.0),
+					(4, '40-70', 40.0, 70.0), (5, '70+', 70.0, NULL)
+			),
+			filtered AS (
+				SELECT GREATEST(COALESCE(charge_energy_added, 0), 0)::float8 AS value
+				FROM charging_processes
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "charge_energy", "charge_energy", "count")
+	case "charges:duration":
 		return fetchNumericDistribution(`
-			SELECT CASE
-				WHEN COALESCE(charger_power,0) < 4 THEN '0-4'
-				WHEN charger_power < 8 THEN '4-8'
-				WHEN charger_power < 12 THEN '8-12'
-				WHEN charger_power < 50 THEN '12-50'
-				ELSE '50+'
-			END AS label,
-			COUNT(*)::int
-			FROM charges
-			INNER JOIN charging_processes ON charging_processes.id = charges.charging_process_id
-			WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date <= $3
-			GROUP BY label
-			ORDER BY label`, carID, startUTC, endUTC, metric, "charge_power", "count")
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-30', 0.0, 30.0), (2, '30-60', 30.0, 60.0), (3, '60-120', 60.0, 120.0),
+					(4, '120-240', 120.0, 240.0), (5, '240+', 240.0, NULL)
+			),
+			filtered AS (
+				SELECT GREATEST(COALESCE(duration_min, 0), 0)::float8 AS value
+				FROM charging_processes
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "charge_duration", "charge_duration", "count")
+	case "charges:power":
+		return fetchNumericDistribution(`
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-4', 0.0, 4.0), (2, '4-8', 4.0, 8.0), (3, '8-12', 8.0, 12.0),
+					(4, '12-50', 12.0, 50.0), (5, '50+', 50.0, NULL)
+			),
+			filtered AS (
+				SELECT MAX(COALESCE(charges.charger_power, 0))::float8 AS value
+				FROM charges
+				INNER JOIN charging_processes ON charging_processes.id = charges.charging_process_id
+				WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL
+					AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
+				GROUP BY charging_processes.id
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "charge_power", "charge_power", "count")
+	case "charges:cost":
+		return fetchNumericDistribution(`
+			WITH buckets(ord, label, min_value, max_value) AS (
+				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
+					(4, '20-50', 20.0, 50.0), (5, '50+', 50.0, NULL)
+			),
+			filtered AS (
+				SELECT cost::float8 AS value
+				FROM charging_processes
+				WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3 AND cost IS NOT NULL AND cost >= 0
+			)
+			SELECT b.label, COALESCE(COUNT(f.value), 0)::int
+			FROM buckets b
+			LEFT JOIN filtered f ON f.value >= b.min_value AND (b.max_value IS NULL OR f.value < b.max_value)
+			GROUP BY b.ord, b.label
+			ORDER BY b.ord`, carID, startUTC, endUTC, "charge_cost", "charge_cost", "count")
 	default:
-		return map[string]any{
-			"metric":     metric,
-			"name":       metric,
-			"unit":       "count",
-			"chart_type": "bar",
-			"buckets":    []any{},
-		}, nil
+		return nil, fmt.Errorf("unsupported %s distribution metric: %s", scope, metric)
 	}
 }
 
-func fetchNumericDistribution(query string, carID int, startUTC, endUTC, metric, name, unit string) (map[string]any, error) {
-	rows, err := db.Query(query, carID, startUTC, endUTC)
+func fetchHourDistribution(table, dateExpr string, carID int, startUTC, endUTC, name string) (map[string]any, error) {
+	query := fmt.Sprintf(`
+		WITH buckets AS (
+			SELECT generate_series(0, 23)::int AS hour
+		),
+		filtered AS (
+			SELECT EXTRACT(HOUR FROM timezone($4, %s))::int AS hour
+			FROM %s
+			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+		)
+		SELECT b.hour, COALESCE(COUNT(f.hour), 0)::int
+		FROM buckets b
+		LEFT JOIN filtered f ON f.hour = b.hour
+		GROUP BY b.hour
+		ORDER BY b.hour`, dateExpr, table)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+	buckets := make([]any, 0, 24)
+	for rows.Next() {
+		var hour, count int
+		if err := rows.Scan(&hour, &count); err != nil {
+			return nil, err
+		}
+		buckets = append(buckets, map[string]any{"label": fmt.Sprintf("%02d:00-%02d:00", hour, (hour+1)%24), "from": hour, "to": hour + 1, "count": count, "value": count})
+	}
+	return map[string]any{"metric": name, "name": name, "unit": "count", "chart_type": "bar", "buckets": buckets}, rows.Err()
+}
+
+func fetchWeekdayDistribution(table, dateExpr string, carID int, startUTC, endUTC, name string) (map[string]any, error) {
+	query := fmt.Sprintf(`
+		WITH buckets(ord, label) AS (
+			VALUES (1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')
+		),
+		filtered AS (
+			SELECT EXTRACT(ISODOW FROM timezone($4, %s))::int AS ord
+			FROM %s
+			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
+		)
+		SELECT b.label, COALESCE(COUNT(f.ord), 0)::int
+		FROM buckets b
+		LEFT JOIN filtered f ON f.ord = b.ord
+		GROUP BY b.ord, b.label
+		ORDER BY b.ord`, dateExpr, table)
+	return fetchNumericDistributionWithTimezone(query, carID, startUTC, endUTC, name, name, "count")
+}
+
+func fetchNumericDistributionWithTimezone(query string, carID int, startUTC, endUTC, metric, name, unit string) (map[string]any, error) {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, appUsersTimezone.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanDistributionRows(rows, metric, name, unit)
+}
+
+func fetchNumericDistribution(query string, carID int, startUTC, endUTC, metric, name, unit string) (map[string]any, error) {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanDistributionRows(rows, metric, name, unit)
+}
+
+func scanDistributionRows(rows *sql.Rows, metric, name, unit string) (map[string]any, error) {
 	buckets := make([]any, 0)
 	for rows.Next() {
 		var label string
@@ -1887,22 +2066,22 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		}
 		return typeSet[tp]
 	}
-	appendInsight := func(id, tp, level, title, desc string, current any, baseline any, related map[string]any) {
+	appendInsight := func(id, tp, level, title, message, metric string, current any, baseline any, related map[string]any) {
 		if len(items) >= limit || !accept(tp) {
 			return
 		}
+		delta := calcDeltaPercent(current, baseline)
 		items = append(items, map[string]any{
-			"id":          id,
-			"type":        tp,
-			"level":       level,
-			"title":       title,
-			"description": desc,
-			"metrics": map[string]any{
-				"current":       current,
-				"baseline":      baseline,
-				"delta_percent": calcDeltaPercent(current, baseline),
-			},
-			"related": related,
+			"id":            id,
+			"type":          tp,
+			"level":         level,
+			"title":         title,
+			"message":       message,
+			"metric":        metric,
+			"current":       current,
+			"baseline":      baseline,
+			"delta_percent": delta,
+			"related":       related,
 		})
 	}
 
@@ -1955,47 +2134,47 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		cur := *currentDrive.AverageConsumption
 		base := *baseDrive.AverageConsumption
 		if base > 0 && cur >= base*1.1 {
-			appendInsight("drive_efficiency_worse", "efficiency", "warning", "drive_efficiency_worse", "average efficiency worsened versus baseline period", cur, base, map[string]any{"entity_type": "drive"})
+			appendInsight("drive_efficiency_worse", "efficiency", "warning", "Driving efficiency worsened", "Average consumption is at least 10% higher than the previous equivalent period.", "avg_efficiency", cur, base, map[string]any{"entity_type": "drive"})
 		}
 		if base > 0 && cur <= base*0.9 {
-			appendInsight("drive_efficiency_better", "efficiency", "positive", "drive_efficiency_better", "average efficiency improved versus baseline period", cur, base, map[string]any{"entity_type": "drive"})
+			appendInsight("drive_efficiency_better", "efficiency", "positive", "Driving efficiency improved", "Average consumption is at least 10% lower than the previous equivalent period.", "avg_efficiency", cur, base, map[string]any{"entity_type": "drive"})
 		}
 	}
 	if currentCharge.AverageCostPerKwh != nil && baseCharge != nil && baseCharge.AverageCostPerKwh != nil {
 		cur := *currentCharge.AverageCostPerKwh
 		base := *baseCharge.AverageCostPerKwh
 		if base > 0 && cur >= base*1.15 {
-			appendInsight("charge_cost_higher", "cost", "warning", "charge_cost_higher", "charging unit cost significantly higher than baseline", cur, base, map[string]any{"entity_type": "charge"})
+			appendInsight("charge_cost_higher", "cost", "warning", "Charging cost increased", "Average charging cost per kWh is at least 15% higher than the previous equivalent period.", "cost_per_kwh", cur, base, map[string]any{"entity_type": "charge"})
 		}
 		if base > 0 && cur <= base*0.85 {
-			appendInsight("charge_cost_lower", "cost", "positive", "charge_cost_lower", "charging unit cost significantly lower than baseline", cur, base, map[string]any{"entity_type": "charge"})
+			appendInsight("charge_cost_lower", "cost", "positive", "Charging cost decreased", "Average charging cost per kWh is at least 15% lower than the previous equivalent period.", "cost_per_kwh", cur, base, map[string]any{"entity_type": "charge"})
 		}
 	}
 	if currentCharge.ChargingEfficiency != nil && baseCharge != nil && baseCharge.ChargingEfficiency != nil {
 		cur := *currentCharge.ChargingEfficiency * 100.0
 		base := *baseCharge.ChargingEfficiency * 100.0
 		if cur < base-5 {
-			appendInsight("charge_efficiency_drop", "charging", "warning", "charge_efficiency_drop", "charging efficiency dropped over 5 points", cur, base, map[string]any{"entity_type": "charge"})
+			appendInsight("charge_efficiency_drop", "charging", "warning", "Charging efficiency dropped", "Charging efficiency is more than 5 percentage points below the previous equivalent period.", "charging_efficiency_percent", cur, base, map[string]any{"entity_type": "charge"})
 		}
 	}
 	if currentRegen != nil && currentRegen.RecoveryShare != nil && baseRegen != nil && baseRegen.RecoveryShare != nil {
 		cur := *currentRegen.RecoveryShare
 		base := *baseRegen.RecoveryShare
 		if base > 0 && cur >= base*1.1 {
-			appendInsight("regen_share_higher", "driving", "positive", "regen_share_higher", "regeneration share increased versus baseline", cur, base, map[string]any{"entity_type": "drive"})
+			appendInsight("regen_share_higher", "driving", "positive", "Regeneration share improved", "Estimated recovered energy share is at least 10% higher than the previous equivalent period.", "regeneration_share", cur, base, map[string]any{"entity_type": "drive"})
 		}
 	}
 	if currentPark != nil && basePark != nil {
 		cur := *currentPark
 		base := *basePark
 		if base > 0 && cur >= base*1.2 {
-			appendInsight("vampire_drain_higher", "battery", "warning", "vampire_drain_higher", "parking energy loss increased versus baseline", cur, base, map[string]any{"entity_type": "state"})
+			appendInsight("vampire_drain_higher", "battery", "warning", "Parking energy loss increased", "Estimated parking energy loss is at least 20% higher than the previous equivalent period.", "park_energy_kwh", cur, base, map[string]any{"entity_type": "state"})
 		}
 	}
 	if currentDrive.DriveCount > 0 {
 		ratio := float64(currentDrive.LowSpeedTripCount) / float64(currentDrive.DriveCount)
 		if ratio >= 0.45 {
-			appendInsight("traffic_ratio_high", "anomaly", "info", "traffic_ratio_high", "high share of low-speed trips indicates congestion", ratio, nil, map[string]any{"entity_type": "drive"})
+			appendInsight("traffic_ratio_high", "anomaly", "info", "Frequent low-speed driving", "At least 45% of trips were low-speed trips, which usually indicates congestion or short urban driving.", "low_speed_trip_ratio", ratio, nil, map[string]any{"entity_type": "drive"})
 		}
 	}
 	if currentCharge.ChargeCount > 0 {
@@ -2003,7 +2182,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		if days > 0 {
 			freq := float64(currentCharge.ChargeCount) / days
 			if freq >= 1.2 {
-				appendInsight("charge_frequency_high", "charging", "info", "charge_frequency_high", "charging frequency is high for this range", freq, nil, map[string]any{"entity_type": "charge"})
+				appendInsight("charge_frequency_high", "charging", "info", "High charging frequency", "Charging frequency is above 1.2 sessions per day for this period.", "charges_per_day", freq, nil, map[string]any{"entity_type": "charge"})
 			}
 		}
 	}

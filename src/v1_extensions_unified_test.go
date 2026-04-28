@@ -59,6 +59,24 @@ func TestParseDateRangeFromQueryTimezoneAndInvalid(t *testing.T) {
 	}
 }
 
+func TestDBTimeRangeUsesLocalTimezoneAndExclusiveEnd(t *testing.T) {
+	loc := time.FixedZone("CST", 8*3600)
+	dr := v1DateRange{
+		Period:   "custom",
+		Timezone: loc,
+		Start:    time.Date(2026, 4, 1, 0, 0, 0, 0, loc),
+		End:      time.Date(2026, 4, 30, 23, 59, 59, 0, loc),
+	}
+
+	startUTC, endUTC := dbTimeRange(dr)
+	if startUTC != "2026-03-31T16:00:00Z" {
+		t.Fatalf("unexpected start UTC: %s", startUTC)
+	}
+	if endUTC != "2026-04-30T16:00:00Z" {
+		t.Fatalf("unexpected exclusive end UTC: %s", endUTC)
+	}
+}
+
 func TestStatisticsCalcNullAndZeroHandling(t *testing.T) {
 	d := 20.0
 	dur := 3600.0
@@ -83,23 +101,5 @@ func TestStatisticsCalcNullAndZeroHandling(t *testing.T) {
 	}
 	if v := calcChargeEfficiencyPercent(&e, &zero); v != nil {
 		t.Fatalf("expected nil on zero charger energy: %+v", *v)
-	}
-}
-
-func TestParseDateRangeWithMonthFallback(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	old := appUsersTimezone
-	appUsersTimezone = time.FixedZone("CST", 8*3600)
-	t.Cleanup(func() { appUsersTimezone = old })
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/?period=custom&startDate=bad&endDate=2026-04-01", nil)
-	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
-	if dr.Period != "month" {
-		t.Fatalf("expected month fallback, got %s", dr.Period)
-	}
-	if len(warnings) == 0 {
-		t.Fatal("expected fallback warning")
 	}
 }

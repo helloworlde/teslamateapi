@@ -137,7 +137,9 @@ func fetchRegenerationSummary(CarID int, parsedStartDate string, parsedEndDate s
 		coverageEnd                  sql.NullString
 	)
 
-	if err := db.QueryRow(query, queryParams...).Scan(
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, query, queryParams...).Scan(
 		&driveCountWithRegeneration,
 		&regenerationEventCount,
 		&totalRecoveredEnergy,
@@ -231,7 +233,9 @@ func fetchMonthlyRecoveredEnergy(CarID int, parsedStartDate string, parsedEndDat
 		ORDER BY period ASC;`, len(queryParams)+1)
 	queryParams = append(queryParams, appUsersTimezone.String())
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

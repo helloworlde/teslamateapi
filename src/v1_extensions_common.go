@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const aggregateQueryTimeout = 1500 * time.Millisecond
+
+func newAggregateQueryContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), aggregateQueryTimeout)
+}
 
 type v1Meta struct {
 	CarID       int    `json:"car_id,omitempty"`
@@ -227,38 +234,34 @@ func buildRangeDTO(r v1DateRange) v1Range {
 }
 
 func dbTimeRange(r v1DateRange) (string, string) {
-	return r.Start.UTC().Format(dbTimestampFormat), r.End.UTC().Format(dbTimestampFormat)
+	// API ranges expose an inclusive, timezone-aware end timestamp. SQL filters use
+	// a half-open range so adjacent local days/months do not double-count boundary rows.
+	return r.Start.UTC().Format(dbTimestampFormat), r.End.Add(time.Second).UTC().Format(dbTimestampFormat)
 }
 
-func currentMonthRange(loc *time.Location) v1DateRange {
-	if loc == nil {
-		loc = appUsersTimezone
+func parseDateRangeStrictOrDefault(c *gin.Context, defaultPeriod string) (v1DateRange, error) {
+	loc, _, err := parseTimezoneParam(c)
+	if err != nil {
+		return v1DateRange{}, err
 	}
-	if loc == nil {
-		loc = time.Local
+	startRaw := strings.TrimSpace(c.Query("startDate"))
+	endRaw := strings.TrimSpace(c.Query("endDate"))
+	if startRaw != "" || endRaw != "" {
+		start, err := parseDateOnlyOrTime(startRaw, loc, false)
+		if err != nil {
+			return v1DateRange{}, err
+		}
+		end, err := parseDateOnlyOrTime(endRaw, loc, true)
+		if err != nil {
+			return v1DateRange{}, err
+		}
+		if start.IsZero() || end.IsZero() {
+			return v1DateRange{}, fmt.Errorf("startDate and endDate are required together")
+		}
+		if end.Before(start) {
+			return v1DateRange{}, fmt.Errorf("startDate must be before endDate")
+		}
+		return v1DateRange{Period: "custom", Timezone: loc, Start: start, End: end}, nil
 	}
-	now := time.Now().In(loc)
-	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
-	end := start.AddDate(0, 1, 0).Add(-time.Second)
-	return v1DateRange{
-		Period:   "month",
-		Timezone: loc,
-		Start:    start,
-		End:      end,
-	}
-}
-
-func parseDateRangeWithMonthFallback(c *gin.Context, defaultPeriod string) (v1DateRange, []any) {
-	dr, err := parseDateRangeFromQuery(c, defaultPeriod)
-	if err == nil {
-		return dr, []any{}
-	}
-	fallback := currentMonthRange(appUsersTimezone)
-	return fallback, []any{
-		map[string]any{
-			"code":    "date_range_fallback",
-			"message": "invalid or missing date range, fallback to current month",
-			"reason":  err.Error(),
-		},
-	}
+	return parseDateRangeFromQuery(c, defaultPeriod)
 }

@@ -83,8 +83,12 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/dashboard",
 		"GET /api/v1/cars/:CarID/calendar",
 		"GET /api/v1/cars/:CarID/statistics",
-		"GET /api/v1/cars/:CarID/series",
-		"GET /api/v1/cars/:CarID/distributions",
+		"GET /api/v1/cars/:CarID/series/drives",
+		"GET /api/v1/cars/:CarID/series/charges",
+		"GET /api/v1/cars/:CarID/series/battery",
+		"GET /api/v1/cars/:CarID/series/states",
+		"GET /api/v1/cars/:CarID/distributions/drives",
+		"GET /api/v1/cars/:CarID/distributions/charges",
 		"GET /api/v1/cars/:CarID/insights",
 		"GET /api/v1/cars/:CarID/timeline",
 		"GET /api/v1/cars/:CarID/map/visited",
@@ -100,6 +104,8 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/dashboards/drives",
 		"GET /api/v1/cars/:CarID/parking-sessions",
 		"GET /api/v1/cars/:CarID/charts/drives/distance",
+		"GET /api/v1/cars/:CarID/series",
+		"GET /api/v1/cars/:CarID/distributions",
 		"GET /api/v1/cars/:CarID/calendar/drives",
 		"GET /api/v1/cars/:CarID/calendar/charges",
 	} {
@@ -162,19 +168,15 @@ func TestCommandRoutesAreRegisteredWhenExplicitlyEnabled(t *testing.T) {
 	}
 }
 
-func TestDashboardInvalidDateFallback(t *testing.T) {
+func TestDashboardInvalidDateReturnsError(t *testing.T) {
 	oldTZ := appUsersTimezone
 	appUsersTimezone = time.FixedZone("CST", 8*3600)
 	defer func() { appUsersTimezone = oldTZ }()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/dashboard?period=custom&startDate=not-a-date&endDate=2026-04-01", nil)
-	dr, warnings := parseDateRangeWithMonthFallback(c, "month")
-	if dr.Period != "month" {
-		t.Fatalf("expected month fallback, got %s", dr.Period)
-	}
-	if len(warnings) == 0 {
-		t.Fatal("expected fallback warning")
+	if _, err := parseDateRangeStrictOrDefault(c, "month"); err == nil {
+		t.Fatal("expected invalid date error")
 	}
 }
 
@@ -201,8 +203,11 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 		"/api/v1/cars/%d/dashboard",
 		"/api/v1/cars/%d/calendar?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/statistics",
-		"/api/v1/cars/%d/series?startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",
-		"/api/v1/cars/%d/distributions?startDate=2026-04-01&endDate=2026-04-30&metrics=drive_start_hour",
+		"/api/v1/cars/%d/series/drives?startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",
+		"/api/v1/cars/%d/series/charges?startDate=2026-04-01&endDate=2026-04-30&metrics=energy,power",
+		"/api/v1/cars/%d/series/battery?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v1/cars/%d/distributions/drives?startDate=2026-04-01&endDate=2026-04-30&metrics=start_hour",
+		"/api/v1/cars/%d/distributions/charges?startDate=2026-04-01&endDate=2026-04-30&metrics=energy",
 		"/api/v1/cars/%d/insights?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/timeline?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/map/visited",

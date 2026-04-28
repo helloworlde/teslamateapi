@@ -199,7 +199,7 @@ func fetchParkingPeriods(CarID int, parsedStartDate string, parsedEndDate string
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND COALESCE(states.end_date, NOW() AT TIME ZONE 'UTC') <= $%d", paramIndex)
+		query += fmt.Sprintf(" AND COALESCE(states.end_date, NOW() AT TIME ZONE 'UTC') < $%d", paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}
@@ -214,7 +214,9 @@ func fetchParkingPeriods(CarID int, parsedStartDate string, parsedEndDate string
 		LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
 	queryParams = append(queryParams, show, offset)
 
-	rows, err := db.Query(query, queryParams...)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +267,7 @@ func fetchParkingHistorySummary(CarID int, parsedStartDate string, parsedEndDate
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		baseQuery += fmt.Sprintf(" AND COALESCE(states.end_date, NOW() AT TIME ZONE 'UTC') <= $%d", paramIndex)
+		baseQuery += fmt.Sprintf(" AND COALESCE(states.end_date, NOW() AT TIME ZONE 'UTC') < $%d", paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}
@@ -296,7 +298,9 @@ func fetchParkingHistorySummary(CarID int, parsedStartDate string, parsedEndDate
 			MAX(effective_end_date) AS coverage_end
 		FROM filtered_states;`
 
-	if err := db.QueryRow(overallQuery, queryParams...).Scan(
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, overallQuery, queryParams...).Scan(
 		&sessionCount,
 		&totalDurationMin,
 		&averageDurationMin,
@@ -322,7 +326,7 @@ func fetchParkingHistorySummary(CarID int, parsedStartDate string, parsedEndDate
 		GROUP BY state
 		ORDER BY total_duration_min DESC, state ASC;`
 
-	rows, err := db.Query(breakdownQuery, queryParams...)
+	rows, err := db.QueryContext(queryCtx, breakdownQuery, queryParams...)
 	if err != nil {
 		return nil, err
 	}
