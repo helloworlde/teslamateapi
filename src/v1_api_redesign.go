@@ -136,60 +136,21 @@ func toAnySlice[T any](items []T) []any {
 }
 
 func TeslaMateAPICarsSummaryV2(c *gin.Context) {
-	startUTC, endUTC, err := parseDateRangeValues(c.Query("startDate"), c.Query("endDate"), appUsersTimezone)
+	dr, err := parseSummaryRangeStrict(c)
 	if err != nil {
-		writeAPIError(c, http.StatusBadRequest, "invalid_date", "invalid startDate or endDate, expected RFC3339 or local date format", map[string]any{"reason": err.Error()})
+		writeV1Error(c, http.StatusBadRequest, "invalid_date", "invalid summary range", map[string]any{"reason": err.Error()})
 		return
 	}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsSummaryV2")
 	if !ok {
 		return
 	}
-
-	driveSummary, err := fetchDriveHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
+	data, warnings, err := buildUnifiedSummary(ctx, dr)
 	if err != nil {
-		writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load drive summary", map[string]any{"reason": err.Error()})
+		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": err.Error()})
 		return
 	}
-	chargeSummary, err := fetchChargeHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
-	if err != nil {
-		writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load charge summary", map[string]any{"reason": err.Error()})
-		return
-	}
-	parkingSummary, err := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
-	if err != nil {
-		writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load parking summary", map[string]any{"reason": err.Error()})
-		return
-	}
-	stateSummary, err := fetchStateSummary(ctx.CarID, startUTC, endUTC)
-	if err != nil {
-		writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load state summary", map[string]any{"reason": err.Error()})
-		return
-	}
-	statistics, err := fetchStatisticsSummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, ctx.UnitsTemperature, driveSummary, chargeSummary)
-	if err != nil {
-		writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load statistics", map[string]any{"reason": err.Error()})
-		return
-	}
-	latestOdometer, _ := fetchLatestOdometer(ctx.CarID, ctx.UnitsLength)
-	vampireChart, vampireMeta := fetchVampireDrainPlaceholder()
-
-	data := map[string]any{
-		"drive_summary":         driveSummary,
-		"charge_summary":        chargeSummary,
-		"parking_summary":       parkingSummary,
-		"statistics":            statistics,
-		"current_snapshot":      stateSummary,
-		"efficiency_summary":    buildEfficiencySummary(driveSummary, chargeSummary),
-		"cost_summary":          buildCostSummary(chargeSummary),
-		"mileage_summary":       map[string]any{"latest_odometer": latestOdometer, "unit": distanceUnit(ctx.UnitsLength)},
-		"vampire_drain_summary": map[string]any{"series": vampireChart, "available": false},
-	}
-	meta := map[string]any{}
-	for k, v := range vampireMeta {
-		meta[k] = v
-	}
-	writeAPISuccess(c, newAPIObjectResponse(ctx.CarID, buildAPIUnits(ctx.UnitsLength, ctx.UnitsTemperature), startUTC, endUTC, data, meta))
+	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
 }
 
 func TeslaMateAPICarsStatisticsV2(c *gin.Context) {

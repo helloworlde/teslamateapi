@@ -25,6 +25,26 @@ func buildTestRouter() *gin.Engine {
 	return r
 }
 
+func routeSet(r *gin.Engine) map[string]bool {
+	routes := map[string]bool{}
+	for _, route := range r.Routes() {
+		routes[route.Method+" "+route.Path] = true
+	}
+	return routes
+}
+
+func restoreEnv(t *testing.T, key string) {
+	t.Helper()
+	old, ok := os.LookupEnv(key)
+	t.Cleanup(func() {
+		if ok {
+			_ = os.Setenv(key, old)
+			return
+		}
+		_ = os.Unsetenv(key)
+	})
+}
+
 func TestParseAPITimeFormats(t *testing.T) {
 	loc := time.FixedZone("CST", 8*3600)
 	cases := []string{
@@ -57,11 +77,9 @@ func TestParseDateRangeValuesDateOnlyEnd(t *testing.T) {
 
 func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 	r := buildTestRouter()
-	routes := map[string]bool{}
-	for _, route := range r.Routes() {
-		routes[route.Method+" "+route.Path] = true
-	}
+	routes := routeSet(r)
 	for _, key := range []string{
+		"GET /api/v1/cars/:CarID/summary",
 		"GET /api/v1/cars/:CarID/dashboard",
 		"GET /api/v1/cars/:CarID/calendar",
 		"GET /api/v1/cars/:CarID/statistics",
@@ -70,6 +88,7 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/insights",
 		"GET /api/v1/cars/:CarID/timeline",
 		"GET /api/v1/cars/:CarID/map/visited",
+		"GET /api/v1/cars/:CarID/locations",
 	} {
 		if !routes[key] {
 			t.Fatalf("missing route %s", key)
@@ -86,6 +105,59 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 	} {
 		if routes[key] {
 			t.Fatalf("unexpected legacy route %s", key)
+		}
+	}
+}
+
+func TestCommandRoutesAreNotRegisteredByDefault(t *testing.T) {
+	restoreEnv(t, "ENABLE_COMMANDS")
+	_ = os.Unsetenv("ENABLE_COMMANDS")
+
+	r := buildTestRouter()
+	routes := routeSet(r)
+	for _, key := range []string{
+		"GET /api/v1/cars/:CarID/command",
+		"POST /api/v1/cars/:CarID/command/:Command",
+		"GET /api/v1/cars/:CarID/logging",
+		"PUT /api/v1/cars/:CarID/logging/:Command",
+		"POST /api/v1/cars/:CarID/wake_up",
+	} {
+		if routes[key] {
+			t.Fatalf("command route should be disabled by default: %s", key)
+		}
+	}
+
+	legacy := gin.New()
+	registerLegacyRedirects(legacy, "/api/v1")
+	legacyRoutes := routeSet(legacy)
+	for _, key := range []string{
+		"GET /cars/:CarID/command",
+		"POST /cars/:CarID/command/:Command",
+		"GET /cars/:CarID/logging",
+		"PUT /cars/:CarID/logging/:Command",
+		"POST /cars/:CarID/wake_up",
+	} {
+		if legacyRoutes[key] {
+			t.Fatalf("legacy command redirect should be disabled by default: %s", key)
+		}
+	}
+}
+
+func TestCommandRoutesAreRegisteredWhenExplicitlyEnabled(t *testing.T) {
+	restoreEnv(t, "ENABLE_COMMANDS")
+	_ = os.Setenv("ENABLE_COMMANDS", "true")
+
+	r := buildTestRouter()
+	routes := routeSet(r)
+	for _, key := range []string{
+		"GET /api/v1/cars/:CarID/command",
+		"POST /api/v1/cars/:CarID/command/:Command",
+		"GET /api/v1/cars/:CarID/logging",
+		"PUT /api/v1/cars/:CarID/logging/:Command",
+		"POST /api/v1/cars/:CarID/wake_up",
+	} {
+		if !routes[key] {
+			t.Fatalf("command route should be enabled when ENABLE_COMMANDS=true: %s", key)
 		}
 	}
 }
@@ -125,6 +197,7 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 	r := buildTestRouter()
 	carID := getEnvAsInt("TESLAMATEAPI_ENDPOINT_CAR_ID", 1)
 	paths := []string{
+		"/api/v1/cars/%d/summary",
 		"/api/v1/cars/%d/dashboard",
 		"/api/v1/cars/%d/calendar?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/statistics",
@@ -133,6 +206,7 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 		"/api/v1/cars/%d/insights?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/timeline?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v1/cars/%d/map/visited",
+		"/api/v1/cars/%d/locations?startDate=2026-04-01&endDate=2026-04-30",
 	}
 	for _, pattern := range paths {
 		w := httptest.NewRecorder()

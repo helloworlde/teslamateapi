@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -71,9 +70,13 @@ func main() {
 	defer db.Close()
 
 	// run initAuthToken to validate environment vars
-	initAuthToken()
+	if commandRoutesEnabled() {
+		initAuthToken()
+	}
 	// initialize allowList stored for /command section
-	initCommandAllowList()
+	if commandRoutesEnabled() {
+		initCommandAllowList()
+	}
 
 	// Connect to the MQTT broker
 	statusCache, err := startMQTT()
@@ -86,7 +89,7 @@ func main() {
 		}
 	}
 
-	if getEnvAsBool("API_TOKEN_DISABLE", false) {
+	if commandRoutesEnabled() && getEnvAsBool("API_TOKEN_DISABLE", false) {
 		log.Println("[warning] validateAuthToken - header authorization bearer token disabled. Authorization: Bearer token will not be required for commands.")
 	}
 
@@ -234,26 +237,27 @@ func initDBconnection() {
 }
 
 func TeslaMateAPIHandleErrorResponse(c *gin.Context, s1 string, s2 string, s3 string) {
-	log.Println("[error] " + s1 + " - (" + c.Request.RequestURI + "). " + s2 + "; " + s3)
+	log.Println("[error] " + s1 + " - (" + sanitizedRequestURI(c) + "). " + s2 + "; " + s3)
 	c.JSON(http.StatusOK, gin.H{"error": s2})
 }
 
 func TeslaMateAPIHandleOtherResponse(c *gin.Context, httpCode int, s string, j interface{}) {
-	// return successful response
-	log.Println("[info] " + s + " - (" + c.Request.RequestURI + ") executed successfully.")
+	if httpCode >= http.StatusInternalServerError {
+		log.Println("[error] " + s + " - (" + sanitizedRequestURI(c) + ") returned status " + strconv.Itoa(httpCode) + ".")
+	} else if httpCode >= http.StatusBadRequest {
+		log.Println("[warning] " + s + " - (" + sanitizedRequestURI(c) + ") returned status " + strconv.Itoa(httpCode) + ".")
+	} else {
+		log.Println("[info] " + s + " - (" + sanitizedRequestURI(c) + ") executed successfully.")
+	}
 	c.JSON(httpCode, j)
 }
 
 func TeslaMateAPIHandleSuccessResponse(c *gin.Context, s string, j interface{}) {
-	// print to log about request
 	if gin.IsDebugging() {
-		log.Println("[debug] " + s + " - (" + c.Request.RequestURI + ") returned data:")
-		js, _ := json.Marshal(j)
-		log.Printf("[debug] %s\n", js)
+		log.Println("[debug] " + s + " - (" + sanitizedRequestURI(c) + ") returned a successful response.")
 	}
 
-	// return successful response
-	log.Println("[info] " + s + " - (" + c.Request.RequestURI + ") executed successfully.")
+	log.Println("[info] " + s + " - (" + sanitizedRequestURI(c) + ") executed successfully.")
 	c.JSON(http.StatusOK, j)
 }
 

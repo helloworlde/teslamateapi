@@ -61,6 +61,7 @@ type v1DateRange struct {
 }
 
 func writeV1Error(c *gin.Context, status int, code, message string, details map[string]any) {
+	details = responseErrorDetails(c, status, code, message, details)
 	c.JSON(status, v1ErrorEnvelope{
 		Error: v1Error{
 			Code:    strings.ToUpper(code),

@@ -81,6 +81,7 @@ func swaggerCurrentCharge() {}
 func swaggerChargeDetails() {}
 
 // @Summary List command options
+// @Description Registered only when ENABLE_COMMANDS=true. Tesla account access and refresh tokens are never exposed in API responses.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -89,6 +90,7 @@ func swaggerChargeDetails() {}
 func swaggerCommandCatalog() {}
 
 // @Summary Execute command
+// @Description Registered only when ENABLE_COMMANDS=true and the specific command is allowlisted. Tesla account access and refresh tokens are never exposed in API responses.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -125,6 +127,7 @@ func swaggerDrives() {}
 func swaggerDriveDetails() {}
 
 // @Summary Get logging status
+// @Description Registered only when ENABLE_COMMANDS=true. Returns allowlisted logging commands only.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -133,6 +136,7 @@ func swaggerDriveDetails() {}
 func swaggerLoggingGet() {}
 
 // @Summary Update logging status
+// @Description Registered only when ENABLE_COMMANDS=true and the logging command is allowlisted.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -160,6 +164,7 @@ func swaggerStatus() {}
 func swaggerUpdates() {}
 
 // @Summary Wake up vehicle
+// @Description Registered only when ENABLE_COMMANDS=true and COMMANDS_WAKE, COMMANDS_ALL, or COMMANDS_ALLOWLIST allows /wake_up. Tesla account access and refresh tokens are never exposed in API responses.
 // @Tags Compatible API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -174,8 +179,25 @@ func swaggerWakeUp() {}
 // @Router /v1/globalsettings [get]
 func swaggerGlobalSettings() {}
 
+// @Summary Summary
+// @Description Canonical range summary for a car. Returns stable overview, driving, charging, parking, battery, efficiency, cost, quality and state sections without legacy include-driven sparse fields.
+// @Tags Extended API
+// @Produce json
+// @Param CarID path int true "Car ID" default(1)
+// @Param period query string false "year|month|week|custom, default month"
+// @Param date query string false "reference date for period mode"
+// @Param startDate query string false "custom range start; when present endDate is required"
+// @Param endDate query string false "custom range end; when present startDate is required"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} SummaryV2Envelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/summary [get]
+func swaggerSummaryV2() {}
+
 // @Summary Dashboard
-// @Description Aggregated dashboard payload for app home. Returns statistics, calendar summary, optional series/distribution placeholders, and warnings in one request.
+// @Description Aggregated dashboard payload for app home. Returns current vehicle snapshot, statistics, calendar summary, chart series, distributions, insights, recent drives, recent charges, recent updates, and warnings in one request.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -184,7 +206,7 @@ func swaggerGlobalSettings() {}
 // @Param startDate query string false "custom range start"
 // @Param endDate query string false "custom range end"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} DashboardV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -200,7 +222,7 @@ func swaggerDashboardV2() {}
 // @Param endDate query string true "range end"
 // @Param bucket query string false "day|week|month"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} CalendarV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -217,7 +239,7 @@ func swaggerCalendarV2() {}
 // @Param startDate query string false "custom range start"
 // @Param endDate query string false "custom range end"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} StatisticsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -235,7 +257,7 @@ func swaggerStatisticsV2() {}
 // @Param startDate query string true "range start"
 // @Param endDate query string true "range end"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} SeriesV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -251,7 +273,7 @@ func swaggerSeriesV2() {}
 // @Param startDate query string true "range start"
 // @Param endDate query string true "range end"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} DistributionsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -268,7 +290,7 @@ func swaggerDistributionsV2() {}
 // @Param types query string false "comma separated types: efficiency,cost,charging,driving,battery,anomaly"
 // @Param limit query int false "insight count limit, 1-100, default 20"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} InsightsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -285,7 +307,7 @@ func swaggerInsightsV2() {}
 // @Param limit query int false "page size"
 // @Param offset query int false "offset"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ListEnvelope
+// @Success 200 {object} TimelineV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
@@ -300,9 +322,25 @@ func swaggerTimelineV2() {}
 // @Param startDate query string true "range start"
 // @Param endDate query string true "range end"
 // @Param timezone query string false "IANA timezone"
-// @Success 200 {object} v1ObjectEnvelope
+// @Success 200 {object} VisitedMapV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
 // @Router /v1/cars/{CarID}/map/visited [get]
 func swaggerVisitedMapV2() {}
+
+// @Summary Locations
+// @Description Aggregated locations payload for TeslaMate location dashboards. Combines drive start/end places and charging places with event counts, coordinates, charge energy, cost, and last-seen timestamps.
+// @Tags Extended API
+// @Produce json
+// @Param CarID path int true "Car ID" default(1)
+// @Param startDate query string true "range start"
+// @Param endDate query string true "range end"
+// @Param limit query int false "maximum locations, capped at 100"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} LocationsV2Envelope
+// @Failure 400 {object} v1ErrorEnvelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/locations [get]
+func swaggerLocationsV2() {}

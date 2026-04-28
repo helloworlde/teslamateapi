@@ -109,6 +109,11 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 
 	// decrypt access token
 	TeslaAccessToken = decryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
+	if TeslaAccessToken == "" {
+		log.Println("[error] TeslaMateAPICarsCommandV1 failed to decrypt Tesla access token.")
+		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal token decrypt error"})
+		return
+	}
 
 	switch getCarRegionAPI(TeslaAccessToken) {
 	case ChinaAPI:

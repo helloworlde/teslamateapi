@@ -6,11 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"net/url"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 type CarRegionAPI string
@@ -21,7 +18,12 @@ const (
 )
 
 // decryptAccessToken funct to decrypt tokens from database
-func decryptAccessToken(data string, encryptionKey string) string {
+func decryptAccessToken(data string, encryptionKey string) (token string) {
+	defer func() {
+		if recover() != nil {
+			token = ""
+		}
+	}()
 
 	/*
 	   From Adrian....
@@ -46,25 +48,20 @@ func decryptAccessToken(data string, encryptionKey string) string {
 
 	h := sha256.New()
 	h.Write([]byte(encryptionKey))
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Key: %x \n", h.Sum(nil))
-	}
 
 	key := h.Sum(nil)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return ""
+	}
+	if len(data) < 31 {
+		return ""
 	}
 
-	// first byte
-	keyType := int([]rune(data)[0])
 	// second byte
 	keyLen := int([]rune(data)[1])
-	keyTag := data[2 : 2+keyLen]
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Type: %d \n", keyType)
-		log.Printf("[debug] decryptAccessToken - Length: %d \n", keyLen)
-		log.Printf("[debug] decryptAccessToken - Key Tag: %s \n", keyTag)
+	if keyLen < 0 || len(data) < 2+keyLen+12+16 {
+		return ""
 	}
 
 	/*
@@ -75,16 +72,10 @@ func decryptAccessToken(data string, encryptionKey string) string {
 	*/
 
 	nonce := data[2+keyLen : 2+keyLen+12]
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - IV (hex): %x \n", nonce)
-
-		ciphertag := data[2+keyLen+12 : 2+keyLen+12+16]
-		log.Printf("[debug] decryptAccessToken - Ciphertag (hex): %x \n", ciphertag)
-	}
 
 	aesgcm, err := cipher.NewGCMWithTagSize(block, 16)
 	if err != nil {
-		panic(err.Error())
+		return ""
 	}
 
 	// https://stackoverflow.com/a/68353192
@@ -94,14 +85,8 @@ func decryptAccessToken(data string, encryptionKey string) string {
 	// AES256GCM -- Additional Authenticated Data (AAD)
 	plaintext, err := aesgcm.Open(nil, []byte(nonce), []byte(ciphertextTag), []byte("AES256GCM"))
 	if err != nil {
-		panic(err.Error())
+		return ""
 	}
-
-	/*
-		if gin.IsDebugging() {
-			fmt.Printf("[debug] decryptAccessToken - Decrypted: %s\n", plaintext)
-		}
-	*/
 
 	return string(plaintext)
 }
@@ -120,7 +105,11 @@ func getCarRegionAPI(accessToken string) CarRegionAPI {
 	if err = json.Unmarshal(decodedStr, &result); err != nil {
 		return GlobalAPI
 	}
-	issUrl, err := url.Parse(result["iss"].(string))
+	iss, ok := result["iss"].(string)
+	if !ok || iss == "" {
+		return GlobalAPI
+	}
+	issUrl, err := url.Parse(iss)
 	if err != nil {
 		return GlobalAPI
 	}

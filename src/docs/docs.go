@@ -246,7 +246,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.CalendarV2Envelope"
                         }
                     },
                     "400": {
@@ -414,6 +414,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/command": {
             "get": {
+                "description": "Registered only when ENABLE_COMMANDS=true. Tesla account access and refresh tokens are never exposed in API responses.",
                 "produces": [
                     "application/json"
                 ],
@@ -443,6 +444,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/command/{Command}": {
             "post": {
+                "description": "Registered only when ENABLE_COMMANDS=true and the specific command is allowlisted. Tesla account access and refresh tokens are never exposed in API responses.",
                 "produces": [
                     "application/json"
                 ],
@@ -479,7 +481,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/dashboard": {
             "get": {
-                "description": "Aggregated dashboard payload for app home. Returns statistics, calendar summary, optional series/distribution placeholders, and warnings in one request.",
+                "description": "Aggregated dashboard payload for app home. Returns current vehicle snapshot, statistics, calendar summary, chart series, distributions, insights, recent drives, recent charges, recent updates, and warnings in one request.",
                 "produces": [
                     "application/json"
                 ],
@@ -531,7 +533,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.DashboardV2Envelope"
                         }
                     },
                     "400": {
@@ -605,7 +607,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.DistributionsV2Envelope"
                         }
                     },
                     "400": {
@@ -810,7 +812,81 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.InsightsV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/locations": {
+            "get": {
+                "description": "Aggregated locations payload for TeslaMate location dashboards. Combines drive start/end places and charging places with event counts, coordinates, charge energy, cost, and last-seen timestamps.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Locations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "range start",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "range end",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "maximum locations, capped at 100",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.LocationsV2Envelope"
                         }
                     },
                     "400": {
@@ -836,6 +912,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/logging": {
             "get": {
+                "description": "Registered only when ENABLE_COMMANDS=true. Returns allowlisted logging commands only.",
                 "produces": [
                     "application/json"
                 ],
@@ -865,6 +942,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/logging/{Command}": {
             "put": {
+                "description": "Registered only when ENABLE_COMMANDS=true and the logging command is allowlisted.",
                 "produces": [
                     "application/json"
                 ],
@@ -943,7 +1021,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.VisitedMapV2Envelope"
                         }
                     },
                     "400": {
@@ -1029,7 +1107,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.SeriesV2Envelope"
                         }
                     },
                     "400": {
@@ -1107,7 +1185,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ObjectEnvelope"
+                            "$ref": "#/definitions/main.StatisticsV2Envelope"
                         }
                     },
                     "400": {
@@ -1155,6 +1233,84 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.CarStatusV1Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/summary": {
+            "get": {
+                "description": "Canonical range summary for a car. Returns stable overview, driving, charging, parking, battery, efficiency, cost, quality and state sections without legacy include-driven sparse fields.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "year|month|week|custom, default month",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "reference date for period mode",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range start; when present endDate is required",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "custom range end; when present startDate is required",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SummaryV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
                         }
                     }
                 }
@@ -1216,7 +1372,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.v1ListEnvelope"
+                            "$ref": "#/definitions/main.TimelineV2Envelope"
                         }
                     },
                     "400": {
@@ -1283,6 +1439,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/wake_up": {
             "post": {
+                "description": "Registered only when ENABLE_COMMANDS=true and COMMANDS_WAKE, COMMANDS_ALL, or COMMANDS_ALLOWLIST allows /wake_up. Tesla account access and refresh tokens are never exposed in API responses.",
                 "produces": [
                     "application/json"
                 ],
@@ -1395,6 +1552,55 @@ const docTemplate = `{
                 },
                 "rated_efficiency": {
                     "type": "number"
+                }
+            }
+        },
+        "main.CalendarBucketV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.CalendarSummaryV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.CalendarV2Data": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string",
+                    "example": "day"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.CalendarBucketV2"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.CalendarSummaryV2"
+                }
+            }
+        },
+        "main.CalendarV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.CalendarV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
                 }
             }
         },
@@ -2082,6 +2288,238 @@ const docTemplate = `{
                 }
             }
         },
+        "main.DashboardCurrentSnapshot": {
+            "type": "object",
+            "properties": {
+                "charge": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "position": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "state": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
+        "main.DashboardRecentCharge": {
+            "type": "object",
+            "properties": {
+                "charge_id": {
+                    "type": "integer"
+                },
+                "charger_type": {
+                    "type": "string"
+                },
+                "charging_efficiency": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration_seconds": {
+                    "type": "integer"
+                },
+                "end_battery_level": {
+                    "type": "integer"
+                },
+                "end_rated_range": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "energy_added": {
+                    "type": "number"
+                },
+                "energy_used": {
+                    "type": "number"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "outside_temperature": {
+                    "type": "number"
+                },
+                "start_battery_level": {
+                    "type": "integer"
+                },
+                "start_rated_range": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.DashboardRecentDrive": {
+            "type": "object",
+            "properties": {
+                "average_speed": {
+                    "type": "number"
+                },
+                "consumption_net": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "drive_id": {
+                    "type": "integer"
+                },
+                "duration_seconds": {
+                    "type": "integer"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "energy_used": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "integer"
+                },
+                "outside_temperature": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.DashboardRecentUpdate": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "update_id": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.DashboardV2Data": {
+            "type": "object",
+            "properties": {
+                "calendar": {
+                    "$ref": "#/definitions/main.CalendarV2Data"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "current": {
+                    "$ref": "#/definitions/main.DashboardCurrentSnapshot"
+                },
+                "distributions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricDistributionV2"
+                    }
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.InsightV2Item"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "recent_charges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.DashboardRecentCharge"
+                    }
+                },
+                "recent_drives": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.DashboardRecentDrive"
+                    }
+                },
+                "recent_updates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.DashboardRecentUpdate"
+                    }
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricSeriesV2"
+                    }
+                },
+                "statistics": {
+                    "$ref": "#/definitions/main.StatisticsSummary"
+                }
+            }
+        },
+        "main.DashboardV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.DashboardV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.DistributionsV2Data": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "distributions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricDistributionV2"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                }
+            }
+        },
+        "main.DistributionsV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.DistributionsV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
         "main.DriveBatteryWindowV1": {
             "type": "object",
             "properties": {
@@ -2414,6 +2852,64 @@ const docTemplate = `{
                 }
             }
         },
+        "main.ExtendedRange": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "string",
+                    "example": "2026-04-30T23:59:59+08:00"
+                },
+                "start": {
+                    "type": "string",
+                    "example": "2026-04-01T00:00:00+08:00"
+                },
+                "timezone": {
+                    "type": "string",
+                    "example": "Asia/Shanghai"
+                }
+            }
+        },
+        "main.ExtendedResponseMeta": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.ExtendedWarning": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "date_range_fallback"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "invalid or missing date range, fallback to current month"
+                },
+                "metric": {
+                    "type": "string",
+                    "example": "distance"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "drives"
+                }
+            }
+        },
         "main.GlobalsettingsV1AccountInfo": {
             "type": "object",
             "properties": {
@@ -2491,6 +2987,500 @@ const docTemplate = `{
                 },
                 "unit_of_temperature": {
                     "type": "string"
+                }
+            }
+        },
+        "main.HistorySummaryCoverage": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.InsightSummaryV2": {
+            "type": "object",
+            "properties": {
+                "info_count": {
+                    "type": "integer"
+                },
+                "positive_count": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "warning_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.InsightV2Item": {
+            "type": "object",
+            "properties": {
+                "baseline": {},
+                "current": {},
+                "delta_percent": {
+                    "type": "number"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "info"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "metric": {
+                    "type": "string"
+                },
+                "related": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "efficiency"
+                }
+            }
+        },
+        "main.InsightsV2Data": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.InsightV2Item"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.InsightSummaryV2"
+                }
+            }
+        },
+        "main.InsightsV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.InsightsV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.LocationAggregateV2": {
+            "type": "object",
+            "properties": {
+                "charge_cost": {
+                    "type": "number"
+                },
+                "charge_count": {
+                    "type": "integer"
+                },
+                "charge_energy_kwh": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "drive_end_count": {
+                    "type": "integer"
+                },
+                "drive_start_count": {
+                    "type": "integer"
+                },
+                "last_seen": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "total_event_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.LocationsSummaryV2": {
+            "type": "object",
+            "properties": {
+                "charge_cost": {
+                    "type": "number"
+                },
+                "charge_count": {
+                    "type": "integer"
+                },
+                "charge_energy_kwh": {
+                    "type": "number"
+                },
+                "charge_location_count": {
+                    "type": "integer"
+                },
+                "drive_end_count": {
+                    "type": "integer"
+                },
+                "drive_location_count": {
+                    "type": "integer"
+                },
+                "drive_start_count": {
+                    "type": "integer"
+                },
+                "location_count": {
+                    "type": "integer"
+                },
+                "returned_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.LocationsV2Data": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "locations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.LocationAggregateV2"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.LocationsSummaryV2"
+                }
+            }
+        },
+        "main.LocationsV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.LocationsV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.MetricDistributionBucketV2": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "from": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "10-20"
+                },
+                "to": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.MetricDistributionV2": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricDistributionBucketV2"
+                    }
+                },
+                "chart_type": {
+                    "type": "string",
+                    "example": "bar"
+                },
+                "metric": {
+                    "type": "string",
+                    "example": "drive_distance"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "drive_distance"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "count"
+                }
+            }
+        },
+        "main.MetricSeriesPointV2": {
+            "type": "object",
+            "properties": {
+                "time": {
+                    "type": "string",
+                    "example": "2026-04-01T00:00:00+08:00"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.MetricSeriesV2": {
+            "type": "object",
+            "properties": {
+                "chart_type": {
+                    "type": "string",
+                    "example": "bar"
+                },
+                "metric": {
+                    "type": "string",
+                    "example": "distance"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "distance"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricSeriesPointV2"
+                    }
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "km"
+                }
+            }
+        },
+        "main.ParkingStateBreakdown": {
+            "type": "object",
+            "properties": {
+                "duration_min": {
+                    "type": "integer"
+                },
+                "session_count": {
+                    "type": "integer"
+                },
+                "share": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.SeriesV2Data": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string",
+                    "example": "day"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "scope": {
+                    "type": "string",
+                    "example": "drives"
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricSeriesV2"
+                    }
+                }
+            }
+        },
+        "main.SeriesV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.SeriesV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.StateBreakdown": {
+            "type": "object",
+            "properties": {
+                "duration_min": {
+                    "type": "integer"
+                },
+                "session_count": {
+                    "type": "integer"
+                },
+                "share": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatisticsBatteryV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.StatisticsChargeV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.StatisticsDriveV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.StatisticsOverviewV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.StatisticsSummary": {
+            "type": "object",
+            "properties": {
+                "average_consumption_gross": {
+                    "type": "number"
+                },
+                "average_consumption_net": {
+                    "type": "number"
+                },
+                "average_cost_per_100_distance": {
+                    "type": "number"
+                },
+                "average_cost_per_kwh": {
+                    "type": "number"
+                },
+                "average_energy_used_per_charge": {
+                    "type": "number"
+                },
+                "average_outside_temp": {
+                    "type": "number"
+                },
+                "average_speed": {
+                    "type": "number"
+                },
+                "charge_count": {
+                    "type": "integer"
+                },
+                "charging_efficiency": {
+                    "type": "number"
+                },
+                "consumption_overhead": {
+                    "type": "number"
+                },
+                "coverage": {
+                    "$ref": "#/definitions/main.HistorySummaryCoverage"
+                },
+                "data_complete": {
+                    "type": "boolean"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "driving_efficiency": {
+                    "type": "number"
+                },
+                "energy_added": {
+                    "type": "number"
+                },
+                "energy_used": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "integer"
+                },
+                "time_driven_min": {
+                    "type": "integer"
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "trips": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.StatisticsV2Data": {
+            "type": "object",
+            "properties": {
+                "battery": {
+                    "$ref": "#/definitions/main.StatisticsBatteryV2"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "charge": {
+                    "$ref": "#/definitions/main.StatisticsChargeV2"
+                },
+                "drive": {
+                    "$ref": "#/definitions/main.StatisticsDriveV2"
+                },
+                "overview": {
+                    "$ref": "#/definitions/main.StatisticsOverviewV2"
+                },
+                "period": {
+                    "type": "string",
+                    "example": "month"
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                }
+            }
+        },
+        "main.StatisticsV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.StatisticsV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
                 }
             }
         },
@@ -2745,9 +3735,493 @@ const docTemplate = `{
                 }
             }
         },
+        "main.SummaryV2Battery": {
+            "type": "object",
+            "properties": {
+                "rated_range": {
+                    "$ref": "#/definitions/main.SummaryV2NullableRange"
+                },
+                "soc": {
+                    "$ref": "#/definitions/main.SummaryV2NullableRange"
+                },
+                "vampire_drain_energy": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2Car": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "car_name": {
+                    "type": "string",
+                    "example": "Model 3"
+                }
+            }
+        },
+        "main.SummaryV2Charging": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "$ref": "#/definitions/main.SummaryV2Duration"
+                },
+                "efficiency": {
+                    "type": "number"
+                },
+                "energy": {
+                    "$ref": "#/definitions/main.SummaryV2ChargingEnergy"
+                },
+                "power": {
+                    "$ref": "#/definitions/main.SummaryV2ChargingPower"
+                }
+            }
+        },
+        "main.SummaryV2ChargingEnergy": {
+            "type": "object",
+            "properties": {
+                "added": {
+                    "type": "number"
+                },
+                "average_added": {
+                    "type": "number"
+                },
+                "charger_used": {
+                    "type": "number"
+                },
+                "largest_added": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2ChargingPower": {
+            "type": "object",
+            "properties": {
+                "average": {
+                    "type": "number"
+                },
+                "max": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.SummaryV2Consumption": {
+            "type": "object",
+            "properties": {
+                "average": {
+                    "type": "number"
+                },
+                "best": {
+                    "type": "number"
+                },
+                "worst": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2Cost": {
+            "type": "object",
+            "properties": {
+                "average": {
+                    "type": "number"
+                },
+                "average_per_kwh": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "highest": {
+                    "type": "number"
+                },
+                "per_100_distance": {
+                    "type": "number"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2Data": {
+            "type": "object",
+            "properties": {
+                "battery": {
+                    "$ref": "#/definitions/main.SummaryV2Battery"
+                },
+                "car": {
+                    "$ref": "#/definitions/main.SummaryV2Car"
+                },
+                "charging": {
+                    "$ref": "#/definitions/main.SummaryV2Charging"
+                },
+                "cost": {
+                    "$ref": "#/definitions/main.SummaryV2Cost"
+                },
+                "driving": {
+                    "$ref": "#/definitions/main.SummaryV2Driving"
+                },
+                "efficiency": {
+                    "$ref": "#/definitions/main.SummaryV2Efficiency"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "overview": {
+                    "$ref": "#/definitions/main.SummaryV2Overview"
+                },
+                "parking": {
+                    "$ref": "#/definitions/main.SummaryV2Parking"
+                },
+                "quality": {
+                    "$ref": "#/definitions/main.SummaryV2Quality"
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "schema_version": {
+                    "type": "string",
+                    "example": "summary.v1"
+                },
+                "state": {
+                    "$ref": "#/definitions/main.SummaryV2VehicleState"
+                },
+                "units": {
+                    "$ref": "#/definitions/main.TeslaMateSummaryUnits"
+                }
+            }
+        },
+        "main.SummaryV2Driving": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "$ref": "#/definitions/main.SummaryV2Consumption"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "$ref": "#/definitions/main.SummaryV2Duration"
+                },
+                "energy": {
+                    "$ref": "#/definitions/main.SummaryV2DrivingEnergy"
+                },
+                "power": {
+                    "$ref": "#/definitions/main.SummaryV2DrivingPower"
+                },
+                "speed": {
+                    "$ref": "#/definitions/main.SummaryV2Speed"
+                }
+            }
+        },
+        "main.SummaryV2DrivingEnergy": {
+            "type": "object",
+            "properties": {
+                "regenerated": {
+                    "type": "number"
+                },
+                "regeneration_ratio": {
+                    "type": "number"
+                },
+                "used": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2DrivingPower": {
+            "type": "object",
+            "properties": {
+                "peak_drive": {
+                    "type": "integer"
+                },
+                "peak_regen": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.SummaryV2Duration": {
+            "type": "object",
+            "properties": {
+                "average_min": {
+                    "type": "number"
+                },
+                "longest_min": {
+                    "type": "integer"
+                },
+                "total_min": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.SummaryV2Efficiency": {
+            "type": "object",
+            "properties": {
+                "charging_efficiency": {
+                    "type": "number"
+                },
+                "consumption_overhead": {
+                    "type": "number"
+                },
+                "drive_average_consumption": {
+                    "type": "number"
+                },
+                "drive_best_consumption": {
+                    "type": "number"
+                },
+                "drive_worst_consumption": {
+                    "type": "number"
+                },
+                "gross_consumption": {
+                    "type": "number"
+                },
+                "regeneration_ratio": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.SummaryV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.SummaryV2NullableRange": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "number"
+                },
+                "start": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.SummaryV2Overview": {
+            "type": "object",
+            "properties": {
+                "charge_count": {
+                    "type": "integer"
+                },
+                "charge_duration_min": {
+                    "type": "integer"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "drive_duration_min": {
+                    "type": "integer"
+                },
+                "energy_added": {
+                    "type": "number"
+                },
+                "energy_used": {
+                    "type": "number"
+                },
+                "latest_odometer": {
+                    "type": "number"
+                },
+                "parking_count": {
+                    "type": "integer"
+                },
+                "parking_duration_min": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.SummaryV2Parking": {
+            "type": "object",
+            "properties": {
+                "average_min": {
+                    "type": "number"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "dominant_state": {
+                    "type": "string"
+                },
+                "duration_min": {
+                    "type": "integer"
+                },
+                "longest_min": {
+                    "type": "integer"
+                },
+                "parked_share": {
+                    "type": "number"
+                },
+                "state_breakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ParkingStateBreakdown"
+                    }
+                }
+            }
+        },
+        "main.SummaryV2Quality": {
+            "type": "object",
+            "properties": {
+                "abnormal_charge_count": {
+                    "type": "integer"
+                },
+                "battery_snapshot_available": {
+                    "type": "boolean"
+                },
+                "congestion_like_drive_count": {
+                    "type": "integer"
+                },
+                "cost_available": {
+                    "type": "boolean"
+                },
+                "data_complete": {
+                    "type": "boolean"
+                },
+                "gross_consumption_available": {
+                    "type": "boolean"
+                },
+                "high_consumption_drive_count": {
+                    "type": "integer"
+                },
+                "low_efficiency_charge_count": {
+                    "type": "integer"
+                },
+                "low_speed_drive_count": {
+                    "type": "integer"
+                },
+                "regeneration_estimated": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "main.SummaryV2Speed": {
+            "type": "object",
+            "properties": {
+                "average": {
+                    "type": "number"
+                },
+                "max": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.SummaryV2VehicleState": {
+            "type": "object",
+            "properties": {
+                "breakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.StateBreakdown"
+                    }
+                },
+                "current": {
+                    "type": "string"
+                },
+                "last_state_change": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.TeslaMateSummaryUnits": {
+            "type": "object",
+            "properties": {
+                "unit_of_consumption": {
+                    "type": "string"
+                },
+                "unit_of_cost_per_distance": {
+                    "type": "string"
+                },
+                "unit_of_length": {
+                    "type": "string"
+                },
+                "unit_of_speed": {
+                    "type": "string"
+                },
+                "unit_of_temperature": {
+                    "type": "string"
+                }
+            }
+        },
         "main.TeslaPassthroughJSONBody": {
             "type": "object",
             "additionalProperties": true
+        },
+        "main.TimelineEventV2": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "entity_id": {
+                    "type": "integer"
+                },
+                "entity_type": {
+                    "type": "string",
+                    "example": "drive"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "drive"
+                }
+            }
+        },
+        "main.TimelineV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.TimelineEventV2"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/main.v1Pagination"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
         },
         "main.UnitsLengthTempPressureV1": {
             "type": "object",
@@ -2813,6 +4287,84 @@ const docTemplate = `{
                 }
             }
         },
+        "main.VisitedMapBoundsV2": {
+            "type": "object",
+            "properties": {
+                "east": {
+                    "type": "number"
+                },
+                "north": {
+                    "type": "number"
+                },
+                "south": {
+                    "type": "number"
+                },
+                "west": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.VisitedMapV2Data": {
+            "type": "object",
+            "properties": {
+                "bounds": {
+                    "$ref": "#/definitions/main.VisitedMapBoundsV2"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "heatmap": {
+                    "type": "array",
+                    "items": {}
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "visited_points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.VisitedPointV2"
+                    }
+                }
+            }
+        },
+        "main.VisitedMapV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.VisitedMapV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ExtendedWarning"
+                    }
+                }
+            }
+        },
+        "main.VisitedPointV2": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                }
+            }
+        },
         "main.v1Error": {
             "type": "object",
             "properties": {
@@ -2833,55 +4385,6 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "$ref": "#/definitions/main.v1Error"
-                }
-            }
-        },
-        "main.v1ListEnvelope": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "meta": {
-                    "$ref": "#/definitions/main.v1Meta"
-                },
-                "pagination": {
-                    "$ref": "#/definitions/main.v1Pagination"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {}
-                }
-            }
-        },
-        "main.v1Meta": {
-            "type": "object",
-            "properties": {
-                "car_id": {
-                    "type": "integer"
-                },
-                "generated_at": {
-                    "type": "string"
-                },
-                "timezone": {
-                    "type": "string"
-                },
-                "unit": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.v1ObjectEnvelope": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "meta": {
-                    "$ref": "#/definitions/main.v1Meta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {}
                 }
             }
         },

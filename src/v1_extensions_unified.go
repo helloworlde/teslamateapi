@@ -62,20 +62,48 @@ func TeslaMateAPICarsDashboardV2(c *gin.Context) {
 		return
 	}
 	warnings = append(warnings, calendarWarnings...)
+	current, currentErr := fetchDashboardCurrentSnapshot(ctx.CarID, ctx.UnitsLength, ctx.UnitsTemperature)
+	if currentErr != nil {
+		warnings = append(warnings, nonFatalWarning("current_snapshot_unavailable", "failed to load current vehicle snapshot", nil, currentErr))
+		current = map[string]any{}
+	}
+	recentDrives, recentDriveErr := fetchDashboardRecentDrives(ctx.CarID, ctx.UnitsLength, ctx.UnitsTemperature, 5)
+	if recentDriveErr != nil {
+		warnings = append(warnings, nonFatalWarning("recent_drives_unavailable", "failed to load recent drives", nil, recentDriveErr))
+		recentDrives = []map[string]any{}
+	}
+	recentCharges, recentChargeErr := fetchDashboardRecentCharges(ctx.CarID, ctx.UnitsLength, ctx.UnitsTemperature, 5)
+	if recentChargeErr != nil {
+		warnings = append(warnings, nonFatalWarning("recent_charges_unavailable", "failed to load recent charges", nil, recentChargeErr))
+		recentCharges = []map[string]any{}
+	}
+	recentUpdates, updateErr := fetchDashboardRecentUpdates(ctx.CarID, 3)
+	if updateErr != nil {
+		warnings = append(warnings, nonFatalWarning("recent_updates_unavailable", "failed to load recent updates", nil, updateErr))
+		recentUpdates = []map[string]any{}
+	}
+	series, seriesWarnings := fetchDashboardMetricSeries(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
+	warnings = append(warnings, seriesWarnings...)
+	distributions, distributionWarnings := fetchDashboardDistributions(ctx.CarID, startUTC, endUTC)
+	warnings = append(warnings, distributionWarnings...)
+	insights, insightWarnings := buildSimpleInsights(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, nil, 6)
+	warnings = append(warnings, insightWarnings...)
 	data := map[string]any{
 		"car_id":     ctx.CarID,
 		"range":      buildRangeDTO(dr),
+		"current":    current,
 		"statistics": statistics,
 		"calendar": map[string]any{
 			"bucket":  "day",
 			"summary": calendarSummary,
 			"items":   calendarItems,
 		},
-		"series":         []any{},
-		"distributions":  []any{},
-		"insights":       []any{},
-		"recent_drives":  []any{},
-		"recent_charges": []any{},
+		"series":         series,
+		"distributions":  distributions,
+		"insights":       insights,
+		"recent_drives":  recentDrives,
+		"recent_charges": recentCharges,
+		"recent_updates": recentUpdates,
 	}
 	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
 }
@@ -137,19 +165,11 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 	}
 	regeneration, regenErr := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
 	if regenErr != nil {
-		warnings = append(warnings, map[string]any{
-			"code":    "regeneration_unavailable",
-			"message": "failed to load regeneration metrics, returned as null",
-			"reason":  regenErr.Error(),
-		})
+		warnings = append(warnings, nonFatalWarning("regeneration_unavailable", "failed to load regeneration metrics, returned as null", nil, regenErr))
 	}
 	batterySnapshot, batteryErr := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if batteryErr != nil {
-		warnings = append(warnings, map[string]any{
-			"code":    "battery_snapshot_unavailable",
-			"message": "failed to load battery snapshot, returned as null",
-			"reason":  batteryErr.Error(),
-		})
+		warnings = append(warnings, nonFatalWarning("battery_snapshot_unavailable", "failed to load battery snapshot, returned as null", nil, batteryErr))
 		batterySnapshot = map[string]any{
 			"soc_start_percent": nil,
 			"soc_end_percent":   nil,
@@ -179,19 +199,11 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 	}
 	parkEnergyKwh, parkEnergyErr := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
 	if parkEnergyErr != nil {
-		warnings = append(warnings, map[string]any{
-			"code":    "park_energy_unavailable",
-			"message": "failed to load parking energy, returned as null",
-			"reason":  parkEnergyErr.Error(),
-		})
+		warnings = append(warnings, nonFatalWarning("park_energy_unavailable", "failed to load parking energy, returned as null", nil, parkEnergyErr))
 	}
 	parkingSummary, parkingErr := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
 	if parkingErr != nil {
-		warnings = append(warnings, map[string]any{
-			"code":    "parking_summary_unavailable",
-			"message": "failed to load parking summary",
-			"reason":  parkingErr.Error(),
-		})
+		warnings = append(warnings, nonFatalWarning("parking_summary_unavailable", "failed to load parking summary", nil, parkingErr))
 	}
 	avgDriveDurationSec := any(nil)
 	if driveSummary.DriveCount > 0 {
@@ -289,15 +301,15 @@ func TeslaMateAPICarsSeriesV2(c *gin.Context) {
 			warnings = append(warnings, map[string]any{"code": "scope_metric_mismatch", "message": "metric does not belong to current scope", "scope": scope, "metric": metric})
 			continue
 		}
-		points, err := fetchMetricSeries(ctx.CarID, scope, metric, bucket, startUTC, endUTC)
+		points, err := fetchMetricSeries(ctx.CarID, scope, metric, bucket, startUTC, endUTC, ctx.UnitsLength)
 		if err != nil {
-			warnings = append(warnings, map[string]any{"code": "metric_query_failed", "message": err.Error(), "metric": metric})
+			warnings = append(warnings, nonFatalWarning("metric_query_failed", "failed to load metric series", map[string]any{"metric": metric}, err))
 			continue
 		}
 		series = append(series, map[string]any{
 			"metric":     def.Key,
 			"name":       def.Name,
-			"unit":       def.Unit,
+			"unit":       metricUnit(def.Key, scope, ctx.UnitsLength),
 			"chart_type": def.ChartType,
 			"points":     points,
 		})
@@ -326,7 +338,7 @@ func TeslaMateAPICarsDistributionsV2(c *gin.Context) {
 	for _, metric := range metrics {
 		item, err := fetchDistribution(ctx.CarID, metric, startUTC, endUTC)
 		if err != nil {
-			warnings = append(warnings, map[string]any{"code": "distribution_query_failed", "metric": metric, "message": err.Error()})
+			warnings = append(warnings, nonFatalWarning("distribution_query_failed", "failed to load distribution", map[string]any{"metric": metric}, err))
 			continue
 		}
 		distributions = append(distributions, item)
@@ -457,6 +469,624 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 		warnings = append(warnings, map[string]any{"code": "data_truncated", "message": "visited points were truncated to limit 10000"})
 	}
 	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+}
+
+func TeslaMateAPICarsLocationsV2(c *gin.Context) {
+	dr, warnings := parseDateRangeWithMonthFallback(c, "custom")
+	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsLocationsV2")
+	if !ok {
+		return
+	}
+	limit := 100
+	if raw := strings.TrimSpace(c.Query("limit")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			writeV1Error(c, http.StatusBadRequest, "invalid_limit", "limit must be positive integer", nil)
+			return
+		}
+		if parsed < limit {
+			limit = parsed
+		}
+	}
+	startUTC, endUTC := dbTimeRange(dr)
+	locations, summary, err := fetchLocationsSummary(ctx.CarID, startUTC, endUTC, limit)
+	if err != nil {
+		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load locations", map[string]any{"reason": err.Error()})
+		return
+	}
+	writeV1Object(c, map[string]any{
+		"car_id":    ctx.CarID,
+		"range":     buildRangeDTO(dr),
+		"summary":   summary,
+		"locations": locations,
+	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+}
+
+func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map[string]any, map[string]any, error) {
+	query := `
+		WITH location_events AS (
+			SELECT
+				COALESCE(
+					'geofence:' || start_geofence.id::text,
+					'address:' || start_address.id::text,
+					'coord:' || ROUND(start_position.latitude::numeric, 4)::text || ',' || ROUND(start_position.longitude::numeric, 4)::text,
+					'unknown'
+				) AS location_key,
+				COALESCE(start_geofence.name, CONCAT_WS(', ', COALESCE(start_address.name, NULLIF(CONCAT_WS(' ', start_address.road, start_address.house_number), '')), start_address.city), 'Unknown') AS location,
+				start_position.latitude,
+				start_position.longitude,
+				1::int AS drive_start_count,
+				0::int AS drive_end_count,
+				0::int AS charge_count,
+				0::float8 AS charge_energy_kwh,
+				NULL::float8 AS charge_cost,
+				drives.start_date AS last_seen
+			FROM drives
+			LEFT JOIN addresses start_address ON start_address.id = drives.start_address_id
+			LEFT JOIN geofences start_geofence ON start_geofence.id = drives.start_geofence_id
+			LEFT JOIN positions start_position ON start_position.id = drives.start_position_id
+			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3
+			UNION ALL
+			SELECT
+				COALESCE(
+					'geofence:' || end_geofence.id::text,
+					'address:' || end_address.id::text,
+					'coord:' || ROUND(end_position.latitude::numeric, 4)::text || ',' || ROUND(end_position.longitude::numeric, 4)::text,
+					'unknown'
+				) AS location_key,
+				COALESCE(end_geofence.name, CONCAT_WS(', ', COALESCE(end_address.name, NULLIF(CONCAT_WS(' ', end_address.road, end_address.house_number), '')), end_address.city), 'Unknown') AS location,
+				end_position.latitude,
+				end_position.longitude,
+				0::int AS drive_start_count,
+				1::int AS drive_end_count,
+				0::int AS charge_count,
+				0::float8 AS charge_energy_kwh,
+				NULL::float8 AS charge_cost,
+				drives.end_date AS last_seen
+			FROM drives
+			LEFT JOIN addresses end_address ON end_address.id = drives.end_address_id
+			LEFT JOIN geofences end_geofence ON end_geofence.id = drives.end_geofence_id
+			LEFT JOIN positions end_position ON end_position.id = drives.end_position_id
+			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date <= $3
+			UNION ALL
+			SELECT
+				COALESCE(
+					'geofence:' || geofence.id::text,
+					'address:' || address.id::text,
+					'coord:' || ROUND(position.latitude::numeric, 4)::text || ',' || ROUND(position.longitude::numeric, 4)::text,
+					'unknown'
+				) AS location_key,
+				COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(address.name, NULLIF(CONCAT_WS(' ', address.road, address.house_number), '')), address.city), 'Unknown') AS location,
+				position.latitude,
+				position.longitude,
+				0::int AS drive_start_count,
+				0::int AS drive_end_count,
+				1::int AS charge_count,
+				GREATEST(COALESCE(charging_processes.charge_energy_added, 0), 0)::float8 AS charge_energy_kwh,
+				charging_processes.cost::float8 AS charge_cost,
+				charging_processes.start_date AS last_seen
+			FROM charging_processes
+			LEFT JOIN addresses address ON address.id = charging_processes.address_id
+			LEFT JOIN geofences geofence ON geofence.id = charging_processes.geofence_id
+			LEFT JOIN positions position ON position.id = charging_processes.position_id
+			WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date <= $3
+		),
+		location_agg AS (
+			SELECT
+				location_key,
+				NULLIF(location, '') AS location,
+				AVG(latitude)::float8 AS latitude,
+				AVG(longitude)::float8 AS longitude,
+				SUM(drive_start_count)::int AS drive_start_count,
+				SUM(drive_end_count)::int AS drive_end_count,
+				SUM(charge_count)::int AS charge_count,
+				SUM(charge_energy_kwh)::float8 AS charge_energy_kwh,
+				NULLIF(SUM(CASE WHEN charge_cost > 0 THEN charge_cost ELSE 0 END), 0)::float8 AS charge_cost,
+				MAX(last_seen) AS last_seen
+			FROM location_events
+			GROUP BY location_key, NULLIF(location, '')
+		)
+		SELECT location, latitude, longitude, drive_start_count, drive_end_count, charge_count,
+			charge_energy_kwh, charge_cost, last_seen,
+			COUNT(*) OVER()::int AS total_locations
+		FROM location_agg
+		WHERE location IS NOT NULL
+		ORDER BY (drive_start_count + drive_end_count + charge_count) DESC, last_seen DESC
+		LIMIT $4`
+	rows, err := db.Query(query, carID, startUTC, endUTC, limit)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	locations := make([]map[string]any, 0)
+	summary := map[string]any{
+		"location_count":        0,
+		"returned_count":        0,
+		"drive_location_count":  0,
+		"charge_location_count": 0,
+		"drive_start_count":     0,
+		"drive_end_count":       0,
+		"charge_count":          0,
+		"charge_energy_kwh":     0.0,
+		"charge_cost":           nil,
+	}
+	totalCost := 0.0
+	hasCost := false
+	for rows.Next() {
+		var (
+			location                          string
+			latitude, longitude               sql.NullFloat64
+			driveStart, driveEnd, chargeCount int
+			chargeEnergy, chargeCost          sql.NullFloat64
+			lastSeen                          sql.NullString
+			totalLocations                    int
+		)
+		if err := rows.Scan(&location, &latitude, &longitude, &driveStart, &driveEnd, &chargeCount, &chargeEnergy, &chargeCost, &lastSeen, &totalLocations); err != nil {
+			return nil, nil, err
+		}
+		summary["location_count"] = totalLocations
+		summary["drive_start_count"] = summary["drive_start_count"].(int) + driveStart
+		summary["drive_end_count"] = summary["drive_end_count"].(int) + driveEnd
+		summary["charge_count"] = summary["charge_count"].(int) + chargeCount
+		if driveStart+driveEnd > 0 {
+			summary["drive_location_count"] = summary["drive_location_count"].(int) + 1
+		}
+		if chargeCount > 0 {
+			summary["charge_location_count"] = summary["charge_location_count"].(int) + 1
+		}
+		if chargeEnergy.Valid {
+			summary["charge_energy_kwh"] = summary["charge_energy_kwh"].(float64) + chargeEnergy.Float64
+		}
+		if chargeCost.Valid {
+			totalCost += chargeCost.Float64
+			hasCost = true
+		}
+		locations = append(locations, map[string]any{
+			"name":              location,
+			"latitude":          floatPointer(latitude),
+			"longitude":         floatPointer(longitude),
+			"drive_start_count": driveStart,
+			"drive_end_count":   driveEnd,
+			"drive_count":       driveStart + driveEnd,
+			"charge_count":      chargeCount,
+			"charge_energy_kwh": floatPointer(chargeEnergy),
+			"charge_cost":       floatPointer(chargeCost),
+			"total_event_count": driveStart + driveEnd + chargeCount,
+			"last_seen":         timeZoneStringPointer(lastSeen),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	summary["returned_count"] = len(locations)
+	if hasCost {
+		summary["charge_cost"] = totalCost
+	}
+	return locations, summary, nil
+}
+
+func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature string) (map[string]any, error) {
+	query := `
+		WITH latest_position AS (
+			SELECT date, latitude, longitude, speed, power, odometer, battery_level, usable_battery_level,
+				rated_battery_range_km, ideal_battery_range_km, outside_temp, inside_temp, elevation
+			FROM positions
+			WHERE car_id = $1
+			ORDER BY date DESC
+			LIMIT 1
+		),
+		latest_state AS (
+			SELECT state::text, start_date, end_date
+			FROM states
+			WHERE car_id = $1
+			ORDER BY start_date DESC
+			LIMIT 1
+		),
+		latest_charge AS (
+			SELECT id, start_date, end_date, charge_energy_added, charge_energy_used, cost,
+				start_battery_level, end_battery_level
+			FROM charging_processes
+			WHERE car_id = $1
+			ORDER BY end_date IS NULL DESC, start_date DESC
+			LIMIT 1
+		)
+		SELECT
+			(SELECT date FROM latest_position),
+			(SELECT latitude FROM latest_position),
+			(SELECT longitude FROM latest_position),
+			(SELECT speed FROM latest_position),
+			(SELECT power FROM latest_position),
+			(SELECT odometer FROM latest_position),
+			(SELECT battery_level FROM latest_position),
+			(SELECT usable_battery_level FROM latest_position),
+			(SELECT rated_battery_range_km FROM latest_position),
+			(SELECT ideal_battery_range_km FROM latest_position),
+			(SELECT outside_temp FROM latest_position),
+			(SELECT inside_temp FROM latest_position),
+			(SELECT elevation FROM latest_position),
+			(SELECT state FROM latest_state),
+			(SELECT start_date FROM latest_state),
+			(SELECT end_date FROM latest_state),
+			(SELECT id FROM latest_charge),
+			(SELECT start_date FROM latest_charge),
+			(SELECT end_date FROM latest_charge),
+			(SELECT charge_energy_added FROM latest_charge),
+			(SELECT charge_energy_used FROM latest_charge),
+			(SELECT cost FROM latest_charge),
+			(SELECT start_battery_level FROM latest_charge),
+			(SELECT end_battery_level FROM latest_charge)`
+	var (
+		positionDate                                          sql.NullString
+		latitude, longitude, odometer, ratedRange, idealRange sql.NullFloat64
+		outsideTemp, insideTemp, elevation                    sql.NullFloat64
+		speed, power, batteryLevel, usableBatteryLevel        sql.NullInt64
+		state, stateStart, stateEnd                           sql.NullString
+		chargeID, chargeStartBattery, chargeEndBattery        sql.NullInt64
+		chargeStart, chargeEnd                                sql.NullString
+		chargeEnergyAdded, chargeEnergyUsed, chargeCost       sql.NullFloat64
+	)
+	if err := db.QueryRow(query, carID).Scan(
+		&positionDate,
+		&latitude,
+		&longitude,
+		&speed,
+		&power,
+		&odometer,
+		&batteryLevel,
+		&usableBatteryLevel,
+		&ratedRange,
+		&idealRange,
+		&outsideTemp,
+		&insideTemp,
+		&elevation,
+		&state,
+		&stateStart,
+		&stateEnd,
+		&chargeID,
+		&chargeStart,
+		&chargeEnd,
+		&chargeEnergyAdded,
+		&chargeEnergyUsed,
+		&chargeCost,
+		&chargeStartBattery,
+		&chargeEndBattery,
+	); err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(unitsLength, "mi") {
+		odometer = kilometersToMilesSqlNullFloat64(odometer)
+		ratedRange = kilometersToMilesSqlNullFloat64(ratedRange)
+		idealRange = kilometersToMilesSqlNullFloat64(idealRange)
+		speed = kilometersToMilesSqlNullInt64(speed)
+	}
+	if strings.EqualFold(unitsTemperature, "f") {
+		if outsideTemp.Valid {
+			outsideTemp.Float64 = celsiusToFahrenheit(outsideTemp.Float64)
+		}
+		if insideTemp.Valid {
+			insideTemp.Float64 = celsiusToFahrenheit(insideTemp.Float64)
+		}
+	}
+	isCharging := chargeID.Valid && !chargeEnd.Valid
+	return map[string]any{
+		"position": map[string]any{
+			"time":                 timeZoneStringPointer(positionDate),
+			"latitude":             floatPointer(latitude),
+			"longitude":            floatPointer(longitude),
+			"speed":                intPointer(speed),
+			"power":                intPointer(power),
+			"odometer":             floatPointer(odometer),
+			"battery_level":        intPointer(batteryLevel),
+			"usable_battery_level": intPointer(usableBatteryLevel),
+			"rated_range":          floatPointer(ratedRange),
+			"ideal_range":          floatPointer(idealRange),
+			"outside_temperature":  floatPointer(outsideTemp),
+			"inside_temperature":   floatPointer(insideTemp),
+			"elevation":            floatPointer(elevation),
+		},
+		"state": map[string]any{
+			"name":       stringPointer(state),
+			"start_time": timeZoneStringPointer(stateStart),
+			"end_time":   timeZoneStringPointer(stateEnd),
+		},
+		"charge": map[string]any{
+			"charge_id":           intPointer(chargeID),
+			"is_charging":         isCharging,
+			"start_time":          timeZoneStringPointer(chargeStart),
+			"end_time":            timeZoneStringPointer(chargeEnd),
+			"energy_added":        floatPointer(chargeEnergyAdded),
+			"energy_used":         floatPointer(chargeEnergyUsed),
+			"cost":                floatPointer(chargeCost),
+			"start_battery_level": intPointer(chargeStartBattery),
+			"end_battery_level":   intPointer(chargeEndBattery),
+		},
+	}, nil
+}
+
+func fetchDashboardRecentDrives(carID int, unitsLength, unitsTemperature string, limit int) ([]map[string]any, error) {
+	rows, err := db.Query(`
+		SELECT drives.id, drives.start_date, drives.end_date,
+			COALESCE(start_geofence.name, CONCAT_WS(', ', COALESCE(start_address.name, NULLIF(CONCAT_WS(' ', start_address.road, start_address.house_number), '')), start_address.city)) AS start_address,
+			COALESCE(end_geofence.name, CONCAT_WS(', ', COALESCE(end_address.name, NULLIF(CONCAT_WS(' ', end_address.road, end_address.house_number), '')), end_address.city)) AS end_address,
+			GREATEST(COALESCE(drives.distance, 0), 0)::float8,
+			GREATEST(COALESCE(drives.duration_min, 0), 0)::int,
+			drives.speed_max,
+			CASE WHEN drives.duration_min > 0 THEN drives.distance / (drives.duration_min::float8 / 60.0) ELSE NULL END::float8,
+			CASE WHEN (drives.start_rated_range_km - drives.end_rated_range_km) > 0 THEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency ELSE NULL END::float8,
+			CASE WHEN drives.distance > 0 AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0 THEN ((drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance) * 1000 ELSE NULL END::float8,
+			drives.outside_temp_avg
+		FROM drives
+		LEFT JOIN cars ON cars.id = drives.car_id
+		LEFT JOIN addresses start_address ON start_address.id = drives.start_address_id
+		LEFT JOIN addresses end_address ON end_address.id = drives.end_address_id
+		LEFT JOIN geofences start_geofence ON start_geofence.id = drives.start_geofence_id
+		LEFT JOIN geofences end_geofence ON end_geofence.id = drives.end_geofence_id
+		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
+		ORDER BY drives.start_date DESC
+		LIMIT $2`, carID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			id                  int
+			startDate, endDate  string
+			startAddress        sql.NullString
+			endAddress          sql.NullString
+			distance            float64
+			duration            int
+			maxSpeed            sql.NullInt64
+			avgSpeed            sql.NullFloat64
+			energy, consumption sql.NullFloat64
+			outsideTemp         sql.NullFloat64
+		)
+		if err := rows.Scan(&id, &startDate, &endDate, &startAddress, &endAddress, &distance, &duration, &maxSpeed, &avgSpeed, &energy, &consumption, &outsideTemp); err != nil {
+			return nil, err
+		}
+		if strings.EqualFold(unitsLength, "mi") {
+			distance = kilometersToMiles(distance)
+			maxSpeed = kilometersToMilesSqlNullInt64(maxSpeed)
+			avgSpeed = kilometersToMilesSqlNullFloat64(avgSpeed)
+			consumption = whPerKmToWhPerMiNull(consumption)
+		}
+		if strings.EqualFold(unitsTemperature, "f") && outsideTemp.Valid {
+			outsideTemp.Float64 = celsiusToFahrenheit(outsideTemp.Float64)
+		}
+		items = append(items, map[string]any{
+			"drive_id":            id,
+			"start_time":          getTimeInTimeZone(startDate),
+			"end_time":            getTimeInTimeZone(endDate),
+			"start_address":       stringPointer(startAddress),
+			"end_address":         stringPointer(endAddress),
+			"distance":            distance,
+			"duration_seconds":    duration * 60,
+			"max_speed":           intPointer(maxSpeed),
+			"average_speed":       floatPointer(avgSpeed),
+			"energy_used":         floatPointer(energy),
+			"consumption_net":     floatPointer(consumption),
+			"outside_temperature": floatPointer(outsideTemp),
+		})
+	}
+	return items, rows.Err()
+}
+
+func fetchDashboardRecentCharges(carID int, unitsLength, unitsTemperature string, limit int) ([]map[string]any, error) {
+	rows, err := db.Query(`
+		SELECT charging_processes.id, charging_processes.start_date, charging_processes.end_date,
+			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(address.name, NULLIF(CONCAT_WS(' ', address.road, address.house_number), '')), address.city)) AS location,
+			GREATEST(COALESCE(charging_processes.duration_min, 0), 0)::int,
+			charging_processes.charge_energy_added,
+			charging_processes.charge_energy_used,
+			charging_processes.cost,
+			charging_processes.start_battery_level,
+			charging_processes.end_battery_level,
+			charging_processes.start_rated_range_km,
+			charging_processes.end_rated_range_km,
+			charging_processes.outside_temp_avg,
+			NULLIF(MAX(charges.fast_charger_type), '') AS charger_type
+		FROM charging_processes
+		LEFT JOIN addresses address ON address.id = charging_processes.address_id
+		LEFT JOIN geofences geofence ON geofence.id = charging_processes.geofence_id
+		LEFT JOIN charges ON charges.charging_process_id = charging_processes.id
+		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL
+		GROUP BY charging_processes.id, address.name, address.road, address.house_number, address.city, geofence.name
+		ORDER BY charging_processes.start_date DESC
+		LIMIT $2`, carID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			id                                int
+			startDate, endDate                string
+			location, chargerType             sql.NullString
+			duration                          int
+			energyAdded, energyUsed, cost     sql.NullFloat64
+			startBattery, endBattery          sql.NullInt64
+			startRange, endRange, outsideTemp sql.NullFloat64
+		)
+		if err := rows.Scan(&id, &startDate, &endDate, &location, &duration, &energyAdded, &energyUsed, &cost, &startBattery, &endBattery, &startRange, &endRange, &outsideTemp, &chargerType); err != nil {
+			return nil, err
+		}
+		if strings.EqualFold(unitsLength, "mi") {
+			startRange = kilometersToMilesSqlNullFloat64(startRange)
+			endRange = kilometersToMilesSqlNullFloat64(endRange)
+		}
+		if strings.EqualFold(unitsTemperature, "f") && outsideTemp.Valid {
+			outsideTemp.Float64 = celsiusToFahrenheit(outsideTemp.Float64)
+		}
+		efficiency := sql.NullFloat64{}
+		if energyAdded.Valid && energyUsed.Valid && energyUsed.Float64 > 0 {
+			efficiency.Valid = true
+			efficiency.Float64 = energyAdded.Float64 / energyUsed.Float64
+		}
+		items = append(items, map[string]any{
+			"charge_id":           id,
+			"start_time":          getTimeInTimeZone(startDate),
+			"end_time":            getTimeInTimeZone(endDate),
+			"location":            stringPointer(location),
+			"charger_type":        stringPointer(chargerType),
+			"duration_seconds":    duration * 60,
+			"energy_added":        floatPointer(energyAdded),
+			"energy_used":         floatPointer(energyUsed),
+			"cost":                floatPointer(cost),
+			"charging_efficiency": floatPointer(efficiency),
+			"start_battery_level": intPointer(startBattery),
+			"end_battery_level":   intPointer(endBattery),
+			"start_rated_range":   floatPointer(startRange),
+			"end_rated_range":     floatPointer(endRange),
+			"outside_temperature": floatPointer(outsideTemp),
+		})
+	}
+	return items, rows.Err()
+}
+
+func fetchDashboardRecentUpdates(carID int, limit int) ([]map[string]any, error) {
+	rows, err := db.Query(`
+		SELECT id, start_date, end_date, version
+		FROM updates
+		WHERE car_id = $1 AND version IS NOT NULL
+		ORDER BY start_date DESC
+		LIMIT $2`, carID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var id int
+		var startDate string
+		var endDate sql.NullString
+		var version sql.NullString
+		if err := rows.Scan(&id, &startDate, &endDate, &version); err != nil {
+			return nil, err
+		}
+		items = append(items, map[string]any{
+			"update_id":  id,
+			"start_time": getTimeInTimeZone(startDate),
+			"end_time":   timeZoneStringPointer(endDate),
+			"version":    stringPointer(version),
+		})
+	}
+	return items, rows.Err()
+}
+
+func fetchDashboardMetricSeries(carID int, startUTC, endUTC, unitsLength string) ([]any, []any) {
+	specs := []struct {
+		Scope     string
+		Metric    string
+		Name      string
+		ChartType string
+	}{
+		{Scope: "drives", Metric: "distance", Name: "drive_distance", ChartType: "bar"},
+		{Scope: "drives", Metric: "efficiency", Name: "drive_efficiency", ChartType: "line"},
+		{Scope: "drives", Metric: "energy", Name: "drive_energy", ChartType: "area"},
+		{Scope: "charges", Metric: "energy", Name: "charge_energy", ChartType: "bar"},
+		{Scope: "charges", Metric: "cost", Name: "charge_cost", ChartType: "bar"},
+		{Scope: "battery", Metric: "soc", Name: "battery_level", ChartType: "line"},
+		{Scope: "battery", Metric: "range", Name: "rated_range", ChartType: "line"},
+	}
+	series := make([]any, 0, len(specs))
+	warnings := make([]any, 0)
+	for _, spec := range specs {
+		points, err := fetchMetricSeries(carID, spec.Scope, spec.Metric, "day", startUTC, endUTC, unitsLength)
+		if err != nil {
+			warnings = append(warnings, nonFatalWarning("dashboard_series_unavailable", "failed to load dashboard series", map[string]any{"metric": spec.Name}, err))
+			continue
+		}
+		series = append(series, map[string]any{
+			"metric":     spec.Name,
+			"name":       spec.Name,
+			"unit":       metricUnit(spec.Metric, spec.Scope, unitsLength),
+			"chart_type": spec.ChartType,
+			"points":     points,
+		})
+	}
+	return series, warnings
+}
+
+func fetchDashboardDistributions(carID int, startUTC, endUTC string) ([]any, []any) {
+	metrics := []string{"drive_start_hour", "drive_distance", "drive_duration", "charge_start_hour", "charge_energy", "charge_power"}
+	distributions := make([]any, 0, len(metrics))
+	warnings := make([]any, 0)
+	for _, metric := range metrics {
+		item, err := fetchDistribution(carID, metric, startUTC, endUTC)
+		if err != nil {
+			warnings = append(warnings, nonFatalWarning("dashboard_distribution_unavailable", "failed to load dashboard distribution", map[string]any{"metric": metric}, err))
+			continue
+		}
+		distributions = append(distributions, item)
+	}
+	return distributions, warnings
+}
+
+func metricUnit(metric, scope, unitsLength string) string {
+	length := "km"
+	speed := "km/h"
+	consumption := "Wh/km"
+	if strings.EqualFold(unitsLength, "mi") {
+		length = "mi"
+		speed = "mph"
+		consumption = "Wh/mi"
+	}
+	switch metric {
+	case "distance", "range":
+		return length
+	case "speed":
+		return speed
+	case "efficiency":
+		return consumption
+	case "energy", "regeneration", "vampire_drain":
+		return "kWh"
+	case "cost":
+		return "currency"
+	case "power":
+		return "kW"
+	case "soc":
+		return "%"
+	default:
+		if scope == "battery" {
+			return "%"
+		}
+		return "count"
+	}
+}
+
+func convertMetricSeriesUnits(points []map[string]any, metric, unitsLength string) []map[string]any {
+	if !strings.EqualFold(unitsLength, "mi") {
+		return points
+	}
+	for _, point := range points {
+		raw, ok := asFloat64(point["value"])
+		if !ok {
+			continue
+		}
+		switch metric {
+		case "distance", "range", "speed":
+			point["value"] = kilometersToMiles(raw)
+		case "efficiency":
+			point["value"] = whPerKmToWhPerMi(raw)
+		}
+	}
+	return points
+}
+
+func localBucketTime(value string) string {
+	if value == "" {
+		return ""
+	}
+	if t, err := time.ParseInLocation("2006-01-02T15:04:05", value, appUsersTimezone); err == nil {
+		return t.Format(time.RFC3339)
+	}
+	if t, err := time.ParseInLocation("2006-01-02", value, appUsersTimezone); err == nil {
+		return t.Format(time.RFC3339)
+	}
+	return value
 }
 
 func toPercent(v *float64) *float64 {
@@ -921,11 +1551,7 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 	if includePark {
 		parkByDate, parkTotal, parkErr := fetchParkingEnergyByBucketWithTimeout(carID, startUTC, endUTC, trunc, 1200*time.Millisecond)
 		if parkErr != nil {
-			warnings = append(warnings, map[string]any{
-				"code":    "park_energy_timeout",
-				"message": "park energy query timed out, returned as null to keep endpoint responsive",
-				"reason":  parkErr.Error(),
-			})
+			warnings = append(warnings, nonFatalWarning("park_energy_timeout", "park energy query timed out, returned as null to keep endpoint responsive", nil, parkErr))
 		} else {
 			if parkTotal != nil {
 				summary["park_energy_kwh"] = *parkTotal
@@ -945,11 +1571,7 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 	if includeRegen {
 		regenByDate, regenTotal, regenErr := fetchRegeneratedEnergyByBucketWithTimeout(carID, startUTC, endUTC, trunc, 1200*time.Millisecond)
 		if regenErr != nil {
-			warnings = append(warnings, map[string]any{
-				"code":    "regeneration_timeout",
-				"message": "regeneration query timed out, returned as null to keep endpoint responsive",
-				"reason":  regenErr.Error(),
-			})
+			warnings = append(warnings, nonFatalWarning("regeneration_timeout", "regeneration query timed out, returned as null to keep endpoint responsive", nil, regenErr))
 		} else {
 			if regenTotal != nil {
 				summary["regenerated_energy_kwh"] = *regenTotal
@@ -969,7 +1591,7 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 	return items, summary, warnings, rows.Err()
 }
 
-func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC string) ([]map[string]any, error) {
+func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, unitsLength string) ([]map[string]any, error) {
 	if bucket == "raw" {
 		bucket = "hour"
 	}
@@ -1030,10 +1652,10 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC string
 			if v != nil {
 				val = *v
 			}
-			out = append(out, map[string]any{"time": getTimeInTimeZone(k + "T00:00:00Z"), "value": val})
+			out = append(out, map[string]any{"time": localBucketTime(k + "T00:00:00"), "value": val})
 		}
 		sort.SliceStable(out, func(i, j int) bool { return out[i]["time"].(string) < out[j]["time"].(string) })
-		return out, nil
+		return convertMetricSeriesUnits(out, metric, unitsLength), nil
 	default:
 		return []map[string]any{}, nil
 	}
@@ -1053,9 +1675,12 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC string
 		if v.Valid {
 			val = v.Float64
 		}
-		result = append(result, map[string]any{"time": getTimeInTimeZone(t + "Z"), "value": val})
+		result = append(result, map[string]any{"time": localBucketTime(t), "value": val})
 	}
-	return result, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return convertMetricSeriesUnits(result, metric, unitsLength), nil
 }
 
 func fetchDistribution(carID int, metric, startUTC, endUTC string) (map[string]any, error) {
@@ -1283,21 +1908,21 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 
 	currentDrive, err := fetchDriveHistorySummary(carID, startUTC, endUTC, unitsLength)
 	if err != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_drive_unavailable", "message": err.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_drive_unavailable", "failed to load drive insight data", nil, err))
 		return items, warnings
 	}
 	currentCharge, err := fetchChargeHistorySummary(carID, startUTC, endUTC, unitsLength)
 	if err != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_charge_unavailable", "message": err.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_charge_unavailable", "failed to load charge insight data", nil, err))
 		return items, warnings
 	}
 	currentRegen, regenErr := fetchRegenerationSummary(carID, startUTC, endUTC, currentDrive, unitsLength)
 	if regenErr != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_regen_unavailable", "message": regenErr.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_regen_unavailable", "failed to load regeneration insight data", nil, regenErr))
 	}
 	currentPark, parkErr := fetchParkingEnergyTotal(carID, startUTC, endUTC)
 	if parkErr != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_park_unavailable", "message": parkErr.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_park_unavailable", "failed to load parking insight data", nil, parkErr))
 	}
 
 	startT, startErr := time.ParseInLocation(dbTimestampFormat, startUTC, time.UTC)
@@ -1314,11 +1939,11 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 
 	baseDrive, driveBaseErr := fetchDriveHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
 	if driveBaseErr != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_drive_baseline_unavailable", "message": driveBaseErr.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_drive_baseline_unavailable", "failed to load drive baseline insight data", nil, driveBaseErr))
 	}
 	baseCharge, chargeBaseErr := fetchChargeHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
 	if chargeBaseErr != nil {
-		warnings = append(warnings, map[string]any{"code": "insight_charge_baseline_unavailable", "message": chargeBaseErr.Error()})
+		warnings = append(warnings, nonFatalWarning("insight_charge_baseline_unavailable", "failed to load charge baseline insight data", nil, chargeBaseErr))
 	}
 	var baseRegen *RegenerationSummary
 	if driveBaseErr == nil {

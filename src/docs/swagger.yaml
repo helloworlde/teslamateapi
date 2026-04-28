@@ -44,6 +44,39 @@ definitions:
       rated_efficiency:
         type: number
     type: object
+  main.CalendarBucketV2:
+    additionalProperties: {}
+    type: object
+  main.CalendarSummaryV2:
+    additionalProperties: {}
+    type: object
+  main.CalendarV2Data:
+    properties:
+      bucket:
+        example: day
+        type: string
+      car_id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/main.CalendarBucketV2'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      summary:
+        $ref: '#/definitions/main.CalendarSummaryV2'
+    type: object
+  main.CalendarV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.CalendarV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
   main.CarGeodataV1:
     properties:
       geofence:
@@ -494,6 +527,159 @@ definitions:
       data:
         $ref: '#/definitions/main.CurrentChargeV1Data'
     type: object
+  main.DashboardCurrentSnapshot:
+    properties:
+      charge:
+        additionalProperties: {}
+        type: object
+      position:
+        additionalProperties: {}
+        type: object
+      state:
+        additionalProperties: {}
+        type: object
+    type: object
+  main.DashboardRecentCharge:
+    properties:
+      charge_id:
+        type: integer
+      charger_type:
+        type: string
+      charging_efficiency:
+        type: number
+      cost:
+        type: number
+      duration_seconds:
+        type: integer
+      end_battery_level:
+        type: integer
+      end_rated_range:
+        type: number
+      end_time:
+        type: string
+      energy_added:
+        type: number
+      energy_used:
+        type: number
+      location:
+        type: string
+      outside_temperature:
+        type: number
+      start_battery_level:
+        type: integer
+      start_rated_range:
+        type: number
+      start_time:
+        type: string
+    type: object
+  main.DashboardRecentDrive:
+    properties:
+      average_speed:
+        type: number
+      consumption_net:
+        type: number
+      distance:
+        type: number
+      drive_id:
+        type: integer
+      duration_seconds:
+        type: integer
+      end_address:
+        type: string
+      end_time:
+        type: string
+      energy_used:
+        type: number
+      max_speed:
+        type: integer
+      outside_temperature:
+        type: number
+      start_address:
+        type: string
+      start_time:
+        type: string
+    type: object
+  main.DashboardRecentUpdate:
+    properties:
+      end_time:
+        type: string
+      start_time:
+        type: string
+      update_id:
+        type: integer
+      version:
+        type: string
+    type: object
+  main.DashboardV2Data:
+    properties:
+      calendar:
+        $ref: '#/definitions/main.CalendarV2Data'
+      car_id:
+        type: integer
+      current:
+        $ref: '#/definitions/main.DashboardCurrentSnapshot'
+      distributions:
+        items:
+          $ref: '#/definitions/main.MetricDistributionV2'
+        type: array
+      insights:
+        items:
+          $ref: '#/definitions/main.InsightV2Item'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      recent_charges:
+        items:
+          $ref: '#/definitions/main.DashboardRecentCharge'
+        type: array
+      recent_drives:
+        items:
+          $ref: '#/definitions/main.DashboardRecentDrive'
+        type: array
+      recent_updates:
+        items:
+          $ref: '#/definitions/main.DashboardRecentUpdate'
+        type: array
+      series:
+        items:
+          $ref: '#/definitions/main.MetricSeriesV2'
+        type: array
+      statistics:
+        $ref: '#/definitions/main.StatisticsSummary'
+    type: object
+  main.DashboardV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.DashboardV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.DistributionsV2Data:
+    properties:
+      car_id:
+        type: integer
+      distributions:
+        items:
+          $ref: '#/definitions/main.MetricDistributionV2'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+    type: object
+  main.DistributionsV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.DistributionsV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
   main.DriveBatteryWindowV1:
     properties:
       end_battery_level:
@@ -711,6 +897,46 @@ definitions:
           type: string
         type: array
     type: object
+  main.ExtendedRange:
+    properties:
+      end:
+        example: "2026-04-30T23:59:59+08:00"
+        type: string
+      start:
+        example: "2026-04-01T00:00:00+08:00"
+        type: string
+      timezone:
+        example: Asia/Shanghai
+        type: string
+    type: object
+  main.ExtendedResponseMeta:
+    properties:
+      car_id:
+        type: integer
+      generated_at:
+        type: string
+      timezone:
+        type: string
+      unit:
+        type: string
+      version:
+        type: string
+    type: object
+  main.ExtendedWarning:
+    properties:
+      code:
+        example: date_range_fallback
+        type: string
+      message:
+        example: invalid or missing date range, fallback to current month
+        type: string
+      metric:
+        example: distance
+        type: string
+      scope:
+        example: drives
+        type: string
+    type: object
   main.GlobalsettingsV1AccountInfo:
     properties:
       inserted_at:
@@ -761,6 +987,336 @@ definitions:
         type: string
       unit_of_temperature:
         type: string
+    type: object
+  main.HistorySummaryCoverage:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+    type: object
+  main.InsightSummaryV2:
+    properties:
+      info_count:
+        type: integer
+      positive_count:
+        type: integer
+      total_count:
+        type: integer
+      warning_count:
+        type: integer
+    type: object
+  main.InsightV2Item:
+    properties:
+      baseline: {}
+      current: {}
+      delta_percent:
+        type: number
+      level:
+        example: info
+        type: string
+      message:
+        type: string
+      metric:
+        type: string
+      related:
+        additionalProperties: {}
+        type: object
+      title:
+        type: string
+      type:
+        example: efficiency
+        type: string
+    type: object
+  main.InsightsV2Data:
+    properties:
+      car_id:
+        type: integer
+      insights:
+        items:
+          $ref: '#/definitions/main.InsightV2Item'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      summary:
+        $ref: '#/definitions/main.InsightSummaryV2'
+    type: object
+  main.InsightsV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.InsightsV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.LocationAggregateV2:
+    properties:
+      charge_cost:
+        type: number
+      charge_count:
+        type: integer
+      charge_energy_kwh:
+        type: number
+      drive_count:
+        type: integer
+      drive_end_count:
+        type: integer
+      drive_start_count:
+        type: integer
+      last_seen:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      total_event_count:
+        type: integer
+    type: object
+  main.LocationsSummaryV2:
+    properties:
+      charge_cost:
+        type: number
+      charge_count:
+        type: integer
+      charge_energy_kwh:
+        type: number
+      charge_location_count:
+        type: integer
+      drive_end_count:
+        type: integer
+      drive_location_count:
+        type: integer
+      drive_start_count:
+        type: integer
+      location_count:
+        type: integer
+      returned_count:
+        type: integer
+    type: object
+  main.LocationsV2Data:
+    properties:
+      car_id:
+        type: integer
+      locations:
+        items:
+          $ref: '#/definitions/main.LocationAggregateV2'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      summary:
+        $ref: '#/definitions/main.LocationsSummaryV2'
+    type: object
+  main.LocationsV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.LocationsV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.MetricDistributionBucketV2:
+    properties:
+      count:
+        type: integer
+      from:
+        type: integer
+      label:
+        example: 10-20
+        type: string
+      to:
+        type: integer
+      value:
+        type: number
+    type: object
+  main.MetricDistributionV2:
+    properties:
+      buckets:
+        items:
+          $ref: '#/definitions/main.MetricDistributionBucketV2'
+        type: array
+      chart_type:
+        example: bar
+        type: string
+      metric:
+        example: drive_distance
+        type: string
+      name:
+        example: drive_distance
+        type: string
+      unit:
+        example: count
+        type: string
+    type: object
+  main.MetricSeriesPointV2:
+    properties:
+      time:
+        example: "2026-04-01T00:00:00+08:00"
+        type: string
+      value:
+        type: number
+    type: object
+  main.MetricSeriesV2:
+    properties:
+      chart_type:
+        example: bar
+        type: string
+      metric:
+        example: distance
+        type: string
+      name:
+        example: distance
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/main.MetricSeriesPointV2'
+        type: array
+      unit:
+        example: km
+        type: string
+    type: object
+  main.ParkingStateBreakdown:
+    properties:
+      duration_min:
+        type: integer
+      session_count:
+        type: integer
+      share:
+        type: number
+      state:
+        type: string
+    type: object
+  main.SeriesV2Data:
+    properties:
+      bucket:
+        example: day
+        type: string
+      car_id:
+        type: integer
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      scope:
+        example: drives
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/main.MetricSeriesV2'
+        type: array
+    type: object
+  main.SeriesV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.SeriesV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.StateBreakdown:
+    properties:
+      duration_min:
+        type: integer
+      session_count:
+        type: integer
+      share:
+        type: number
+      state:
+        type: string
+    type: object
+  main.StatisticsBatteryV2:
+    additionalProperties: {}
+    type: object
+  main.StatisticsChargeV2:
+    additionalProperties: {}
+    type: object
+  main.StatisticsDriveV2:
+    additionalProperties: {}
+    type: object
+  main.StatisticsOverviewV2:
+    additionalProperties: {}
+    type: object
+  main.StatisticsSummary:
+    properties:
+      average_consumption_gross:
+        type: number
+      average_consumption_net:
+        type: number
+      average_cost_per_100_distance:
+        type: number
+      average_cost_per_kwh:
+        type: number
+      average_energy_used_per_charge:
+        type: number
+      average_outside_temp:
+        type: number
+      average_speed:
+        type: number
+      charge_count:
+        type: integer
+      charging_efficiency:
+        type: number
+      consumption_overhead:
+        type: number
+      coverage:
+        $ref: '#/definitions/main.HistorySummaryCoverage'
+      data_complete:
+        type: boolean
+      distance:
+        type: number
+      drive_count:
+        type: integer
+      driving_efficiency:
+        type: number
+      energy_added:
+        type: number
+      energy_used:
+        type: number
+      max_speed:
+        type: integer
+      time_driven_min:
+        type: integer
+      total_cost:
+        type: number
+      trips:
+        type: integer
+    type: object
+  main.StatisticsV2Data:
+    properties:
+      battery:
+        $ref: '#/definitions/main.StatisticsBatteryV2'
+      car_id:
+        type: integer
+      charge:
+        $ref: '#/definitions/main.StatisticsChargeV2'
+      drive:
+        $ref: '#/definitions/main.StatisticsDriveV2'
+      overview:
+        $ref: '#/definitions/main.StatisticsOverviewV2'
+      period:
+        example: month
+        type: string
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+    type: object
+  main.StatisticsV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.StatisticsV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
     type: object
   main.StatusActiveRouteV1:
     properties:
@@ -926,8 +1482,325 @@ definitions:
       version:
         type: string
     type: object
+  main.SummaryV2Battery:
+    properties:
+      rated_range:
+        $ref: '#/definitions/main.SummaryV2NullableRange'
+      soc:
+        $ref: '#/definitions/main.SummaryV2NullableRange'
+      vampire_drain_energy:
+        type: number
+    type: object
+  main.SummaryV2Car:
+    properties:
+      car_id:
+        example: 1
+        type: integer
+      car_name:
+        example: Model 3
+        type: string
+    type: object
+  main.SummaryV2Charging:
+    properties:
+      count:
+        type: integer
+      duration:
+        $ref: '#/definitions/main.SummaryV2Duration'
+      efficiency:
+        type: number
+      energy:
+        $ref: '#/definitions/main.SummaryV2ChargingEnergy'
+      power:
+        $ref: '#/definitions/main.SummaryV2ChargingPower'
+    type: object
+  main.SummaryV2ChargingEnergy:
+    properties:
+      added:
+        type: number
+      average_added:
+        type: number
+      charger_used:
+        type: number
+      largest_added:
+        type: number
+    type: object
+  main.SummaryV2ChargingPower:
+    properties:
+      average:
+        type: number
+      max:
+        type: integer
+    type: object
+  main.SummaryV2Consumption:
+    properties:
+      average:
+        type: number
+      best:
+        type: number
+      worst:
+        type: number
+    type: object
+  main.SummaryV2Cost:
+    properties:
+      average:
+        type: number
+      average_per_kwh:
+        type: number
+      currency:
+        type: string
+      highest:
+        type: number
+      per_100_distance:
+        type: number
+      total:
+        type: number
+    type: object
+  main.SummaryV2Data:
+    properties:
+      battery:
+        $ref: '#/definitions/main.SummaryV2Battery'
+      car:
+        $ref: '#/definitions/main.SummaryV2Car'
+      charging:
+        $ref: '#/definitions/main.SummaryV2Charging'
+      cost:
+        $ref: '#/definitions/main.SummaryV2Cost'
+      driving:
+        $ref: '#/definitions/main.SummaryV2Driving'
+      efficiency:
+        $ref: '#/definitions/main.SummaryV2Efficiency'
+      generated_at:
+        type: string
+      overview:
+        $ref: '#/definitions/main.SummaryV2Overview'
+      parking:
+        $ref: '#/definitions/main.SummaryV2Parking'
+      quality:
+        $ref: '#/definitions/main.SummaryV2Quality'
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      schema_version:
+        example: summary.v1
+        type: string
+      state:
+        $ref: '#/definitions/main.SummaryV2VehicleState'
+      units:
+        $ref: '#/definitions/main.TeslaMateSummaryUnits'
+    type: object
+  main.SummaryV2Driving:
+    properties:
+      consumption:
+        $ref: '#/definitions/main.SummaryV2Consumption'
+      count:
+        type: integer
+      distance:
+        type: number
+      duration:
+        $ref: '#/definitions/main.SummaryV2Duration'
+      energy:
+        $ref: '#/definitions/main.SummaryV2DrivingEnergy'
+      power:
+        $ref: '#/definitions/main.SummaryV2DrivingPower'
+      speed:
+        $ref: '#/definitions/main.SummaryV2Speed'
+    type: object
+  main.SummaryV2DrivingEnergy:
+    properties:
+      regenerated:
+        type: number
+      regeneration_ratio:
+        type: number
+      used:
+        type: number
+    type: object
+  main.SummaryV2DrivingPower:
+    properties:
+      peak_drive:
+        type: integer
+      peak_regen:
+        type: integer
+    type: object
+  main.SummaryV2Duration:
+    properties:
+      average_min:
+        type: number
+      longest_min:
+        type: integer
+      total_min:
+        type: integer
+    type: object
+  main.SummaryV2Efficiency:
+    properties:
+      charging_efficiency:
+        type: number
+      consumption_overhead:
+        type: number
+      drive_average_consumption:
+        type: number
+      drive_best_consumption:
+        type: number
+      drive_worst_consumption:
+        type: number
+      gross_consumption:
+        type: number
+      regeneration_ratio:
+        type: number
+    type: object
+  main.SummaryV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.SummaryV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.SummaryV2NullableRange:
+    properties:
+      end:
+        type: number
+      start:
+        type: number
+    type: object
+  main.SummaryV2Overview:
+    properties:
+      charge_count:
+        type: integer
+      charge_duration_min:
+        type: integer
+      cost:
+        type: number
+      distance:
+        type: number
+      drive_count:
+        type: integer
+      drive_duration_min:
+        type: integer
+      energy_added:
+        type: number
+      energy_used:
+        type: number
+      latest_odometer:
+        type: number
+      parking_count:
+        type: integer
+      parking_duration_min:
+        type: integer
+    type: object
+  main.SummaryV2Parking:
+    properties:
+      average_min:
+        type: number
+      count:
+        type: integer
+      dominant_state:
+        type: string
+      duration_min:
+        type: integer
+      longest_min:
+        type: integer
+      parked_share:
+        type: number
+      state_breakdown:
+        items:
+          $ref: '#/definitions/main.ParkingStateBreakdown'
+        type: array
+    type: object
+  main.SummaryV2Quality:
+    properties:
+      abnormal_charge_count:
+        type: integer
+      battery_snapshot_available:
+        type: boolean
+      congestion_like_drive_count:
+        type: integer
+      cost_available:
+        type: boolean
+      data_complete:
+        type: boolean
+      gross_consumption_available:
+        type: boolean
+      high_consumption_drive_count:
+        type: integer
+      low_efficiency_charge_count:
+        type: integer
+      low_speed_drive_count:
+        type: integer
+      regeneration_estimated:
+        type: boolean
+    type: object
+  main.SummaryV2Speed:
+    properties:
+      average:
+        type: number
+      max:
+        type: integer
+    type: object
+  main.SummaryV2VehicleState:
+    properties:
+      breakdown:
+        items:
+          $ref: '#/definitions/main.StateBreakdown'
+        type: array
+      current:
+        type: string
+      last_state_change:
+        type: string
+    type: object
+  main.TeslaMateSummaryUnits:
+    properties:
+      unit_of_consumption:
+        type: string
+      unit_of_cost_per_distance:
+        type: string
+      unit_of_length:
+        type: string
+      unit_of_speed:
+        type: string
+      unit_of_temperature:
+        type: string
+    type: object
   main.TeslaPassthroughJSONBody:
     additionalProperties: true
+    type: object
+  main.TimelineEventV2:
+    properties:
+      end_date:
+        type: string
+      entity_id:
+        type: integer
+      entity_type:
+        example: drive
+        type: string
+      id:
+        type: string
+      start_date:
+        type: string
+      summary:
+        additionalProperties: {}
+        type: object
+      title:
+        type: string
+      type:
+        example: drive
+        type: string
+    type: object
+  main.TimelineV2Envelope:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/main.TimelineEventV2'
+        type: array
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      pagination:
+        $ref: '#/definitions/main.v1Pagination'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
     type: object
   main.UnitsLengthTempPressureV1:
     properties:
@@ -970,6 +1843,57 @@ definitions:
       data:
         $ref: '#/definitions/main.UpdatesListV1Data'
     type: object
+  main.VisitedMapBoundsV2:
+    properties:
+      east:
+        type: number
+      north:
+        type: number
+      south:
+        type: number
+      west:
+        type: number
+    type: object
+  main.VisitedMapV2Data:
+    properties:
+      bounds:
+        $ref: '#/definitions/main.VisitedMapBoundsV2'
+      car_id:
+        type: integer
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      heatmap:
+        items: {}
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      visited_points:
+        items:
+          $ref: '#/definitions/main.VisitedPointV2'
+        type: array
+    type: object
+  main.VisitedMapV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.VisitedMapV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      warnings:
+        items:
+          $ref: '#/definitions/main.ExtendedWarning'
+        type: array
+    type: object
+  main.VisitedPointV2:
+    properties:
+      count:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+    type: object
   main.v1Error:
     properties:
       code:
@@ -984,39 +1908,6 @@ definitions:
     properties:
       error:
         $ref: '#/definitions/main.v1Error'
-    type: object
-  main.v1ListEnvelope:
-    properties:
-      data: {}
-      meta:
-        $ref: '#/definitions/main.v1Meta'
-      pagination:
-        $ref: '#/definitions/main.v1Pagination'
-      warnings:
-        items: {}
-        type: array
-    type: object
-  main.v1Meta:
-    properties:
-      car_id:
-        type: integer
-      generated_at:
-        type: string
-      timezone:
-        type: string
-      unit:
-        type: string
-      version:
-        type: string
-    type: object
-  main.v1ObjectEnvelope:
-    properties:
-      data: {}
-      meta:
-        $ref: '#/definitions/main.v1Meta'
-      warnings:
-        items: {}
-        type: array
     type: object
   main.v1Pagination:
     properties:
@@ -1195,7 +2086,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.CalendarV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1309,6 +2200,8 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/command:
     get:
+      description: Registered only when ENABLE_COMMANDS=true. Tesla account access
+        and refresh tokens are never exposed in API responses.
       parameters:
       - default: 1
         description: Car ID
@@ -1328,6 +2221,9 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/command/{Command}:
     post:
+      description: Registered only when ENABLE_COMMANDS=true and the specific command
+        is allowlisted. Tesla account access and refresh tokens are never exposed
+        in API responses.
       parameters:
       - default: 1
         description: Car ID
@@ -1352,9 +2248,9 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/dashboard:
     get:
-      description: Aggregated dashboard payload for app home. Returns statistics,
-        calendar summary, optional series/distribution placeholders, and warnings
-        in one request.
+      description: Aggregated dashboard payload for app home. Returns current vehicle
+        snapshot, statistics, calendar summary, chart series, distributions, insights,
+        recent drives, recent charges, recent updates, and warnings in one request.
       parameters:
       - default: 1
         description: Car ID
@@ -1388,7 +2284,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.DashboardV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1439,7 +2335,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.DistributionsV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1580,7 +2476,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.InsightsV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1596,8 +2492,62 @@ paths:
       summary: Insights
       tags:
       - Extended API
+  /v1/cars/{CarID}/locations:
+    get:
+      description: Aggregated locations payload for TeslaMate location dashboards.
+        Combines drive start/end places and charging places with event counts, coordinates,
+        charge energy, cost, and last-seen timestamps.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: range start
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: range end
+        in: query
+        name: endDate
+        required: true
+        type: string
+      - description: maximum locations, capped at 100
+        in: query
+        name: limit
+        type: integer
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.LocationsV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Locations
+      tags:
+      - Extended API
   /v1/cars/{CarID}/logging:
     get:
+      description: Registered only when ENABLE_COMMANDS=true. Returns allowlisted
+        logging commands only.
       parameters:
       - default: 1
         description: Car ID
@@ -1617,6 +2567,8 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/logging/{Command}:
     put:
+      description: Registered only when ENABLE_COMMANDS=true and the logging command
+        is allowlisted.
       parameters:
       - default: 1
         description: Car ID
@@ -1669,7 +2621,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.VisitedMapV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1728,7 +2680,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.SeriesV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1781,7 +2733,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ObjectEnvelope'
+            $ref: '#/definitions/main.StatisticsV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1816,6 +2768,60 @@ paths:
       summary: Current vehicle status
       tags:
       - Compatible API
+  /v1/cars/{CarID}/summary:
+    get:
+      description: Canonical range summary for a car. Returns stable overview, driving,
+        charging, parking, battery, efficiency, cost, quality and state sections without
+        legacy include-driven sparse fields.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: year|month|week|custom, default month
+        in: query
+        name: period
+        type: string
+      - description: reference date for period mode
+        in: query
+        name: date
+        type: string
+      - description: custom range start; when present endDate is required
+        in: query
+        name: startDate
+        type: string
+      - description: custom range end; when present startDate is required
+        in: query
+        name: endDate
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SummaryV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Summary
+      tags:
+      - Extended API
   /v1/cars/{CarID}/timeline:
     get:
       description: Unified timeline feed for drive/charge/state activities with pagination.
@@ -1854,7 +2860,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.v1ListEnvelope'
+            $ref: '#/definitions/main.TimelineV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -1899,6 +2905,9 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/wake_up:
     post:
+      description: Registered only when ENABLE_COMMANDS=true and COMMANDS_WAKE, COMMANDS_ALL,
+        or COMMANDS_ALLOWLIST allows /wake_up. Tesla account access and refresh tokens
+        are never exposed in API responses.
       parameters:
       - default: 1
         description: Car ID

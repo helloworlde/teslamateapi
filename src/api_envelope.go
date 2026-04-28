@@ -79,6 +79,7 @@ type APIChartResponse struct {
 }
 
 func writeAPIError(c *gin.Context, status int, code, message string, details map[string]any) {
+	details = responseErrorDetails(c, status, code, message, details)
 	c.JSON(status, APIErrorResponse{Error: APIErrorDetail{Code: code, Message: message, Details: details}})
 }
 

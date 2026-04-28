@@ -18,19 +18,22 @@ These routes are preserved and remain registered exactly as compatibility guaran
 - `GET /api/v1/cars/:CarID/charges`
 - `GET /api/v1/cars/:CarID/charges/current`
 - `GET /api/v1/cars/:CarID/charges/:ChargeID`
-- `GET /api/v1/cars/:CarID/command`
-- `POST /api/v1/cars/:CarID/command/:Command`
 - `GET /api/v1/cars/:CarID/drives`
 - `GET /api/v1/cars/:CarID/drives/:DriveID`
-- `PUT /api/v1/cars/:CarID/logging/:Command`
-- `GET /api/v1/cars/:CarID/logging`
 - `GET /api/v1/cars/:CarID/status`
 - `GET /api/v1/cars/:CarID/updates`
-- `POST /api/v1/cars/:CarID/wake_up`
 - `GET /api/v1/globalsettings`
 - `GET /api/healthz`
 - `GET /api/ping`
 - `GET /api/readyz`
+
+The compatible command routes are preserved only when command execution is explicitly enabled with `ENABLE_COMMANDS=true`; otherwise they are not mounted at all:
+
+- `GET /api/v1/cars/:CarID/command`
+- `POST /api/v1/cars/:CarID/command/:Command`
+- `GET /api/v1/cars/:CarID/logging`
+- `PUT /api/v1/cars/:CarID/logging/:Command`
+- `POST /api/v1/cars/:CarID/wake_up`
 
 ### Documentation routes
 
@@ -72,34 +75,30 @@ These routes were present before the redesign and are no longer registered:
 ### Redesigned extension routes
 
 - `GET /api/v1/cars/:CarID/summary`
+- `GET /api/v1/cars/:CarID/dashboard`
+- `GET /api/v1/cars/:CarID/calendar`
 - `GET /api/v1/cars/:CarID/statistics`
-- `GET /api/v1/cars/:CarID/charts/overview`
-- `GET /api/v1/cars/:CarID/charts/drives/distance`
-- `GET /api/v1/cars/:CarID/charts/drives/energy`
-- `GET /api/v1/cars/:CarID/charts/drives/efficiency`
-- `GET /api/v1/cars/:CarID/charts/drives/speed`
-- `GET /api/v1/cars/:CarID/charts/drives/temperature`
-- `GET /api/v1/cars/:CarID/charts/charges/energy`
-- `GET /api/v1/cars/:CarID/charts/charges/cost`
-- `GET /api/v1/cars/:CarID/charts/charges/efficiency`
-- `GET /api/v1/cars/:CarID/charts/charges/power`
-- `GET /api/v1/cars/:CarID/charts/charges/location`
-- `GET /api/v1/cars/:CarID/charts/charges/soc`
-- `GET /api/v1/cars/:CarID/charts/battery/range`
-- `GET /api/v1/cars/:CarID/charts/battery/health`
-- `GET /api/v1/cars/:CarID/charts/states/duration`
-- `GET /api/v1/cars/:CarID/charts/vampire-drain`
-- `GET /api/v1/cars/:CarID/charts/mileage`
-- `GET /api/v1/cars/:CarID/drives/:DriveID/details`
-- `GET /api/v1/cars/:CarID/charges/:ChargeID/details`
-- `GET /api/v1/cars/:CarID/timeline`
-- `GET /api/v1/cars/:CarID/calendar/drives`
-- `GET /api/v1/cars/:CarID/calendar/charges`
-- `GET /api/v1/cars/:CarID/map/visited`
+- `GET /api/v1/cars/:CarID/series`
+- `GET /api/v1/cars/:CarID/distributions`
 - `GET /api/v1/cars/:CarID/insights`
-- `GET /api/v1/cars/:CarID/insights/events`
-- `GET /api/v1/cars/:CarID/analytics/activity`
-- `GET /api/v1/cars/:CarID/analytics/regeneration`
+- `GET /api/v1/cars/:CarID/timeline`
+- `GET /api/v1/cars/:CarID/map/visited`
+- `GET /api/v1/cars/:CarID/locations`
+
+### OpenAPI response models
+
+The redesigned extension routes use concrete, business-named Swagger models instead of a generic object envelope:
+
+- `summary` -> `SummaryV2Envelope`
+- `dashboard` -> `DashboardV2Envelope`
+- `calendar` -> `CalendarV2Envelope`
+- `statistics` -> `StatisticsV2Envelope`
+- `series` -> `SeriesV2Envelope`
+- `distributions` -> `DistributionsV2Envelope`
+- `insights` -> `InsightsV2Envelope`
+- `timeline` -> `TimelineV2Envelope`
+- `map/visited` -> `VisitedMapV2Envelope`
+- `locations` -> `LocationsV2Envelope`
 
 ## Audit findings
 
@@ -149,21 +148,22 @@ These routes were present before the redesign and are no longer registered:
 
 ### Rename
 
-- `calendars/drives` -> `calendar/drives`
-- `charts/charges/location-energy` -> `charts/charges/location`
-- `charts/activity/duration` -> `charts/states/duration`
-- bucket-specific chart aliases -> `charts/...` with `bucket` query parameter
+- `calendars/*` -> unified `calendar`
+- bucket-specific chart aliases -> unified `series` / `distributions`
+- fragmented analytics aliases -> unified `summary`, `statistics`, `insights`
 
 ### Add
 
 - `summary`
+- `dashboard`
 - `statistics`
-- chart families under `charts/*`
-- `drives/:DriveID/details`
-- `charges/:ChargeID/details`
+- `series`
+- `distributions`
+- `insights`
 - `timeline`
-- `calendar/charges`
+- `calendar`
 - `map/visited`
+- `locations`
 
 ## Compatibility strategy
 

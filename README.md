@@ -128,6 +128,8 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 **Commands** environment variables
 
+Command routes are not registered unless `ENABLE_COMMANDS=true` is set explicitly. With the default configuration, `/command`, `/logging`, and `/wake_up` command endpoints return 404 because they are not mounted.
+
 | Variable                    | Type    | Default           |
 | --------------------------- | ------- | ----------------- |
 | **ENABLE_COMMANDS**         | boolean | _false_           |
@@ -160,6 +162,7 @@ Interactive API docs are auto-generated from Go annotation comments; HTML is pro
 - OpenAPI JSON: `/api/v1/docs/openapi.json`
 - Legacy JSON alias: `/api/v1/docs/swagger/doc.json`
 - `/api/v1/docs/swagger` redirects to `/api/v1/docs/swagger/index.html`
+- Redesigned extension endpoints use concrete response models such as `SummaryV2Envelope`, `DashboardV2Envelope`, `SeriesV2Envelope`, and `LocationsV2Envelope`.
 
 Regenerate OpenAPI JSON after route or annotation changes:
 
@@ -174,7 +177,7 @@ Local run on another port (optional): set **`TESLAMATEAPI_LISTEN_ADDR=:18088`** 
 
 - All original TeslaMateApi endpoints listed below remain compatible.
 - All redesigned extension endpoints are now unified under `/api/v1/cars/:CarID/*`.
-- Removed extension aliases include legacy `summary`, `analytics/*`, `calendar/*`, `charts/*`, `insights/events`, and other fragmented chart endpoints.
+- Removed extension aliases include legacy `summaries/*`, `analytics/*`, `calendar/*`, `charts/*`, `insights/events`, and other fragmented chart endpoints.
 
 ### Date parameters
 
@@ -227,19 +230,23 @@ Optional:
 - GET `/api/v1/cars/:CarID/charges`
 - GET `/api/v1/cars/:CarID/charges/current`
 - GET `/api/v1/cars/:CarID/charges/:ChargeID`
-- GET `/api/v1/cars/:CarID/command`
-- POST `/api/v1/cars/:CarID/command/:Command`
 - GET `/api/v1/cars/:CarID/drives`
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
-- GET `/api/v1/cars/:CarID/logging`
-- PUT `/api/v1/cars/:CarID/logging/:Command`
 - GET `/api/v1/cars/:CarID/status`
 - GET `/api/v1/cars/:CarID/updates`
-- POST `/api/v1/cars/:CarID/wake_up`
 - GET `/api/v1/globalsettings`
+
+**Compatible command API, registered only when `ENABLE_COMMANDS=true`**
+
+- GET `/api/v1/cars/:CarID/command`
+- POST `/api/v1/cars/:CarID/command/:Command`
+- GET `/api/v1/cars/:CarID/logging`
+- PUT `/api/v1/cars/:CarID/logging/:Command`
+- POST `/api/v1/cars/:CarID/wake_up`
 
 **Unified extension API**
 
+- GET `/api/v1/cars/:CarID/summary`
 - GET `/api/v1/cars/:CarID/dashboard`
 - GET `/api/v1/cars/:CarID/calendar`
 - GET `/api/v1/cars/:CarID/statistics`
@@ -248,9 +255,11 @@ Optional:
 - GET `/api/v1/cars/:CarID/insights`
 - GET `/api/v1/cars/:CarID/timeline`
 - GET `/api/v1/cars/:CarID/map/visited`
+- GET `/api/v1/cars/:CarID/locations`
 
 ### Extension API purpose
 
+- `summary`: 规范化范围摘要（overview/driving/charging/parking/battery/efficiency/cost/quality/state）。
 - `dashboard`: app 首页聚合数据，减少客户端请求次数。
 - `calendar`: 日历维度聚合（day/week/month）。
 - `statistics`: 年/月/周/自定义范围统计。
@@ -258,6 +267,7 @@ Optional:
 - `distributions`: 分布图数据（起步时间、时长等）。
 - `insights`: 可扩展洞察事件与摘要。
 - `timeline`: 时间线事件流（drive/charge/state）。
+- `locations`: 地点聚合（驾驶起终点、充电地点、次数、能量、费用、坐标）。
 - `map/visited`: 访问点、边界和热力图基础数据。
 
 ### Units and warnings
