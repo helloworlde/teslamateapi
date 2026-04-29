@@ -1,4 +1,4 @@
-package main
+package commandcatalog
 
 import (
 	"encoding/json"
@@ -6,17 +6,17 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
-var (
-	// list of allowed commands
-	allowList []string
-)
+// EnvBool 读取 bool 环境配置。
+type EnvBool func(key string, fallback bool) bool
 
-// initCommandAllowList func
-func initCommandAllowList() {
+// EnvString 读取 string 环境配置。
+type EnvString func(key string, fallback string) string
+
+// LoadAllowedCommands 根据环境变量或 COMMANDS_ALLOWLIST 文件生成允许执行的 Tesla 命令列表。
+func LoadAllowedCommands(getBool EnvBool, getString EnvString, debug bool) []string {
+	allowList := make([]string, 0)
 
 	// generate map of all available commands
 	CommandList := make(map[string][]string)
@@ -160,38 +160,38 @@ func initCommandAllowList() {
 	}
 
 	// allow all commands available below
-	allowAll := getEnvAsBool("COMMANDS_ALL", false)
+	allowAll := getBool("COMMANDS_ALL", false)
 
 	// looping over CommandList to generate allowList
 	for key := range CommandList {
 		// checking if env is set from key or if all should be allowed
-		if getEnvAsBool(key, false) || allowAll {
+		if getBool(key, false) || allowAll {
 			// appending to allowList
 			allowList = append(allowList, CommandList[key]...)
 		}
 	}
 
 	// if allowList is empty, read COMMANDS_ALLOWLIST and append to allowList
-	commandAllowListLocation := getEnv("COMMANDS_ALLOWLIST", "allow_list.json")
+	commandAllowListLocation := getString("COMMANDS_ALLOWLIST", "allow_list.json")
 	if len(allowList) == 0 {
 		var allowListFile []string
 		commandAllowListFile, err := os.Open(commandAllowListLocation)
 		if err != nil {
 			log.Println("[error] getAllowList error with COMMANDS_ALLOWLIST: " + commandAllowListLocation + " not found and will be ignored")
-			return
+			return allowList
 		}
 
 		defer commandAllowListFile.Close()
 		byteValue, err := io.ReadAll(commandAllowListFile)
 		if err != nil {
 			log.Println("[error] getAllowList error while reading COMMANDS_ALLOWLIST: " + commandAllowListLocation + " it will be ignored")
-			return
+			return allowList
 		}
 
 		err = json.Unmarshal(byteValue, &allowListFile)
 		if err != nil {
 			log.Println("[error] getAllowList error while parsing JSON.. COMMANDS_ALLOWLIST: " + commandAllowListLocation + " it will be ignored")
-			return
+			return allowList
 		}
 
 		allowList = append(allowList, allowListFile...)
@@ -199,7 +199,8 @@ func initCommandAllowList() {
 		log.Print("[info] getAllowList COMMANDS from environment variables set, " + commandAllowListLocation + " will be ignored.")
 	}
 
-	if gin.IsDebugging() {
+	if debug {
 		log.Println("[info] initCommandAllowList - generated following list of allowed commands: " + strings.Join(allowList, ", "))
 	}
+	return allowList
 }

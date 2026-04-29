@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
 func TeslaMateAPICarsCalendarV2(c *gin.Context) {
@@ -52,8 +53,8 @@ func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeReg
 		items   []any
 		summary map[string]any
 	}
-	key := aggregateCacheKey("calendar", carID, startUTC, endUTC, bucket, includeRegen, includePark, appUsersTimezone.String())
-	cached, err := cachedValue(key, aggregateCacheTTL(endUTC), func() (cachedCalendar, error) {
+	key := aggregatecache.Key("calendar", carID, startUTC, endUTC, bucket, includeRegen, includePark, appUsersTimezone.String())
+	cached, err := aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (cachedCalendar, error) {
 		items, summary, err := fetchUnifiedCalendarUncached(carID, startUTC, endUTC, bucket, includeRegen, includePark)
 		return cachedCalendar{items: items, summary: summary}, err
 	})

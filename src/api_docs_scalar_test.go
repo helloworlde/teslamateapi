@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	docs "github.com/tobiasehlert/teslamateapi/src/docs"
+	"github.com/tobiasehlert/teslamateapi/src/internal/docsui"
 )
 
 func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
@@ -163,9 +164,7 @@ func TestOpenAPIExtendedModelsExposeExpectedDataSections(t *testing.T) {
 func TestDocsRoutesReturnContent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/v1/docs", serveScalarAPIReference)
-	r.GET("/api/v1/docs/openapi.json", serveOpenAPIDocumentJSON)
-	r.GET("/api/v1/docs/swagger/doc.json", serveSwaggerDocJSON)
+	docsui.RegisterRoutes(r.Group("/api/v1"), "/api/v1")
 
 	for _, path := range []string{"/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -194,7 +193,7 @@ func TestDocsRoutesReturnContent(t *testing.T) {
 func TestDocsRouteAliases(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	registerDocsRoutes(r.Group("/api/v1"), "/api/v1")
+	docsui.RegisterRoutes(r.Group("/api/v1"), "/api/v1")
 
 	for _, path := range []string{"/api/v1/docs", "/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)

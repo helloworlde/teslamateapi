@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
 func TeslaMateAPICarsDriveDistributionsV2(c *gin.Context) {
@@ -50,8 +51,8 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 
 func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {
 	// 分布图 bucket 定义固定且历史数据变化频率低，缓存可以显著减少重复扫描。
-	key := aggregateCacheKey("distribution", carID, scope, metric, startUTC, endUTC, appUsersTimezone.String())
-	return cachedValue(key, aggregateCacheTTL(endUTC), func() (map[string]any, error) {
+	key := aggregatecache.Key("distribution", carID, scope, metric, startUTC, endUTC, appUsersTimezone.String())
+	return aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (map[string]any, error) {
 		return fetchDistributionUncached(carID, scope, metric, startUTC, endUTC)
 	})
 }

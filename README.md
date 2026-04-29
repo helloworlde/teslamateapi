@@ -290,6 +290,14 @@ Optional:
 - 缓存 key 包含车辆、指标、bucket、时区、单位和 UTC 时间范围；近实时区间 TTL 较短，历史区间 TTL 较长。
 - loader 出错不会写入缓存，避免缓存临时数据库错误。
 
+### 代码组织
+
+- Go 文件统一使用小写下划线命名。
+- `v1_compat_*.go`：原兼容接口，保持历史响应结构。
+- `v1_extended_*.go`：重构后的扩展接口，按 summary、dashboard、series、distributions、insights、timeline、locations 等功能拆分。
+- `v1_extended_models_*.go`：扩展接口 OpenAPI/Swagger 响应模型，按业务域拆分。
+- `v1_aggregate_cache.go`：历史聚合数据缓存。
+
 ### 查询示例
 
 ```bash

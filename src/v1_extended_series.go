@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
 type metricDef struct {
@@ -232,8 +233,8 @@ func localBucketTime(value string) string {
 
 func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, unitsLength string) ([]map[string]any, error) {
 	// 历史时序数据按指标独立缓存，避免一次请求中重复扫描相同时间范围。
-	key := aggregateCacheKey("series", carID, scope, metric, bucket, startUTC, endUTC, unitsLength, appUsersTimezone.String())
-	return cachedValue(key, aggregateCacheTTL(endUTC), func() ([]map[string]any, error) {
+	key := aggregatecache.Key("series", carID, scope, metric, bucket, startUTC, endUTC, unitsLength, appUsersTimezone.String())
+	return aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() ([]map[string]any, error) {
 		return fetchMetricSeriesUncached(carID, scope, metric, bucket, startUTC, endUTC, unitsLength)
 	})
 }

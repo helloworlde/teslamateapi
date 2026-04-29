@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tobiasehlert/teslamateapi/src/internal/docsui"
 )
 
 func buildTestRouter() *gin.Engine {
@@ -16,7 +17,7 @@ func buildTestRouter() *gin.Engine {
 	r := gin.New()
 	api := r.Group("/api")
 	v1 := api.Group("/v1")
-	registerDocsRoutes(v1, "/api/v1")
+	docsui.RegisterRoutes(v1, "/api/v1")
 	registerCompatibleV1Routes(v1)
 	registerExtendedV1Routes(v1)
 	api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })

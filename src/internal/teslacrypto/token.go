@@ -1,4 +1,4 @@
-package main
+package teslacrypto
 
 import (
 	"crypto/aes"
@@ -17,8 +17,8 @@ const (
 	GlobalAPI CarRegionAPI = "Global"
 )
 
-// decryptAccessToken funct to decrypt tokens from database
-func decryptAccessToken(data string, encryptionKey string) (token string) {
+// DecryptAccessToken 解密 TeslaMate private.tokens.access；解密失败时只返回空字符串，避免泄漏密文或异常细节。
+func DecryptAccessToken(data string, encryptionKey string) (token string) {
 	defer func() {
 		if recover() != nil {
 			token = ""
@@ -91,8 +91,8 @@ func decryptAccessToken(data string, encryptionKey string) (token string) {
 	return string(plaintext)
 }
 
-// getCarRegionAPI function to get URL from iis in accessToken
-func getCarRegionAPI(accessToken string) CarRegionAPI {
+// GetCarRegionAPI 根据 JWT iss 判断 Tesla Owner API 区域。
+func GetCarRegionAPI(accessToken string) CarRegionAPI {
 	payload := strings.Split(accessToken, ".")
 	if len(payload) != 3 {
 		return GlobalAPI

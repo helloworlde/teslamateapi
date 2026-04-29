@@ -6,15 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerDocsRoutes(v1 *gin.RouterGroup, basePathV1 string) {
-	// 文档路由统一挂在 /api/v1/docs 下，Swagger 旧入口跳转到 Scalar UI。
-	v1.GET("/docs", serveScalarAPIReference)
-	v1.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
-	v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+"/docs/swagger/index.html") })
-	v1.GET("/docs/swagger/index.html", serveScalarAPIReference)
-	v1.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
-}
-
 func registerCompatibleV1Routes(v1 *gin.RouterGroup) {
 	// 兼容接口保持原 TeslaMateApi 路由和响应结构，避免影响已有客户端。
 	v1.GET("/cars", TeslaMateAPICarsV1)

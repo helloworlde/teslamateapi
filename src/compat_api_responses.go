@@ -19,7 +19,7 @@ type CarsV1Data struct {
 	Cars []CarsV1Car `json:"cars"`
 }
 
-// CarsV1Car mirrors TeslaMateAPICarsV1 JSON shape (see v1_TeslaMateAPICars.go).
+// CarsV1Car mirrors TeslaMateAPICarsV1 JSON shape (see v1_compat_cars.go).
 type CarsV1Car struct {
 	CarID            int                  `json:"car_id" example:"1"`
 	Name             NullString           `json:"name" swaggertype:"string" example:"My Tesla"`

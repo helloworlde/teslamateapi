@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	teslacrypto "github.com/tobiasehlert/teslamateapi/src/internal/teslacrypto"
 )
 
 // TeslaMateAPICarsCommandV1 func
@@ -108,15 +109,15 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 	}
 
 	// decrypt access token
-	TeslaAccessToken = decryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
+	TeslaAccessToken = teslacrypto.DecryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
 	if TeslaAccessToken == "" {
 		log.Println("[error] TeslaMateAPICarsCommandV1 failed to decrypt Tesla access token.")
 		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal token decrypt error"})
 		return
 	}
 
-	switch getCarRegionAPI(TeslaAccessToken) {
-	case ChinaAPI:
+	switch teslacrypto.GetCarRegionAPI(TeslaAccessToken) {
+	case teslacrypto.ChinaAPI:
 		TeslaEndpointUrl = getEnv("TESLA_API_HOST", "https://owner-api.vn.cloud.tesla.cn")
 	default:
 		TeslaEndpointUrl = getEnv("TESLA_API_HOST", "https://owner-api.teslamotors.com")

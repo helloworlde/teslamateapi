@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
 func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
@@ -127,8 +128,8 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 }
 
 func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[string]any, error) {
-	key := aggregateCacheKey("battery_snapshot", carID, startUTC, endUTC, unitsLength)
-	return cachedValue(key, aggregateCacheTTL(endUTC), func() (map[string]any, error) {
+	key := aggregatecache.Key("battery_snapshot", carID, startUTC, endUTC, unitsLength)
+	return aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (map[string]any, error) {
 		return fetchBatterySnapshotUncached(carID, startUTC, endUTC, unitsLength)
 	})
 }
@@ -190,8 +191,8 @@ func fetchBatterySnapshotUncached(carID int, startUTC, endUTC, unitsLength strin
 }
 
 func fetchParkingEnergyTotal(carID int, startUTC, endUTC string) (*float64, error) {
-	key := aggregateCacheKey("parking_energy_total", carID, startUTC, endUTC)
-	return cachedValue(key, aggregateCacheTTL(endUTC), func() (*float64, error) {
+	key := aggregatecache.Key("parking_energy_total", carID, startUTC, endUTC)
+	return aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (*float64, error) {
 		return fetchParkingEnergyTotalUncached(carID, startUTC, endUTC)
 	})
 }
@@ -253,8 +254,8 @@ func fetchParkingEnergyByBucketWithTimeout(carID int, startUTC, endUTC, trunc st
 		Values map[string]*float64
 		Total  *float64
 	}
-	key := aggregateCacheKey("parking_energy_bucket", carID, startUTC, endUTC, trunc, appUsersTimezone.String())
-	cached, err := cachedValue(key, aggregateCacheTTL(endUTC), func() (cachedBuckets, error) {
+	key := aggregatecache.Key("parking_energy_bucket", carID, startUTC, endUTC, trunc, appUsersTimezone.String())
+	cached, err := aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (cachedBuckets, error) {
 		values, total, err := fetchParkingEnergyByBucketUncached(carID, startUTC, endUTC, trunc, timeout)
 		return cachedBuckets{Values: values, Total: total}, err
 	})
@@ -348,8 +349,8 @@ func fetchRegeneratedEnergyByBucketWithTimeout(carID int, startUTC, endUTC, trun
 		Values map[string]*float64
 		Total  *float64
 	}
-	key := aggregateCacheKey("regenerated_energy_bucket", carID, startUTC, endUTC, trunc, appUsersTimezone.String())
-	cached, err := cachedValue(key, aggregateCacheTTL(endUTC), func() (cachedBuckets, error) {
+	key := aggregatecache.Key("regenerated_energy_bucket", carID, startUTC, endUTC, trunc, appUsersTimezone.String())
+	cached, err := aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (cachedBuckets, error) {
 		values, total, err := fetchRegeneratedEnergyByBucketUncached(carID, startUTC, endUTC, trunc, timeout)
 		return cachedBuckets{Values: values, Total: total}, err
 	})

@@ -131,15 +131,19 @@
 
 ### 代码组织
 
-- `v1_extensions_dashboard.go`: vehicle-level dashboard handler and realtime snapshot query.
-- `v1_extensions_calendar.go`: calendar aggregation.
-- `v1_extensions_series.go`: domain-specific time series.
-- `v1_extensions_distributions.go`: domain-specific distribution buckets.
-- `v1_extensions_statistics.go`: statistics handler plus battery/parking/regeneration helpers.
-- `v1_extensions_insights.go`: baseline comparison insights.
-- `v1_extensions_locations.go`: location aggregation.
-- `v1_extensions_timeline_map.go`: timeline and visited map endpoints.
-- `v1_cache.go`: shared in-process TTL cache for historical aggregate data.
+- `v1_compat_*.go`: 原 TeslaMateApi 兼容接口，保持历史路由和响应结构。
+- `v1_extended_summary.go`: 扩展摘要接口。
+- `v1_extended_dashboard.go`: 车辆级 dashboard 和实时快照接口。
+- `v1_extended_calendar.go`: 日历聚合。
+- `v1_extended_series.go`: 按领域拆分的时序数据。
+- `v1_extended_distributions.go`: 按领域拆分的分布桶。
+- `v1_extended_statistics.go`: 统计接口及电池、停车、动能回收聚合 helper。
+- `v1_extended_insights.go`: 基线对比洞察。
+- `v1_extended_locations.go`: 地点聚合。
+- `v1_extended_timeline_map.go`: 时间线和访问地图接口。
+- `v1_extended_models_*.go`: 扩展接口 Swagger 响应模型，按业务域拆分。
+- `v1_aggregate_cache.go`: 历史聚合数据的进程内 TTL 缓存。
+- `v1_legacy_extended.go`: 旧扩展重构过程遗留的未注册 handler 与图表 helper，保留给内部 helper 和迁移参考。
 
 ### 单位与空数据
 

@@ -1,4 +1,4 @@
-package main
+package aggregatecache
 
 import (
 	"fmt"
@@ -49,7 +49,8 @@ func (c *ttlCache) set(key string, value any, ttl time.Duration) {
 
 var aggregateCache = newTTLCache()
 
-func cachedValue[T any](key string, ttl time.Duration, load func() (T, error)) (T, error) {
+// Value 返回带 TTL 的缓存值；loader 出错时不会写入缓存，避免缓存异常结果。
+func Value[T any](key string, ttl time.Duration, load func() (T, error)) (T, error) {
 	if raw, ok := aggregateCache.get(key); ok {
 		if value, ok := raw.(T); ok {
 			return value, nil
@@ -63,7 +64,8 @@ func cachedValue[T any](key string, ttl time.Duration, load func() (T, error)) (
 	return value, nil
 }
 
-func aggregateCacheKey(parts ...any) string {
+// Key 将查询维度拼成稳定缓存 key。
+func Key(parts ...any) string {
 	values := make([]string, 0, len(parts))
 	for _, part := range parts {
 		values = append(values, fmt.Sprint(part))
@@ -71,8 +73,9 @@ func aggregateCacheKey(parts ...any) string {
 	return strings.Join(values, "|")
 }
 
-func aggregateCacheTTL(endUTC string) time.Duration {
-	end, err := time.Parse(dbTimestampFormat, endUTC)
+// TTL 按查询结束时间动态计算缓存时长：越早的历史数据缓存越久。
+func TTL(endUTC string) time.Duration {
+	end, err := time.Parse("2006-01-02T15:04:05Z", endUTC)
 	if err != nil {
 		return 30 * time.Second
 	}

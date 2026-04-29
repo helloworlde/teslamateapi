@@ -18,6 +18,7 @@ import (
 	_ "github.com/lib/pq"
 
 	docs "github.com/tobiasehlert/teslamateapi/src/docs"
+	"github.com/tobiasehlert/teslamateapi/src/internal/docsui"
 )
 
 const (
@@ -138,7 +139,7 @@ func main() {
 			v1.GET("/", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
 			})
-			registerDocsRoutes(v1, BasePathV1)
+			docsui.RegisterRoutes(v1, BasePathV1)
 			registerCompatibleV1Routes(v1)
 			registerExtendedV1Routes(v1)
 		}
