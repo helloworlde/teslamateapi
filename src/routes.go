@@ -7,6 +7,7 @@ import (
 )
 
 func registerDocsRoutes(v1 *gin.RouterGroup, basePathV1 string) {
+	// 文档路由统一挂在 /api/v1/docs 下，Swagger 旧入口跳转到 Scalar UI。
 	v1.GET("/docs", serveScalarAPIReference)
 	v1.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
 	v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+"/docs/swagger/index.html") })
@@ -15,6 +16,7 @@ func registerDocsRoutes(v1 *gin.RouterGroup, basePathV1 string) {
 }
 
 func registerCompatibleV1Routes(v1 *gin.RouterGroup) {
+	// 兼容接口保持原 TeslaMateApi 路由和响应结构，避免影响已有客户端。
 	v1.GET("/cars", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
@@ -35,6 +37,7 @@ func commandRoutesEnabled() bool {
 }
 
 func registerCommandV1Routes(v1 *gin.RouterGroup) {
+	// 车辆命令具备外部副作用，必须通过环境变量显式启用才注册路由。
 	if !commandRoutesEnabled() {
 		return
 	}
@@ -46,6 +49,7 @@ func registerCommandV1Routes(v1 *gin.RouterGroup) {
 }
 
 func registerExtendedV1Routes(v1 *gin.RouterGroup) {
+	// 扩展接口按使用场景拆分：摘要、仪表盘、实时、时序、分布、洞察、地图等职责分离。
 	v1.GET("/cars/:CarID/summary", TeslaMateAPICarsSummaryV2)
 	v1.GET("/cars/:CarID/dashboard", TeslaMateAPICarsDashboardV2)
 	v1.GET("/cars/:CarID/realtime", TeslaMateAPICarsRealtimeV2)

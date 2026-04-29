@@ -49,6 +49,7 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 }
 
 func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {
+	// 分布图 bucket 定义固定且历史数据变化频率低，缓存可以显著减少重复扫描。
 	key := aggregateCacheKey("distribution", carID, scope, metric, startUTC, endUTC, appUsersTimezone.String())
 	return cachedValue(key, aggregateCacheTTL(endUTC), func() (map[string]any, error) {
 		return fetchDistributionUncached(carID, scope, metric, startUTC, endUTC)
@@ -56,6 +57,7 @@ func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[s
 }
 
 func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {
+	// 每个 metric 只负责一种分布口径，避免把行程、充电、时间和数值桶混在一个 SQL 中。
 	switch scope + ":" + metric {
 	case "drives:start_hour":
 		return fetchHourDistribution("drives", "drives.start_date", carID, startUTC, endUTC, "drive_start_hour")
@@ -64,6 +66,7 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "drives:distance":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
+				-- 行程距离桶：短途更细，长途合并，适合日常驾驶分布
 				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
 					(4, '20-30', 20.0, 30.0), (5, '30-50', 30.0, 50.0), (6, '50-80', 50.0, 80.0),
 					(7, '80-120', 80.0, 120.0), (8, '120+', 120.0, NULL)
@@ -98,6 +101,7 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "drives:speed":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
+				-- 最高速度桶：0-140 每 10 km/h 一个桶，140+ 单独统计
 				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-30', 20.0, 30.0),
 					(4, '30-40', 30.0, 40.0), (5, '40-50', 40.0, 50.0), (6, '50-60', 50.0, 60.0),
 					(7, '60-70', 60.0, 70.0), (8, '70-80', 70.0, 80.0), (9, '80-90', 80.0, 90.0),
@@ -176,6 +180,7 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "charges:power":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
+				-- 充电功率桶覆盖家充、目的地充电和超充常见区间
 				VALUES (1, '0-4', 0.0, 4.0), (2, '4-8', 4.0, 8.0), (3, '8-12', 8.0, 12.0),
 					(4, '12-22', 12.0, 22.0), (5, '22-50', 22.0, 50.0), (6, '50-120', 50.0, 120.0),
 					(7, '120+', 120.0, NULL)
@@ -215,6 +220,7 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 }
 
 func fetchHourDistribution(table, dateExpr string, carID int, startUTC, endUTC, name string) (map[string]any, error) {
+	// 小时分布必须在数据库侧按环境时区转换，否则跨时区部署会出现小时偏移。
 	query := fmt.Sprintf(`
 		WITH buckets AS (
 			SELECT generate_series(0, 23)::int AS hour
@@ -248,6 +254,7 @@ func fetchHourDistribution(table, dateExpr string, carID int, startUTC, endUTC, 
 }
 
 func fetchWeekdayDistribution(table, dateExpr string, carID int, startUTC, endUTC, name string) (map[string]any, error) {
+	// 使用 ISO 星期序号，保证周一到周日的展示顺序稳定。
 	query := fmt.Sprintf(`
 		WITH buckets(ord, label) AS (
 			VALUES (1, 'Mon'), (2, 'Tue'), (3, 'Wed'), (4, 'Thu'), (5, 'Fri'), (6, 'Sat'), (7, 'Sun')

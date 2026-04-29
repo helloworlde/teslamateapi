@@ -9,6 +9,7 @@ import (
 )
 
 func TeslaMateAPICarsDashboardV2(c *gin.Context) {
+	// dashboard 只聚合车辆级统计，避免把实时状态、图表和明细列表揉进首页接口。
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid dashboard range", map[string]any{"reason": err.Error()})
@@ -71,8 +72,10 @@ func TeslaMateAPICarsRealtimeV2(c *gin.Context) {
 }
 
 func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature string) (map[string]any, error) {
+	// 实时快照只取每类最新记录：最新位置、最新状态、最新充电过程。
 	query := `
 		WITH latest_position AS (
+			-- 最新位置提供电量、里程、速度、温度、海拔等当前展示字段
 			SELECT date, latitude, longitude, speed, power, odometer, battery_level, usable_battery_level,
 				rated_battery_range_km, ideal_battery_range_km, outside_temp, inside_temp, elevation
 			FROM positions
@@ -81,6 +84,7 @@ func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature stri
 			LIMIT 1
 		),
 		latest_state AS (
+			-- 最新状态用于判断车辆当前状态和状态持续时间
 			SELECT state::text, start_date, end_date
 			FROM states
 			WHERE car_id = $1
@@ -88,6 +92,7 @@ func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature stri
 			LIMIT 1
 		),
 		latest_charge AS (
+			-- 最新充电过程用于展示是否正在充电和最近一次充电信息
 			SELECT id, start_date, end_date, charge_energy_added, charge_energy_used, cost,
 				start_battery_level, end_battery_level
 			FROM charging_processes

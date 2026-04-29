@@ -47,6 +47,7 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 }
 
 func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, error) {
+	// 日历聚合属于历史数据读多写少场景，按车辆、时间范围、bucket 和可选指标缓存。
 	type cachedCalendar struct {
 		items   []any
 		summary map[string]any
@@ -70,8 +71,13 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 	case "month":
 		trunc = "month"
 	}
+	// SQL 说明：
+	// 1. drives_agg 与 charges_agg 先按环境时区截断到 day/week/month；
+	// 2. FULL JOIN 保留只有行程或只有充电的日期；
+	// 3. 最终按 bucket_date DESC 返回，保证时间类响应默认倒序。
 	query := fmt.Sprintf(`
 		WITH drives_agg AS (
+			-- 行程侧聚合：次数、距离、时长、估算耗电量
 			SELECT date_trunc('%s', timezone($4, start_date)) AS bucket,
 				COUNT(*)::int AS drive_count,
 				COALESCE(SUM(distance), 0)::float8 AS distance_km,
@@ -88,6 +94,7 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 			GROUP BY bucket
 		),
 		charges_agg AS (
+			-- 充电侧聚合：次数、补能、费用
 			SELECT date_trunc('%s', timezone($4, start_date)) AS bucket,
 				COUNT(*)::int AS charge_count,
 				COALESCE(SUM(charge_energy_added), 0)::float8 AS charge_energy_kwh,

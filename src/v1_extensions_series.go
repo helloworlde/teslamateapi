@@ -36,6 +36,7 @@ func TeslaMateAPICarsStateSeriesV2(c *gin.Context) {
 }
 
 func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
+	// series 返回“指标元数据 + 合并后的时间点”，前端可以直接按 time 渲染多指标图表。
 	bucket := strings.ToLower(strings.TrimSpace(c.DefaultQuery("bucket", "day")))
 	metrics := parseCSV(c.Query("metrics"))
 	if len(metrics) == 0 {
@@ -92,6 +93,8 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 }
 
 func mergeMetricSeries(defs []metricDef, values map[string][]map[string]any) []map[string]any {
+	// 将多条单指标序列合并成同一时间点的宽表结构：
+	// {"time": "...", "distance": 12.3, "speed": 34.5}
 	byTime := make(map[string]map[string]any)
 	times := make([]string, 0)
 	for _, def := range defs {
@@ -228,6 +231,7 @@ func localBucketTime(value string) string {
 }
 
 func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, unitsLength string) ([]map[string]any, error) {
+	// 历史时序数据按指标独立缓存，避免一次请求中重复扫描相同时间范围。
 	key := aggregateCacheKey("series", carID, scope, metric, bucket, startUTC, endUTC, unitsLength, appUsersTimezone.String())
 	return cachedValue(key, aggregateCacheTTL(endUTC), func() ([]map[string]any, error) {
 		return fetchMetricSeriesUncached(carID, scope, metric, bucket, startUTC, endUTC, unitsLength)
@@ -235,6 +239,7 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, units
 }
 
 func bucketExpression(bucket, column string) string {
+	// raw 对外表示“尽量细”，当前落到 hour，避免直接返回海量 position 原始点。
 	if bucket == "raw" {
 		bucket = "hour"
 	}
@@ -247,6 +252,7 @@ func bucketExpression(bucket, column string) string {
 }
 
 func fetchMetricSeriesUncached(carID int, scope, metric, bucket, startUTC, endUTC, unitsLength string) ([]map[string]any, error) {
+	// SQL 统一规则：所有时间桶先按环境时区转换，再 date_trunc；过滤条件使用 UTC 半开区间。
 	eventBucketExpr := bucketExpression(bucket, "start_date")
 	positionBucketExpr := bucketExpression(bucket, "positions.date")
 	var query string
@@ -291,6 +297,7 @@ func fetchMetricSeriesUncached(carID int, scope, metric, bucket, startUTC, endUT
 		query = fmt.Sprintf(`SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t, AVG(positions.rated_battery_range_km)::float8 FROM positions WHERE positions.car_id=$1 AND positions.date >= $2 AND positions.date < $3 AND positions.rated_battery_range_km IS NOT NULL GROUP BY t ORDER BY t DESC`, positionBucketExpr)
 	case "regeneration":
 		query = fmt.Sprintf(`WITH regen AS (
+			-- 使用 position.power 的负功率样本估算动能回收；过滤异常采样间隔避免尖峰污染
 			SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t,
 				ABS(LEAST(COALESCE(positions.power, 0)::float8, 0)) AS pkw,
 				EXTRACT(EPOCH FROM (positions.date - LAG(positions.date) OVER (PARTITION BY drives.id ORDER BY positions.id))) AS ds
@@ -300,6 +307,7 @@ func fetchMetricSeriesUncached(carID int, scope, metric, bucket, startUTC, endUT
 		SELECT t, SUM(pkw * ds / 3600.0)::float8 FROM regen WHERE ds > 0 AND ds <= 300 AND pkw > 0 GROUP BY t ORDER BY t DESC`, positionBucketExpr)
 	case "duration":
 		query = fmt.Sprintf(`WITH bounded AS (
+			-- 状态窗口先裁剪到请求范围内，再按本地 bucket 汇总分钟数
 			SELECT TO_CHAR(%s, 'YYYY-MM-DD"T"HH24:MI:SS') AS t,
 				EXTRACT(EPOCH FROM (LEAST(COALESCE(end_date, $3::timestamp), $3::timestamp) - GREATEST(start_date, $2::timestamp))) / 60.0 AS minutes
 			FROM states

@@ -14,6 +14,7 @@ import (
 const aggregateQueryTimeout = 1500 * time.Millisecond
 
 func newAggregateQueryContext() (context.Context, context.CancelFunc) {
+	// 聚合查询默认限制执行时间，避免大范围历史数据拖慢 API 响应。
 	return context.WithTimeout(context.Background(), aggregateQueryTimeout)
 }
 
@@ -117,6 +118,7 @@ func parseOffsetLimit(c *gin.Context, defaultLimit, maxLimit int) (int, int, err
 }
 
 func parseTimezoneParam(c *gin.Context) (*time.Location, string, error) {
+	// 扩展接口不接受 timezone 请求参数，所有本地时间解析和 SQL 分桶都使用环境变量时区。
 	defaultLoc := appUsersTimezone
 	if defaultLoc == nil {
 		defaultLoc = time.Local
@@ -147,6 +149,7 @@ func parseDateOnlyOrTime(raw string, loc *time.Location, endOfDay bool) (time.Ti
 }
 
 func parseDateRangeFromQuery(c *gin.Context, defaultPeriod string) (v1DateRange, error) {
+	// period 模式用参考日期计算完整自然周/月/年；custom 模式要求显式传入起止时间。
 	loc, _, err := parseTimezoneParam(c)
 	if err != nil {
 		return v1DateRange{}, err
@@ -216,8 +219,8 @@ func buildRangeDTO(r v1DateRange) v1Range {
 }
 
 func dbTimeRange(r v1DateRange) (string, string) {
-	// API ranges expose an inclusive, timezone-aware end timestamp. SQL filters use
-	// a half-open range so adjacent local days/months do not double-count boundary rows.
+	// API 对外展示的是包含结束秒的本地时间范围；SQL 使用 [start, end) 半开区间，
+	// 避免相邻自然日/月在边界秒重复统计。
 	return r.Start.UTC().Format(dbTimestampFormat), r.End.Add(time.Second).UTC().Format(dbTimestampFormat)
 }
 

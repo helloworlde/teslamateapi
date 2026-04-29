@@ -244,7 +244,7 @@ Optional:
 - PUT `/api/v1/cars/:CarID/logging/:Command`
 - POST `/api/v1/cars/:CarID/wake_up`
 
-**Unified extension API**
+**统一扩展 API**
 
 - GET `/api/v1/cars/:CarID/summary`
 - GET `/api/v1/cars/:CarID/dashboard`
@@ -262,7 +262,7 @@ Optional:
 - GET `/api/v1/cars/:CarID/map/visited`
 - GET `/api/v1/cars/:CarID/locations`
 
-### Extension API purpose
+### 扩展接口说明
 
 - `summary`: 规范化范围摘要（overview/driving/charging/parking/battery/efficiency/cost/quality/state）。
 - `dashboard`: app 首页车辆级统计，只包含全局/整车粒度数据。
@@ -276,7 +276,7 @@ Optional:
 - `locations`: 地点聚合（驾驶起终点、充电地点、次数、能量、费用、坐标）。
 - `map/visited`: 访问点、边界和热力图基础数据。
 
-### Units and time
+### 单位与时间
 
 - 默认单位为 metric（km, km/h, kWh, Wh/km）。
 - 所有时间字段使用 RFC3339，并按环境变量配置的时区输出。
@@ -284,13 +284,13 @@ Optional:
 - 无法可靠计算的字段返回 `null`。
 - 禁止返回伪造值或用 `0` 冒充未知值。
 
-### Aggregate cache
+### 聚合缓存
 
 - 历史聚合数据使用进程内 TTL cache，覆盖 calendar、series、distributions、battery snapshot、parking energy、regeneration 等查询。
 - 缓存 key 包含车辆、指标、bucket、时区、单位和 UTC 时间范围；近实时区间 TTL 较短，历史区间 TTL 较长。
 - loader 出错不会写入缓存，避免缓存临时数据库错误。
 
-### Query examples
+### 查询示例
 
 ```bash
 # 查询本月日历
@@ -309,20 +309,20 @@ curl "http://localhost:8080/api/v1/cars/1/distributions/charges?metrics=start_ho
 curl "http://localhost:8080/api/v1/cars/1/insights?startDate=2026-04-01&endDate=2026-04-30"
 ```
 
-### Verification
+### 验证
 
 - Static and unit validation: `go test ./...` and `go vet ./...`
 - Redesign notes: `docs/api-redesign.md`
 
-## Security information
+## 安全说明
 
-There is **no** possibility to get access to your Tesla account tokens by this API and we'll keep it this way!
+本 API **不会**提供任何读取 Tesla 账号 token 的接口，也不会在响应中暴露相关信息。
 
-The data that is accessible is data like the cars, charges, drives, current status, updates and global settings.
+可访问的数据仅限车辆、充电、行程、当前状态、更新记录和全局设置等 TeslaMate 业务数据。
 
-Also, apply some authentication on your webserver in front of the container, so your data is not unprotected and too exposed. In the example above, we use the same .htpasswd file as used by TeslaMate.
+建议在容器前的 Web 服务器上启用认证，避免车辆数据裸露在公网。上方示例使用了与 TeslaMate 相同的 `.htpasswd` 文件。
 
-If you have applied a level of authentication in front of the container `API_TOKEN_DISABLE=true` will allow commands without requiring the header or uri token value. But even then it's always rekommended to use an apikey.
+如果已经在前置 Web 服务器上做了认证，可以通过 `API_TOKEN_DISABLE=true` 关闭本服务的 API token 校验；即便如此，仍建议保留 API key 保护。
 
 ## Credits
 
