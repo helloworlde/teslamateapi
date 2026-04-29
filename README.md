@@ -281,6 +281,12 @@ Optional:
 - 无法可靠计算的字段返回 `null`，并通过 `warnings` 说明原因。
 - 禁止返回伪造值或用 `0` 冒充未知值。
 
+### Aggregate cache
+
+- 历史聚合数据使用进程内 TTL cache，覆盖 calendar、series、distributions、battery snapshot、parking energy、regeneration 等查询。
+- 缓存 key 包含车辆、指标、bucket、时区、单位和 UTC 时间范围；近实时区间 TTL 较短，历史区间 TTL 较长。
+- loader 出错不会写入缓存，避免缓存临时数据库错误。
+
 ### Query examples
 
 ```bash

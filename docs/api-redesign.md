@@ -124,6 +124,19 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 - Several chart aliases encoded bucket semantics in the path instead of query parameters; bucket selection is now explicit.
 - Query helpers now consistently apply `car_id` and timezone-aware half-open date filters in the database layer used by the redesigned routes.
 - Expensive derived calculations such as parking energy / vampire drain and regeneration are bounded with query timeouts and return warnings instead of blocking aggregate responses indefinitely.
+- Historical aggregate reads are cached with TTL keys that include car, range, timezone, unit, scope, metric and bucket, reducing repeated scans for chart-heavy clients.
+
+### Code organization
+
+- `v1_extensions_dashboard.go`: dashboard handler and recent/current dashboard queries.
+- `v1_extensions_calendar.go`: calendar aggregation.
+- `v1_extensions_series.go`: domain-specific time series.
+- `v1_extensions_distributions.go`: domain-specific distribution buckets.
+- `v1_extensions_statistics.go`: statistics handler plus battery/parking/regeneration helpers.
+- `v1_extensions_insights.go`: baseline comparison insights.
+- `v1_extensions_locations.go`: location aggregation.
+- `v1_extensions_timeline_map.go`: timeline and visited map endpoints.
+- `v1_cache.go`: shared in-process TTL cache for historical aggregate data.
 
 ### Units and empty data
 
