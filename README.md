@@ -248,6 +248,7 @@ Optional:
 
 - GET `/api/v1/cars/:CarID/summary`
 - GET `/api/v1/cars/:CarID/dashboard`
+- GET `/api/v1/cars/:CarID/realtime`
 - GET `/api/v1/cars/:CarID/calendar`
 - GET `/api/v1/cars/:CarID/statistics`
 - GET `/api/v1/cars/:CarID/series/drives`
@@ -264,7 +265,8 @@ Optional:
 ### Extension API purpose
 
 - `summary`: 规范化范围摘要（overview/driving/charging/parking/battery/efficiency/cost/quality/state）。
-- `dashboard`: app 首页聚合数据，减少客户端请求次数。
+- `dashboard`: app 首页车辆级统计，只包含全局/整车粒度数据。
+- `realtime`: 最新位置、状态、充电快照。
 - `calendar`: 日历维度聚合（day/week/month）。
 - `statistics`: 年/月/周/自定义范围统计。
 - `series/*`: 按领域拆分的时序曲线（drives/charges/battery/states）。
@@ -274,11 +276,12 @@ Optional:
 - `locations`: 地点聚合（驾驶起终点、充电地点、次数、能量、费用、坐标）。
 - `map/visited`: 访问点、边界和热力图基础数据。
 
-### Units and warnings
+### Units and time
 
 - 默认单位为 metric（km, km/h, kWh, Wh/km）。
-- 所有时间字段使用 RFC3339。
-- 无法可靠计算的字段返回 `null`，并通过 `warnings` 说明原因。
+- 所有时间字段使用 RFC3339，并按环境变量配置的时区输出。
+- 扩展接口不接受 `timezone` 请求参数；时间解析和 SQL 分桶统一使用环境变量时区。
+- 无法可靠计算的字段返回 `null`。
 - 禁止返回伪造值或用 `0` 冒充未知值。
 
 ### Aggregate cache
@@ -291,10 +294,10 @@ Optional:
 
 ```bash
 # 查询本月日历
-curl "http://localhost:8080/api/v1/cars/1/calendar?startDate=2026-04-01&endDate=2026-04-30&bucket=day&timezone=Asia/Shanghai"
+curl "http://localhost:8080/api/v1/cars/1/calendar?startDate=2026-04-01&endDate=2026-04-30&bucket=day"
 
 # 查询本月统计
-curl "http://localhost:8080/api/v1/cars/1/statistics?period=month&date=2026-04-01&timezone=Asia/Shanghai"
+curl "http://localhost:8080/api/v1/cars/1/statistics?period=month&date=2026-04-01"
 
 # 查询本月里程和速度曲线
 curl "http://localhost:8080/api/v1/cars/1/series/drives?metrics=distance,speed&bucket=day&startDate=2026-04-01&endDate=2026-04-30"

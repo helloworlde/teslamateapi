@@ -32,16 +32,14 @@ type v1Pagination struct {
 }
 
 type v1ObjectEnvelope struct {
-	Data     any    `json:"data"`
-	Meta     v1Meta `json:"meta"`
-	Warnings []any  `json:"warnings"`
+	Data any    `json:"data"`
+	Meta v1Meta `json:"meta"`
 }
 
 type v1ListEnvelope struct {
 	Data       any          `json:"data"`
 	Pagination v1Pagination `json:"pagination"`
 	Meta       v1Meta       `json:"meta"`
-	Warnings   []any        `json:"warnings"`
 }
 
 type v1Error struct {
@@ -88,26 +86,18 @@ func buildV1Meta(carID int, tzName string, unit string) v1Meta {
 	}
 }
 
-func writeV1Object(c *gin.Context, data any, meta v1Meta, warnings []any) {
-	if warnings == nil {
-		warnings = make([]any, 0)
-	}
+func writeV1Object(c *gin.Context, data any, meta v1Meta) {
 	c.JSON(http.StatusOK, v1ObjectEnvelope{
-		Data:     data,
-		Meta:     meta,
-		Warnings: warnings,
+		Data: data,
+		Meta: meta,
 	})
 }
 
-func writeV1List(c *gin.Context, data any, pagination v1Pagination, meta v1Meta, warnings []any) {
-	if warnings == nil {
-		warnings = make([]any, 0)
-	}
+func writeV1List(c *gin.Context, data any, pagination v1Pagination, meta v1Meta) {
 	c.JSON(http.StatusOK, v1ListEnvelope{
 		Data:       data,
 		Pagination: pagination,
 		Meta:       meta,
-		Warnings:   warnings,
 	})
 }
 
@@ -131,15 +121,7 @@ func parseTimezoneParam(c *gin.Context) (*time.Location, string, error) {
 	if defaultLoc == nil {
 		defaultLoc = time.Local
 	}
-	tzName := strings.TrimSpace(c.Query("timezone"))
-	if tzName == "" {
-		return defaultLoc, defaultLoc.String(), nil
-	}
-	loc, err := time.LoadLocation(tzName)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid timezone: %s", tzName)
-	}
-	return loc, tzName, nil
+	return defaultLoc, defaultLoc.String(), nil
 }
 
 func parseFlexibleTime(raw string, loc *time.Location) (time.Time, error) {

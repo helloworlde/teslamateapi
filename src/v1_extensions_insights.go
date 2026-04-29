@@ -15,7 +15,6 @@ func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid insight range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedInsightsV2")
 	if !ok {
 		return
@@ -28,8 +27,7 @@ func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
 			limit = parsed
 		}
 	}
-	insights, insightWarnings := buildSimpleInsights(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, types, limit)
-	warnings = append(warnings, insightWarnings...)
+	insights := buildSimpleInsights(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, types, limit)
 	levels := map[string]int{"positive": 0, "warning": 0, "info": 0}
 	for _, item := range insights {
 		level, _ := item["level"].(string)
@@ -45,12 +43,11 @@ func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
 			"total_count":    len(insights),
 		},
 		"insights": insights,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
-func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types []string, limit int) ([]map[string]any, []any) {
+func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types []string, limit int) []map[string]any {
 	items := make([]map[string]any, 0)
-	warnings := make([]any, 0)
 	typeSet := map[string]bool{}
 	for _, t := range types {
 		typeSet[t] = true
@@ -82,28 +79,21 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 
 	currentDrive, err := fetchDriveHistorySummary(carID, startUTC, endUTC, unitsLength)
 	if err != nil {
-		warnings = append(warnings, nonFatalWarning("insight_drive_unavailable", "failed to load drive insight data", nil, err))
-		return items, warnings
+		return items
 	}
 	currentCharge, err := fetchChargeHistorySummary(carID, startUTC, endUTC, unitsLength)
 	if err != nil {
-		warnings = append(warnings, nonFatalWarning("insight_charge_unavailable", "failed to load charge insight data", nil, err))
-		return items, warnings
+		return items
 	}
 	currentRegen, regenErr := fetchRegenerationSummary(carID, startUTC, endUTC, currentDrive, unitsLength)
-	if regenErr != nil {
-		warnings = append(warnings, nonFatalWarning("insight_regen_unavailable", "failed to load regeneration insight data", nil, regenErr))
-	}
+	_ = regenErr
 	currentPark, parkErr := fetchParkingEnergyTotal(carID, startUTC, endUTC)
-	if parkErr != nil {
-		warnings = append(warnings, nonFatalWarning("insight_park_unavailable", "failed to load parking insight data", nil, parkErr))
-	}
+	_ = parkErr
 
 	startT, startErr := time.ParseInLocation(dbTimestampFormat, startUTC, time.UTC)
 	endT, endErr := time.ParseInLocation(dbTimestampFormat, endUTC, time.UTC)
 	if startErr != nil || endErr != nil || !endT.After(startT) {
-		warnings = append(warnings, map[string]any{"code": "insight_baseline_unavailable", "message": "invalid range for baseline comparison"})
-		return items, warnings
+		return items
 	}
 	duration := endT.Sub(startT)
 	baseStart := startT.Add(-duration)
@@ -112,12 +102,9 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 	baseEndUTC := baseEnd.UTC().Format(dbTimestampFormat)
 
 	baseDrive, driveBaseErr := fetchDriveHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
-	if driveBaseErr != nil {
-		warnings = append(warnings, nonFatalWarning("insight_drive_baseline_unavailable", "failed to load drive baseline insight data", nil, driveBaseErr))
-	}
 	baseCharge, chargeBaseErr := fetchChargeHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
 	if chargeBaseErr != nil {
-		warnings = append(warnings, nonFatalWarning("insight_charge_baseline_unavailable", "failed to load charge baseline insight data", nil, chargeBaseErr))
+		baseCharge = nil
 	}
 	var baseRegen *RegenerationSummary
 	if driveBaseErr == nil {
@@ -181,7 +168,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 			}
 		}
 	}
-	return items, warnings
+	return items
 }
 
 func calcDeltaPercent(current any, baseline any) any {

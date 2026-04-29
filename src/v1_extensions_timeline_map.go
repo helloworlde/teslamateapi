@@ -21,7 +21,6 @@ func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid timeline range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedTimelineV2")
 	if !ok {
 		return
@@ -50,7 +49,7 @@ func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
 			"entity_id":   entityID,
 		})
 	}
-	writeV1List(c, out, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	writeV1List(c, out, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
 func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
@@ -59,7 +58,6 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid visited map range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsMapVisitedUnifiedV2")
 	if !ok {
 		return
@@ -92,6 +90,7 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 		"drive_count":    nil,
 		"visited_points": visitedPoints,
 		"heatmap":        []any{},
+		"truncated":      truncated,
 	}
 	if bounds != nil {
 		data["bounds"] = map[string]any{
@@ -101,8 +100,5 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 			"west":  bounds.MinLongitude,
 		}
 	}
-	if truncated {
-		warnings = append(warnings, map[string]any{"code": "data_truncated", "message": "visited points were truncated to limit 10000"})
-	}
-	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }

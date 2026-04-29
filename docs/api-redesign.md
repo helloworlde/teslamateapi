@@ -122,13 +122,13 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 
 - Date parsing previously rejected offset values after URL decoding converted `+` to a space.
 - Several chart aliases encoded bucket semantics in the path instead of query parameters; bucket selection is now explicit.
-- Query helpers now consistently apply `car_id` and timezone-aware half-open date filters in the database layer used by the redesigned routes.
-- Expensive derived calculations such as parking energy / vampire drain and regeneration are bounded with query timeouts and return warnings instead of blocking aggregate responses indefinitely.
+- Query helpers now consistently apply `car_id` and environment-timezone-aware half-open date filters in the database layer used by the redesigned routes.
+- Expensive derived calculations such as parking energy / vampire drain and regeneration are bounded with query timeouts and keep unavailable optional values as `null` instead of blocking aggregate responses indefinitely.
 - Historical aggregate reads are cached with TTL keys that include car, range, timezone, unit, scope, metric and bucket, reducing repeated scans for chart-heavy clients.
 
 ### Code organization
 
-- `v1_extensions_dashboard.go`: dashboard handler and recent/current dashboard queries.
+- `v1_extensions_dashboard.go`: vehicle-level dashboard handler and realtime snapshot query.
 - `v1_extensions_calendar.go`: calendar aggregation.
 - `v1_extensions_series.go`: domain-specific time series.
 - `v1_extensions_distributions.go`: domain-specific distribution buckets.
@@ -189,9 +189,9 @@ The redesigned extension routes use concrete, business-named Swagger models inst
 
 ## Data definitions and limits
 
-- `startDate` / `endDate` accept RFC3339, timezone offset, decoded-space offset, local datetime, and date-only formats.
+- `startDate` / `endDate` accept RFC3339, timezone offset, decoded-space offset, local datetime, and date-only formats; local dates use the environment-configured timezone.
 - Date-only `endDate` values are expanded to local end-of-day for redesigned range parsing, then translated into half-open SQL filters.
 - Series and distribution endpoints default to bounded time windows to avoid unbounded scans.
 - `map/visited` limits points and reports truncation in metadata.
-- `vampire_drain` is derived from state windows and battery/range samples where available; expensive queries are time-boxed and return `null` plus warnings when the data is unavailable or too slow.
+- `vampire_drain` is derived from state windows and battery/range samples where available; expensive queries are time-boxed and return `null` when the data is unavailable or too slow.
 - Distances use TeslaMate settings-derived `km` or `mi`; speeds use `km/h` or `mi/h`; consumption uses `Wh/km` or `Wh/mi`; energy uses `kWh`.

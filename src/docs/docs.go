@@ -232,12 +232,6 @@ const docTemplate = `{
                         "description": "day|week|month",
                         "name": "bucket",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -479,7 +473,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/dashboard": {
             "get": {
-                "description": "Aggregated dashboard payload for app home. Returns current vehicle snapshot, statistics, calendar summary, chart series, distributions, insights, recent drives, recent charges, recent updates, and warnings in one request.",
+                "description": "Vehicle-level dashboard statistics for the selected range. Realtime state, chart series, distributions, insights, timeline, drives and charges are exposed by dedicated endpoints.",
                 "produces": [
                     "application/json"
                 ],
@@ -518,12 +512,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "custom range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -591,12 +579,6 @@ const docTemplate = `{
                         "description": "range end",
                         "name": "endDate",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -662,12 +644,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -866,12 +842,6 @@ const docTemplate = `{
                         "description": "insight count limit, 1-100, default 20",
                         "name": "limit",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -937,12 +907,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "maximum locations, capped at 100",
                         "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1071,12 +1035,6 @@ const docTemplate = `{
                         "description": "range end",
                         "name": "endDate",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1090,6 +1048,48 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/realtime": {
+            "get": {
+                "description": "Current vehicle snapshot derived from latest position, latest state and latest charging process.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Extended API"
+                ],
+                "summary": "Realtime vehicle snapshot",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.RealtimeV2Envelope"
                         }
                     },
                     "404": {
@@ -1149,12 +1149,6 @@ const docTemplate = `{
                         "description": "range end",
                         "name": "endDate",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1187,7 +1181,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/series/charges": {
             "get": {
-                "description": "Charge time series with charge-only metrics and chart metadata.",
+                "description": "Charge time series grouped by bucket. Response includes start_soc and end_soc and merges selected metrics into one point object per timestamp.",
                 "produces": [
                     "application/json"
                 ],
@@ -1206,7 +1200,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "comma separated metrics: energy,power,cost,soc",
+                        "description": "comma separated metrics: energy,power,cost,start_soc,end_soc",
                         "name": "metrics",
                         "in": "query"
                     },
@@ -1226,12 +1220,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1265,7 +1253,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/series/drives": {
             "get": {
-                "description": "Drive time series with drive-only metrics and chart metadata.",
+                "description": "Drive time series grouped by bucket. Response merges selected metrics into one point object per timestamp, sorted newest first.",
                 "produces": [
                     "application/json"
                 ],
@@ -1284,7 +1272,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "comma separated metrics: distance,efficiency,speed,energy,regeneration",
+                        "description": "comma separated metrics: distance,efficiency,speed,max_speed,motor_power,regen_power,elevation,outside_temp,inside_temp,energy,regeneration",
                         "name": "metrics",
                         "in": "query"
                     },
@@ -1304,12 +1292,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1343,7 +1325,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/series/states": {
             "get": {
-                "description": "State-derived time series for parking energy / vampire drain.",
+                "description": "State-derived time series for state duration and parking energy / vampire drain.",
                 "produces": [
                     "application/json"
                 ],
@@ -1362,7 +1344,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "comma separated metrics: vampire_drain",
+                        "description": "comma separated metrics: duration,vampire_drain",
                         "name": "metrics",
                         "in": "query"
                     },
@@ -1382,12 +1364,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1460,12 +1436,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "custom range end",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1568,12 +1538,6 @@ const docTemplate = `{
                         "description": "custom range end; when present startDate is required",
                         "name": "endDate",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1645,12 +1609,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "offset",
                         "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
                         "in": "query"
                     }
                 ],
@@ -1881,12 +1839,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -2591,164 +2543,21 @@ const docTemplate = `{
                 }
             }
         },
-        "main.DashboardRecentCharge": {
+        "main.DashboardOverview": {
             "type": "object",
-            "properties": {
-                "charge_id": {
-                    "type": "integer"
-                },
-                "charger_type": {
-                    "type": "string"
-                },
-                "charging_efficiency": {
-                    "type": "number"
-                },
-                "cost": {
-                    "type": "number"
-                },
-                "duration_seconds": {
-                    "type": "integer"
-                },
-                "end_battery_level": {
-                    "type": "integer"
-                },
-                "end_rated_range": {
-                    "type": "number"
-                },
-                "end_time": {
-                    "type": "string"
-                },
-                "energy_added": {
-                    "type": "number"
-                },
-                "energy_used": {
-                    "type": "number"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "outside_temperature": {
-                    "type": "number"
-                },
-                "start_battery_level": {
-                    "type": "integer"
-                },
-                "start_rated_range": {
-                    "type": "number"
-                },
-                "start_time": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.DashboardRecentDrive": {
-            "type": "object",
-            "properties": {
-                "average_speed": {
-                    "type": "number"
-                },
-                "consumption_net": {
-                    "type": "number"
-                },
-                "distance": {
-                    "type": "number"
-                },
-                "drive_id": {
-                    "type": "integer"
-                },
-                "duration_seconds": {
-                    "type": "integer"
-                },
-                "end_address": {
-                    "type": "string"
-                },
-                "end_time": {
-                    "type": "string"
-                },
-                "energy_used": {
-                    "type": "number"
-                },
-                "max_speed": {
-                    "type": "integer"
-                },
-                "outside_temperature": {
-                    "type": "number"
-                },
-                "start_address": {
-                    "type": "string"
-                },
-                "start_time": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.DashboardRecentUpdate": {
-            "type": "object",
-            "properties": {
-                "end_time": {
-                    "type": "string"
-                },
-                "start_time": {
-                    "type": "string"
-                },
-                "update_id": {
-                    "type": "integer"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
+            "additionalProperties": {}
         },
         "main.DashboardV2Data": {
             "type": "object",
             "properties": {
-                "calendar": {
-                    "$ref": "#/definitions/main.CalendarV2Data"
-                },
                 "car_id": {
                     "type": "integer"
                 },
-                "current": {
-                    "$ref": "#/definitions/main.DashboardCurrentSnapshot"
-                },
-                "distributions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.MetricDistributionV2"
-                    }
-                },
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.InsightV2Item"
-                    }
+                "overview": {
+                    "$ref": "#/definitions/main.DashboardOverview"
                 },
                 "range": {
                     "$ref": "#/definitions/main.ExtendedRange"
-                },
-                "recent_charges": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.DashboardRecentCharge"
-                    }
-                },
-                "recent_drives": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.DashboardRecentDrive"
-                    }
-                },
-                "recent_updates": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.DashboardRecentUpdate"
-                    }
-                },
-                "series": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.MetricSeriesV2"
-                    }
                 },
                 "statistics": {
                     "$ref": "#/definitions/main.StatisticsSummary"
@@ -2763,12 +2572,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -2801,12 +2604,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -3179,27 +2976,6 @@ const docTemplate = `{
                 }
             }
         },
-        "main.ExtendedWarning": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "query_timeout"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "optional aggregate query timed out"
-                },
-                "metric": {
-                    "type": "string",
-                    "example": "distance"
-                },
-                "scope": {
-                    "type": "string",
-                    "example": "drives"
-                }
-            }
-        },
         "main.GlobalsettingsV1AccountInfo": {
             "type": "object",
             "properties": {
@@ -3367,12 +3143,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -3474,12 +3244,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -3531,19 +3295,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.MetricSeriesPointV2": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string",
-                    "example": "2026-04-01T00:00:00+08:00"
-                },
-                "value": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.MetricSeriesV2": {
+        "main.MetricSeriesMetaV2": {
             "type": "object",
             "properties": {
                 "chart_type": {
@@ -3556,19 +3308,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "distance"
-                },
-                "points": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.MetricSeriesPointV2"
-                    }
+                    "example": "drive_distance"
                 },
                 "unit": {
                     "type": "string",
                     "example": "km"
                 }
             }
+        },
+        "main.MetricSeriesPointV2": {
+            "type": "object",
+            "additionalProperties": {}
         },
         "main.ParkingStateBreakdown": {
             "type": "object",
@@ -3587,6 +3337,28 @@ const docTemplate = `{
                 }
             }
         },
+        "main.RealtimeV2Data": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "type": "integer"
+                },
+                "current": {
+                    "$ref": "#/definitions/main.DashboardCurrentSnapshot"
+                }
+            }
+        },
+        "main.RealtimeV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.RealtimeV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                }
+            }
+        },
         "main.SeriesV2Data": {
             "type": "object",
             "properties": {
@@ -3597,18 +3369,24 @@ const docTemplate = `{
                 "car_id": {
                     "type": "integer"
                 },
+                "metrics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricSeriesMetaV2"
+                    }
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.MetricSeriesPointV2"
+                    }
+                },
                 "range": {
                     "$ref": "#/definitions/main.ExtendedRange"
                 },
                 "scope": {
                     "type": "string",
                     "example": "drives"
-                },
-                "series": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.MetricSeriesV2"
-                    }
                 }
             }
         },
@@ -3620,12 +3398,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -3765,12 +3537,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -4284,12 +4050,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -4504,12 +4264,6 @@ const docTemplate = `{
                 },
                 "pagination": {
                     "$ref": "#/definitions/main.v1Pagination"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -4616,6 +4370,9 @@ const docTemplate = `{
                 "range": {
                     "$ref": "#/definitions/main.ExtendedRange"
                 },
+                "truncated": {
+                    "type": "boolean"
+                },
                 "visited_points": {
                     "type": "array",
                     "items": {
@@ -4632,12 +4389,6 @@ const docTemplate = `{
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ExtendedWarning"
-                    }
                 }
             }
         },
@@ -4709,7 +4460,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{"http", "https"},
 	Title:            "TeslaMateApi",
-	Description:      "RESTful API for TeslaMate-backed vehicle, charge, drive, statistics, chart, timeline, and insight data. Original TeslaMateApi routes remain compatible; redesigned extension routes may introduce breaking changes. Date query parameters support RFC3339, timezone offsets, decoded-space offsets, local datetime, and date-only formats. When using `+08:00` in URLs, prefer `%2B08:00`, though decoded-space offsets are also accepted.",
+	Description:      "RESTful API for TeslaMate-backed vehicle, charge, drive, statistics, chart, timeline, and insight data. Original TeslaMateApi routes remain compatible; redesigned extension routes may introduce breaking changes. Date query parameters support RFC3339, timezone offsets, decoded-space offsets, local datetime, and date-only formats; local dates use the environment-configured timezone.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

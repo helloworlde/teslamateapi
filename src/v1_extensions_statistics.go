@@ -17,7 +17,6 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid statistics range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedStatisticsV2")
 	if !ok {
 		return
@@ -39,12 +38,8 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 		return
 	}
 	regeneration, regenErr := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
-	if regenErr != nil {
-		warnings = append(warnings, nonFatalWarning("regeneration_unavailable", "failed to load regeneration metrics, returned as null", nil, regenErr))
-	}
 	batterySnapshot, batteryErr := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if batteryErr != nil {
-		warnings = append(warnings, nonFatalWarning("battery_snapshot_unavailable", "failed to load battery snapshot, returned as null", nil, batteryErr))
 		batterySnapshot = map[string]any{
 			"soc_start_percent": nil,
 			"soc_end_percent":   nil,
@@ -53,33 +48,18 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 		}
 	}
 	currency := "UNKNOWN"
-	if statistics.TotalCost == nil || statistics.AverageCostPerKwh == nil {
-		warnings = append(warnings, map[string]any{
-			"code":    "charge_cost_or_currency_missing",
-			"message": "cost metrics require charging_processes.cost and currency setting",
-		})
-	}
 	chargeEfficiencyPercent := toPercent(statistics.ChargingEfficiency)
 	regeneratedEnergy := any(nil)
 	regenerationRatio := any(nil)
 	if regeneration != nil {
 		regeneratedEnergy = regeneration.EstimatedRecoveredEnergyKwh
 		regenerationRatio = regeneration.RecoveryShare
-		if regeneration.MetricsEstimated {
-			warnings = append(warnings, map[string]any{
-				"code":    "regeneration_estimated",
-				"message": "regeneration metrics are estimated from position power samples",
-			})
-		}
 	}
+	_ = regenErr
 	parkEnergyKwh, parkEnergyErr := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
-	if parkEnergyErr != nil {
-		warnings = append(warnings, nonFatalWarning("park_energy_unavailable", "failed to load parking energy, returned as null", nil, parkEnergyErr))
-	}
+	_ = parkEnergyErr
 	parkingSummary, parkingErr := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
-	if parkingErr != nil {
-		warnings = append(warnings, nonFatalWarning("parking_summary_unavailable", "failed to load parking summary", nil, parkingErr))
-	}
+	_ = parkingErr
 	avgDriveDurationSec := any(nil)
 	if driveSummary.DriveCount > 0 {
 		avgDriveDurationSec = float64(driveSummary.TotalDurationMin*60) / float64(driveSummary.DriveCount)
@@ -143,7 +123,7 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 				return parkingSummary.TotalDurationMin * 60
 			}(),
 		},
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
 func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[string]any, error) {

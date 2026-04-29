@@ -37,20 +37,6 @@ func responseErrorDetails(c *gin.Context, status int, code, message string, deta
 	return details
 }
 
-func nonFatalWarning(code, message string, fields map[string]any, err error) map[string]any {
-	if err != nil {
-		log.Printf("[warning] nonfatal_warning - code=%s message=%s details=%v", code, message, err)
-	}
-	warning := map[string]any{
-		"code":    code,
-		"message": message,
-	}
-	for key, value := range fields {
-		warning[key] = value
-	}
-	return warning
-}
-
 func TeslaMateAPIHandleErrorResponseWithStatus(c *gin.Context, status int, logPrefix, message, detail string) {
 	log.Println("[error] " + logPrefix + " - (" + sanitizedRequestURI(c) + "). " + message + "; " + detail)
 	body := gin.H{"error": message}

@@ -22,7 +22,6 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid distribution range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsDistributionsV2")
 	if !ok {
 		return
@@ -36,8 +35,8 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 	for _, metric := range metrics {
 		item, err := fetchDistribution(ctx.CarID, scope, metric, startUTC, endUTC)
 		if err != nil {
-			warnings = append(warnings, nonFatalWarning("distribution_query_failed", "failed to load distribution", map[string]any{"metric": metric}, err))
-			continue
+			writeV1Error(c, http.StatusBadRequest, "unsupported_metric", "unsupported distribution metric", map[string]any{"metric": metric, "reason": err.Error()})
+			return
 		}
 		distributions = append(distributions, item)
 	}
@@ -46,30 +45,7 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 		"scope":         scope,
 		"range":         buildRangeDTO(dr),
 		"distributions": distributions,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
-}
-
-func fetchDashboardDistributions(carID int, startUTC, endUTC string) ([]any, []any) {
-	specs := []struct {
-		Scope  string
-		Metric string
-	}{
-		{Scope: "drives", Metric: "start_hour"},
-		{Scope: "drives", Metric: "distance"},
-		{Scope: "charges", Metric: "start_hour"},
-		{Scope: "charges", Metric: "energy"},
-	}
-	distributions := make([]any, 0, len(specs))
-	warnings := make([]any, 0)
-	for _, spec := range specs {
-		item, err := fetchDistribution(carID, spec.Scope, spec.Metric, startUTC, endUTC)
-		if err != nil {
-			warnings = append(warnings, nonFatalWarning("dashboard_distribution_unavailable", "failed to load dashboard distribution", map[string]any{"scope": spec.Scope, "metric": spec.Metric}, err))
-			continue
-		}
-		distributions = append(distributions, item)
-	}
-	return distributions, warnings
+	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
 func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {
@@ -89,7 +65,8 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
 				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
-					(4, '20-50', 20.0, 50.0), (5, '50+', 50.0, NULL)
+					(4, '20-30', 20.0, 30.0), (5, '30-50', 30.0, 50.0), (6, '50-80', 50.0, 80.0),
+					(7, '80-120', 80.0, 120.0), (8, '120+', 120.0, NULL)
 			),
 			filtered AS (
 				SELECT GREATEST(COALESCE(distance, 0), 0)::float8 AS value
@@ -104,8 +81,9 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "drives:duration":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
-				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-40', 20.0, 40.0),
-					(4, '40-60', 40.0, 60.0), (5, '60+', 60.0, NULL)
+				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
+					(4, '20-30', 20.0, 30.0), (5, '30-45', 30.0, 45.0), (6, '45-60', 45.0, 60.0),
+					(7, '60-90', 60.0, 90.0), (8, '90+', 90.0, NULL)
 			),
 			filtered AS (
 				SELECT GREATEST(COALESCE(duration_min, 0), 0)::float8 AS value
@@ -120,8 +98,11 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "drives:speed":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
-				VALUES (1, '0-20', 0.0, 20.0), (2, '20-40', 20.0, 40.0), (3, '40-60', 40.0, 60.0),
-					(4, '60-100', 60.0, 100.0), (5, '100+', 100.0, NULL)
+				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-30', 20.0, 30.0),
+					(4, '30-40', 30.0, 40.0), (5, '40-50', 40.0, 50.0), (6, '50-60', 50.0, 60.0),
+					(7, '60-70', 60.0, 70.0), (8, '70-80', 70.0, 80.0), (9, '80-90', 80.0, 90.0),
+					(10, '90-100', 90.0, 100.0), (11, '100-110', 100.0, 110.0), (12, '110-120', 110.0, 120.0),
+					(13, '120-130', 120.0, 130.0), (14, '130-140', 130.0, 140.0), (15, '140+', 140.0, NULL)
 			),
 			filtered AS (
 				SELECT COALESCE(speed_max, 0)::float8 AS value
@@ -161,8 +142,9 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "charges:energy":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
-				VALUES (1, '0-10', 0.0, 10.0), (2, '10-20', 10.0, 20.0), (3, '20-40', 20.0, 40.0),
-					(4, '40-70', 40.0, 70.0), (5, '70+', 70.0, NULL)
+				VALUES (1, '0-5', 0.0, 5.0), (2, '5-10', 5.0, 10.0), (3, '10-20', 10.0, 20.0),
+					(4, '20-40', 20.0, 40.0), (5, '40-60', 40.0, 60.0), (6, '60-80', 60.0, 80.0),
+					(7, '80+', 80.0, NULL)
 			),
 			filtered AS (
 				SELECT GREATEST(COALESCE(charge_energy_added, 0), 0)::float8 AS value
@@ -177,8 +159,9 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 	case "charges:duration":
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
-				VALUES (1, '0-30', 0.0, 30.0), (2, '30-60', 30.0, 60.0), (3, '60-120', 60.0, 120.0),
-					(4, '120-240', 120.0, 240.0), (5, '240+', 240.0, NULL)
+				VALUES (1, '0-30', 0.0, 30.0), (2, '30-60', 30.0, 60.0), (3, '60-90', 60.0, 90.0),
+					(4, '90-120', 90.0, 120.0), (5, '120-180', 120.0, 180.0), (6, '180-240', 180.0, 240.0),
+					(7, '240+', 240.0, NULL)
 			),
 			filtered AS (
 				SELECT GREATEST(COALESCE(duration_min, 0), 0)::float8 AS value
@@ -194,7 +177,8 @@ func fetchDistributionUncached(carID int, scope, metric, startUTC, endUTC string
 		return fetchNumericDistribution(`
 			WITH buckets(ord, label, min_value, max_value) AS (
 				VALUES (1, '0-4', 0.0, 4.0), (2, '4-8', 4.0, 8.0), (3, '8-12', 8.0, 12.0),
-					(4, '12-50', 12.0, 50.0), (5, '50+', 50.0, NULL)
+					(4, '12-22', 12.0, 22.0), (5, '22-50', 22.0, 50.0), (6, '50-120', 50.0, 120.0),
+					(7, '120+', 120.0, NULL)
 			),
 			filtered AS (
 				SELECT MAX(COALESCE(charges.charger_power, 0))::float8 AS value

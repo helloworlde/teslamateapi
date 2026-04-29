@@ -48,6 +48,7 @@ func registerCommandV1Routes(v1 *gin.RouterGroup) {
 func registerExtendedV1Routes(v1 *gin.RouterGroup) {
 	v1.GET("/cars/:CarID/summary", TeslaMateAPICarsSummaryV2)
 	v1.GET("/cars/:CarID/dashboard", TeslaMateAPICarsDashboardV2)
+	v1.GET("/cars/:CarID/realtime", TeslaMateAPICarsRealtimeV2)
 	v1.GET("/cars/:CarID/calendar", TeslaMateAPICarsCalendarV2)
 	v1.GET("/cars/:CarID/statistics", TeslaMateAPICarsUnifiedStatisticsV2)
 	v1.GET("/cars/:CarID/series/drives", TeslaMateAPICarsDriveSeriesV2)

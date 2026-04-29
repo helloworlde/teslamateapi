@@ -188,7 +188,6 @@ func swaggerGlobalSettings() {}
 // @Param date query string false "reference date for period mode"
 // @Param startDate query string false "custom range start; when present endDate is required"
 // @Param endDate query string false "custom range end; when present startDate is required"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} SummaryV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -197,7 +196,7 @@ func swaggerGlobalSettings() {}
 func swaggerSummaryV2() {}
 
 // @Summary Dashboard
-// @Description Aggregated dashboard payload for app home. Returns current vehicle snapshot, statistics, calendar summary, chart series, distributions, insights, recent drives, recent charges, recent updates, and warnings in one request.
+// @Description Vehicle-level dashboard statistics for the selected range. Realtime state, chart series, distributions, insights, timeline, drives and charges are exposed by dedicated endpoints.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
@@ -205,13 +204,23 @@ func swaggerSummaryV2() {}
 // @Param date query string false "YYYY-MM-DD or RFC3339"
 // @Param startDate query string false "custom range start"
 // @Param endDate query string false "custom range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} DashboardV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
 // @Failure 500 {object} v1ErrorEnvelope
 // @Router /v1/cars/{CarID}/dashboard [get]
 func swaggerDashboardV2() {}
+
+// @Summary Realtime vehicle snapshot
+// @Description Current vehicle snapshot derived from latest position, latest state and latest charging process.
+// @Tags Extended API
+// @Produce json
+// @Param CarID path int true "Car ID" default(1)
+// @Success 200 {object} RealtimeV2Envelope
+// @Failure 404 {object} v1ErrorEnvelope
+// @Failure 500 {object} v1ErrorEnvelope
+// @Router /v1/cars/{CarID}/realtime [get]
+func swaggerRealtimeV2() {}
 
 // @Summary Calendar
 // @Description Unified calendar endpoint for drives/charges metrics. Supports day, week, month buckets and returns summary + item list.
@@ -221,7 +230,6 @@ func swaggerDashboardV2() {}
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
 // @Param bucket query string false "day|week|month"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} CalendarV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -238,7 +246,6 @@ func swaggerCalendarV2() {}
 // @Param date query string false "YYYY-MM-DD or RFC3339"
 // @Param startDate query string false "custom range start"
 // @Param endDate query string false "custom range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} StatisticsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -247,15 +254,14 @@ func swaggerCalendarV2() {}
 func swaggerStatisticsV2() {}
 
 // @Summary Drive series
-// @Description Drive time series with drive-only metrics and chart metadata.
+// @Description Drive time series grouped by bucket. Response merges selected metrics into one point object per timestamp, sorted newest first.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param metrics query string false "comma separated metrics: distance,efficiency,speed,energy,regeneration"
+// @Param metrics query string false "comma separated metrics: distance,efficiency,speed,max_speed,motor_power,regen_power,elevation,outside_temp,inside_temp,energy,regeneration"
 // @Param bucket query string false "raw|hour|day|week|month|year"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} SeriesV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -264,15 +270,14 @@ func swaggerStatisticsV2() {}
 func swaggerDriveSeriesV2() {}
 
 // @Summary Charge series
-// @Description Charge time series with charge-only metrics and chart metadata.
+// @Description Charge time series grouped by bucket. Response includes start_soc and end_soc and merges selected metrics into one point object per timestamp.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param metrics query string false "comma separated metrics: energy,power,cost,soc"
+// @Param metrics query string false "comma separated metrics: energy,power,cost,start_soc,end_soc"
 // @Param bucket query string false "raw|hour|day|week|month|year"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} SeriesV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -289,7 +294,6 @@ func swaggerChargeSeriesV2() {}
 // @Param bucket query string false "raw|hour|day|week|month|year"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} SeriesV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -298,15 +302,14 @@ func swaggerChargeSeriesV2() {}
 func swaggerBatterySeriesV2() {}
 
 // @Summary State series
-// @Description State-derived time series for parking energy / vampire drain.
+// @Description State-derived time series for state duration and parking energy / vampire drain.
 // @Tags Extended API
 // @Produce json
 // @Param CarID path int true "Car ID" default(1)
-// @Param metrics query string false "comma separated metrics: vampire_drain"
+// @Param metrics query string false "comma separated metrics: duration,vampire_drain"
 // @Param bucket query string false "raw|hour|day|week|month|year"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} SeriesV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -322,7 +325,6 @@ func swaggerStateSeriesV2() {}
 // @Param metrics query string false "comma separated metrics: start_hour,weekday,distance,duration,speed,efficiency"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} DistributionsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -338,7 +340,6 @@ func swaggerDriveDistributionsV2() {}
 // @Param metrics query string false "comma separated metrics: start_hour,weekday,energy,duration,power,cost"
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} DistributionsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -355,7 +356,6 @@ func swaggerChargeDistributionsV2() {}
 // @Param endDate query string false "range end"
 // @Param types query string false "comma separated types: efficiency,cost,charging,driving,battery,anomaly"
 // @Param limit query int false "insight count limit, 1-100, default 20"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} InsightsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -372,7 +372,6 @@ func swaggerInsightsV2() {}
 // @Param endDate query string false "range end"
 // @Param limit query int false "page size"
 // @Param offset query int false "offset"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} TimelineV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -387,7 +386,6 @@ func swaggerTimelineV2() {}
 // @Param CarID path int true "Car ID" default(1)
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} VisitedMapV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope
@@ -403,7 +401,6 @@ func swaggerVisitedMapV2() {}
 // @Param startDate query string false "range start"
 // @Param endDate query string false "range end"
 // @Param limit query int false "maximum locations, capped at 100"
-// @Param timezone query string false "IANA timezone"
 // @Success 200 {object} LocationsV2Envelope
 // @Failure 400 {object} v1ErrorEnvelope
 // @Failure 404 {object} v1ErrorEnvelope

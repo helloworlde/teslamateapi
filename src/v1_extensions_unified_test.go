@@ -37,13 +37,21 @@ func TestParseDateRangeFromQueryMonthWeekYearCustom(t *testing.T) {
 	}
 }
 
-func TestParseDateRangeFromQueryTimezoneAndInvalid(t *testing.T) {
+func TestParseDateRangeFromQueryUsesConfiguredTimezoneAndInvalid(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	old := appUsersTimezone
+	appUsersTimezone = time.FixedZone("CST", 8*3600)
+	t.Cleanup(func() { appUsersTimezone = old })
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/?period=month&timezone=Asia%2FShanghai&date=2026-04-01", nil)
-	if _, err := parseDateRangeFromQuery(c, "month"); err != nil {
+	c.Request = httptest.NewRequest(http.MethodGet, "/?period=month&date=2026-04-01", nil)
+	dr, err := parseDateRangeFromQuery(c, "month")
+	if err != nil {
 		t.Fatal(err)
+	}
+	if dr.Timezone.String() != "CST" {
+		t.Fatalf("expected configured timezone, got %s", dr.Timezone.String())
 	}
 
 	c2, _ := gin.CreateTestContext(httptest.NewRecorder())

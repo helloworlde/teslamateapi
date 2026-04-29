@@ -15,7 +15,6 @@ func TeslaMateAPICarsLocationsV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid locations range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsLocationsV2")
 	if !ok {
 		return
@@ -42,7 +41,7 @@ func TeslaMateAPICarsLocationsV2(c *gin.Context) {
 		"range":     buildRangeDTO(dr),
 		"summary":   summary,
 		"locations": locations,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
 func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map[string]any, map[string]any, error) {
@@ -134,7 +133,7 @@ func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map
 			COUNT(*) OVER()::int AS total_locations
 		FROM location_agg
 		WHERE location IS NOT NULL
-		ORDER BY (drive_start_count + drive_end_count + charge_count) DESC, last_seen DESC
+		ORDER BY last_seen DESC, (drive_start_count + drive_end_count + charge_count) DESC
 		LIMIT $4`
 	queryCtx, cancel := newAggregateQueryContext()
 	defer cancel()

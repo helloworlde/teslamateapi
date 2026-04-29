@@ -145,12 +145,12 @@ func TeslaMateAPICarsSummaryV2(c *gin.Context) {
 	if !ok {
 		return
 	}
-	data, warnings, err := buildUnifiedSummary(ctx, dr)
+	data, err := buildUnifiedSummary(ctx, dr)
 	if err != nil {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": err.Error()})
 		return
 	}
-	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
 func TeslaMateAPICarsStatisticsV2(c *gin.Context) {
@@ -869,7 +869,7 @@ func fetchDriveDistanceSeries(carID int, startUTC, endUTC, bucket, unitsLength s
 		FROM drives
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
 	points, err := fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 	if err != nil {
 		return nil, err
@@ -895,7 +895,7 @@ func fetchDriveEnergySeries(carID int, startUTC, endUTC, bucket, unitsLength str
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
 	return fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 }
 
@@ -911,7 +911,7 @@ func fetchDriveEfficiencySeries(carID int, startUTC, endUTC, bucket, unitsLength
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
 	points, err := fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 	if err != nil {
 		return nil, err
@@ -940,7 +940,7 @@ func fetchDriveTemperatureSeries(carID int, startUTC, endUTC, bucket, unitsLengt
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, err
@@ -988,7 +988,7 @@ func fetchDriveSpeedSeries(carID int, startUTC, endUTC, bucket, unitsLength stri
 		FROM drives
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "drives.start_date", tzParam))
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, err
@@ -1022,7 +1022,7 @@ func fetchChargeEnergySeries(carID int, startUTC, endUTC, bucket string) ([]APIC
 		FROM charging_processes
 		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
 	return fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 }
 
@@ -1033,7 +1033,7 @@ func fetchChargeCostSeries(carID int, startUTC, endUTC, bucket string) ([]APICha
 		FROM charging_processes
 		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
 	return fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 }
 
@@ -1047,7 +1047,7 @@ func fetchChargeEfficiencySeries(carID int, startUTC, endUTC, bucket string) ([]
 		FROM charging_processes
 		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
 	return fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 }
 
@@ -1061,7 +1061,7 @@ func fetchChargePowerSeries(carID int, startUTC, endUTC, bucket string) ([]APICh
 		LEFT JOIN charges ON charges.charging_process_id = charging_processes.id
 		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
 		GROUP BY bucket
-		ORDER BY bucket ASC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
+		ORDER BY bucket DESC`, bucketDateExpr(bucket, "charging_processes.start_date", tzParam))
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, err
@@ -1110,7 +1110,7 @@ func fetchChargeSOCDistribution(carID int, startUTC, endUTC string) ([]APIChartP
 			WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND end_date < $3
 		) buckets
 		GROUP BY label, bucket
-		ORDER BY bucket ASC`
+		ORDER BY bucket DESC`
 	rows, err := db.Query(query, carID, startUTC, endUTC)
 	if err != nil {
 		return nil, nil, err
@@ -1159,7 +1159,7 @@ func fetchBatteryRangeChartSeries(carID int, startUTC, endUTC, unitsLength strin
 			ideal_battery_range_km,
 			CASE WHEN usable_battery_level > 0 THEN rated_battery_range_km * efficiency / usable_battery_level * 100.0 ELSE NULL END AS usable_battery_estimate
 		FROM latest_daily
-		ORDER BY local_day ASC`
+		ORDER BY local_day DESC`
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, err
@@ -1243,7 +1243,7 @@ func fetchBatteryHealthChartSeries(carID int, startUTC, endUTC string) ([]APICha
 		)
 		SELECT TO_CHAR(local_day::timestamp, 'YYYY-MM-DD HH24:MI:SS') AS bucket, rated_battery_range_km
 		FROM daily
-		ORDER BY local_day ASC`
+		ORDER BY local_day DESC`
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return nil, nil, err
@@ -1294,7 +1294,7 @@ func fetchMileageSeries(carID int, startUTC, endUTC, unitsLength string) ([]APIC
 			WHERE positions.car_id = $1 AND positions.date >= $2 AND positions.date < $3 AND positions.odometer IS NOT NULL
 			GROUP BY month_bucket
 		)
-		SELECT TO_CHAR(month_bucket, 'YYYY-MM-DD HH24:MI:SS') AS bucket, odometer FROM monthly ORDER BY month_bucket ASC`
+		SELECT TO_CHAR(month_bucket, 'YYYY-MM-DD HH24:MI:SS') AS bucket, odometer FROM monthly ORDER BY month_bucket DESC`
 	points, err := fetchAggregateChartPoints(query, []any{carID, startUTC, endUTC, appUsersTimezone.String()})
 	if err != nil {
 		return nil, err
@@ -1344,7 +1344,7 @@ func fetchChargeCalendarMonth(carID int, year int, month int) (chargeCalendarMon
 			MAX(charging_processes.end_date) AS last_charge_at
 		FROM charging_processes
 		WHERE charging_processes.car_id = $1 AND charging_processes.end_date IS NOT NULL AND charging_processes.start_date >= $2 AND charging_processes.end_date < $3
-		GROUP BY local_date ORDER BY local_date ASC`
+		GROUP BY local_date ORDER BY local_date DESC`
 	rows, err := db.Query(query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
 		return chargeCalendarMonth{}, err
@@ -1401,7 +1401,7 @@ func fetchVisitedMap(carID int, startUTC, endUTC string, limit int) ([]visitedPo
 		INNER JOIN drives ON drives.id = positions.drive_id
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
 			AND positions.latitude IS NOT NULL AND positions.longitude IS NOT NULL
-		ORDER BY positions.date ASC
+		ORDER BY positions.date DESC
 		LIMIT $4`
 	queryCtx, cancel := newAggregateQueryContext()
 	defer cancel()

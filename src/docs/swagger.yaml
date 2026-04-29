@@ -72,10 +72,6 @@ definitions:
         $ref: '#/definitions/main.CalendarV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.CarGeodataV1:
     properties:
@@ -539,111 +535,17 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
-  main.DashboardRecentCharge:
-    properties:
-      charge_id:
-        type: integer
-      charger_type:
-        type: string
-      charging_efficiency:
-        type: number
-      cost:
-        type: number
-      duration_seconds:
-        type: integer
-      end_battery_level:
-        type: integer
-      end_rated_range:
-        type: number
-      end_time:
-        type: string
-      energy_added:
-        type: number
-      energy_used:
-        type: number
-      location:
-        type: string
-      outside_temperature:
-        type: number
-      start_battery_level:
-        type: integer
-      start_rated_range:
-        type: number
-      start_time:
-        type: string
-    type: object
-  main.DashboardRecentDrive:
-    properties:
-      average_speed:
-        type: number
-      consumption_net:
-        type: number
-      distance:
-        type: number
-      drive_id:
-        type: integer
-      duration_seconds:
-        type: integer
-      end_address:
-        type: string
-      end_time:
-        type: string
-      energy_used:
-        type: number
-      max_speed:
-        type: integer
-      outside_temperature:
-        type: number
-      start_address:
-        type: string
-      start_time:
-        type: string
-    type: object
-  main.DashboardRecentUpdate:
-    properties:
-      end_time:
-        type: string
-      start_time:
-        type: string
-      update_id:
-        type: integer
-      version:
-        type: string
+  main.DashboardOverview:
+    additionalProperties: {}
     type: object
   main.DashboardV2Data:
     properties:
-      calendar:
-        $ref: '#/definitions/main.CalendarV2Data'
       car_id:
         type: integer
-      current:
-        $ref: '#/definitions/main.DashboardCurrentSnapshot'
-      distributions:
-        items:
-          $ref: '#/definitions/main.MetricDistributionV2'
-        type: array
-      insights:
-        items:
-          $ref: '#/definitions/main.InsightV2Item'
-        type: array
+      overview:
+        $ref: '#/definitions/main.DashboardOverview'
       range:
         $ref: '#/definitions/main.ExtendedRange'
-      recent_charges:
-        items:
-          $ref: '#/definitions/main.DashboardRecentCharge'
-        type: array
-      recent_drives:
-        items:
-          $ref: '#/definitions/main.DashboardRecentDrive'
-        type: array
-      recent_updates:
-        items:
-          $ref: '#/definitions/main.DashboardRecentUpdate'
-        type: array
-      series:
-        items:
-          $ref: '#/definitions/main.MetricSeriesV2'
-        type: array
       statistics:
         $ref: '#/definitions/main.StatisticsSummary'
     type: object
@@ -653,10 +555,6 @@ definitions:
         $ref: '#/definitions/main.DashboardV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.DistributionsV2Data:
     properties:
@@ -678,10 +576,6 @@ definitions:
         $ref: '#/definitions/main.DistributionsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.DriveBatteryWindowV1:
     properties:
@@ -925,21 +819,6 @@ definitions:
       version:
         type: string
     type: object
-  main.ExtendedWarning:
-    properties:
-      code:
-        example: query_timeout
-        type: string
-      message:
-        example: optional aggregate query timed out
-        type: string
-      metric:
-        example: distance
-        type: string
-      scope:
-        example: drives
-        type: string
-    type: object
   main.GlobalsettingsV1AccountInfo:
     properties:
       inserted_at:
@@ -1050,10 +929,6 @@ definitions:
         $ref: '#/definitions/main.InsightsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.LocationAggregateV2:
     properties:
@@ -1120,10 +995,6 @@ definitions:
         $ref: '#/definitions/main.LocationsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.MetricDistributionBucketV2:
     properties:
@@ -1158,15 +1029,7 @@ definitions:
         example: count
         type: string
     type: object
-  main.MetricSeriesPointV2:
-    properties:
-      time:
-        example: "2026-04-01T00:00:00+08:00"
-        type: string
-      value:
-        type: number
-    type: object
-  main.MetricSeriesV2:
+  main.MetricSeriesMetaV2:
     properties:
       chart_type:
         example: bar
@@ -1175,15 +1038,14 @@ definitions:
         example: distance
         type: string
       name:
-        example: distance
+        example: drive_distance
         type: string
-      points:
-        items:
-          $ref: '#/definitions/main.MetricSeriesPointV2'
-        type: array
       unit:
         example: km
         type: string
+    type: object
+  main.MetricSeriesPointV2:
+    additionalProperties: {}
     type: object
   main.ParkingStateBreakdown:
     properties:
@@ -1196,6 +1058,20 @@ definitions:
       state:
         type: string
     type: object
+  main.RealtimeV2Data:
+    properties:
+      car_id:
+        type: integer
+      current:
+        $ref: '#/definitions/main.DashboardCurrentSnapshot'
+    type: object
+  main.RealtimeV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.RealtimeV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+    type: object
   main.SeriesV2Data:
     properties:
       bucket:
@@ -1203,15 +1079,19 @@ definitions:
         type: string
       car_id:
         type: integer
+      metrics:
+        items:
+          $ref: '#/definitions/main.MetricSeriesMetaV2'
+        type: array
+      points:
+        items:
+          $ref: '#/definitions/main.MetricSeriesPointV2'
+        type: array
       range:
         $ref: '#/definitions/main.ExtendedRange'
       scope:
         example: drives
         type: string
-      series:
-        items:
-          $ref: '#/definitions/main.MetricSeriesV2'
-        type: array
     type: object
   main.SeriesV2Envelope:
     properties:
@@ -1219,10 +1099,6 @@ definitions:
         $ref: '#/definitions/main.SeriesV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.StateBreakdown:
     properties:
@@ -1316,10 +1192,6 @@ definitions:
         $ref: '#/definitions/main.StatisticsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.StatusActiveRouteV1:
     properties:
@@ -1655,10 +1527,6 @@ definitions:
         $ref: '#/definitions/main.SummaryV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.SummaryV2NullableRange:
     properties:
@@ -1800,10 +1668,6 @@ definitions:
         $ref: '#/definitions/main.ExtendedResponseMeta'
       pagination:
         $ref: '#/definitions/main.v1Pagination'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.UnitsLengthTempPressureV1:
     properties:
@@ -1872,6 +1736,8 @@ definitions:
         type: array
       range:
         $ref: '#/definitions/main.ExtendedRange'
+      truncated:
+        type: boolean
       visited_points:
         items:
           $ref: '#/definitions/main.VisitedPointV2'
@@ -1883,10 +1749,6 @@ definitions:
         $ref: '#/definitions/main.VisitedMapV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-      warnings:
-        items:
-          $ref: '#/definitions/main.ExtendedWarning'
-        type: array
     type: object
   main.VisitedPointV2:
     properties:
@@ -1927,8 +1789,7 @@ info:
     chart, timeline, and insight data. Original TeslaMateApi routes remain compatible;
     redesigned extension routes may introduce breaking changes. Date query parameters
     support RFC3339, timezone offsets, decoded-space offsets, local datetime, and
-    date-only formats. When using `+08:00` in URLs, prefer `%2B08:00`, though decoded-space
-    offsets are also accepted.
+    date-only formats; local dates use the environment-configured timezone.
   title: TeslaMateApi
   version: "1.0"
 paths:
@@ -2076,10 +1937,6 @@ paths:
       - description: day|week|month
         in: query
         name: bucket
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2249,9 +2106,9 @@ paths:
       - Compatible API
   /v1/cars/{CarID}/dashboard:
     get:
-      description: Aggregated dashboard payload for app home. Returns current vehicle
-        snapshot, statistics, calendar summary, chart series, distributions, insights,
-        recent drives, recent charges, recent updates, and warnings in one request.
+      description: Vehicle-level dashboard statistics for the selected range. Realtime
+        state, chart series, distributions, insights, timeline, drives and charges
+        are exposed by dedicated endpoints.
       parameters:
       - default: 1
         description: Car ID
@@ -2274,10 +2131,6 @@ paths:
       - description: custom range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2324,10 +2177,6 @@ paths:
         in: query
         name: endDate
         type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -2372,10 +2221,6 @@ paths:
       - description: range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2512,10 +2357,6 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -2562,10 +2403,6 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -2653,10 +2490,6 @@ paths:
         in: query
         name: endDate
         type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -2677,6 +2510,35 @@ paths:
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
       summary: Visited map
+      tags:
+      - Extended API
+  /v1/cars/{CarID}/realtime:
+    get:
+      description: Current vehicle snapshot derived from latest position, latest state
+        and latest charging process.
+      parameters:
+      - default: 1
+        description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.RealtimeV2Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: Realtime vehicle snapshot
       tags:
       - Extended API
   /v1/cars/{CarID}/series/battery:
@@ -2705,10 +2567,6 @@ paths:
         in: query
         name: endDate
         type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -2733,7 +2591,8 @@ paths:
       - Extended API
   /v1/cars/{CarID}/series/charges:
     get:
-      description: Charge time series with charge-only metrics and chart metadata.
+      description: Charge time series grouped by bucket. Response includes start_soc
+        and end_soc and merges selected metrics into one point object per timestamp.
       parameters:
       - default: 1
         description: Car ID
@@ -2741,7 +2600,7 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 'comma separated metrics: energy,power,cost,soc'
+      - description: 'comma separated metrics: energy,power,cost,start_soc,end_soc'
         in: query
         name: metrics
         type: string
@@ -2756,10 +2615,6 @@ paths:
       - description: range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2785,7 +2640,8 @@ paths:
       - Extended API
   /v1/cars/{CarID}/series/drives:
     get:
-      description: Drive time series with drive-only metrics and chart metadata.
+      description: Drive time series grouped by bucket. Response merges selected metrics
+        into one point object per timestamp, sorted newest first.
       parameters:
       - default: 1
         description: Car ID
@@ -2793,7 +2649,7 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 'comma separated metrics: distance,efficiency,speed,energy,regeneration'
+      - description: 'comma separated metrics: distance,efficiency,speed,max_speed,motor_power,regen_power,elevation,outside_temp,inside_temp,energy,regeneration'
         in: query
         name: metrics
         type: string
@@ -2808,10 +2664,6 @@ paths:
       - description: range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2837,7 +2689,8 @@ paths:
       - Extended API
   /v1/cars/{CarID}/series/states:
     get:
-      description: State-derived time series for parking energy / vampire drain.
+      description: State-derived time series for state duration and parking energy
+        / vampire drain.
       parameters:
       - default: 1
         description: Car ID
@@ -2845,7 +2698,7 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 'comma separated metrics: vampire_drain'
+      - description: 'comma separated metrics: duration,vampire_drain'
         in: query
         name: metrics
         type: string
@@ -2860,10 +2713,6 @@ paths:
       - description: range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2913,10 +2762,6 @@ paths:
       - description: custom range end
         in: query
         name: endDate
-        type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
         type: string
       produces:
       - application/json
@@ -2987,10 +2832,6 @@ paths:
         in: query
         name: endDate
         type: string
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:
@@ -3039,10 +2880,6 @@ paths:
         in: query
         name: offset
         type: integer
-      - description: IANA timezone
-        in: query
-        name: timezone
-        type: string
       produces:
       - application/json
       responses:

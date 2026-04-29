@@ -34,48 +34,39 @@ func parseSummaryRangeStrict(c *gin.Context) (v1DateRange, error) {
 	return parseDateRangeFromQuery(c, "month")
 }
 
-func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, []any, error) {
+func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, error) {
 	startUTC, endUTC := dbTimeRange(dr)
-	warnings := make([]any, 0)
 
 	driveSummary, err := fetchDriveHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if err != nil {
-		return nil, nil, fmt.Errorf("drive summary: %w", err)
+		return nil, fmt.Errorf("drive summary: %w", err)
 	}
 	chargeSummary, err := fetchChargeHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if err != nil {
-		return nil, nil, fmt.Errorf("charge summary: %w", err)
+		return nil, fmt.Errorf("charge summary: %w", err)
 	}
 	parkingSummary, err := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parking summary: %w", err)
+		return nil, fmt.Errorf("parking summary: %w", err)
 	}
 	stateSummary, err := fetchStateSummary(ctx.CarID, startUTC, endUTC)
 	if err != nil {
-		return nil, nil, fmt.Errorf("state summary: %w", err)
+		return nil, fmt.Errorf("state summary: %w", err)
 	}
 	statistics, err := fetchStatisticsSummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, ctx.UnitsTemperature, driveSummary, chargeSummary)
 	if err != nil {
-		return nil, nil, fmt.Errorf("statistics: %w", err)
+		return nil, fmt.Errorf("statistics: %w", err)
 	}
 
 	regeneration, err := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
-	if err != nil {
-		warnings = append(warnings, nonFatalWarning("regeneration_unavailable", "failed to load regeneration summary", nil, err))
-	}
 	batterySnapshot, err := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if err != nil {
-		warnings = append(warnings, nonFatalWarning("battery_snapshot_unavailable", "failed to load battery snapshot", nil, err))
 		batterySnapshot = map[string]any{}
 	}
 	parkEnergy, err := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
-	if err != nil {
-		warnings = append(warnings, nonFatalWarning("parking_energy_unavailable", "failed to load parking energy", nil, err))
-	}
+	_ = err
 	latestOdometer, err := fetchLatestOdometer(ctx.CarID, ctx.UnitsLength)
-	if err != nil {
-		warnings = append(warnings, nonFatalWarning("latest_odometer_unavailable", "failed to load latest odometer", nil, err))
-	}
+	_ = err
 
 	regenEnergy := any(nil)
 	regenShare := any(nil)
@@ -213,5 +204,5 @@ func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, []
 			"breakdown":         stateSummary.StateBreakdown,
 		},
 		"generated_at": time.Now().In(dr.Timezone).Format(time.RFC3339),
-	}, warnings, nil
+	}, nil
 }

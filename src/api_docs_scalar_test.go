@@ -16,6 +16,7 @@ func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 	for _, sub := range []string{
 		"/v1/cars/{CarID}/summary",
 		"/v1/cars/{CarID}/dashboard",
+		"/v1/cars/{CarID}/realtime",
 		"/v1/cars/{CarID}/calendar",
 		"/v1/cars/{CarID}/statistics",
 		"/v1/cars/{CarID}/series/drives",
@@ -97,6 +98,7 @@ func TestOpenAPIExtendedRoutesUseConcreteResponseModels(t *testing.T) {
 	expected := map[string]string{
 		"/v1/cars/{CarID}/summary":               "#/definitions/main.SummaryV2Envelope",
 		"/v1/cars/{CarID}/dashboard":             "#/definitions/main.DashboardV2Envelope",
+		"/v1/cars/{CarID}/realtime":              "#/definitions/main.RealtimeV2Envelope",
 		"/v1/cars/{CarID}/calendar":              "#/definitions/main.CalendarV2Envelope",
 		"/v1/cars/{CarID}/statistics":            "#/definitions/main.StatisticsV2Envelope",
 		"/v1/cars/{CarID}/series/drives":         "#/definitions/main.SeriesV2Envelope",
@@ -138,7 +140,9 @@ func TestOpenAPIExtendedModelsExposeExpectedDataSections(t *testing.T) {
 	defs, _ := root["definitions"].(map[string]any)
 	expectProps := map[string][]string{
 		"main.SummaryV2Data":       {"schema_version", "car", "range", "units", "overview", "driving", "charging", "parking", "battery", "efficiency", "cost", "quality", "state", "generated_at"},
-		"main.DashboardV2Data":     {"car_id", "range", "current", "statistics", "calendar", "series", "distributions", "insights", "recent_drives", "recent_charges", "recent_updates"},
+		"main.DashboardV2Data":     {"car_id", "range", "overview", "statistics"},
+		"main.RealtimeV2Data":      {"car_id", "current"},
+		"main.SeriesV2Data":        {"car_id", "scope", "bucket", "range", "metrics", "points"},
 		"main.LocationsV2Data":     {"car_id", "range", "summary", "locations"},
 		"main.LocationAggregateV2": {"name", "latitude", "longitude", "drive_start_count", "drive_end_count", "drive_count", "charge_count", "charge_energy_kwh", "charge_cost", "total_event_count", "last_seen"},
 	}

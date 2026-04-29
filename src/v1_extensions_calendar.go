@@ -16,7 +16,6 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid calendar range", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings := []any{}
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsCalendarV2")
 	if !ok {
 		return
@@ -32,12 +31,11 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 	metricSet := parseMetricSet(c.Query("metrics"))
 	includeRegen := metricSet["regeneration"]
 	includePark := metricSet["park_energy"] || metricSet["vampire_drain"]
-	items, summary, calendarWarnings, err := fetchUnifiedCalendar(ctx.CarID, startUTC, endUTC, bucket, includeRegen, includePark)
+	items, summary, err := fetchUnifiedCalendar(ctx.CarID, startUTC, endUTC, bucket, includeRegen, includePark)
 	if err != nil {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load calendar", map[string]any{"reason": err.Error()})
 		return
 	}
-	warnings = append(warnings, calendarWarnings...)
 	resp := map[string]any{
 		"car_id":  ctx.CarID,
 		"range":   buildRangeDTO(dr),
@@ -45,27 +43,26 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 		"summary": summary,
 		"items":   items,
 	}
-	writeV1Object(c, resp, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"), warnings)
+	writeV1Object(c, resp, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }
 
-func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, []any, error) {
+func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, error) {
 	type cachedCalendar struct {
-		items    []any
-		summary  map[string]any
-		warnings []any
+		items   []any
+		summary map[string]any
 	}
 	key := aggregateCacheKey("calendar", carID, startUTC, endUTC, bucket, includeRegen, includePark, appUsersTimezone.String())
 	cached, err := cachedValue(key, aggregateCacheTTL(endUTC), func() (cachedCalendar, error) {
-		items, summary, warnings, err := fetchUnifiedCalendarUncached(carID, startUTC, endUTC, bucket, includeRegen, includePark)
-		return cachedCalendar{items: items, summary: summary, warnings: warnings}, err
+		items, summary, err := fetchUnifiedCalendarUncached(carID, startUTC, endUTC, bucket, includeRegen, includePark)
+		return cachedCalendar{items: items, summary: summary}, err
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	return cached.items, cached.summary, cached.warnings, nil
+	return cached.items, cached.summary, nil
 }
 
-func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, []any, error) {
+func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, error) {
 	trunc := "day"
 	switch bucket {
 	case "week":
@@ -109,16 +106,15 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 			c.charge_cost
 		FROM drives_agg d
 		FULL JOIN charges_agg c ON d.bucket = c.bucket
-		ORDER BY bucket_date ASC`, trunc, trunc)
+		ORDER BY bucket_date DESC`, trunc, trunc)
 	queryCtx, cancel := newAggregateQueryContext()
 	defer cancel()
 	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, appUsersTimezone.String())
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	items := make([]any, 0)
-	warnings := make([]any, 0)
 	summary := map[string]any{
 		"drive_days":               0,
 		"charge_days":              0,
@@ -147,7 +143,7 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 		var chargeEnergy sql.NullFloat64
 		var chargeCost sql.NullFloat64
 		if err := rows.Scan(&date, &driveCount, &chargeCount, &distanceKm, &durationSec, &driveEnergyKwh, &chargeEnergy, &chargeCost); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		if driveCount > 0 {
 			summary["drive_days"] = summary["drive_days"].(int) + 1
@@ -229,9 +225,7 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 	}
 	if includePark {
 		parkByDate, parkTotal, parkErr := fetchParkingEnergyByBucketWithTimeout(carID, startUTC, endUTC, trunc, 1200*time.Millisecond)
-		if parkErr != nil {
-			warnings = append(warnings, nonFatalWarning("park_energy_timeout", "park energy query timed out, returned as null to keep endpoint responsive", nil, parkErr))
-		} else {
+		if parkErr == nil {
 			if parkTotal != nil {
 				summary["park_energy_kwh"] = *parkTotal
 			}
@@ -249,9 +243,7 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 	}
 	if includeRegen {
 		regenByDate, regenTotal, regenErr := fetchRegeneratedEnergyByBucketWithTimeout(carID, startUTC, endUTC, trunc, 1200*time.Millisecond)
-		if regenErr != nil {
-			warnings = append(warnings, nonFatalWarning("regeneration_timeout", "regeneration query timed out, returned as null to keep endpoint responsive", nil, regenErr))
-		} else {
+		if regenErr == nil {
 			if regenTotal != nil {
 				summary["regenerated_energy_kwh"] = *regenTotal
 			}
@@ -267,5 +259,5 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 			}
 		}
 	}
-	return items, summary, warnings, rows.Err()
+	return items, summary, rows.Err()
 }

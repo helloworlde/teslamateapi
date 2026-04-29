@@ -8,13 +8,6 @@ type ExtendedResponseMeta struct {
 	Version     string `json:"version,omitempty"`
 }
 
-type ExtendedWarning struct {
-	Code    string `json:"code" example:"query_timeout"`
-	Message string `json:"message" example:"optional aggregate query timed out"`
-	Metric  string `json:"metric,omitempty" example:"distance"`
-	Scope   string `json:"scope,omitempty" example:"drives"`
-}
-
 type ExtendedRange struct {
 	Start    string `json:"start" example:"2026-04-01T00:00:00+08:00"`
 	End      string `json:"end" example:"2026-04-30T23:59:59+08:00"`
@@ -22,9 +15,8 @@ type ExtendedRange struct {
 }
 
 type SummaryV2Envelope struct {
-	Data     SummaryV2Data        `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data SummaryV2Data        `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type SummaryV2Data struct {
@@ -181,23 +173,27 @@ type SummaryV2VehicleState struct {
 }
 
 type DashboardV2Envelope struct {
-	Data     DashboardV2Data      `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data DashboardV2Data      `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type DashboardV2Data struct {
-	CarID         int                      `json:"car_id"`
-	Range         ExtendedRange            `json:"range"`
-	Current       DashboardCurrentSnapshot `json:"current"`
-	Statistics    StatisticsSummary        `json:"statistics"`
-	Calendar      CalendarV2Data           `json:"calendar"`
-	Series        []MetricSeriesV2         `json:"series"`
-	Distributions []MetricDistributionV2   `json:"distributions"`
-	Insights      []InsightV2Item          `json:"insights"`
-	RecentDrives  []DashboardRecentDrive   `json:"recent_drives"`
-	RecentCharges []DashboardRecentCharge  `json:"recent_charges"`
-	RecentUpdates []DashboardRecentUpdate  `json:"recent_updates"`
+	CarID      int               `json:"car_id"`
+	Range      ExtendedRange     `json:"range"`
+	Overview   DashboardOverview `json:"overview"`
+	Statistics StatisticsSummary `json:"statistics"`
+}
+
+type DashboardOverview map[string]any
+
+type RealtimeV2Envelope struct {
+	Data RealtimeV2Data       `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
+}
+
+type RealtimeV2Data struct {
+	CarID   int                      `json:"car_id"`
+	Current DashboardCurrentSnapshot `json:"current"`
 }
 
 type DashboardCurrentSnapshot struct {
@@ -206,50 +202,9 @@ type DashboardCurrentSnapshot struct {
 	Charge   map[string]any `json:"charge"`
 }
 
-type DashboardRecentDrive struct {
-	DriveID            int      `json:"drive_id"`
-	StartTime          string   `json:"start_time"`
-	EndTime            string   `json:"end_time"`
-	StartAddress       *string  `json:"start_address"`
-	EndAddress         *string  `json:"end_address"`
-	Distance           float64  `json:"distance"`
-	DurationSeconds    int      `json:"duration_seconds"`
-	MaxSpeed           *int     `json:"max_speed"`
-	AverageSpeed       *float64 `json:"average_speed"`
-	EnergyUsed         *float64 `json:"energy_used"`
-	ConsumptionNet     *float64 `json:"consumption_net"`
-	OutsideTemperature *float64 `json:"outside_temperature"`
-}
-
-type DashboardRecentCharge struct {
-	ChargeID           int      `json:"charge_id"`
-	StartTime          string   `json:"start_time"`
-	EndTime            string   `json:"end_time"`
-	Location           *string  `json:"location"`
-	ChargerType        *string  `json:"charger_type"`
-	DurationSeconds    int      `json:"duration_seconds"`
-	EnergyAdded        *float64 `json:"energy_added"`
-	EnergyUsed         *float64 `json:"energy_used"`
-	Cost               *float64 `json:"cost"`
-	ChargingEfficiency *float64 `json:"charging_efficiency"`
-	StartBatteryLevel  *int     `json:"start_battery_level"`
-	EndBatteryLevel    *int     `json:"end_battery_level"`
-	StartRatedRange    *float64 `json:"start_rated_range"`
-	EndRatedRange      *float64 `json:"end_rated_range"`
-	OutsideTemperature *float64 `json:"outside_temperature"`
-}
-
-type DashboardRecentUpdate struct {
-	UpdateID  int     `json:"update_id"`
-	StartTime string  `json:"start_time"`
-	EndTime   *string `json:"end_time"`
-	Version   *string `json:"version"`
-}
-
 type CalendarV2Envelope struct {
-	Data     CalendarV2Data       `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data CalendarV2Data       `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type CalendarV2Data struct {
@@ -265,9 +220,8 @@ type CalendarSummaryV2 map[string]any
 type CalendarBucketV2 map[string]any
 
 type StatisticsV2Envelope struct {
-	Data     StatisticsV2Data     `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data StatisticsV2Data     `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type StatisticsV2Data struct {
@@ -286,36 +240,31 @@ type StatisticsChargeV2 map[string]any
 type StatisticsBatteryV2 map[string]any
 
 type SeriesV2Envelope struct {
-	Data     SeriesV2Data         `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data SeriesV2Data         `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type SeriesV2Data struct {
-	CarID  int              `json:"car_id"`
-	Scope  string           `json:"scope" example:"drives"`
-	Bucket string           `json:"bucket" example:"day"`
-	Range  ExtendedRange    `json:"range"`
-	Series []MetricSeriesV2 `json:"series"`
+	CarID   int                   `json:"car_id"`
+	Scope   string                `json:"scope" example:"drives"`
+	Bucket  string                `json:"bucket" example:"day"`
+	Range   ExtendedRange         `json:"range"`
+	Metrics []MetricSeriesMetaV2  `json:"metrics"`
+	Points  []MetricSeriesPointV2 `json:"points"`
 }
 
-type MetricSeriesV2 struct {
-	Metric    string                `json:"metric" example:"distance"`
-	Name      string                `json:"name" example:"distance"`
-	Unit      string                `json:"unit" example:"km"`
-	ChartType string                `json:"chart_type" example:"bar"`
-	Points    []MetricSeriesPointV2 `json:"points"`
+type MetricSeriesMetaV2 struct {
+	Metric    string `json:"metric" example:"distance"`
+	Name      string `json:"name" example:"drive_distance"`
+	Unit      string `json:"unit" example:"km"`
+	ChartType string `json:"chart_type" example:"bar"`
 }
 
-type MetricSeriesPointV2 struct {
-	Time  string   `json:"time" example:"2026-04-01T00:00:00+08:00"`
-	Value *float64 `json:"value"`
-}
+type MetricSeriesPointV2 map[string]any
 
 type DistributionsV2Envelope struct {
-	Data     DistributionsV2Data  `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data DistributionsV2Data  `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type DistributionsV2Data struct {
@@ -342,9 +291,8 @@ type MetricDistributionBucketV2 struct {
 }
 
 type InsightsV2Envelope struct {
-	Data     InsightsV2Data       `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data InsightsV2Data       `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type InsightsV2Data struct {
@@ -377,7 +325,6 @@ type TimelineV2Envelope struct {
 	Data       []TimelineEventV2    `json:"data"`
 	Pagination v1Pagination         `json:"pagination"`
 	Meta       ExtendedResponseMeta `json:"meta"`
-	Warnings   []ExtendedWarning    `json:"warnings"`
 }
 
 type TimelineEventV2 struct {
@@ -392,9 +339,8 @@ type TimelineEventV2 struct {
 }
 
 type VisitedMapV2Envelope struct {
-	Data     VisitedMapV2Data     `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data VisitedMapV2Data     `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type VisitedMapV2Data struct {
@@ -405,6 +351,7 @@ type VisitedMapV2Data struct {
 	Bounds        *VisitedMapBoundsV2 `json:"bounds,omitempty"`
 	VisitedPoints []VisitedPointV2    `json:"visited_points"`
 	Heatmap       []any               `json:"heatmap"`
+	Truncated     bool                `json:"truncated"`
 }
 
 type VisitedMapBoundsV2 struct {
@@ -421,9 +368,8 @@ type VisitedPointV2 struct {
 }
 
 type LocationsV2Envelope struct {
-	Data     LocationsV2Data      `json:"data"`
-	Meta     ExtendedResponseMeta `json:"meta"`
-	Warnings []ExtendedWarning    `json:"warnings"`
+	Data LocationsV2Data      `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
 }
 
 type LocationsV2Data struct {
