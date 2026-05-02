@@ -116,11 +116,10 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			SELECT conn_charge_cable, fast_charger_brand
 			FROM charges
 			WHERE charging_process_id = charging_processes.id
-			ORDER BY id ASC
 			LIMIT 1
 		) charges ON true
 		WHERE charging_processes.car_id = $1
-		  AND charging_processes.end_date IS NOT NULL;`
+		  AND charging_processes.end_date IS NOT NULL`
 
 	// Parameters to be passed to the query
 	var queryParams []any
