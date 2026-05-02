@@ -1,8 +1,6 @@
 package main
 
 import (
-	"database/sql"
-	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -35,25 +33,4 @@ func responseErrorDetails(c *gin.Context, status int, code, message string, deta
 		log.Printf("[warning] api_error - (%s) status=%d code=%s message=%s details=%v", sanitizedRequestURI(c), status, code, message, details)
 	}
 	return details
-}
-
-func TeslaMateAPIHandleErrorResponseWithStatus(c *gin.Context, status int, logPrefix, message, detail string) {
-	log.Println("[error] " + logPrefix + " - (" + sanitizedRequestURI(c) + "). " + message + "; " + detail)
-	body := gin.H{"error": message}
-	if detail != "" {
-		body["detail"] = detail
-	}
-	c.JSON(status, body)
-}
-
-func respondSummaryMetadataError(c *gin.Context, actionName string, err error, unableMsg string) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, sql.ErrNoRows) {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusNotFound, actionName, "Car not found.", "")
-		return true
-	}
-	TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, unableMsg, err.Error())
-	return true
 }

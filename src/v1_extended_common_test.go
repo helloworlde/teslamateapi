@@ -85,29 +85,3 @@ func TestDBTimeRangeUsesLocalTimezoneAndExclusiveEnd(t *testing.T) {
 	}
 }
 
-func TestStatisticsCalcNullAndZeroHandling(t *testing.T) {
-	d := 20.0
-	dur := 3600.0
-	e := 3.0
-	ce := 5.0
-
-	if v := calcAvgSpeed(&d, &dur); v == nil || *v != 20 {
-		t.Fatalf("avg speed: %+v", v)
-	}
-	if v := calcEfficiencyWhPerKm(&e, &d); v == nil || *v != 150 {
-		t.Fatalf("efficiency: %+v", v)
-	}
-	if v := calcChargeEfficiencyPercent(&e, &ce); v == nil || *v != 60 {
-		t.Fatalf("charge efficiency: %+v", v)
-	}
-	zero := 0.0
-	if v := calcAvgSpeed(&d, &zero); v != nil {
-		t.Fatalf("expected nil on zero duration: %+v", *v)
-	}
-	if v := calcEfficiencyWhPerKm(&e, &zero); v != nil {
-		t.Fatalf("expected nil on zero distance: %+v", *v)
-	}
-	if v := calcChargeEfficiencyPercent(&e, &zero); v != nil {
-		t.Fatalf("expected nil on zero charger energy: %+v", *v)
-	}
-}

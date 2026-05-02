@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -8,7 +9,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsChargesV1 func
+// TeslaMateAPICarsChargesV1 返回车辆充电会话列表；每条记录附带该会话首条 charges 采样行的 conn_charge_cable 与 fast_charger_brand（若有）。
 func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	// define error messages
@@ -96,20 +97,30 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			start_battery_level,
 			end_battery_level,
 			duration_min,
-			TO_CHAR((duration_min * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			TO_CHAR((duration_min * INTERVAL '1 minute'), 'HH24:MI') AS duration_str,
 			outside_temp_avg,
-			position.odometer as odometer,
+			position.odometer AS odometer,
 			position.latitude,
 			position.longitude,
-			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
-			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
-			cars.name
+			(SELECT unit_of_length FROM settings LIMIT 1) AS unit_of_length,
+			(SELECT unit_of_temperature FROM settings LIMIT 1) AS unit_of_temperature,
+			cars.name,
+			charges.conn_charge_cable,
+			charges.fast_charger_brand
 		FROM charging_processes
 		LEFT JOIN cars ON car_id = cars.id
 		LEFT JOIN addresses address ON address_id = address.id
 		LEFT JOIN positions position ON position_id = position.id
 		LEFT JOIN geofences geofence ON geofence_id = geofence.id
-		WHERE charging_processes.car_id=$1 AND charging_processes.end_date IS NOT NULL`
+		LEFT JOIN LATERAL (
+			SELECT conn_charge_cable, fast_charger_brand
+			FROM charges
+			WHERE charging_process_id = charging_processes.id
+			ORDER BY id ASC
+			LIMIT 1
+		) charges ON true
+		WHERE charging_processes.car_id = $1
+		  AND charging_processes.end_date IS NOT NULL;`
 
 	// Parameters to be passed to the query
 	var queryParams []any
@@ -150,6 +161,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 		// creating charge object based on struct
 		charge := ChargeListItemV1{}
+		var connCable, fastBrand sql.NullString
 
 		// scanning row and putting values into the charge
 		err = rows.Scan(
@@ -175,7 +187,18 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			&UnitsLength,
 			&UnitsTemperature,
 			&CarName,
+			&connCable,
+			&fastBrand,
 		)
+
+		if connCable.Valid && connCable.String != "" {
+			s := connCable.String
+			charge.ConnChargeCable = &s
+		}
+		if fastBrand.Valid && fastBrand.String != "" && fastBrand.String != "<invalid>" {
+			s := fastBrand.String
+			charge.FastChargerBrand = &s
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {

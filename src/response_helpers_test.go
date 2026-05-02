@@ -25,18 +25,18 @@ func TestSanitizedRequestURIRedactsTokenQueryValues(t *testing.T) {
 	}
 }
 
-func TestWriteAPIErrorHidesInternalDetailsForServerErrors(t *testing.T) {
+func TestWriteV1ErrorHidesInternalDetailsForServerErrors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/summary", nil)
 
-	writeAPIError(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": "select * from private.tokens failed"})
+	writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": "select * from private.tokens failed"})
 
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500, got %d", w.Code)
 	}
-	var body APIErrorResponse
+	var body v1ErrorEnvelope
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("parse response: %v", err)
 	}

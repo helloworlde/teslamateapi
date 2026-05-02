@@ -35,44 +35,6 @@ func TestParseCarID(t *testing.T) {
 	}
 }
 
-func TestParseChargeID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Params = gin.Params{{Key: "ChargeID", Value: "42"}}
-	id, err := parseChargeID(c)
-	if err != nil || id != 42 {
-		t.Fatalf("parseChargeID valid: id=%d err=%v", id, err)
-	}
-	c.Params = gin.Params{{Key: "ChargeID", Value: "abc"}}
-	if _, err := parseChargeID(c); err == nil {
-		t.Fatal("parseChargeID invalid expected error")
-	}
-}
-
-func TestParsePositiveIntQueryClamp(t *testing.T) {
-	v, err := parsePositiveIntQuery("0", 10, 1, 100)
-	if err != nil || v != 1 {
-		t.Fatalf("clamp min: %d %v", v, err)
-	}
-	v, err = parsePositiveIntQuery("9999", 10, 1, 100)
-	if err != nil || v != 100 {
-		t.Fatalf("clamp max: %d %v", v, err)
-	}
-}
-
-func TestParseSummaryIncludesInvalid(t *testing.T) {
-	if _, err := parseSummaryIncludes("overview,not_a_real_include"); err == nil {
-		t.Fatal("expected error for unknown include")
-	}
-}
-
-func TestParseInsightTypesInvalid(t *testing.T) {
-	if _, err := parseInsightTypes("harsh_brake,unknown_type"); err == nil {
-		t.Fatal("expected error for unknown insight type")
-	}
-}
-
 func TestParseDateParamLocalAndRFC3339(t *testing.T) {
 	old := appUsersTimezone
 	t.Cleanup(func() { appUsersTimezone = old })

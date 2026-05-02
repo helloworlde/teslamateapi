@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -413,4 +414,22 @@ func fetchRegeneratedEnergyByBucketUncached(carID int, startUTC, endUTC, trunc s
 		return result, nil, nil
 	}
 	return result, &total, nil
+}
+
+func fetchLatestOdometer(carID int, unitsLength string) (*float64, error) {
+	var odometer sql.NullFloat64
+	if err := db.QueryRow(`SELECT odometer FROM positions WHERE car_id = $1 AND odometer IS NOT NULL ORDER BY date DESC LIMIT 1`, carID).Scan(&odometer); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if !odometer.Valid {
+		return nil, nil
+	}
+	value := odometer.Float64
+	if strings.EqualFold(unitsLength, "mi") {
+		value = kilometersToMiles(value)
+	}
+	return &value, nil
 }

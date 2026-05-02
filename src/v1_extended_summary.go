@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -205,4 +206,22 @@ func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, er
 		},
 		"generated_at": time.Now().In(dr.Timezone).Format(time.RFC3339),
 	}, nil
+}
+
+func TeslaMateAPICarsSummaryV2(c *gin.Context) {
+	dr, err := parseSummaryRangeStrict(c)
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_date", "invalid summary range", map[string]any{"reason": err.Error()})
+		return
+	}
+	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsSummaryV2")
+	if !ok {
+		return
+	}
+	data, err := buildUnifiedSummary(ctx, dr)
+	if err != nil {
+		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": err.Error()})
+		return
+	}
+	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
 }

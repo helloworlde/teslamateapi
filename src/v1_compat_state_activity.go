@@ -2,13 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 type GrossConsumptionSummary struct {
@@ -76,99 +72,6 @@ type ActivityTimelineEvent struct {
 	Metrics     map[string]any `json:"metrics"`
 }
 
-type TeslaMateStateTimelineFilters struct {
-	StartDate *string `json:"start_date"`
-	EndDate   *string `json:"end_date"`
-	Page      int     `json:"page"`
-	Show      int     `json:"show"`
-}
-
-type TeslaMateStateTimelineData struct {
-	Car            TeslaMateSummaryCar           `json:"car"`
-	Filters        TeslaMateStateTimelineFilters `json:"filters"`
-	Events         []ActivityTimelineEvent       `json:"events"`
-	TeslaMateUnits TeslaMateSummaryUnits         `json:"units"`
-}
-
-type TeslaMateStateTimelineJSONData struct {
-	Data TeslaMateStateTimelineData `json:"data"`
-}
-
-func TeslaMateAPICarsStatisticsSummaryV1(c *gin.Context) {
-	const actionName = "TeslaMateAPICarsStatisticsSummaryV1"
-
-	CarID, err := parseCarID(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
-		return
-	}
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
-		return
-	}
-
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if respondSummaryMetadataError(c, actionName, err, "Unable to load statistics summary.") {
-		return
-	}
-
-	driveSummary, err := fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load statistics summary.", err.Error())
-		return
-	}
-	chargeSummary, err := fetchChargeHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load statistics summary.", err.Error())
-		return
-	}
-	statisticsSummary, err := fetchStatisticsSummary(CarID, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature, driveSummary, chargeSummary)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load statistics summary.", err.Error())
-		return
-	}
-
-	data := makeSummaryResponseData(CarID, carName, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature)
-	data.StatisticsSummary = statisticsSummary
-
-	TeslaMateAPIHandleSuccessResponse(c, actionName, focusedSummaryResponse(data, gin.H{
-		"statistics_summary": data.StatisticsSummary,
-	}))
-}
-
-func TeslaMateAPICarsStateSummaryV1(c *gin.Context) {
-	const actionName = "TeslaMateAPICarsStateSummaryV1"
-
-	CarID, err := parseCarID(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
-		return
-	}
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
-		return
-	}
-
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if respondSummaryMetadataError(c, actionName, err, "Unable to load state summary.") {
-		return
-	}
-	stateSummary, err := fetchStateSummary(CarID, parsedStartDate, parsedEndDate)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load state summary.", err.Error())
-		return
-	}
-
-	data := makeSummaryResponseData(CarID, carName, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature)
-	data.StateSummary = stateSummary
-
-	TeslaMateAPIHandleSuccessResponse(c, actionName, focusedSummaryResponse(data, gin.H{
-		"state_summary": data.StateSummary,
-	}))
-}
-
 func activityTimelineTypeAndSource(timelineID string, state string) (string, string) {
 	switch {
 	case strings.HasPrefix(timelineID, "drive-"):
@@ -231,104 +134,6 @@ func mapStateTimelineToActivityEvents(items []StateTimelineItem) []ActivityTimel
 		return out[i].SourceID < out[j].SourceID
 	})
 	return out
-}
-
-func TeslaMateAPICarsStateTimelineV1(c *gin.Context) {
-	const actionName = "TeslaMateAPICarsStateTimelineV1"
-
-	CarID, err := parseCarID(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
-		return
-	}
-	page, show, err := parsePaginationParams(c, 1, 100, 500)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid pagination parameter.", err.Error())
-		return
-	}
-
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
-		return
-	}
-
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusNotFound, actionName, "Car not found.", "")
-			return
-		}
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load activity timeline.", err.Error())
-		return
-	}
-
-	timeline, err := fetchStateTimeline(CarID, parsedStartDate, parsedEndDate, page, show)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load activity timeline.", err.Error())
-		return
-	}
-
-	jsonData := TeslaMateStateTimelineJSONData{
-		Data: TeslaMateStateTimelineData{
-			Car: TeslaMateSummaryCar{
-				CarID:   CarID,
-				CarName: carName,
-			},
-			Filters: TeslaMateStateTimelineFilters{
-				StartDate: summaryFilterDate(parsedStartDate),
-				EndDate:   summaryFilterDate(parsedEndDate),
-				Page:      page,
-				Show:      show,
-			},
-			Events:         mapStateTimelineToActivityEvents(timeline),
-			TeslaMateUnits: buildSummaryUnits(unitsLength, unitsTemperature),
-		},
-	}
-
-	TeslaMateAPIHandleSuccessResponse(c, actionName, jsonData)
-}
-
-func TeslaMateAPICarsChartStateDurationV1(c *gin.Context) {
-	const actionName = "TeslaMateAPICarsChartStateDurationV1"
-	TeslaMateAPIHandleChartCategoryResponse(c, actionName, "Unable to load state duration chart.", func(CarID int, parsedStartDate string, parsedEndDate string, unitsLength string) ([]SummaryCategoryValue, error) {
-		return fetchStateDurationChart(CarID, parsedStartDate, parsedEndDate)
-	}, "state_duration")
-}
-
-func TeslaMateAPIHandleChartCategoryResponse(
-	c *gin.Context,
-	actionName string,
-	errorMessage string,
-	fetch func(CarID int, parsedStartDate string, parsedEndDate string, unitsLength string) ([]SummaryCategoryValue, error),
-	fieldName string,
-) {
-	CarID, err := parseCarID(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
-		return
-	}
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
-		return
-	}
-
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if respondSummaryMetadataError(c, actionName, err, errorMessage) {
-		return
-	}
-
-	items, err := fetch(CarID, parsedStartDate, parsedEndDate, unitsLength)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, errorMessage, err.Error())
-		return
-	}
-
-	data := makeSummaryResponseData(CarID, carName, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature)
-	TeslaMateAPIHandleSuccessResponse(c, actionName, focusedSummaryResponse(data, gin.H{
-		fieldName: items,
-	}))
 }
 
 func fetchAverageOutsideTemp(CarID int, parsedStartDate string, parsedEndDate string, unitsTemperature string) (*float64, error) {
@@ -437,12 +242,12 @@ func fetchStatisticsSummary(
 	statistics := &StatisticsSummary{
 		Coverage: HistorySummaryCoverage{
 			StartDate: minSummaryDate(
-				coverageStartDate(driveSummary),
-				coverageStartDate(chargeSummary),
+				coverageStartDateDrive(driveSummary),
+				coverageStartDateCharge(chargeSummary),
 			),
 			EndDate: maxSummaryDate(
-				coverageEndDate(driveSummary),
-				coverageEndDate(chargeSummary),
+				coverageEndDateDrive(driveSummary),
+				coverageEndDateCharge(chargeSummary),
 			),
 		},
 		AverageOutsideTemp: averageOutsideTemp,
@@ -593,23 +398,6 @@ func fetchStateTimeline(CarID int, parsedStartDate string, parsedEndDate string,
 		return nil, err
 	}
 	return items, nil
-}
-
-func fetchStateDurationChart(CarID int, parsedStartDate string, parsedEndDate string) ([]SummaryCategoryValue, error) {
-	breakdown, _, _, err := fetchStateBreakdown(CarID, parsedStartDate, parsedEndDate)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]SummaryCategoryValue, 0, len(breakdown))
-	for index, item := range breakdown {
-		result = append(result, SummaryCategoryValue{
-			ID:    fmt.Sprintf("state-duration-%d", index+1),
-			Label: item.State,
-			Value: float64(item.DurationMin),
-		})
-	}
-	return result, nil
 }
 
 func fetchStateBreakdown(CarID int, parsedStartDate string, parsedEndDate string) ([]StateBreakdown, HistorySummaryCoverage, int, error) {
@@ -801,4 +589,67 @@ func stringPointer(value sql.NullString) *string {
 		return nil
 	}
 	return &value.String
+}
+
+func minSummaryDate(dates ...*string) *string {
+	var best *string
+	for _, d := range dates {
+		if d == nil || *d == "" {
+			continue
+		}
+		if best == nil || *d < *best {
+			best = d
+		}
+	}
+	return best
+}
+
+func maxSummaryDate(dates ...*string) *string {
+	var best *string
+	for _, d := range dates {
+		if d == nil || *d == "" {
+			continue
+		}
+		if best == nil || *d > *best {
+			best = d
+		}
+	}
+	return best
+}
+
+func coverageStartDateDrive(d *DriveHistorySummary) *string {
+	if d == nil {
+		return nil
+	}
+	return d.Coverage.StartDate
+}
+
+func coverageStartDateCharge(c *ChargeHistorySummary) *string {
+	if c == nil {
+		return nil
+	}
+	return c.Coverage.StartDate
+}
+
+func coverageEndDateDrive(d *DriveHistorySummary) *string {
+	if d == nil {
+		return nil
+	}
+	return d.Coverage.EndDate
+}
+
+func coverageEndDateCharge(c *ChargeHistorySummary) *string {
+	if c == nil {
+		return nil
+	}
+	return c.Coverage.EndDate
+}
+
+func formatDurationMinutes(minutes int) string {
+	if minutes < 0 {
+		minutes = 0
+	}
+	h := minutes / 60
+	m := minutes % 60
+	return fmt.Sprintf("%d:%02d", h, m)
 }

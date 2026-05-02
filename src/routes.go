@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -56,29 +54,4 @@ func registerExtendedV1Routes(v1 *gin.RouterGroup) {
 	v1.GET("/cars/:CarID/timeline", TeslaMateAPICarsUnifiedTimelineV2)
 	v1.GET("/cars/:CarID/map/visited", TeslaMateAPICarsMapVisitedUnifiedV2)
 	v1.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)
-}
-
-func registerLegacyRedirects(r *gin.Engine, basePathV1 string) {
-	redirect := func(pattern string) {
-		r.GET(pattern, func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+c.Request.RequestURI) })
-	}
-	redirect("/cars")
-	redirect("/cars/:CarID")
-	redirect("/cars/:CarID/battery-health")
-	redirect("/cars/:CarID/charges")
-	redirect("/cars/:CarID/charges/current")
-	redirect("/cars/:CarID/charges/:ChargeID")
-	redirect("/cars/:CarID/drives")
-	redirect("/cars/:CarID/drives/:DriveID")
-	redirect("/cars/:CarID/status")
-	redirect("/cars/:CarID/updates")
-	redirect("/globalsettings")
-
-	if commandRoutesEnabled() {
-		redirect("/cars/:CarID/command")
-		r.POST("/cars/:CarID/command/:Command", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+c.Request.RequestURI) })
-		redirect("/cars/:CarID/logging")
-		r.PUT("/cars/:CarID/logging/:Command", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+c.Request.RequestURI) })
-		r.POST("/cars/:CarID/wake_up", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+c.Request.RequestURI) })
-	}
 }

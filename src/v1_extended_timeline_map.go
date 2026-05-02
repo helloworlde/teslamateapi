@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,21 +67,30 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load visited map", map[string]any{"reason": err.Error()})
 		return
 	}
-	visited := map[string]int{}
+	type visitedCell struct {
+		Lat, Lng float64
+		Count    int
+	}
+	cells := make(map[string]*visitedCell, len(points))
 	for _, p := range points {
 		key := fmt.Sprintf("%.4f,%.4f", p.Latitude, p.Longitude)
-		visited[key]++
+		if c := cells[key]; c != nil {
+			c.Count++
+		} else {
+			cells[key] = &visitedCell{Lat: p.Latitude, Lng: p.Longitude, Count: 1}
+		}
 	}
-	visitedPoints := make([]any, 0, len(visited))
-	for key, count := range visited {
-		parts := strings.Split(key, ",")
-		lat, _ := strconv.ParseFloat(parts[0], 64)
-		lng, _ := strconv.ParseFloat(parts[1], 64)
-		visitedPoints = append(visitedPoints, map[string]any{"latitude": lat, "longitude": lng, "count": count})
+	visitedList := make([]visitedCell, 0, len(cells))
+	for _, c := range cells {
+		visitedList = append(visitedList, *c)
 	}
-	sort.SliceStable(visitedPoints, func(i, j int) bool {
-		return visitedPoints[i].(map[string]any)["count"].(int) > visitedPoints[j].(map[string]any)["count"].(int)
+	sort.SliceStable(visitedList, func(i, j int) bool {
+		return visitedList[i].Count > visitedList[j].Count
 	})
+	visitedPoints := make([]any, 0, len(visitedList))
+	for _, v := range visitedList {
+		visitedPoints = append(visitedPoints, map[string]any{"latitude": v.Lat, "longitude": v.Lng, "count": v.Count})
+	}
 	data := map[string]any{
 		"car_id":         ctx.CarID,
 		"range":          buildRangeDTO(dr),
@@ -101,4 +109,88 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 		}
 	}
 	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+}
+
+type visitedBounds struct {
+	MinLatitude  float64 `json:"min_latitude"`
+	MaxLatitude  float64 `json:"max_latitude"`
+	MinLongitude float64 `json:"min_longitude"`
+	MaxLongitude float64 `json:"max_longitude"`
+}
+
+type visitedPoint struct {
+	Time      string  `json:"time"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+func fetchTimelineEvents(carID int, startUTC, endUTC string, page, show int, order string) ([]ActivityTimelineEvent, int, error) {
+	baseQuery, params := buildStateTimelineBaseQuery(carID, startUTC, endUTC)
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	var total int
+	if err := db.QueryRowContext(queryCtx, baseQuery+` SELECT COUNT(*)::int FROM timeline;`, params...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	items, err := fetchStateTimeline(carID, startUTC, endUTC, page, show)
+	if err != nil {
+		return nil, 0, err
+	}
+	events := mapStateTimelineToActivityEvents(items)
+	if order == "asc" {
+		sort.SliceStable(events, func(i, j int) bool { return events[i].StartDate < events[j].StartDate })
+	}
+	return events, total, nil
+}
+
+func fetchVisitedMap(carID int, startUTC, endUTC string, limit int) ([]visitedPoint, *visitedBounds, bool, error) {
+	query := `
+		SELECT positions.date, positions.latitude, positions.longitude
+		FROM positions
+		INNER JOIN drives ON drives.id = positions.drive_id
+		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.start_date >= $2 AND drives.end_date < $3
+			AND positions.latitude IS NOT NULL AND positions.longitude IS NOT NULL
+		ORDER BY positions.date DESC
+		LIMIT $4`
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	rows, err := db.QueryContext(queryCtx, query, carID, startUTC, endUTC, limit+1)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	defer rows.Close()
+	points := make([]visitedPoint, 0, limit+1)
+	bounds := &visitedBounds{MinLatitude: 999, MaxLatitude: -999, MinLongitude: 999, MaxLongitude: -999}
+	for rows.Next() {
+		var date string
+		var p visitedPoint
+		if err := rows.Scan(&date, &p.Latitude, &p.Longitude); err != nil {
+			return nil, nil, false, err
+		}
+		p.Time = getTimeInTimeZone(date)
+		points = append(points, p)
+		if p.Latitude < bounds.MinLatitude {
+			bounds.MinLatitude = p.Latitude
+		}
+		if p.Latitude > bounds.MaxLatitude {
+			bounds.MaxLatitude = p.Latitude
+		}
+		if p.Longitude < bounds.MinLongitude {
+			bounds.MinLongitude = p.Longitude
+		}
+		if p.Longitude > bounds.MaxLongitude {
+			bounds.MaxLongitude = p.Longitude
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, false, err
+	}
+	truncated := len(points) > limit
+	if truncated {
+		points = points[:limit]
+	}
+	if len(points) == 0 {
+		return points, nil, false, nil
+	}
+	return points, bounds, truncated, nil
 }

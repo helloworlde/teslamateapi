@@ -133,21 +133,6 @@ func TestCommandRoutesAreNotRegisteredByDefault(t *testing.T) {
 			t.Fatalf("command route should be disabled by default: %s", key)
 		}
 	}
-
-	legacy := gin.New()
-	registerLegacyRedirects(legacy, "/api/v1")
-	legacyRoutes := routeSet(legacy)
-	for _, key := range []string{
-		"GET /cars/:CarID/command",
-		"POST /cars/:CarID/command/:Command",
-		"GET /cars/:CarID/logging",
-		"PUT /cars/:CarID/logging/:Command",
-		"POST /cars/:CarID/wake_up",
-	} {
-		if legacyRoutes[key] {
-			t.Fatalf("legacy command redirect should be disabled by default: %s", key)
-		}
-	}
 }
 
 func TestCommandRoutesAreRegisteredWhenExplicitlyEnabled(t *testing.T) {

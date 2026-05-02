@@ -264,6 +264,7 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/charges": {
             "get": {
+                "description": "列表项含每条充电会话首条采样行的 conn_charge_cable（接口/线缆类型）与 fast_charger_brand（直流快充品牌，可选）。",
                 "produces": [
                     "application/json"
                 ],
@@ -2319,6 +2320,10 @@ const docTemplate = `{
                 "charge_id": {
                     "type": "integer"
                 },
+                "conn_charge_cable": {
+                    "description": "TeslaMate charges 表中的充电接口/线缆类型（如 IEC、NEMA）；无采样记录时响应中不出现该字段",
+                    "type": "string"
+                },
                 "cost": {
                     "type": "number"
                 },
@@ -2329,6 +2334,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "end_date": {
+                    "type": "string"
+                },
+                "fast_charger_brand": {
+                    "description": "TeslaMate charges 表中的直流快充桩品牌；交流充电或非快充时常为空，响应中可省略",
                     "type": "string"
                 },
                 "latitude": {

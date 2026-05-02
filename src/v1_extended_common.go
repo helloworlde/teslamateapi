@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -249,4 +251,33 @@ func parseDateRangeStrictOrDefault(c *gin.Context, defaultPeriod string) (v1Date
 		return v1DateRange{Period: "custom", Timezone: loc, Start: start, End: end}, nil
 	}
 	return parseDateRangeFromQuery(c, defaultPeriod)
+}
+
+type apiCarContext struct {
+	CarID            int
+	UnitsLength      string
+	UnitsTemperature string
+	CarName          NullString
+}
+
+func loadAPICarContext(c *gin.Context, actionName string) (*apiCarContext, bool) {
+	carID, err := parseCarID(c)
+	if err != nil {
+		writeV1Error(c, http.StatusBadRequest, "invalid_car_id", "invalid CarID, expected positive integer", map[string]any{"car_id": c.Param("CarID")})
+		return nil, false
+	}
+	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(carID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeV1Error(c, http.StatusNotFound, "car_not_found", "car not found", map[string]any{"car_id": carID})
+			return nil, false
+		}
+		if strings.Contains(err.Error(), "out of range for type smallint") {
+			writeV1Error(c, http.StatusBadRequest, "invalid_car_id", "invalid CarID, expected value within TeslaMate car id range", map[string]any{"car_id": carID})
+			return nil, false
+		}
+		writeV1Error(c, http.StatusInternalServerError, "metadata_error", "unable to load car metadata", map[string]any{"reason": err.Error(), "action": actionName})
+		return nil, false
+	}
+	return &apiCarContext{CarID: carID, UnitsLength: unitsLength, UnitsTemperature: unitsTemperature, CarName: carName}, true
 }

@@ -39,17 +39,6 @@ func parseAPITime(value string, loc *time.Location) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("invalid date format: %q (expected RFC3339, RFC3339 with timezone offset, local datetime YYYY-MM-DD HH:mm:ss, or date YYYY-MM-DD; encode + as %%2B in query strings)", sanitizedInput)
 }
 
-func parseOptionalAPITime(value string, loc *time.Location) (*time.Time, error) {
-	if strings.TrimSpace(value) == "" {
-		return nil, nil
-	}
-	t, err := parseAPITime(value, loc)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
-}
-
 func isDateOnlyValue(value string) bool {
 	value = strings.TrimSpace(value)
 	if value == "" {

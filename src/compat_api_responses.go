@@ -130,6 +130,10 @@ type ChargeListItemV1 struct {
 	Odometer          float64                 `json:"odometer"`
 	Latitude          float64                 `json:"latitude"`
 	Longitude         float64                 `json:"longitude"`
+	// ConnChargeCable：TeslaMate `charges.conn_charge_cable`（如 IEC、NEMA）；无记录时 JSON 省略该字段。
+	ConnChargeCable *string `json:"conn_charge_cable,omitempty" swaggertype:"string"`
+	// FastChargerBrand：TeslaMate `charges.fast_charger_brand`（直流快充品牌）；交流或非快充时常为空，JSON 省略；无效占位 `<invalid>` 不输出。
+	FastChargerBrand *string `json:"fast_charger_brand,omitempty" swaggertype:"string"`
 }
 
 type ChargeDetailsV1Envelope struct {

@@ -152,8 +152,6 @@ func main() {
 		api.GET("/readyz", readyz)
 	}
 
-	registerLegacyRedirects(r, BasePathV1)
-
 	// build the http server
 	listenAddr := getEnv("TESLAMATEAPI_LISTEN_ADDR", ":8080")
 	server := &http.Server{

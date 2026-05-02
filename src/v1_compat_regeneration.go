@@ -3,9 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type RegenerationSummary struct {
@@ -22,43 +19,6 @@ type RegenerationSummary struct {
 	RecoveryShare                *float64               `json:"recovery_share,omitempty"`
 	RegenEnergyPer100Distance    *float64               `json:"estimated_regen_energy_per_100_distance,omitempty"`
 	MonthlyRecoveredEnergy       []SummaryCategoryValue `json:"monthly_recovered_energy"`
-}
-
-func TeslaMateAPICarsRegenerationInsightsV1(c *gin.Context) {
-	const actionName = "TeslaMateAPICarsRegenerationInsightsV1"
-
-	CarID, err := parseCarID(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid CarID parameter.", err.Error())
-		return
-	}
-	parsedStartDate, parsedEndDate, err := parseSummaryDateRange(c)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusBadRequest, actionName, "Invalid date format.", err.Error())
-		return
-	}
-
-	unitsLength, unitsTemperature, carName, err := fetchSummaryMetadata(CarID)
-	if respondSummaryMetadataError(c, actionName, err, "Unable to load regeneration insights.") {
-		return
-	}
-
-	driveSummary, err := fetchDriveHistorySummary(CarID, parsedStartDate, parsedEndDate, unitsLength)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load regeneration insights.", err.Error())
-		return
-	}
-
-	regenerationSummary, err := fetchRegenerationSummary(CarID, parsedStartDate, parsedEndDate, driveSummary, unitsLength)
-	if err != nil {
-		TeslaMateAPIHandleErrorResponseWithStatus(c, http.StatusInternalServerError, actionName, "Unable to load regeneration insights.", err.Error())
-		return
-	}
-
-	data := makeSummaryResponseData(CarID, carName, parsedStartDate, parsedEndDate, unitsLength, unitsTemperature)
-	TeslaMateAPIHandleSuccessResponse(c, actionName, focusedSummaryResponse(data, gin.H{
-		"regeneration_summary": regenerationSummary,
-	}))
 }
 
 func fetchRegenerationSummary(CarID int, parsedStartDate string, parsedEndDate string, driveSummary *DriveHistorySummary, unitsLength string) (*RegenerationSummary, error) {
