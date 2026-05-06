@@ -39,7 +39,7 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load statistics", map[string]any{"reason": err.Error()})
 		return
 	}
-	regeneration, regenErr := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
+	regeneration, _ := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
 	batterySnapshot, batteryErr := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
 	if batteryErr != nil {
 		batterySnapshot = map[string]any{
@@ -49,7 +49,9 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 			"range_end_km":      nil,
 		}
 	}
-	currency := "UNKNOWN"
+	parkEnergyKwh, _ := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
+	parkingSummary, _ := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
+
 	chargeEfficiencyPercent := toPercent(statistics.ChargingEfficiency)
 	regeneratedEnergy := any(nil)
 	regenerationRatio := any(nil)
@@ -57,11 +59,6 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 		regeneratedEnergy = regeneration.EstimatedRecoveredEnergyKwh
 		regenerationRatio = regeneration.RecoveryShare
 	}
-	_ = regenErr
-	parkEnergyKwh, parkEnergyErr := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
-	_ = parkEnergyErr
-	parkingSummary, parkingErr := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
-	_ = parkingErr
 	avgDriveDurationSec := any(nil)
 	if driveSummary.DriveCount > 0 {
 		avgDriveDurationSec = float64(driveSummary.TotalDurationMin*60) / float64(driveSummary.DriveCount)
@@ -69,6 +66,10 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 	avgChargeDurationSec := any(nil)
 	if chargeSummary.ChargeCount > 0 {
 		avgChargeDurationSec = float64(chargeSummary.TotalDurationMin*60) / float64(chargeSummary.ChargeCount)
+	}
+	parkingDurationSec := any(nil)
+	if parkingSummary != nil {
+		parkingDurationSec = parkingSummary.TotalDurationMin * 60
 	}
 	writeV1Object(c, map[string]any{
 		"car_id": ctx.CarID,
@@ -106,36 +107,52 @@ func TeslaMateAPICarsUnifiedStatisticsV2(c *gin.Context) {
 			"cost":                   statistics.TotalCost,
 			"cost_per_kwh":           statistics.AverageCostPerKwh,
 			"cost_per_100_km":        statistics.AverageCostPer100Distance,
-			"currency":               currency,
+			"currency":               nil,
 			"avg_power_kw":           chargeSummary.AveragePower,
 			"max_power_kw":           chargeSummary.MaxPower,
 			"avg_efficiency_percent": chargeEfficiencyPercent,
 		},
 		"battery": map[string]any{
-			"soc_start_percent": batterySnapshot["soc_start_percent"],
-			"soc_end_percent":   batterySnapshot["soc_end_percent"],
-			"range_start_km":    batterySnapshot["range_start_km"],
-			"range_end_km":      batterySnapshot["range_end_km"],
-			"vampire_drain_kwh": parkEnergyKwh,
-			"park_energy_kwh":   parkEnergyKwh,
-			"parking_duration_s": func() any {
-				if parkingSummary == nil {
-					return nil
-				}
-				return parkingSummary.TotalDurationMin * 60
-			}(),
+			"soc_start_percent":  batterySnapshot["soc_start_percent"],
+			"soc_end_percent":    batterySnapshot["soc_end_percent"],
+			"range_start_km":     batterySnapshot["range_start_km"],
+			"range_end_km":       batterySnapshot["range_end_km"],
+			"vampire_drain_kwh":  parkEnergyKwh,
+			"park_energy_kwh":    parkEnergyKwh,
+			"parking_duration_s": parkingDurationSec,
 		},
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
+// fetchBatterySnapshot returns battery SOC and range at the start/end of the period.
+// Raw km values are cached unit-independently; unit conversion is applied after retrieval.
 func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[string]any, error) {
-	key := aggregatecache.Key("battery_snapshot", carID, startUTC, endUTC, unitsLength)
-	return aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (map[string]any, error) {
-		return fetchBatterySnapshotUncached(carID, startUTC, endUTC, unitsLength)
+	key := aggregatecache.Key("battery_snapshot", carID, startUTC, endUTC)
+	raw, err := aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (map[string]any, error) {
+		return fetchBatterySnapshotRaw(carID, startUTC, endUTC)
 	})
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]any{
+		"soc_start_percent": raw["soc_start_percent"],
+		"soc_end_percent":   raw["soc_end_percent"],
+	}
+	for _, field := range []string{"range_start_km", "range_end_km"} {
+		if v, ok := raw[field].(float64); ok {
+			if strings.EqualFold(unitsLength, "mi") {
+				result[field] = kilometersToMiles(v)
+			} else {
+				result[field] = v
+			}
+		} else {
+			result[field] = nil
+		}
+	}
+	return result, nil
 }
 
-func fetchBatterySnapshotUncached(carID int, startUTC, endUTC, unitsLength string) (map[string]any, error) {
+func fetchBatterySnapshotRaw(carID int, startUTC, endUTC string) (map[string]any, error) {
 	query := `
 		WITH start_pos AS (
 			SELECT battery_level, rated_battery_range_km
@@ -167,27 +184,11 @@ func fetchBatterySnapshotUncached(carID int, startUTC, endUTC, unitsLength strin
 	if err := db.QueryRowContext(queryCtx, query, carID, startUTC, endUTC).Scan(&socStart, &socEnd, &rangeStart, &rangeEnd); err != nil {
 		return nil, err
 	}
-	startRange := any(nil)
-	endRange := any(nil)
-	if rangeStart.Valid {
-		v := rangeStart.Float64
-		if strings.EqualFold(unitsLength, "mi") {
-			v = kilometersToMiles(v)
-		}
-		startRange = v
-	}
-	if rangeEnd.Valid {
-		v := rangeEnd.Float64
-		if strings.EqualFold(unitsLength, "mi") {
-			v = kilometersToMiles(v)
-		}
-		endRange = v
-	}
 	return map[string]any{
 		"soc_start_percent": intOrNil(socStart),
 		"soc_end_percent":   intOrNil(socEnd),
-		"range_start_km":    startRange,
-		"range_end_km":      endRange,
+		"range_start_km":    floatOrNil(rangeStart),
+		"range_end_km":      floatOrNil(rangeEnd),
 	}, nil
 }
 
@@ -199,7 +200,7 @@ func fetchParkingEnergyTotal(carID int, startUTC, endUTC string) (*float64, erro
 }
 
 func fetchParkingEnergyTotalUncached(carID int, startUTC, endUTC string) (*float64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+	ctx, cancel := newAggregateQueryContext()
 	defer cancel()
 	query := `
 		WITH state_windows AS (
@@ -418,7 +419,9 @@ func fetchRegeneratedEnergyByBucketUncached(carID int, startUTC, endUTC, trunc s
 
 func fetchLatestOdometer(carID int, unitsLength string) (*float64, error) {
 	var odometer sql.NullFloat64
-	if err := db.QueryRow(`SELECT odometer FROM positions WHERE car_id = $1 AND odometer IS NOT NULL ORDER BY date DESC LIMIT 1`, carID).Scan(&odometer); err != nil {
+	queryCtx, cancel := newAggregateQueryContext()
+	defer cancel()
+	if err := db.QueryRowContext(queryCtx, `SELECT odometer FROM positions WHERE car_id = $1 AND odometer IS NOT NULL ORDER BY date DESC LIMIT 1`, carID).Scan(&odometer); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

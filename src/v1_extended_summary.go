@@ -6,68 +6,97 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 )
-
-func parseSummaryRangeStrict(c *gin.Context) (v1DateRange, error) {
-	loc, _, err := parseTimezoneParam(c)
-	if err != nil {
-		return v1DateRange{}, err
-	}
-	startRaw := c.Query("startDate")
-	endRaw := c.Query("endDate")
-	if startRaw != "" || endRaw != "" {
-		start, err := parseDateOnlyOrTime(startRaw, loc, false)
-		if err != nil {
-			return v1DateRange{}, err
-		}
-		end, err := parseDateOnlyOrTime(endRaw, loc, true)
-		if err != nil {
-			return v1DateRange{}, err
-		}
-		if start.IsZero() || end.IsZero() {
-			return v1DateRange{}, fmt.Errorf("startDate and endDate are required together")
-		}
-		if end.Before(start) {
-			return v1DateRange{}, fmt.Errorf("startDate must be before endDate")
-		}
-		return v1DateRange{Period: "custom", Timezone: loc, Start: start, End: end}, nil
-	}
-	return parseDateRangeFromQuery(c, "month")
-}
 
 func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, error) {
 	startUTC, endUTC := dbTimeRange(dr)
 
-	driveSummary, err := fetchDriveHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
-	if err != nil {
-		return nil, fmt.Errorf("drive summary: %w", err)
-	}
-	chargeSummary, err := fetchChargeHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
-	if err != nil {
-		return nil, fmt.Errorf("charge summary: %w", err)
-	}
-	parkingSummary, err := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
-	if err != nil {
-		return nil, fmt.Errorf("parking summary: %w", err)
-	}
-	stateSummary, err := fetchStateSummary(ctx.CarID, startUTC, endUTC)
-	if err != nil {
-		return nil, fmt.Errorf("state summary: %w", err)
-	}
-	statistics, err := fetchStatisticsSummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, ctx.UnitsTemperature, driveSummary, chargeSummary)
-	if err != nil {
-		return nil, fmt.Errorf("statistics: %w", err)
+	// Phase A: all independent queries run concurrently.
+	var (
+		driveSummary   *DriveHistorySummary
+		chargeSummary  *ChargeHistorySummary
+		parkingSummary *ParkingHistorySummary
+		stateSummary   *StateSummary
+		batterySnapshot = map[string]any{}
+		parkEnergy      *float64
+		latestOdometer  *float64
+	)
+	gA := new(errgroup.Group)
+	gA.Go(func() error {
+		v, err := fetchDriveHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
+		if err != nil {
+			return fmt.Errorf("drive summary: %w", err)
+		}
+		driveSummary = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, err := fetchChargeHistorySummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
+		if err != nil {
+			return fmt.Errorf("charge summary: %w", err)
+		}
+		chargeSummary = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, err := fetchParkingHistorySummary(ctx.CarID, startUTC, endUTC, nil)
+		if err != nil {
+			return fmt.Errorf("parking summary: %w", err)
+		}
+		parkingSummary = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, err := fetchStateSummary(ctx.CarID, startUTC, endUTC)
+		if err != nil {
+			return fmt.Errorf("state summary: %w", err)
+		}
+		stateSummary = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, err := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
+		if err == nil {
+			batterySnapshot = v
+		}
+		return nil
+	})
+	gA.Go(func() error {
+		v, _ := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
+		parkEnergy = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, _ := fetchLatestOdometer(ctx.CarID, ctx.UnitsLength)
+		latestOdometer = v
+		return nil
+	})
+	if err := gA.Wait(); err != nil {
+		return nil, err
 	}
 
-	regeneration, err := fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
-	batterySnapshot, err := fetchBatterySnapshot(ctx.CarID, startUTC, endUTC, ctx.UnitsLength)
-	if err != nil {
-		batterySnapshot = map[string]any{}
+	// Phase B: statistics and regeneration depend on drive/charge summaries.
+	var (
+		statistics   *StatisticsSummary
+		regeneration *RegenerationSummary
+	)
+	gB := new(errgroup.Group)
+	gB.Go(func() error {
+		v, err := fetchStatisticsSummary(ctx.CarID, startUTC, endUTC, ctx.UnitsLength, ctx.UnitsTemperature, driveSummary, chargeSummary)
+		if err != nil {
+			return fmt.Errorf("statistics: %w", err)
+		}
+		statistics = v
+		return nil
+	})
+	gB.Go(func() error {
+		regeneration, _ = fetchRegenerationSummary(ctx.CarID, startUTC, endUTC, driveSummary, ctx.UnitsLength)
+		return nil
+	})
+	if err := gB.Wait(); err != nil {
+		return nil, err
 	}
-	parkEnergy, err := fetchParkingEnergyTotal(ctx.CarID, startUTC, endUTC)
-	_ = err
-	latestOdometer, err := fetchLatestOdometer(ctx.CarID, ctx.UnitsLength)
-	_ = err
 
 	regenEnergy := any(nil)
 	regenShare := any(nil)
@@ -185,7 +214,7 @@ func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, er
 			"highest":          chargeSummary.HighestCost,
 			"average_per_kwh":  chargeSummary.AverageCostPerKwh,
 			"per_100_distance": chargeSummary.CostPer100Distance,
-			"currency":         "currency",
+			"currency":         nil,
 		},
 		"quality": map[string]any{
 			"data_complete":                dataComplete,
@@ -209,7 +238,7 @@ func buildUnifiedSummary(ctx *apiCarContext, dr v1DateRange) (map[string]any, er
 }
 
 func TeslaMateAPICarsSummaryV2(c *gin.Context) {
-	dr, err := parseSummaryRangeStrict(c)
+	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date", "invalid summary range", map[string]any{"reason": err.Error()})
 		return
@@ -223,5 +252,5 @@ func TeslaMateAPICarsSummaryV2(c *gin.Context) {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load summary", map[string]any{"reason": err.Error()})
 		return
 	}
-	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	writeV1Object(c, data, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }

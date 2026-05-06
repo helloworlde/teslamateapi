@@ -46,7 +46,7 @@ func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []str
 		"scope":         scope,
 		"range":         buildRangeDTO(dr),
 		"distributions": distributions,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func fetchDistribution(carID int, scope, metric, startUTC, endUTC string) (map[string]any, error) {

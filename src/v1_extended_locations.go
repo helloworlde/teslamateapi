@@ -41,7 +41,7 @@ func TeslaMateAPICarsLocationsV2(c *gin.Context) {
 		"range":     buildRangeDTO(dr),
 		"summary":   summary,
 		"locations": locations,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func fetchLocationsSummary(carID int, startUTC, endUTC string, limit int) ([]map[string]any, map[string]any, error) {

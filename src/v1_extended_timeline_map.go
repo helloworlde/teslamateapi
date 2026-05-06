@@ -48,7 +48,7 @@ func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
 			"entity_id":   entityID,
 		})
 	}
-	writeV1List(c, out, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	writeV1List(c, out, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
@@ -108,7 +108,7 @@ func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
 			"west":  bounds.MinLongitude,
 		}
 	}
-	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	writeV1Object(c, data, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 type visitedBounds struct {

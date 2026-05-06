@@ -37,6 +37,7 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load calendar", map[string]any{"reason": err.Error()})
 		return
 	}
+	convertCalendarUnits(items, summary, ctx.UnitsLength)
 	resp := map[string]any{
 		"car_id":  ctx.CarID,
 		"range":   buildRangeDTO(dr),
@@ -44,7 +45,7 @@ func TeslaMateAPICarsCalendarV2(c *gin.Context) {
 		"summary": summary,
 		"items":   items,
 	}
-	writeV1Object(c, resp, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	writeV1Object(c, resp, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func fetchUnifiedCalendar(carID int, startUTC, endUTC, bucket string, includeRegen bool, includePark bool) ([]any, map[string]any, error) {
@@ -268,4 +269,46 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 		}
 	}
 	return items, summary, rows.Err()
+}
+
+// convertCalendarUnits applies unit conversion to calendar items and summary in-place.
+// The cache stores raw metric values; conversion happens after retrieval.
+func convertCalendarUnits(items []any, summary map[string]any, unitsLength string) {
+	if !strings.EqualFold(unitsLength, "mi") {
+		return
+	}
+	convertMap := func(m map[string]any) {
+		if v, ok := m["distance_km"].(float64); ok {
+			m["distance_km"] = kilometersToMiles(v)
+		}
+		if v, ok := m["avg_speed_kmh"].(float64); ok {
+			m["avg_speed_kmh"] = kilometersToMiles(v)
+		}
+		if v, ok := m["avg_efficiency_wh_per_km"].(float64); ok {
+			m["avg_efficiency_wh_per_km"] = whPerKmToWhPerMi(v)
+		}
+		// Update badge distance labels
+		if badges, ok := m["badges"].([]any); ok {
+			for _, b := range badges {
+				badge, ok := b.(map[string]any)
+				if !ok {
+					continue
+				}
+				if badge["type"] == "drive" {
+					if v, ok := badge["value"].(float64); ok {
+						mi := kilometersToMiles(v)
+						badge["value"] = mi
+						badge["unit"] = "mi"
+						badge["label"] = fmt.Sprintf("%.1fmi", mi)
+					}
+				}
+			}
+		}
+	}
+	convertMap(summary)
+	for _, item := range items {
+		if m, ok := item.(map[string]any); ok {
+			convertMap(m)
+		}
+	}
 }

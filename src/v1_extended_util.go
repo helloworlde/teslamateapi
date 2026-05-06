@@ -20,6 +20,13 @@ func intOrNil(v sql.NullInt64) any {
 	return int(v.Int64)
 }
 
+func floatOrNil(v sql.NullFloat64) any {
+	if !v.Valid {
+		return nil
+	}
+	return v.Float64
+}
+
 func parseCSV(raw string) []string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {

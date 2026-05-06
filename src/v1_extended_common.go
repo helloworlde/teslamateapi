@@ -89,6 +89,14 @@ func buildV1Meta(carID int, tzName string, unit string) v1Meta {
 	}
 }
 
+func buildV1MetaFromCar(ctx *apiCarContext, tzName string) v1Meta {
+	unit := "metric"
+	if strings.EqualFold(ctx.UnitsLength, "mi") {
+		unit = "imperial"
+	}
+	return buildV1Meta(ctx.CarID, tzName, unit)
+}
+
 func writeV1Object(c *gin.Context, data any, meta v1Meta) {
 	c.JSON(http.StatusOK, v1ObjectEnvelope{
 		Data: data,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
+	"golang.org/x/sync/errgroup"
 )
 
 type metricDef struct {
@@ -37,8 +38,8 @@ func TeslaMateAPICarsStateSeriesV2(c *gin.Context) {
 }
 
 func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
-	// series 返回“指标元数据 + 合并后的时间点”，前端可以直接按 time 渲染多指标图表。
 	bucket := strings.ToLower(strings.TrimSpace(c.DefaultQuery("bucket", "day")))
+	sortOrder := strings.ToLower(strings.TrimSpace(c.DefaultQuery("sort", "asc")))
 	metrics := parseCSV(c.Query("metrics"))
 	if len(metrics) == 0 {
 		metrics = defaultMetrics
@@ -47,6 +48,10 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 	case "raw", "hour", "day", "week", "month", "year":
 	default:
 		writeV1Error(c, http.StatusBadRequest, "invalid_bucket", "bucket must be raw|hour|day|week|month|year", nil)
+		return
+	}
+	if sortOrder != "asc" && sortOrder != "desc" {
+		writeV1Error(c, http.StatusBadRequest, "invalid_sort", "sort must be asc|desc", nil)
 		return
 	}
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
@@ -58,24 +63,43 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 	if !ok {
 		return
 	}
-	startUTC, endUTC := dbTimeRange(dr)
-	defs := make([]metricDef, 0, len(metrics))
-	values := make(map[string][]map[string]any, len(metrics))
-	metadata := make([]map[string]any, 0, len(metrics))
-	for _, metric := range metrics {
+
+	// Validate all metrics before starting any DB work.
+	defs := make([]metricDef, len(metrics))
+	for i, metric := range metrics {
 		def, ok := metricDefinition(scope, metric)
 		if !ok {
 			writeV1Error(c, http.StatusBadRequest, "unsupported_metric", "unsupported series metric", map[string]any{"scope": scope, "metric": metric})
 			return
 		}
-		points, err := fetchMetricSeries(ctx.CarID, scope, metric, bucket, startUTC, endUTC, ctx.UnitsLength)
-		if err != nil {
-			writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load series metric", map[string]any{"scope": scope, "metric": metric, "reason": err.Error()})
-			return
-		}
 		def.Unit = metricUnit(def.Key, scope, ctx.UnitsLength)
-		defs = append(defs, def)
-		values[def.Key] = points
+		defs[i] = def
+	}
+
+	startUTC, endUTC := dbTimeRange(dr)
+
+	// Fetch all metrics concurrently; indexed by position so no mutex needed.
+	pointsSlice := make([][]map[string]any, len(metrics))
+	g := new(errgroup.Group)
+	for i, metric := range metrics {
+		g.Go(func() error {
+			pts, err := fetchMetricSeries(ctx.CarID, scope, metric, bucket, startUTC, endUTC, ctx.UnitsLength)
+			if err != nil {
+				return fmt.Errorf("metric %s: %w", metric, err)
+			}
+			pointsSlice[i] = pts
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load series metric", map[string]any{"scope": scope, "reason": err.Error()})
+		return
+	}
+
+	values := make(map[string][]map[string]any, len(metrics))
+	metadata := make([]map[string]any, 0, len(metrics))
+	for i, def := range defs {
+		values[def.Key] = pointsSlice[i]
 		metadata = append(metadata, map[string]any{
 			"metric":     def.Key,
 			"name":       def.Name,
@@ -87,15 +111,16 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 		"car_id":  ctx.CarID,
 		"scope":   scope,
 		"bucket":  bucket,
+		"sort":    sortOrder,
 		"range":   buildRangeDTO(dr),
 		"metrics": metadata,
-		"points":  mergeMetricSeries(defs, values),
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+		"points":  mergeMetricSeries(defs, values, sortOrder),
+	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
-func mergeMetricSeries(defs []metricDef, values map[string][]map[string]any) []map[string]any {
-	// 将多条单指标序列合并成同一时间点的宽表结构：
-	// {"time": "...", "distance": 12.3, "speed": 34.5}
+// mergeMetricSeries merges per-metric point slices into wide-table rows keyed by time.
+// sortOrder is "asc" (oldest first, default) or "desc" (newest first).
+func mergeMetricSeries(defs []metricDef, values map[string][]map[string]any, sortOrder string) []map[string]any {
 	byTime := make(map[string]map[string]any)
 	times := make([]string, 0)
 	for _, def := range defs {
@@ -113,7 +138,13 @@ func mergeMetricSeries(defs []metricDef, values map[string][]map[string]any) []m
 			row[def.Key] = point["value"]
 		}
 	}
-	sort.SliceStable(times, func(i, j int) bool { return times[i] > times[j] })
+	descending := sortOrder == "desc"
+	sort.SliceStable(times, func(i, j int) bool {
+		if descending {
+			return times[i] > times[j]
+		}
+		return times[i] < times[j]
+	})
 	out := make([]map[string]any, 0, len(times))
 	for _, t := range times {
 		out = append(out, byTime[t])
@@ -240,7 +271,7 @@ func fetchMetricSeries(carID int, scope, metric, bucket, startUTC, endUTC, units
 }
 
 func bucketExpression(bucket, column string) string {
-	// raw 对外表示“尽量细”，当前落到 hour，避免直接返回海量 position 原始点。
+	// raw 对外表示"尽量细"，当前落到 hour，避免直接返回海量 position 原始点。
 	if bucket == "raw" {
 		bucket = "hour"
 	}

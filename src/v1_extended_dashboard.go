@@ -52,7 +52,7 @@ func TeslaMateAPICarsDashboardV2(c *gin.Context) {
 		},
 		"statistics": statistics,
 	}
-	writeV1Object(c, data, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	writeV1Object(c, data, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func TeslaMateAPICarsRealtimeV2(c *gin.Context) {
@@ -68,7 +68,7 @@ func TeslaMateAPICarsRealtimeV2(c *gin.Context) {
 	writeV1Object(c, map[string]any{
 		"car_id":  ctx.CarID,
 		"current": current,
-	}, buildV1Meta(ctx.CarID, appUsersTimezone.String(), "metric"))
+	}, buildV1MetaFromCar(ctx, appUsersTimezone.String()))
 }
 
 func fetchDashboardCurrentSnapshot(carID int, unitsLength, unitsTemperature string) (map[string]any, error) {

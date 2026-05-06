@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 )
 
 func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
@@ -43,7 +44,7 @@ func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
 			"total_count":    len(insights),
 		},
 		"insights": insights,
-	}, buildV1Meta(ctx.CarID, dr.Timezone.String(), "metric"))
+	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
 func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types []string, limit int) []map[string]any {
@@ -77,40 +78,79 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		})
 	}
 
-	currentDrive, err := fetchDriveHistorySummary(carID, startUTC, endUTC, unitsLength)
-	if err != nil {
-		return items
-	}
-	currentCharge, err := fetchChargeHistorySummary(carID, startUTC, endUTC, unitsLength)
-	if err != nil {
-		return items
-	}
-	currentRegen, regenErr := fetchRegenerationSummary(carID, startUTC, endUTC, currentDrive, unitsLength)
-	_ = regenErr
-	currentPark, parkErr := fetchParkingEnergyTotal(carID, startUTC, endUTC)
-	_ = parkErr
-
+	// Pre-compute base period dates from request range — no DB dependency.
 	startT, startErr := time.ParseInLocation(dbTimestampFormat, startUTC, time.UTC)
 	endT, endErr := time.ParseInLocation(dbTimestampFormat, endUTC, time.UTC)
 	if startErr != nil || endErr != nil || !endT.After(startT) {
 		return items
 	}
 	duration := endT.Sub(startT)
-	baseStart := startT.Add(-duration)
-	baseEnd := startT
-	baseStartUTC := baseStart.UTC().Format(dbTimestampFormat)
-	baseEndUTC := baseEnd.UTC().Format(dbTimestampFormat)
+	baseStartUTC := startT.Add(-duration).UTC().Format(dbTimestampFormat)
+	baseEndUTC := startT.UTC().Format(dbTimestampFormat)
 
-	baseDrive, driveBaseErr := fetchDriveHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
-	baseCharge, chargeBaseErr := fetchChargeHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
-	if chargeBaseErr != nil {
-		baseCharge = nil
+	// Phase A: current and baseline drive/charge/park queries run concurrently.
+	var (
+		currentDrive  *DriveHistorySummary
+		currentCharge *ChargeHistorySummary
+		currentPark   *float64
+		baseDrive     *DriveHistorySummary
+		baseCharge    *ChargeHistorySummary
+		basePark      *float64
+	)
+	gA := new(errgroup.Group)
+	gA.Go(func() error {
+		v, err := fetchDriveHistorySummary(carID, startUTC, endUTC, unitsLength)
+		if err != nil {
+			return err
+		}
+		currentDrive = v
+		return nil
+	})
+	gA.Go(func() error {
+		v, err := fetchChargeHistorySummary(carID, startUTC, endUTC, unitsLength)
+		if err != nil {
+			return err
+		}
+		currentCharge = v
+		return nil
+	})
+	gA.Go(func() error {
+		currentPark, _ = fetchParkingEnergyTotal(carID, startUTC, endUTC)
+		return nil
+	})
+	gA.Go(func() error {
+		baseDrive, _ = fetchDriveHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
+		return nil
+	})
+	gA.Go(func() error {
+		baseCharge, _ = fetchChargeHistorySummary(carID, baseStartUTC, baseEndUTC, unitsLength)
+		return nil
+	})
+	gA.Go(func() error {
+		basePark, _ = fetchParkingEnergyTotal(carID, baseStartUTC, baseEndUTC)
+		return nil
+	})
+	if err := gA.Wait(); err != nil {
+		return items
 	}
-	var baseRegen *RegenerationSummary
-	if driveBaseErr == nil {
-		baseRegen, _ = fetchRegenerationSummary(carID, baseStartUTC, baseEndUTC, baseDrive, unitsLength)
-	}
-	basePark, _ := fetchParkingEnergyTotal(carID, baseStartUTC, baseEndUTC)
+
+	// Phase B: regen needs drive summaries from Phase A.
+	var (
+		currentRegen *RegenerationSummary
+		baseRegen    *RegenerationSummary
+	)
+	gB := new(errgroup.Group)
+	gB.Go(func() error {
+		currentRegen, _ = fetchRegenerationSummary(carID, startUTC, endUTC, currentDrive, unitsLength)
+		return nil
+	})
+	gB.Go(func() error {
+		if baseDrive != nil {
+			baseRegen, _ = fetchRegenerationSummary(carID, baseStartUTC, baseEndUTC, baseDrive, unitsLength)
+		}
+		return nil
+	})
+	gB.Wait()
 
 	if currentDrive.AverageConsumption != nil && baseDrive != nil && baseDrive.AverageConsumption != nil {
 		cur := *currentDrive.AverageConsumption
@@ -166,6 +206,41 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 			if freq >= 1.2 {
 				appendInsight("charge_frequency_high", "charging", "info", "High charging frequency", "Charging frequency is above 1.2 sessions per day for this period.", "charges_per_day", freq, nil, map[string]any{"entity_type": "charge"})
 			}
+		}
+	}
+	// Efficiency variance: large gap between best and worst trip indicates inconsistent driving style.
+	if currentDrive.BestConsumption != nil && currentDrive.WorstConsumption != nil &&
+		*currentDrive.BestConsumption > 0 {
+		ratio := *currentDrive.WorstConsumption / *currentDrive.BestConsumption
+		if ratio >= 2.5 {
+			appendInsight("efficiency_variance_high", "efficiency", "info",
+				"High efficiency variance",
+				"Worst trip consumption is more than 2.5× the best trip, indicating highly inconsistent driving conditions or style.",
+				"efficiency_worst_best_ratio", ratio, nil, map[string]any{"entity_type": "drive"})
+		}
+	}
+	// Excellent regeneration: regen share > 20% is noteworthy for most driving styles.
+	if currentRegen != nil && currentRegen.RecoveryShare != nil && *currentRegen.RecoveryShare >= 0.20 {
+		appendInsight("regen_share_excellent", "driving", "positive",
+			"Excellent regeneration rate",
+			"Estimated energy recovery share exceeded 20%, indicating effective one-pedal driving or city traffic conditions.",
+			"regeneration_share", *currentRegen.RecoveryShare, nil, map[string]any{"entity_type": "drive"})
+	}
+	// Charging efficiency consistently high (above 94%).
+	if currentCharge.ChargingEfficiency != nil && *currentCharge.ChargingEfficiency >= 0.94 {
+		appendInsight("charge_efficiency_excellent", "charging", "positive",
+			"Excellent charging efficiency",
+			"Average charging efficiency is above 94%, indicating healthy battery and charger conditions.",
+			"charging_efficiency_percent", *currentCharge.ChargingEfficiency*100.0, nil, map[string]any{"entity_type": "charge"})
+	}
+	// Abnormal charges: many sessions flagged as abnormal may indicate charging equipment issues.
+	if currentCharge.ChargeCount > 0 && currentCharge.AbnormalChargeCount > 0 {
+		abnormalRatio := float64(currentCharge.AbnormalChargeCount) / float64(currentCharge.ChargeCount)
+		if abnormalRatio >= 0.20 {
+			appendInsight("abnormal_charge_ratio_high", "charging", "warning",
+				"Many abnormal charge sessions",
+				"More than 20% of charge sessions were flagged as abnormal. Check charging equipment.",
+				"abnormal_charge_ratio", abnormalRatio, nil, map[string]any{"entity_type": "charge"})
 		}
 	}
 	return items
