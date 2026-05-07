@@ -39,3 +39,38 @@ func TestParseV2AnalyticsQueryPreviousPeriod(t *testing.T) {
 		t.Fatalf("unexpected previous end: %s", got)
 	}
 }
+
+func TestParseV2AnalyticsQueryDefaultsTimezoneFromTZEnv(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	oldLocation := appUsersTimezone
+	appUsersTimezone = nil
+	t.Cleanup(func() {
+		appUsersTimezone = oldLocation
+	})
+	t.Setenv("TZ", "Asia/Shanghai")
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v2?period=day&timezone=", nil)
+
+	_, timeRange, err := parseV2AnalyticsQuery(c, time.Date(2026, 5, 7, 16, 30, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if timeRange.Timezone != "Asia/Shanghai" {
+		t.Fatalf("unexpected timezone: %s", timeRange.Timezone)
+	}
+	if got := timeRange.Start.Format(time.RFC3339); got != "2026-05-07T16:00:00Z" {
+		t.Fatalf("unexpected UTC start: %s", got)
+	}
+	if got := timeRange.End.Format(time.RFC3339); got != "2026-05-08T16:00:00Z" {
+		t.Fatalf("unexpected UTC end: %s", got)
+	}
+
+	meta := newV2Meta(1, timeRange, nil)
+	if meta.Start != "2026-05-08T00:00:00+08:00" {
+		t.Fatalf("unexpected localized meta start: %s", meta.Start)
+	}
+	if meta.End != "2026-05-09T00:00:00+08:00" {
+		t.Fatalf("unexpected localized meta end: %s", meta.End)
+	}
+}

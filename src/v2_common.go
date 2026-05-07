@@ -11,14 +11,14 @@ import (
 
 func parseV2AnalyticsQuery(c *gin.Context, now time.Time) (V2AnalyticsQuery, V2TimeRange, error) {
 	query := V2AnalyticsQuery{
-		Period:   strings.ToLower(c.DefaultQuery("period", v2DefaultPeriod)),
-		Start:    c.Query("start"),
-		End:      c.Query("end"),
-		Timezone: c.DefaultQuery("timezone", defaultV2Timezone()),
-		Compare:  strings.ToLower(c.DefaultQuery("compare", v2DefaultCompare)),
-		GroupBy:  c.Query("group_by"),
-		Metrics:  c.Query("metrics"),
-		Include:  c.Query("include"),
+		Period:   strings.ToLower(v2QueryDefault(c, "period", v2DefaultPeriod)),
+		Start:    strings.TrimSpace(c.Query("start")),
+		End:      strings.TrimSpace(c.Query("end")),
+		Timezone: v2QueryDefault(c, "timezone", defaultV2Timezone()),
+		Compare:  strings.ToLower(v2QueryDefault(c, "compare", v2DefaultCompare)),
+		GroupBy:  strings.TrimSpace(c.Query("group_by")),
+		Metrics:  strings.TrimSpace(c.Query("metrics")),
+		Include:  strings.TrimSpace(c.Query("include")),
 	}
 
 	if !v2AllowedPeriods[query.Period] {
@@ -57,11 +57,27 @@ func parseV2AnalyticsQuery(c *gin.Context, now time.Time) (V2AnalyticsQuery, V2T
 	return query, result, nil
 }
 
-func defaultV2Timezone() string {
-	if appUsersTimezone != nil {
-		return appUsersTimezone.String()
+func v2QueryDefault(c *gin.Context, key string, fallback string) string {
+	value := strings.TrimSpace(c.Query(key))
+	if value == "" {
+		return fallback
 	}
-	return "UTC"
+	return value
+}
+
+func defaultV2Timezone() string {
+	return defaultV2Location().String()
+}
+
+func defaultV2Location() *time.Location {
+	if appUsersTimezone != nil {
+		return appUsersTimezone
+	}
+	location, err := time.LoadLocation(getEnv("TZ", "Europe/Berlin"))
+	if err != nil {
+		return time.UTC
+	}
+	return location
 }
 
 func resolveV2Range(query V2AnalyticsQuery, location *time.Location, now time.Time) (time.Time, time.Time, error) {
@@ -133,23 +149,27 @@ func parseV2ClientTime(value string, location *time.Location) (time.Time, error)
 }
 
 func newV2Meta(carID int64, timeRange V2TimeRange, quality *V2DataQuality) V2Meta {
+	location := timeRangeLocation(timeRange)
 	return V2Meta{
 		CarID:       carID,
 		Period:      timeRange.Period,
 		Timezone:    timeRange.Timezone,
-		Start:       timeRange.Start.Format(time.RFC3339),
-		End:         timeRange.End.Format(time.RFC3339),
+		Start:       timeRange.Start.In(location).Format(time.RFC3339),
+		End:         timeRange.End.In(location).Format(time.RFC3339),
 		Compare:     timeRange.Compare,
 		Unit:        defaultV2Unit(),
-		GeneratedAt: time.Now().In(timeRangeLocation(timeRange)).Format(time.RFC3339),
+		GeneratedAt: time.Now().In(location).Format(time.RFC3339),
 		DataQuality: quality,
 	}
 }
 
 func timeRangeLocation(timeRange V2TimeRange) *time.Location {
+	if timeRange.Timezone == "" {
+		return defaultV2Location()
+	}
 	location, err := time.LoadLocation(timeRange.Timezone)
 	if err != nil {
-		return time.UTC
+		return defaultV2Location()
 	}
 	return location
 }

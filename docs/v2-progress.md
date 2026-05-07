@@ -5,6 +5,8 @@
 - Each completed task must update this file.
 - Each API must have handler, service, repository, response DTO, Swagger comments, and tests.
 - Each API must be visible in Scalar documentation.
+- After each task is complete, run checks, start the API with the real project runtime configuration, verify the task's API endpoints with curl, commit that task separately, then continue to the next task.
+- All V2 API time ranges, time buckets, time outputs, and comparisons must default to the `TZ` environment variable as the IANA timezone; an explicit `timezone` query parameter overrides it, and database filtering must still use correctly converted UTC instants.
 
 ## Progress
 
@@ -12,7 +14,7 @@
 |---|---|---|---|---|---|---|---|
 | T00 | Done |  | V2 base framework, `/api/v2`, `/api/docs`, `/api/docs/swagger.json`, `/api/docs/scalar` | Yes | Yes | Yes | scalar-go wired to the generated OpenAPI JSON handler. |
 | T01 | Done |  | `/api/v2/cars/{CarID}/analytics/summary` | Yes | Yes | Yes | Supports `none` and `previous_period`; `previous_year` and `lifetime_average` return explicit not implemented errors. |
-| T02 | Done |  | `/api/v2/cars/{CarID}/analytics/driving`, `/timeseries`, `/distribution`, `/ranking` | Yes | Yes | Yes | Supports summary, previous-period comparison, chart timeseries, dimension distributions, and objective rankings. |
+| T02 | Done |  | `/api/v2/cars/{CarID}/analytics/driving`, `/timeseries`, `/distribution`, `/ranking` | Yes | Yes | Yes | Supports summary, previous-period comparison, chart timeseries, dimension distributions, and objective rankings. Ranking SQL is qualified; time buckets and outputs use the selected/default timezone. |
 | T03 | Pending |  | charging | No | No | No |  |
 | T04 | Pending |  | parking | No | No | No |  |
 | T05 | Pending |  | battery | No | No | No |  |

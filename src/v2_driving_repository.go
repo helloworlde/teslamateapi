@@ -121,29 +121,29 @@ func (r PostgresV2DrivingRepository) Timeseries(ctx context.Context, carID int64
 	truncUnit := postgresDateTruncUnit(groupBy)
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', start_date AT TIME ZONE $4) AS period_start,
+			date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			COUNT(*) AS drive_count,
-			COALESCE(SUM(distance), 0) AS distance_km,
-			COALESCE(SUM(duration_min), 0) AS duration_min,
-			AVG(CASE WHEN duration_min > 0 THEN distance / duration_min * 60 ELSE NULL END) AS avg_speed_kmh,
+			COALESCE(SUM(drives.distance), 0) AS distance_km,
+			COALESCE(SUM(drives.duration_min), 0) AS duration_min,
+			AVG(CASE WHEN drives.duration_min > 0 THEN drives.distance / drives.duration_min * 60 ELSE NULL END) AS avg_speed_kmh,
 			SUM(
 				CASE
-					WHEN start_rated_range_km IS NOT NULL
-						AND end_rated_range_km IS NOT NULL
+					WHEN drives.start_rated_range_km IS NOT NULL
+						AND drives.end_rated_range_km IS NOT NULL
 						AND cars.efficiency IS NOT NULL
-						AND (start_rated_range_km - end_rated_range_km) > 0
-					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency
+						AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0
+					THEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency
 					ELSE NULL
 				END
 			) AS estimated_energy_consumed_kwh,
 			AVG(
 				CASE
-					WHEN distance > 0
-						AND start_rated_range_km IS NOT NULL
-						AND end_rated_range_km IS NOT NULL
+					WHEN drives.distance > 0
+						AND drives.start_rated_range_km IS NOT NULL
+						AND drives.end_rated_range_km IS NOT NULL
 						AND cars.efficiency IS NOT NULL
-						AND (start_rated_range_km - end_rated_range_km) > 0
-					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000
+						AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0
+					THEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000
 					ELSE NULL
 				END
 			) AS avg_consumption_wh_per_km,
@@ -173,6 +173,7 @@ func (r PostgresV2DrivingRepository) Timeseries(ctx context.Context, carID int64
 
 	var items []V2DrivingTimeseriesItem
 	var stats V2DrivingStats
+	location := timeRangeLocation(timeRange)
 	for rows.Next() {
 		var periodStart time.Time
 		var item V2DrivingTimeseriesItem
@@ -183,7 +184,7 @@ func (r PostgresV2DrivingRepository) Timeseries(ctx context.Context, carID int64
 		if err := rows.Scan(&periodStart, &item.DriveCount, &item.DistanceKM, &item.DurationMin, &avgSpeed, &estimatedEnergy, &avgConsumption, &energyRows); err != nil {
 			return nil, stats, err
 		}
-		item.PeriodStart = periodStart.Format(time.RFC3339)
+		item.PeriodStart = periodStart.In(location).Format(time.RFC3339)
 		if avgSpeed.Valid {
 			item.AvgSpeedKMH = &avgSpeed.Float64
 		}
@@ -209,9 +210,9 @@ func (r PostgresV2DrivingRepository) Distribution(ctx context.Context, carID int
 		SELECT
 			%s AS bucket,
 			COUNT(*) AS drive_count,
-			COALESCE(SUM(distance), 0) AS distance_km,
-			COALESCE(SUM(duration_min), 0) AS duration_min,
-			COUNT(outside_temp_avg) AS temperature_rows
+			COALESCE(SUM(drives.distance), 0) AS distance_km,
+			COALESCE(SUM(drives.duration_min), 0) AS duration_min,
+			COUNT(drives.outside_temp_avg) AS temperature_rows
 		FROM drives
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1
@@ -220,7 +221,7 @@ func (r PostgresV2DrivingRepository) Distribution(ctx context.Context, carID int
 			AND drives.start_date < $3
 		GROUP BY 1
 		ORDER BY 1`, bucketSQL),
-		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time,
+		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time, timeRange.Timezone,
 	)
 	if err != nil {
 		return nil, V2DrivingStats{}, err
@@ -252,19 +253,19 @@ func (r PostgresV2DrivingRepository) Ranking(ctx context.Context, carID int64, t
 	}
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
-			start_date,
-			end_date,
-			distance,
-			duration_min,
-			speed_max,
+			drives.id,
+			drives.start_date,
+			drives.end_date,
+			drives.distance,
+			drives.duration_min,
+			drives.speed_max,
 			%s AS metric_value
 		FROM drives
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1
-			AND end_date IS NOT NULL
-			AND start_date >= $2
-			AND start_date < $3
+			AND drives.end_date IS NOT NULL
+			AND drives.start_date >= $2
+			AND drives.start_date < $3
 			%s
 		ORDER BY metric_value %s
 		LIMIT $4`, drivingRankingMetricSQL(rankingType), whereSQL, orderSQL),
@@ -277,6 +278,7 @@ func (r PostgresV2DrivingRepository) Ranking(ctx context.Context, carID int64, t
 
 	var items []V2DrivingRankingItem
 	var stats V2DrivingStats
+	location := timeRangeLocation(timeRange)
 	rank := 1
 	for rows.Next() {
 		var id int64
@@ -289,8 +291,8 @@ func (r PostgresV2DrivingRepository) Ranking(ctx context.Context, carID int64, t
 		if err := rows.Scan(&id, &startTime, &endTime, &distance, &duration, &speed, &metric); err != nil {
 			return nil, stats, err
 		}
-		start := startTime.Format(time.RFC3339)
-		end := endTime.Format(time.RFC3339)
+		start := startTime.In(location).Format(time.RFC3339)
+		end := endTime.In(location).Format(time.RFC3339)
 		item := V2DrivingRankingItem{
 			Rank:        rank,
 			DriveID:     &id,
@@ -312,7 +314,7 @@ func (r PostgresV2DrivingRepository) Ranking(ctx context.Context, carID int64, t
 func (r PostgresV2DrivingRepository) rankingHighestDistanceDay(ctx context.Context, carID int64, timeRange V2TimeRange, limit int) ([]V2DrivingRankingItem, V2DrivingStats, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
-			date_trunc('day', start_date AT TIME ZONE $4) AS period_start,
+			date_trunc('day', start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			COALESCE(SUM(distance), 0) AS distance_km,
 			COALESCE(SUM(duration_min), 0) AS duration_min
 		FROM drives
@@ -332,6 +334,7 @@ func (r PostgresV2DrivingRepository) rankingHighestDistanceDay(ctx context.Conte
 
 	var items []V2DrivingRankingItem
 	var stats V2DrivingStats
+	location := timeRangeLocation(timeRange)
 	rank := 1
 	for rows.Next() {
 		var periodStart time.Time
@@ -340,7 +343,7 @@ func (r PostgresV2DrivingRepository) rankingHighestDistanceDay(ctx context.Conte
 		if err := rows.Scan(&periodStart, &distance, &duration); err != nil {
 			return nil, stats, err
 		}
-		period := periodStart.Format(time.RFC3339)
+		period := periodStart.In(location).Format(time.RFC3339)
 		item := V2DrivingRankingItem{
 			Rank:        rank,
 			PeriodStart: &period,
@@ -372,52 +375,52 @@ func postgresDateTruncUnit(groupBy string) string {
 func drivingDistributionBucketSQL(dimension string) (string, error) {
 	switch dimension {
 	case "hour_of_day":
-		return `LPAD(EXTRACT(HOUR FROM start_date)::int::text, 2, '0')`, nil
+		return `LPAD(EXTRACT(HOUR FROM drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4)::int::text, 2, '0')`, nil
 	case "day_of_week":
-		return `TRIM(TO_CHAR(start_date, 'Day'))`, nil
+		return `TRIM(TO_CHAR(drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4, 'Day'))`, nil
 	case "distance_bucket":
 		return `CASE
-			WHEN distance < 5 THEN '000-005'
-			WHEN distance < 10 THEN '005-010'
-			WHEN distance < 25 THEN '010-025'
-			WHEN distance < 50 THEN '025-050'
-			WHEN distance < 100 THEN '050-100'
+			WHEN drives.distance < 5 THEN '000-005'
+			WHEN drives.distance < 10 THEN '005-010'
+			WHEN drives.distance < 25 THEN '010-025'
+			WHEN drives.distance < 50 THEN '025-050'
+			WHEN drives.distance < 100 THEN '050-100'
 			ELSE '100+'
 		END`, nil
 	case "duration_bucket":
 		return `CASE
-			WHEN duration_min < 10 THEN '000-010'
-			WHEN duration_min < 30 THEN '010-030'
-			WHEN duration_min < 60 THEN '030-060'
-			WHEN duration_min < 120 THEN '060-120'
+			WHEN drives.duration_min < 10 THEN '000-010'
+			WHEN drives.duration_min < 30 THEN '010-030'
+			WHEN drives.duration_min < 60 THEN '030-060'
+			WHEN drives.duration_min < 120 THEN '060-120'
 			ELSE '120+'
 		END`, nil
 	case "speed_bucket":
 		return `CASE
-			WHEN speed_max < 30 THEN '000-030'
-			WHEN speed_max < 60 THEN '030-060'
-			WHEN speed_max < 90 THEN '060-090'
-			WHEN speed_max < 120 THEN '090-120'
+			WHEN drives.speed_max < 30 THEN '000-030'
+			WHEN drives.speed_max < 60 THEN '030-060'
+			WHEN drives.speed_max < 90 THEN '060-090'
+			WHEN drives.speed_max < 120 THEN '090-120'
 			ELSE '120+'
 		END`, nil
 	case "consumption_bucket":
 		return `CASE
-			WHEN distance <= 0 OR cars.efficiency IS NULL OR start_rated_range_km IS NULL OR end_rated_range_km IS NULL THEN 'unknown'
-			WHEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000 < 120 THEN '000-120'
-			WHEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000 < 160 THEN '120-160'
-			WHEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000 < 200 THEN '160-200'
-			WHEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000 < 250 THEN '200-250'
+			WHEN drives.distance <= 0 OR cars.efficiency IS NULL OR drives.start_rated_range_km IS NULL OR drives.end_rated_range_km IS NULL THEN 'unknown'
+			WHEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000 < 120 THEN '000-120'
+			WHEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000 < 160 THEN '120-160'
+			WHEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000 < 200 THEN '160-200'
+			WHEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000 < 250 THEN '200-250'
 			ELSE '250+'
 		END`, nil
 	case "temperature_bucket":
 		return `CASE
-			WHEN outside_temp_avg IS NULL THEN 'unknown'
-			WHEN outside_temp_avg < -10 THEN '<-10'
-			WHEN outside_temp_avg < 0 THEN '-10-000'
-			WHEN outside_temp_avg < 10 THEN '000-010'
-			WHEN outside_temp_avg < 20 THEN '010-020'
-			WHEN outside_temp_avg < 30 THEN '020-030'
-			WHEN outside_temp_avg < 40 THEN '030-040'
+			WHEN drives.outside_temp_avg IS NULL THEN 'unknown'
+			WHEN drives.outside_temp_avg < -10 THEN '<-10'
+			WHEN drives.outside_temp_avg < 0 THEN '-10-000'
+			WHEN drives.outside_temp_avg < 10 THEN '000-010'
+			WHEN drives.outside_temp_avg < 20 THEN '010-020'
+			WHEN drives.outside_temp_avg < 30 THEN '020-030'
+			WHEN drives.outside_temp_avg < 40 THEN '030-040'
 			ELSE '040+'
 		END`, nil
 	default:
@@ -428,13 +431,13 @@ func drivingDistributionBucketSQL(dimension string) (string, error) {
 func drivingRankingMetricSQL(rankingType string) string {
 	switch rankingType {
 	case "longest_duration":
-		return "duration_min"
+		return "drives.duration_min"
 	case "highest_speed":
-		return "speed_max"
+		return "drives.speed_max"
 	case "lowest_consumption", "highest_consumption":
-		return "(start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000"
+		return "(drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / NULLIF(drives.distance, 0) * 1000"
 	default:
-		return "distance"
+		return "drives.distance"
 	}
 }
 
@@ -447,9 +450,9 @@ func drivingRankingSQL(rankingType string) (string, string, string, error) {
 	case "highest_speed":
 		return "DESC", "km/h", "", nil
 	case "lowest_consumption":
-		return "ASC", "Wh/km", "AND distance > 0 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL", nil
+		return "ASC", "Wh/km", "AND drives.distance > 0 AND drives.start_rated_range_km IS NOT NULL AND drives.end_rated_range_km IS NOT NULL", nil
 	case "highest_consumption":
-		return "DESC", "Wh/km", "AND distance > 0 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL", nil
+		return "DESC", "Wh/km", "AND drives.distance > 0 AND drives.start_rated_range_km IS NOT NULL AND drives.end_rated_range_km IS NOT NULL", nil
 	default:
 		return "", "", "", errV2InvalidDrivingRanking
 	}
