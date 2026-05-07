@@ -12,7 +12,7 @@ import (
 
 // TeslaMateAPICarsRecordsV2 returns all-time personal best records for the car.
 // Accepts optional ?year=YYYY to scope records to a specific year.
-func TeslaMateAPICarsRecordsV2(c *gin.Context) {
+func TeslaMateAPICarsAnalysisRecordsV2(c *gin.Context) {
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsRecordsV2")
 	if !ok {
 		return

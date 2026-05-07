@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TeslaMateAPICarsUnifiedInsightsV2(c *gin.Context) {
+func TeslaMateAPICarsAnalysisInsightsV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid insight range", map[string]any{"reason": err.Error()})

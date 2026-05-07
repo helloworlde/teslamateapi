@@ -11,13 +11,13 @@ import (
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
-func TeslaMateAPICarsCalendarV2(c *gin.Context) {
+func TeslaMateAPICarsActivityV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid calendar range", map[string]any{"reason": err.Error()})
 		return
 	}
-	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsCalendarV2")
+	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsActivityV2")
 	if !ok {
 		return
 	}

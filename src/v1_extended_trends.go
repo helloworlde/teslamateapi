@@ -10,7 +10,7 @@ import (
 
 // TeslaMateAPICarsTrendsV2 returns period-over-period trend indicators for key metrics.
 // Always compares the requested period against the immediately preceding equivalent period.
-func TeslaMateAPICarsTrendsV2(c *gin.Context) {
+func TeslaMateAPICarsAnalysisTrendsV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid trends range", map[string]any{"reason": err.Error()})

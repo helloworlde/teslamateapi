@@ -4,17 +4,30 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
-func TeslaMateAPICarsDriveDistributionsV2(c *gin.Context) {
-	writeScopedDistributions(c, "drives", []string{"start_hour", "weekday", "distance", "duration", "speed", "efficiency"})
+// scopeDefaultDistributions maps each scope to its default distribution metrics.
+var scopeDefaultDistributions = map[string][]string{
+	"drives":  {"start_hour", "weekday", "distance", "duration", "speed", "efficiency"},
+	"charges": {"start_hour", "weekday", "energy", "duration", "power", "cost"},
 }
 
-func TeslaMateAPICarsChargeDistributionsV2(c *gin.Context) {
-	writeScopedDistributions(c, "charges", []string{"start_hour", "weekday", "energy", "duration", "power", "cost"})
+// TeslaMateAPICarsDistributionsV2 is the unified distribution histogram endpoint.
+// Required: ?scope=drives|charges
+func TeslaMateAPICarsDistributionsV2(c *gin.Context) {
+	scope := strings.ToLower(strings.TrimSpace(c.Query("scope")))
+	defaults, ok := scopeDefaultDistributions[scope]
+	if !ok {
+		writeV1Error(c, http.StatusBadRequest, "invalid_scope",
+			"scope must be one of: drives, charges",
+			map[string]any{"scope": scope})
+		return
+	}
+	writeScopedDistributions(c, scope, defaults)
 }
 
 func writeScopedDistributions(c *gin.Context, scope string, defaultMetrics []string) {

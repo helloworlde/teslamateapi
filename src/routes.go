@@ -9,12 +9,9 @@ func registerCompatibleV1Routes(v1 *gin.RouterGroup) {
 	v1.GET("/cars", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
-	v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesV1)
 	v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
 	v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
-	v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 	v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
-	v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusRouteV1)
 	v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
 	v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
 
@@ -38,22 +35,31 @@ func registerCommandV1Routes(v1 *gin.RouterGroup) {
 }
 
 func registerExtendedV1Routes(v1 *gin.RouterGroup) {
-	// 扩展接口按使用场景拆分：摘要、仪表盘、实时、时序、分布、洞察、地图等职责分离。
-	v1.GET("/cars/:CarID/summary", TeslaMateAPICarsSummaryV2)
-	v1.GET("/cars/:CarID/dashboard", TeslaMateAPICarsDashboardV2)
-	v1.GET("/cars/:CarID/realtime", TeslaMateAPICarsRealtimeV2)
-	v1.GET("/cars/:CarID/calendar", TeslaMateAPICarsCalendarV2)
-	v1.GET("/cars/:CarID/statistics", TeslaMateAPICarsUnifiedStatisticsV2)
-	v1.GET("/cars/:CarID/series/drives", TeslaMateAPICarsDriveSeriesV2)
-	v1.GET("/cars/:CarID/series/charges", TeslaMateAPICarsChargeSeriesV2)
-	v1.GET("/cars/:CarID/series/battery", TeslaMateAPICarsBatterySeriesV2)
-	v1.GET("/cars/:CarID/series/states", TeslaMateAPICarsStateSeriesV2)
-	v1.GET("/cars/:CarID/distributions/drives", TeslaMateAPICarsDriveDistributionsV2)
-	v1.GET("/cars/:CarID/distributions/charges", TeslaMateAPICarsChargeDistributionsV2)
-	v1.GET("/cars/:CarID/insights", TeslaMateAPICarsUnifiedInsightsV2)
-	v1.GET("/cars/:CarID/trends", TeslaMateAPICarsTrendsV2)
-	v1.GET("/cars/:CarID/records", TeslaMateAPICarsRecordsV2)
-	v1.GET("/cars/:CarID/timeline", TeslaMateAPICarsUnifiedTimelineV2)
-	v1.GET("/cars/:CarID/map/visited", TeslaMateAPICarsMapVisitedUnifiedV2)
+	// Real-time vehicle state — no period param, always fresh.
+	v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
+
+	// Period KPIs — unified stats replacing the old summary/statistics/dashboard trio.
+	v1.GET("/cars/:CarID/stats", TeslaMateAPICarsStatsV2)
+
+	// Calendar-style activity view.
+	v1.GET("/cars/:CarID/activity", TeslaMateAPICarsActivityV2)
+
+	// Unified time series with ?scope=drives|charges|battery|states.
+	v1.GET("/cars/:CarID/series", TeslaMateAPICarsSeriesV2)
+
+	// Unified distribution histograms with ?scope=drives|charges.
+	v1.GET("/cars/:CarID/distributions", TeslaMateAPICarsDistributionsV2)
+
+	// Paginated event history, one resource per event type.
+	v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
+	v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
+
+	// Spatial data.
 	v1.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)
+	v1.GET("/cars/:CarID/locations/heatmap", TeslaMateAPICarsLocationsHeatmapV2)
+
+	// Analytical features grouped under /analysis/.
+	v1.GET("/cars/:CarID/analysis/insights", TeslaMateAPICarsAnalysisInsightsV2)
+	v1.GET("/cars/:CarID/analysis/trends", TeslaMateAPICarsAnalysisTrendsV2)
+	v1.GET("/cars/:CarID/analysis/records", TeslaMateAPICarsAnalysisRecordsV2)
 }

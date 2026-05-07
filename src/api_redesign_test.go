@@ -80,35 +80,33 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 	r := buildTestRouter()
 	routes := routeSet(r)
 	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/summary",
-		"GET /api/v1/cars/:CarID/dashboard",
-		"GET /api/v1/cars/:CarID/calendar",
-		"GET /api/v1/cars/:CarID/statistics",
-		"GET /api/v1/cars/:CarID/series/drives",
-		"GET /api/v1/cars/:CarID/series/charges",
-		"GET /api/v1/cars/:CarID/series/battery",
-		"GET /api/v1/cars/:CarID/series/states",
-		"GET /api/v1/cars/:CarID/distributions/drives",
-		"GET /api/v1/cars/:CarID/distributions/charges",
-		"GET /api/v1/cars/:CarID/insights",
-		"GET /api/v1/cars/:CarID/timeline",
-		"GET /api/v1/cars/:CarID/map/visited",
+		"GET /api/v1/cars/:CarID/status",
+		"GET /api/v1/cars/:CarID/stats",
+		"GET /api/v1/cars/:CarID/activity",
+		"GET /api/v1/cars/:CarID/series",
+		"GET /api/v1/cars/:CarID/distributions",
+		"GET /api/v1/cars/:CarID/drives",
+		"GET /api/v1/cars/:CarID/charges",
 		"GET /api/v1/cars/:CarID/locations",
+		"GET /api/v1/cars/:CarID/locations/heatmap",
+		"GET /api/v1/cars/:CarID/analysis/insights",
+		"GET /api/v1/cars/:CarID/analysis/trends",
+		"GET /api/v1/cars/:CarID/analysis/records",
 	} {
 		if !routes[key] {
 			t.Fatalf("missing route %s", key)
 		}
 	}
 	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/summaries",
-		"GET /api/v1/cars/:CarID/activity-timeline",
-		"GET /api/v1/cars/:CarID/dashboards/drives",
-		"GET /api/v1/cars/:CarID/parking-sessions",
-		"GET /api/v1/cars/:CarID/charts/drives/distance",
-		"GET /api/v1/cars/:CarID/series",
-		"GET /api/v1/cars/:CarID/distributions",
-		"GET /api/v1/cars/:CarID/calendar/drives",
-		"GET /api/v1/cars/:CarID/calendar/charges",
+		"GET /api/v1/cars/:CarID/summary",
+		"GET /api/v1/cars/:CarID/dashboard",
+		"GET /api/v1/cars/:CarID/calendar",
+		"GET /api/v1/cars/:CarID/statistics",
+		"GET /api/v1/cars/:CarID/insights",
+		"GET /api/v1/cars/:CarID/timeline",
+		"GET /api/v1/cars/:CarID/map/visited",
+		"GET /api/v1/cars/:CarID/series/drives",
+		"GET /api/v1/cars/:CarID/distributions/drives",
 	} {
 		if routes[key] {
 			t.Fatalf("unexpected legacy route %s", key)

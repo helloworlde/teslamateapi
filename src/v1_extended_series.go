@@ -21,20 +21,26 @@ type metricDef struct {
 	ChartType string
 }
 
-func TeslaMateAPICarsDriveSeriesV2(c *gin.Context) {
-	writeScopedSeries(c, "drives", []string{"distance", "speed", "max_speed", "motor_power", "regen_power", "elevation", "outside_temp", "efficiency", "energy", "regeneration"})
+// scopeDefaultMetrics maps each scope to its default metric set.
+var scopeDefaultMetrics = map[string][]string{
+	"drives":  {"distance", "speed", "max_speed", "motor_power", "regen_power", "elevation", "outside_temp", "efficiency", "energy", "regeneration"},
+	"charges": {"energy", "power", "cost", "start_soc", "end_soc"},
+	"battery": {"soc", "range"},
+	"states":  {"duration", "vampire_drain"},
 }
 
-func TeslaMateAPICarsChargeSeriesV2(c *gin.Context) {
-	writeScopedSeries(c, "charges", []string{"energy", "power", "cost", "start_soc", "end_soc"})
-}
-
-func TeslaMateAPICarsBatterySeriesV2(c *gin.Context) {
-	writeScopedSeries(c, "battery", []string{"soc", "range"})
-}
-
-func TeslaMateAPICarsStateSeriesV2(c *gin.Context) {
-	writeScopedSeries(c, "states", []string{"duration", "vampire_drain"})
+// TeslaMateAPICarsSeriesV2 is the unified time-series endpoint.
+// Required: ?scope=drives|charges|battery|states
+func TeslaMateAPICarsSeriesV2(c *gin.Context) {
+	scope := strings.ToLower(strings.TrimSpace(c.Query("scope")))
+	defaults, ok := scopeDefaultMetrics[scope]
+	if !ok {
+		writeV1Error(c, http.StatusBadRequest, "invalid_scope",
+			"scope must be one of: drives, charges, battery, states",
+			map[string]any{"scope": scope})
+		return
+	}
+	writeScopedSeries(c, scope, defaults)
 }
 
 func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {

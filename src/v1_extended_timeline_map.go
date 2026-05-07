@@ -4,54 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TeslaMateAPICarsUnifiedTimelineV2(c *gin.Context) {
-	offset, limit, err := parseOffsetLimit(c, 50, 200)
-	if err != nil {
-		writeV1Error(c, http.StatusBadRequest, "invalid_pagination", err.Error(), nil)
-		return
-	}
-	dr, err := parseDateRangeStrictOrDefault(c, "month")
-	if err != nil {
-		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid timeline range", map[string]any{"reason": err.Error()})
-		return
-	}
-	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsUnifiedTimelineV2")
-	if !ok {
-		return
-	}
-	startUTC, endUTC := dbTimeRange(dr)
-	page := offset/limit + 1
-	items, total, err := fetchTimelineEvents(ctx.CarID, startUTC, endUTC, page, limit, "desc")
-	if err != nil {
-		writeV1Error(c, http.StatusInternalServerError, "query_error", "unable to load timeline", map[string]any{"reason": err.Error()})
-		return
-	}
-	out := make([]any, 0, len(items))
-	for _, item := range items {
-		entityID := 0
-		if id, err := strconv.Atoi(item.SourceID); err == nil {
-			entityID = id
-		}
-		out = append(out, map[string]any{
-			"id":          item.ID,
-			"type":        item.Type,
-			"start_date":  item.StartDate,
-			"end_date":    item.EndDate,
-			"title":       item.Title,
-			"summary":     item.Metrics,
-			"entity_type": item.Type,
-			"entity_id":   entityID,
-		})
-	}
-	writeV1List(c, out, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
-}
-
-func TeslaMateAPICarsMapVisitedUnifiedV2(c *gin.Context) {
+func TeslaMateAPICarsLocationsHeatmapV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
 		writeV1Error(c, http.StatusBadRequest, "invalid_date_range", "invalid visited map range", map[string]any{"reason": err.Error()})
