@@ -12,7 +12,6 @@ TeslaMateApi is a RESTful API to get data collected by self-hosted data logger *
 - Written in **[Golang](https://golang.org/)**
 - Data is collected from TeslaMate **Postgres** database and local **MQTT** Broker
 - Endpoints return data in JSON format
-- Send commands to your Tesla through the TeslaMateApi
 
 ### Table of Contents
 
@@ -22,7 +21,6 @@ TeslaMateApi is a RESTful API to get data collected by self-hosted data logger *
 - [API documentation](#api-documentation)
   - [Available endpoints](#available-endpoints)
   - [Authentication](#authentication)
-  - [Commands](#commands)
 - [Security information](#security-information)
 - [Credits](#credits)
 
@@ -42,7 +40,6 @@ services:
     depends_on:
       - database
     environment:
-      - ENCRYPTION_KEY=MySuperSecretEncryptionKey
       - DATABASE_USER=teslamate
       - DATABASE_PASS=secret
       - DATABASE_NAME=teslamate
@@ -63,7 +60,6 @@ services:
     depends_on:
       - database
     environment:
-      - ENCRYPTION_KEY=${TM_ENCRYPTION_KEY}
       - DATABASE_USER=${TM_DB_USER}
       - DATABASE_PASS=${TM_DB_PASS}
       - DATABASE_NAME=${TM_DB_NAME}
@@ -98,7 +94,6 @@ Basically the same environment variables for the database, mqqt and timezone nee
 | **DATABASE_PASS**  | string | _secret_        |
 | **DATABASE_NAME**  | string | _teslamate_     |
 | **DATABASE_HOST**  | string | _database_      |
-| **ENCRYPTION_KEY** | string |                 |
 | **MQTT_HOST**      | string | _mosquitto_     |
 | **TZ**             | string | _Europe/Berlin_ |
 
@@ -106,11 +101,6 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 | Variable                      | Type    | Default                       |
 | ----------------------------- | ------- | ----------------------------- |
-| **TESLAMATE_SSL**             | boolean | _false_                       |
-| **TESLAMATE_HOST**            | string  | _teslamate_                   |
-| **TESLAMATE_PORT**            | string  | _4000_                        |
-| **API_TOKEN**                 | string  |                               |
-| **API_TOKEN_DISABLE**         | string  | _false_                       |
 | **DATABASE_PORT**             | integer | _5432_                        |
 | **DATABASE_TIMEOUT**          | integer | _60000_                       |
 | **DATABASE_SSL**              | string  | _disable_                     |
@@ -124,35 +114,6 @@ Basically the same environment variables for the database, mqqt and timezone nee
 | **MQTT_PASSWORD**             | string  |                               |
 | **MQTT_NAMESPACE**            | string  |                               |
 | **MQTT_CLIENTID**             | string  | _4 char random string_        |
-| **TESLA_API_HOST**            | string  | _retrieved by access token_   |
-
-**Commands** environment variables
-
-Command routes are not registered unless `ENABLE_COMMANDS=true` is set explicitly. With the default configuration, `/command`, `/logging`, and `/wake_up` command endpoints return 404 because they are not mounted.
-
-| Variable                    | Type    | Default           |
-| --------------------------- | ------- | ----------------- |
-| **ENABLE_COMMANDS**         | boolean | _false_           |
-| **COMMANDS_ALL**            | boolean | _false_           |
-| **COMMANDS_ALLOWLIST**      | string  | _allow_list.json_ |
-| **COMMANDS_LOGGING**        | boolean | _false_           |
-| **COMMANDS_WAKE**           | boolean | _false_           |
-| **COMMANDS_ALERT**          | boolean | _false_           |
-| **COMMANDS_REMOTESTART**    | boolean | _false_           |
-| **COMMANDS_HOMELINK**       | boolean | _false_           |
-| **COMMANDS_SPEEDLIMIT**     | boolean | _false_           |
-| **COMMANDS_VALET**          | boolean | _false_           |
-| **COMMANDS_SENTRYMODE**     | boolean | _false_           |
-| **COMMANDS_DOORS**          | boolean | _false_           |
-| **COMMANDS_TRUNK**          | boolean | _false_           |
-| **COMMANDS_WINDOWS**        | boolean | _false_           |
-| **COMMANDS_SUNROOF**        | boolean | _false_           |
-| **COMMANDS_CHARGING**       | boolean | _false_           |
-| **COMMANDS_CLIMATE**        | boolean | _false_           |
-| **COMMANDS_MEDIA**          | boolean | _false_           |
-| **COMMANDS_SHARING**        | boolean | _false_           |
-| **COMMANDS_SOFTWAREUPDATE** | boolean | _false_           |
-| **COMMANDS_UNKNOWN**        | boolean | _false_           |
 
 ## API documentation
 
@@ -235,14 +196,6 @@ Optional:
 - GET `/api/v1/cars/:CarID/status`
 - GET `/api/v1/cars/:CarID/updates`
 - GET `/api/v1/globalsettings`
-
-**Compatible command API, registered only when `ENABLE_COMMANDS=true`**
-
-- GET `/api/v1/cars/:CarID/command`
-- POST `/api/v1/cars/:CarID/command/:Command`
-- GET `/api/v1/cars/:CarID/logging`
-- PUT `/api/v1/cars/:CarID/logging/:Command`
-- POST `/api/v1/cars/:CarID/wake_up`
 
 **统一扩展 API**
 
@@ -329,8 +282,6 @@ curl "http://localhost:8080/api/v1/cars/1/insights?startDate=2026-04-01&endDate=
 可访问的数据仅限车辆、充电、行程、当前状态、更新记录和全局设置等 TeslaMate 业务数据。
 
 建议在容器前的 Web 服务器上启用认证，避免车辆数据裸露在公网。上方示例使用了与 TeslaMate 相同的 `.htpasswd` 文件。
-
-如果已经在前置 Web 服务器上做了认证，可以通过 `API_TOKEN_DISABLE=true` 关闭本服务的 API token 校验；即便如此，仍建议保留 API key 保护。
 
 ## Credits
 

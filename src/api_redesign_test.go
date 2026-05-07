@@ -19,8 +19,10 @@ func buildTestRouter() *gin.Engine {
 	v1 := api.Group("/v1")
 	docsui.RegisterRoutes(v1, "/api/v1")
 	registerCompatibleV1Routes(v1)
-	registerExtendedV1Routes(v1)
-	api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
+	v2 := api.Group("/v2")
+	docsui.RegisterRoutes(v2, "/api/v2")
+	registerExtendedV2Routes(v2)
+	api.GET("/ping", apiPing)
 	api.GET("/healthz", healthz)
 	api.GET("/readyz", readyz)
 	return r
@@ -80,74 +82,47 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 	r := buildTestRouter()
 	routes := routeSet(r)
 	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/status",
-		"GET /api/v1/cars/:CarID/stats",
-		"GET /api/v1/cars/:CarID/activity",
-		"GET /api/v1/cars/:CarID/series",
-		"GET /api/v1/cars/:CarID/distributions",
-		"GET /api/v1/cars/:CarID/drives",
+		"GET /api/v1/cars",
+		"GET /api/v1/cars/:CarID",
+		"GET /api/v1/cars/:CarID/battery-health",
 		"GET /api/v1/cars/:CarID/charges",
-		"GET /api/v1/cars/:CarID/locations",
-		"GET /api/v1/cars/:CarID/locations/heatmap",
-		"GET /api/v1/cars/:CarID/analysis/insights",
-		"GET /api/v1/cars/:CarID/analysis/trends",
-		"GET /api/v1/cars/:CarID/analysis/records",
+		"GET /api/v1/cars/:CarID/charges/current",
+		"GET /api/v1/cars/:CarID/charges/:ChargeID",
+		"GET /api/v1/cars/:CarID/drives",
+		"GET /api/v1/cars/:CarID/drives/:DriveID",
+		"GET /api/v1/cars/:CarID/status",
+		"GET /api/v1/cars/:CarID/updates",
+		"GET /api/v1/globalsettings",
+		"GET /api/v2/cars/:CarID/status",
+		"GET /api/v2/cars/:CarID/stats",
+		"GET /api/v2/cars/:CarID/activity",
+		"GET /api/v2/cars/:CarID/series",
+		"GET /api/v2/cars/:CarID/distributions",
+		"GET /api/v2/cars/:CarID/drives",
+		"GET /api/v2/cars/:CarID/charges",
+		"GET /api/v2/cars/:CarID/locations",
+		"GET /api/v2/cars/:CarID/locations/heatmap",
+		"GET /api/v2/cars/:CarID/analysis/insights",
+		"GET /api/v2/cars/:CarID/analysis/trends",
+		"GET /api/v2/cars/:CarID/analysis/records",
 	} {
 		if !routes[key] {
 			t.Fatalf("missing route %s", key)
 		}
 	}
 	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/summary",
-		"GET /api/v1/cars/:CarID/dashboard",
-		"GET /api/v1/cars/:CarID/calendar",
-		"GET /api/v1/cars/:CarID/statistics",
-		"GET /api/v1/cars/:CarID/insights",
-		"GET /api/v1/cars/:CarID/timeline",
-		"GET /api/v1/cars/:CarID/map/visited",
-		"GET /api/v1/cars/:CarID/series/drives",
-		"GET /api/v1/cars/:CarID/distributions/drives",
+		"GET /api/v1/cars/:CarID/stats",
+		"GET /api/v1/cars/:CarID/activity",
+		"GET /api/v1/cars/:CarID/series",
+		"GET /api/v1/cars/:CarID/distributions",
+		"GET /api/v1/cars/:CarID/locations",
+		"GET /api/v1/cars/:CarID/locations/heatmap",
+		"GET /api/v1/cars/:CarID/analysis/insights",
+		"GET /api/v1/cars/:CarID/analysis/trends",
+		"GET /api/v1/cars/:CarID/analysis/records",
 	} {
 		if routes[key] {
-			t.Fatalf("unexpected legacy route %s", key)
-		}
-	}
-}
-
-func TestCommandRoutesAreNotRegisteredByDefault(t *testing.T) {
-	restoreEnv(t, "ENABLE_COMMANDS")
-	_ = os.Unsetenv("ENABLE_COMMANDS")
-
-	r := buildTestRouter()
-	routes := routeSet(r)
-	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/command",
-		"POST /api/v1/cars/:CarID/command/:Command",
-		"GET /api/v1/cars/:CarID/logging",
-		"PUT /api/v1/cars/:CarID/logging/:Command",
-		"POST /api/v1/cars/:CarID/wake_up",
-	} {
-		if routes[key] {
-			t.Fatalf("command route should be disabled by default: %s", key)
-		}
-	}
-}
-
-func TestCommandRoutesAreRegisteredWhenExplicitlyEnabled(t *testing.T) {
-	restoreEnv(t, "ENABLE_COMMANDS")
-	_ = os.Setenv("ENABLE_COMMANDS", "true")
-
-	r := buildTestRouter()
-	routes := routeSet(r)
-	for _, key := range []string{
-		"GET /api/v1/cars/:CarID/command",
-		"POST /api/v1/cars/:CarID/command/:Command",
-		"GET /api/v1/cars/:CarID/logging",
-		"PUT /api/v1/cars/:CarID/logging/:Command",
-		"POST /api/v1/cars/:CarID/wake_up",
-	} {
-		if !routes[key] {
-			t.Fatalf("command route should be enabled when ENABLE_COMMANDS=true: %s", key)
+			t.Fatalf("extended route must not be registered on v1: %s", key)
 		}
 	}
 }
@@ -158,7 +133,7 @@ func TestDashboardInvalidDateReturnsError(t *testing.T) {
 	defer func() { appUsersTimezone = oldTZ }()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/dashboard?period=custom&startDate=not-a-date&endDate=2026-04-01", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/stats?period=custom&startDate=not-a-date&endDate=2026-04-01", nil)
 	if _, err := parseDateRangeStrictOrDefault(c, "month"); err == nil {
 		t.Fatal("expected invalid date error")
 	}
@@ -183,19 +158,18 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 	r := buildTestRouter()
 	carID := getEnvAsInt("TESLAMATEAPI_ENDPOINT_CAR_ID", 1)
 	paths := []string{
-		"/api/v1/cars/%d/summary",
-		"/api/v1/cars/%d/dashboard",
-		"/api/v1/cars/%d/calendar?startDate=2026-04-01&endDate=2026-04-30",
-		"/api/v1/cars/%d/statistics",
-		"/api/v1/cars/%d/series/drives?startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",
-		"/api/v1/cars/%d/series/charges?startDate=2026-04-01&endDate=2026-04-30&metrics=energy,power",
-		"/api/v1/cars/%d/series/battery?startDate=2026-04-01&endDate=2026-04-30",
-		"/api/v1/cars/%d/distributions/drives?startDate=2026-04-01&endDate=2026-04-30&metrics=start_hour",
-		"/api/v1/cars/%d/distributions/charges?startDate=2026-04-01&endDate=2026-04-30&metrics=energy",
-		"/api/v1/cars/%d/insights?startDate=2026-04-01&endDate=2026-04-30",
-		"/api/v1/cars/%d/timeline?startDate=2026-04-01&endDate=2026-04-30",
-		"/api/v1/cars/%d/map/visited",
-		"/api/v1/cars/%d/locations?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v2/cars/%d/status",
+		"/api/v2/cars/%d/stats",
+		"/api/v2/cars/%d/activity?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v2/cars/%d/series?scope=drives&startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",
+		"/api/v2/cars/%d/series?scope=charges&startDate=2026-04-01&endDate=2026-04-30&metrics=energy,power",
+		"/api/v2/cars/%d/series?scope=battery&startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v2/cars/%d/distributions?scope=drives&startDate=2026-04-01&endDate=2026-04-30&metrics=start_hour",
+		"/api/v2/cars/%d/distributions?scope=charges&startDate=2026-04-01&endDate=2026-04-30&metrics=energy",
+		"/api/v2/cars/%d/analysis/insights?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v2/cars/%d/analysis/trends?startDate=2026-04-01&endDate=2026-04-30",
+		"/api/v2/cars/%d/analysis/records",
+		"/api/v2/cars/%d/locations?startDate=2026-04-01&endDate=2026-04-30",
 	}
 	for _, pattern := range paths {
 		w := httptest.NewRecorder()

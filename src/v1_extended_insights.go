@@ -10,6 +10,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// TeslaMateAPICarsAnalysisInsightsV2 返回派生洞察卡片。
+// @Summary 分析洞察
+// @Description 扩展接口 v2：返回所选周期的派生洞察卡片。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Success 200 {object} InsightsV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/analysis/insights [get]
 func TeslaMateAPICarsAnalysisInsightsV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
@@ -78,7 +90,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		})
 	}
 
-	// Pre-compute base period dates from request range — no DB dependency.
+	// 根据请求范围预计算基准周期，不依赖数据库。
 	startT, startErr := time.ParseInLocation(dbTimestampFormat, startUTC, time.UTC)
 	endT, endErr := time.ParseInLocation(dbTimestampFormat, endUTC, time.UTC)
 	if startErr != nil || endErr != nil || !endT.After(startT) {
@@ -88,7 +100,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 	baseStartUTC := startT.Add(-duration).UTC().Format(dbTimestampFormat)
 	baseEndUTC := startT.UTC().Format(dbTimestampFormat)
 
-	// Phase A: current and baseline drive/charge/park queries run concurrently.
+	// 阶段 A：当前周期和基准周期的行程、充电、停车查询并发执行。
 	var (
 		currentDrive  *DriveHistorySummary
 		currentCharge *ChargeHistorySummary
@@ -134,7 +146,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 		return items
 	}
 
-	// Phase B: regen needs drive summaries from Phase A.
+	// 阶段 B：动能回收依赖阶段 A 的行程汇总。
 	var (
 		currentRegen *RegenerationSummary
 		baseRegen    *RegenerationSummary
@@ -208,7 +220,7 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 			}
 		}
 	}
-	// Efficiency variance: large gap between best and worst trip indicates inconsistent driving style.
+	// 效率波动较大：最佳和最差行程差距明显，通常说明驾驶风格不稳定。
 	if currentDrive.BestConsumption != nil && currentDrive.WorstConsumption != nil &&
 		*currentDrive.BestConsumption > 0 {
 		ratio := *currentDrive.WorstConsumption / *currentDrive.BestConsumption
@@ -219,21 +231,21 @@ func buildSimpleInsights(carID int, startUTC, endUTC, unitsLength string, types 
 				"efficiency_worst_best_ratio", ratio, nil, map[string]any{"entity_type": "drive"})
 		}
 	}
-	// Excellent regeneration: regen share > 20% is noteworthy for most driving styles.
+	// 动能回收表现优秀：多数驾驶风格下，回收占比超过 20% 都值得提示。
 	if currentRegen != nil && currentRegen.RecoveryShare != nil && *currentRegen.RecoveryShare >= 0.20 {
 		appendInsight("regen_share_excellent", "driving", "positive",
 			"Excellent regeneration rate",
 			"Estimated energy recovery share exceeded 20%, indicating effective one-pedal driving or city traffic conditions.",
 			"regeneration_share", *currentRegen.RecoveryShare, nil, map[string]any{"entity_type": "drive"})
 	}
-	// Charging efficiency consistently high (above 94%).
+	// 充电效率持续较高，超过 94%。
 	if currentCharge.ChargingEfficiency != nil && *currentCharge.ChargingEfficiency >= 0.94 {
 		appendInsight("charge_efficiency_excellent", "charging", "positive",
 			"Excellent charging efficiency",
 			"Average charging efficiency is above 94%, indicating healthy battery and charger conditions.",
 			"charging_efficiency_percent", *currentCharge.ChargingEfficiency*100.0, nil, map[string]any{"entity_type": "charge"})
 	}
-	// Abnormal charges: many sessions flagged as abnormal may indicate charging equipment issues.
+	// 异常充电较多时，可能表示充电设备存在问题。
 	if currentCharge.ChargeCount > 0 && currentCharge.AbnormalChargeCount > 0 {
 		abnormalRatio := float64(currentCharge.AbnormalChargeCount) / float64(currentCharge.ChargeCount)
 		if abnormalRatio >= 0.20 {

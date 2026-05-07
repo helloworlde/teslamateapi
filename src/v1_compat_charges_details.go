@@ -7,16 +7,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsChargesDetailsV1 func
+// TeslaMateAPICarsChargesDetailsV1 返回兼容响应结构的充电详情。
+// @Summary 充电详情
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param ChargeID path int true "充电 ID"
+// @Success 200 {object} ChargeDetailsV1Envelope
+// @Router /v1/cars/{CarID}/charges/{ChargeID} [get]
 func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var (
 		CarsChargesDetailsError1 = "Unable to load charge."
 		CarsChargesDetailsError2 = "Unable to load charge details."
 	)
 
-	// getting CarID and ChargeID param from URL
+	// 从 URL 读取车辆 ID 和充电 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
 	ChargeID := convertStringToInteger(c.Param("ChargeID"))
 
@@ -27,7 +34,7 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	// getting data from database
+	// 从数据库读取充电主记录。
 	query := `
 		SELECT
 			charging_processes.id AS charge_id,
@@ -62,7 +69,7 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		ORDER BY start_date DESC;`
 	row := db.QueryRow(query, CarID, ChargeID)
 
-	// scanning row and putting values into the charge
+	// 将当前行扫描到充电详情对象。
 	err := row.Scan(
 		&charge.ChargeID,
 		&charge.StartDate,
@@ -93,14 +100,14 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesDetailsV1", "No rows were returned!", err.Error())
 		return
 	case nil:
-		// nothing wrong.. continuing
+		// 查询成功，继续组装响应。
 		break
 	default:
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError1, err.Error())
 		return
 	}
 
-	// converting values based of settings UnitsLength
+	// 根据长度单位设置转换数值。
 	if UnitsLength == "mi" {
 		charge.RangeIdeal.StartRange = kilometersToMiles(charge.RangeIdeal.StartRange)
 		charge.RangeIdeal.EndRange = kilometersToMiles(charge.RangeIdeal.EndRange)
@@ -108,16 +115,16 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		charge.RangeRated.EndRange = kilometersToMiles(charge.RangeRated.EndRange)
 		charge.Odometer = kilometersToMiles(charge.Odometer)
 	}
-	// converting values based of settings UnitsTemperature
+	// 根据温度单位设置转换数值。
 	if UnitsTemperature == "F" {
 		charge.OutsideTempAvg = celsiusToFahrenheit(charge.OutsideTempAvg)
 	}
 
-	// adjusting to timezone differences from UTC to be userspecific
+	// 按用户配置时区转换时间字段。
 	charge.StartDate = getTimeInTimeZone(charge.StartDate)
 	charge.EndDate = getTimeInTimeZone(charge.EndDate)
 
-	// getting detailed charge data from database
+	// 从数据库读取充电采样明细。
 	query = `
  			SELECT
 				id AS detail_id,
@@ -146,22 +153,22 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 			ORDER BY id ASC;`
 	rows, err := db.Query(query, ChargeID)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError2, err.Error())
 		return
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
-		// creating chargedetails object based on struct
+		// 创建充电采样对象。
 		chargedetails := ChargeDetailRowV1{}
 
-		// scanning row and putting values into the drive
+		// 将当前行扫描到充电采样对象。
 		err = rows.Scan(
 			&chargedetails.DetailID,
 			&chargedetails.Date,
@@ -186,31 +193,31 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 			&chargedetails.OutsideTemp,
 		)
 
-		// converting values based of settings UnitsLength
+		// 根据长度单位设置转换数值。
 		if UnitsLength == "mi" {
 			chargedetails.BatteryInfo.IdealBatteryRange = kilometersToMiles(chargedetails.BatteryInfo.IdealBatteryRange)
 			chargedetails.BatteryInfo.RatedBatteryRange = kilometersToMiles(chargedetails.BatteryInfo.RatedBatteryRange)
 
 		}
-		// converting values based of settings UnitsTemperature
+		// 根据温度单位设置转换数值。
 		if UnitsTemperature == "F" {
 			chargedetails.OutsideTemp = celsiusToFahrenheit(chargedetails.OutsideTemp)
 		}
-		// adjusting to timezone differences from UTC to be userspecific
+		// 按用户配置时区转换时间字段。
 		chargedetails.Date = getTimeInTimeZone(chargedetails.Date)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError2, err.Error())
 			return
 		}
 
-		// appending drive to ChargeData
+		// 追加充电采样到响应列表。
 		ChargeDetailsData = append(ChargeDetailsData, chargedetails)
 		charge.ChargeDetails = ChargeDetailsData
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError2, err.Error())
@@ -231,6 +238,6 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsChargesDetailsV1", jsonData)
 }

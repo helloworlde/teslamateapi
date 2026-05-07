@@ -53,7 +53,7 @@ func referenceChargeEnergyAddedSum(carID int, parsedStart, parsedEnd string) (fl
 	return v, err
 }
 
-// TestDatacheckSummaryVsReferenceSQL 需要真实 Postgres：设置 TESLAMATEAPI_DATACHECK=1 与 DATABASE_*、TZ、ENCRYPTION_KEY（与运行服务相同）。
+// TestDatacheckSummaryVsReferenceSQL 需要真实 Postgres：设置 TESLAMATEAPI_DATACHECK=1 与 DATABASE_*、TZ（与运行服务相同）。
 // 可选 TESLAMATEAPI_DATACHECK_CAR_ID（默认 1）、TESLAMATEAPI_DATACHECK_START_DATE / END_DATE（RFC3339 或 parseDateParam 支持的格式）。
 func TestDatacheckSummaryVsReferenceSQL(t *testing.T) {
 	if !datacheckEnabled() {
@@ -128,7 +128,7 @@ func TestDatacheckSummaryVsReferenceSQL(t *testing.T) {
 		wantDist = kilometersToMiles(sumKm)
 	}
 	if driveSummary.DriveCount == 0 && sumKm == 0 {
-		// ok
+		// 查询成功。
 	} else if math.Abs(driveSummary.TotalDistance-wantDist) > 1e-3 {
 		t.Errorf("total_distance: API=%g 独立SUM(km)换算后=%g units=%q", driveSummary.TotalDistance, wantDist, unitsLength)
 	}

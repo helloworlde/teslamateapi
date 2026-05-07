@@ -27,14 +27,6 @@
 - `GET /api/ping`
 - `GET /api/readyz`
 
-以下命令路由只有在通过 `ENABLE_COMMANDS=true` 显式启用时才注册；未启用时不会挂载到路由表：
-
-- `GET /api/v1/cars/:CarID/command`
-- `POST /api/v1/cars/:CarID/command/:Command`
-- `GET /api/v1/cars/:CarID/logging`
-- `PUT /api/v1/cars/:CarID/logging/:Command`
-- `POST /api/v1/cars/:CarID/wake_up`
-
 ### 文档路由
 
 - `GET /api/v1/docs`

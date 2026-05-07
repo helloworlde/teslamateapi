@@ -1,10 +1,12 @@
 package main
 
+// InsightsV2Envelope 描述 v2 洞察接口响应。
 type InsightsV2Envelope struct {
 	Data InsightsV2Data       `json:"data"`
 	Meta ExtendedResponseMeta `json:"meta"`
 }
 
+// InsightsV2Data 描述 v2 洞察接口的 data 对象。
 type InsightsV2Data struct {
 	CarID    int              `json:"car_id"`
 	Range    ExtendedRange    `json:"range"`
@@ -12,6 +14,7 @@ type InsightsV2Data struct {
 	Insights []InsightV2Item  `json:"insights"`
 }
 
+// InsightSummaryV2 描述洞察严重级别计数。
 type InsightSummaryV2 struct {
 	PositiveCount int `json:"positive_count"`
 	WarningCount  int `json:"warning_count"`
@@ -19,6 +22,7 @@ type InsightSummaryV2 struct {
 	TotalCount    int `json:"total_count"`
 }
 
+// InsightV2Item 描述一张洞察卡片。
 type InsightV2Item struct {
 	Type         string         `json:"type" example:"efficiency"`
 	Level        string         `json:"level" example:"info"`
@@ -31,12 +35,70 @@ type InsightV2Item struct {
 	Related      map[string]any `json:"related,omitempty"`
 }
 
+// TrendsV2Envelope 描述 v2 趋势接口响应。
+type TrendsV2Envelope struct {
+	Data TrendsV2Data         `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
+}
+
+// TrendsV2Data 描述 v2 趋势接口的 data 对象。
+type TrendsV2Data struct {
+	CarID           int           `json:"car_id"`
+	Period          string        `json:"period" example:"month"`
+	Range           ExtendedRange `json:"range"`
+	ComparisonRange ExtendedRange `json:"comparison_range"`
+	Trends          []TrendV2Item `json:"trends"`
+}
+
+// TrendV2Item 描述一个环比指标对比。
+type TrendV2Item struct {
+	Metric         string   `json:"metric" example:"distance"`
+	Name           string   `json:"name" example:"Distance Driven"`
+	Unit           string   `json:"unit" example:"km"`
+	Current        any      `json:"current"`
+	Previous       any      `json:"previous"`
+	ChangePercent  *float64 `json:"change_percent"`
+	Direction      string   `json:"direction" example:"better"`
+	HigherIsBetter bool     `json:"higher_is_better"`
+}
+
+// RecordsV2Envelope 描述 v2 纪录接口响应。
+type RecordsV2Envelope struct {
+	Data RecordsV2Data        `json:"data"`
+	Meta ExtendedResponseMeta `json:"meta"`
+}
+
+// RecordsV2Data 描述 v2 纪录接口的 data 对象。
+type RecordsV2Data struct {
+	CarID      int                 `json:"car_id"`
+	YearFilter any                 `json:"year_filter"`
+	Records    map[string]RecordV2 `json:"records"`
+}
+
+// RecordV2 描述一项个人最佳纪录。
+type RecordV2 struct {
+	Value      any    `json:"value"`
+	Unit       string `json:"unit"`
+	Date       any    `json:"date"`
+	EntityType string `json:"entity_type" example:"drive"`
+	EntityID   any    `json:"entity_id"`
+}
+
+// HistoryListV2Envelope 描述 v2 分页历史列表响应。
+type HistoryListV2Envelope struct {
+	Data       []map[string]any     `json:"data"`
+	Pagination v1Pagination         `json:"pagination"`
+	Meta       ExtendedResponseMeta `json:"meta"`
+}
+
+// TimelineV2Envelope 描述为 schema 兼容保留的旧 timeline 响应。
 type TimelineV2Envelope struct {
 	Data       []TimelineEventV2    `json:"data"`
 	Pagination v1Pagination         `json:"pagination"`
 	Meta       ExtendedResponseMeta `json:"meta"`
 }
 
+// TimelineEventV2 描述一个时间线事件。
 type TimelineEventV2 struct {
 	ID         string         `json:"id"`
 	Type       string         `json:"type" example:"drive"`
@@ -48,11 +110,13 @@ type TimelineEventV2 struct {
 	EntityID   int            `json:"entity_id"`
 }
 
+// VisitedMapV2Envelope 描述 v2 访问地图接口响应。
 type VisitedMapV2Envelope struct {
 	Data VisitedMapV2Data     `json:"data"`
 	Meta ExtendedResponseMeta `json:"meta"`
 }
 
+// VisitedMapV2Data 描述 v2 访问地图接口的 data 对象。
 type VisitedMapV2Data struct {
 	CarID         int                 `json:"car_id"`
 	Range         ExtendedRange       `json:"range"`
@@ -64,6 +128,7 @@ type VisitedMapV2Data struct {
 	Truncated     bool                `json:"truncated"`
 }
 
+// VisitedMapBoundsV2 描述访问地图坐标边界。
 type VisitedMapBoundsV2 struct {
 	North float64 `json:"north"`
 	South float64 `json:"south"`
@@ -71,17 +136,20 @@ type VisitedMapBoundsV2 struct {
 	West  float64 `json:"west"`
 }
 
+// VisitedPointV2 描述一个访问地图点位。
 type VisitedPointV2 struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 	Count     int     `json:"count"`
 }
 
+// LocationsV2Envelope 描述 v2 位置聚合接口响应。
 type LocationsV2Envelope struct {
 	Data LocationsV2Data      `json:"data"`
 	Meta ExtendedResponseMeta `json:"meta"`
 }
 
+// LocationsV2Data 描述 v2 位置聚合接口的 data 对象。
 type LocationsV2Data struct {
 	CarID     int                   `json:"car_id"`
 	Range     ExtendedRange         `json:"range"`
@@ -89,6 +157,7 @@ type LocationsV2Data struct {
 	Locations []LocationAggregateV2 `json:"locations"`
 }
 
+// LocationsSummaryV2 描述位置聚合计数。
 type LocationsSummaryV2 struct {
 	LocationCount       int      `json:"location_count"`
 	ReturnedCount       int      `json:"returned_count"`
@@ -101,6 +170,7 @@ type LocationsSummaryV2 struct {
 	ChargeCost          *float64 `json:"charge_cost"`
 }
 
+// LocationAggregateV2 描述一个聚合后的行程或充电地点。
 type LocationAggregateV2 struct {
 	Name            string   `json:"name"`
 	Latitude        *float64 `json:"latitude"`

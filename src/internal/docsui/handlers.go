@@ -10,13 +10,12 @@ import (
 )
 
 // RegisterRoutes 注册 OpenAPI JSON、Scalar UI 和旧 Swagger 入口。
-func RegisterRoutes(v1 *gin.RouterGroup, basePathV1 string) {
-	// 文档路由统一挂在 /api/v1/docs 下，Swagger 旧入口跳转到 Scalar UI。
-	v1.GET("/docs", serveScalarAPIReference)
-	v1.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
-	v1.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePathV1+"/docs/swagger/index.html") })
-	v1.GET("/docs/swagger/index.html", serveScalarAPIReference)
-	v1.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
+func RegisterRoutes(group *gin.RouterGroup, basePath string) {
+	group.GET("/docs", func(c *gin.Context) { serveScalarAPIReference(c, basePath) })
+	group.GET("/docs/openapi.json", serveOpenAPIDocumentJSON)
+	group.GET("/docs/swagger", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, basePath+"/docs/swagger/index.html") })
+	group.GET("/docs/swagger/index.html", func(c *gin.Context) { serveScalarAPIReference(c, basePath) })
+	group.GET("/docs/swagger/doc.json", serveSwaggerDocJSON)
 }
 
 func serveOpenAPIDocumentJSON(c *gin.Context) {
@@ -28,9 +27,9 @@ func serveSwaggerDocJSON(c *gin.Context) {
 	c.String(http.StatusOK, docs.SwaggerInfo.ReadDoc())
 }
 
-func serveScalarAPIReference(c *gin.Context) {
+func serveScalarAPIReference(c *gin.Context, basePath string) {
 	html, err := scalar.ApiReferenceHTML(&scalar.Options{
-		SpecURL:       "/api/v1/docs/openapi.json",
+		SpecURL:       basePath + "/docs/openapi.json",
 		SpecContent:   docs.SwaggerInfo.ReadDoc(),
 		Theme:         scalar.ThemeDefault,
 		Layout:        scalar.LayoutModern,

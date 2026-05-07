@@ -8,8 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TeslaMateAPICarsStatusV2 returns a real-time vehicle snapshot.
-// No period params — always reflects the latest known state.
+// TeslaMateAPICarsStatusV2 返回实时车辆状态快照。
+// @Summary 车辆状态快照
+// @Description 扩展接口 v2：返回最新已知车辆状态。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Success 200 {object} StatusV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/status [get]
 func TeslaMateAPICarsStatusV2(c *gin.Context) {
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsStatusV2")
 	if !ok {
@@ -70,14 +77,14 @@ func fetchVehicleStatus(carID int, unitsLength, unitsTemperature string) (map[st
 			(SELECT start_battery_level FROM active_charge)`
 
 	var (
-		posDate                                           sql.NullString
-		lat, lng, odo, ratedRange, idealRange             sql.NullFloat64
-		outsideTemp, insideTemp, elevation                sql.NullFloat64
-		speed, power, battLevel, usableBattLevel          sql.NullInt64
-		state, stateSince                                 sql.NullString
-		chargeID, chargeStartSOC                          sql.NullInt64
-		chargeStart                                       sql.NullString
-		chargeEnergyAdded                                 sql.NullFloat64
+		posDate                                  sql.NullString
+		lat, lng, odo, ratedRange, idealRange    sql.NullFloat64
+		outsideTemp, insideTemp, elevation       sql.NullFloat64
+		speed, power, battLevel, usableBattLevel sql.NullInt64
+		state, stateSince                        sql.NullString
+		chargeID, chargeStartSOC                 sql.NullInt64
+		chargeStart                              sql.NullString
+		chargeEnergyAdded                        sql.NullFloat64
 	)
 	qCtx, cancel := newAggregateQueryContext()
 	defer cancel()
@@ -106,7 +113,7 @@ func fetchVehicleStatus(carID int, unitsLength, unitsTemperature string) (map[st
 		}
 	}
 
-	// Active charge session — only present when a charge is in progress.
+	// 当前充电会话，仅在充电进行中返回。
 	var activeCharge any
 	if chargeID.Valid {
 		activeCharge = map[string]any{
@@ -138,7 +145,7 @@ func fetchVehicleStatus(carID int, unitsLength, unitsTemperature string) (map[st
 			"outside_temp": floatPointer(outsideTemp),
 			"inside_temp":  floatPointer(insideTemp),
 		},
-		"odometer":     floatPointer(odo),
+		"odometer":      floatPointer(odo),
 		"active_charge": activeCharge,
 	}, nil
 }

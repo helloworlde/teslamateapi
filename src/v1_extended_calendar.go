@@ -11,6 +11,20 @@ import (
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
+// TeslaMateAPICarsActivityV2 返回按日、周或月聚合的活动数据。
+// @Summary 活动日历
+// @Description 扩展接口 v2：返回按日、周或月聚合的活动数据。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Param bucket query string false "day|week|month"
+// @Param metrics query string false "可选指标"
+// @Success 200 {object} ActivityV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/activity [get]
 func TeslaMateAPICarsActivityV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
@@ -271,8 +285,8 @@ func fetchUnifiedCalendarUncached(carID int, startUTC, endUTC, bucket string, in
 	return items, summary, rows.Err()
 }
 
-// convertCalendarUnits applies unit conversion to calendar items and summary in-place.
-// The cache stores raw metric values; conversion happens after retrieval.
+// convertCalendarUnits 就地转换日历条目和汇总指标的单位。
+// 缓存保存原始指标值，读取后再做单位转换。
 func convertCalendarUnits(items []any, summary map[string]any, unitsLength string) {
 	if !strings.EqualFold(unitsLength, "mi") {
 		return
@@ -287,7 +301,7 @@ func convertCalendarUnits(items []any, summary map[string]any, unitsLength strin
 		if v, ok := m["avg_efficiency_wh_per_km"].(float64); ok {
 			m["avg_efficiency_wh_per_km"] = whPerKmToWhPerMi(v)
 		}
-		// Update badge distance labels
+		// 更新徽标中的距离标签。
 		if badges, ok := m["badges"].([]any); ok {
 			for _, b := range badges {
 				badge, ok := b.(map[string]any)

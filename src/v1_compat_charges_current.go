@@ -12,17 +12,23 @@ const (
 	maxChargeInactivityThresholdMinutes = 15
 )
 
-// TeslaMateAPICarsChargesCurrentV1 func
+// TeslaMateAPICarsChargesCurrentV1 返回兼容响应结构的当前充电数据。
+// @Summary 当前充电
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Success 200 {object} CurrentChargeV1Envelope
+// @Router /v1/cars/{CarID}/charges/current [get]
 func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var (
 		CarsChargesCurrentError1 = "Unable to load current charge."
 		CarsChargesCurrentError2 = "Unable to load current charge details."
 		CarsChargesCurrentError3 = "No active charging in progress."
 	)
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
 
 	var (
@@ -33,7 +39,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		isCharging                    bool
 	)
 
-	// Create temp vars to handle NULL values in the database
+	// 创建临时变量以处理数据库 NULL 值。
 	var (
 		startRatedRange, currentRatedRange     sql.NullFloat64
 		startBatteryLevel, currentBatteryLevel sql.NullInt64
@@ -44,7 +50,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		durationStr, address                   sql.NullString
 	)
 
-	// Construct the query with the preferred range setting
+	// 构建带首选续航设置的查询。
 	query := `
 		SELECT
 			charging_processes.id AS charge_id,
@@ -75,7 +81,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 
 	row := db.QueryRow(query, CarID)
 
-	// Scanning row and putting values into the temp vars to handle NULLs
+	// 将当前行扫描到临时变量以处理 NULL 值。
 	err := row.Scan(
 		&charge.ChargeID,
 		&charge.StartDate,
@@ -101,7 +107,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", "No current charge found.", "No rows were returned")
 		return
 	case nil:
-		// nothing wrong.. continuing
+		// 查询成功，继续组装响应。
 		break
 	default:
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError1, err.Error())
@@ -140,7 +146,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 	}
 
 	if durationMin.Valid {
-		charge.DurationMin = int(durationMin.Float64) // Convert float64 to int
+		charge.DurationMin = int(durationMin.Float64) // 将 float64 转换为 int。
 	}
 
 	if durationStr.Valid {
@@ -155,22 +161,22 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		charge.Odometer = odometer.Float64
 	}
 
-	// Converting values based on settings UnitsLength
+	// 根据长度单位设置转换数值。
 	if UnitsLength == "mi" {
 		charge.RatedRange.StartRange = kilometersToMiles(charge.RatedRange.StartRange)
 		charge.RatedRange.CurrentRange = kilometersToMiles(charge.RatedRange.CurrentRange)
 		charge.RatedRange.AddedRange = kilometersToMiles(charge.RatedRange.AddedRange)
 		charge.Odometer = kilometersToMiles(charge.Odometer)
 	}
-	// Converting values based on settings UnitsTemperature
+	// 根据温度单位设置转换数值。
 	if UnitsTemperature == "F" && outsideTempAvg.Valid {
 		charge.OutsideTempAvg = celsiusToFahrenheit(charge.OutsideTempAvg)
 	}
 
-	// Adjusting to timezone differences from UTC to be user-specific
+	// 按用户配置时区转换时间字段。
 	charge.StartDate = getTimeInTimeZone(charge.StartDate)
 
-	// Getting detailed charge data from database
+	// 从数据库读取充电采样明细。
 	detailsQuery := `
 		SELECT
 			id AS detail_id,
@@ -198,18 +204,18 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		ORDER BY id DESC;`
 	rows, err := db.Query(detailsQuery, charge.ChargeID)
 
-	// Checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError2, err.Error())
 		return
 	}
 
-	// Defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// Looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
-		// Create temp variables to handle NULL values
+		// 创建临时变量以处理 NULL 值。
 		var (
 			detailBatteryLevel, detailUsableBatteryLevel                        sql.NullInt64
 			detailChargeEnergyAdded, detailRatedBatteryRange, detailOutsideTemp sql.NullFloat64
@@ -217,10 +223,10 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 			detailFastChargerBrand                                              sql.NullString
 		)
 
-		// Creating chargedetails object based on struct
+		// 创建充电采样对象。
 		chargedetails := CurrentChargeDetailRowV1{}
 
-		// Scanning row and putting values into temporary variables
+		// 将当前行扫描到临时变量。
 		err = rows.Scan(
 			&chargedetails.DetailID,
 			&chargedetails.Date,
@@ -244,7 +250,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 			&detailOutsideTemp,
 		)
 
-		// Handle NULL values
+		// 处理 NULL 值。
 		if detailBatteryLevel.Valid {
 			chargedetails.BatteryLevel = int(detailBatteryLevel.Int64)
 		}
@@ -261,14 +267,14 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 			chargedetails.BatteryInfo.RatedBatteryRange = detailRatedBatteryRange.Float64
 		}
 
-		// Properly handle NULL values for string fields by using interface{}
+		// 使用 interface{} 正确表达字符串字段的 NULL 值。
 		if detailConnChargeCable.Valid {
 			chargedetails.ConnChargeCable = detailConnChargeCable.String
 		} else {
 			chargedetails.ConnChargeCable = nil
 		}
 
-		// Fix for fast_charger_brand and fast_charger_type when "<invalid>"
+		// 过滤 fast_charger_brand 和 fast_charger_type 的无效占位值。
 		if detailFastChargerBrand.Valid && detailFastChargerBrand.String != "<invalid>" {
 			chargedetails.FastChargerInfo.FastChargerBrand = &detailFastChargerBrand.String
 		} else {
@@ -285,58 +291,58 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 			chargedetails.OutsideTemp = detailOutsideTemp.Float64
 		}
 
-		// Converting values based on settings UnitsLength
+		// 根据长度单位设置转换数值。
 		if UnitsLength == "mi" && detailRatedBatteryRange.Valid {
 			chargedetails.BatteryInfo.RatedBatteryRange = kilometersToMiles(chargedetails.BatteryInfo.RatedBatteryRange)
 		}
 
-		// Converting values based on settings UnitsTemperature
+		// 根据温度单位设置转换数值。
 		if UnitsTemperature == "F" && detailOutsideTemp.Valid {
 			chargedetails.OutsideTemp = celsiusToFahrenheit(chargedetails.OutsideTemp)
 		}
 
-		// Adjusting to timezone differences from UTC to be user-specific
+		// 按用户配置时区转换时间字段。
 		chargedetails.Date = getTimeInTimeZone(chargedetails.Date)
 
 		chargedetails.ChargerDetails.ChargerPhases = normalizeChargerPhases(chargedetails.ChargerDetails.ChargerPhases)
 
-		// Checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError2, err.Error())
 			return
 		}
 
-		// Appending chargedetails to ChargeDetailsData
+		// 追加充电采样到响应列表。
 		ChargeDetailsData = append(ChargeDetailsData, chargedetails)
 	}
 
-	// Checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError2, err.Error())
 		return
 	}
 
-	// Check if the charge details array contains any entries
+	// 检查充电采样列表是否包含记录。
 	if len(ChargeDetailsData) > 0 {
-		// Parse the date of the most recent charge detail
+		// 解析最近一条充电采样时间。
 		latestDetailDate, err := time.Parse(time.RFC3339, ChargeDetailsData[0].Date)
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError2, "Error parsing charge detail date")
 			return
 		}
 
-		// Calculate time elapsed since the most recent detail
+		// 计算最近采样距当前的时间。
 		timeElapsed := time.Since(latestDetailDate)
 
-		// If the most recent detail is more than 15 minutes old, consider it incomplete/not current
+		// 最近采样超过阈值时认为当前充电已不活跃。
 		if timeElapsed.Minutes() > maxChargeInactivityThresholdMinutes {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesCurrentV1", CarsChargesCurrentError3, "No active charging in progress. There are incomplete charges but last update was more than 15 minutes ago.")
 			return
 		}
 	}
 
-	// Set the ChargeDetails in the charge
+	// 将充电采样写入充电对象。
 	charge.ChargeDetails = ChargeDetailsData
 
 	if charge.RatedRange.StartRange == 0 && len(ChargeDetailsData) > 0 {
@@ -363,13 +369,13 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		},
 	}
 
-	// Return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsChargesCurrentV1", jsonData)
 }
 
-// normalizeChargerPhases converts phase values to valid configurations.
-// Both phase 2 and 3 are normalized to 3.
-// All other values default to 1 (single-phase).
+// normalizeChargerPhases 将相位值归一化为有效配置。
+// 2 相和 3 相都归一化为 3。
+// 其他值默认按单相处理。
 func normalizeChargerPhases(phases int) int {
 	switch phases {
 	case 2, 3:

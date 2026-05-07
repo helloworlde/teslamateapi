@@ -7,16 +7,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsDrivesDetailsV1 func
+// TeslaMateAPICarsDrivesDetailsV1 返回兼容响应结构的行程详情。
+// @Summary 行程详情
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param DriveID path int true "行程 ID"
+// @Success 200 {object} DriveDetailsV1Envelope
+// @Router /v1/cars/{CarID}/drives/{DriveID} [get]
 func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var (
 		CarsDrivesDetailsError1 = "Unable to load drive."
 		CarsDrivesDetailsError2 = "Unable to load drive details."
 	)
 
-	// getting CarID and DriveID param from URL
+	// 从 URL 读取车辆 ID 和行程 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
 	DriveID := convertStringToInteger(c.Param("DriveID"))
 
@@ -27,7 +34,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	// getting data from database
+	// 从数据库读取行程主记录。
 	query := `
 		SELECT
 			drives.id AS drive_id,
@@ -82,7 +89,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`
 	row := db.QueryRow(query, CarID, DriveID)
 
-	// scanning row and putting values into the drive
+	// 将当前行扫描到行程详情对象。
 	err := row.Scan(
 		&drive.DriveID,
 		&drive.StartDate,
@@ -124,14 +131,14 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesDetailsV1", "No rows were returned!", err.Error())
 		return
 	case nil:
-		// nothing wrong.. continuing
+		// 查询成功，继续组装响应。
 		break
 	default:
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError1, err.Error())
 		return
 	}
 
-	// converting values based of settings UnitsLength
+	// 根据长度单位设置转换数值。
 	if UnitsLength == "mi" {
 		drive.OdometerDetails.OdometerStart = kilometersToMiles(drive.OdometerDetails.OdometerStart)
 		drive.OdometerDetails.OdometerEnd = kilometersToMiles(drive.OdometerDetails.OdometerEnd)
@@ -148,16 +155,16 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 			*drive.ConsumptionNet = whPerKmToWhPerMi(*drive.ConsumptionNet)
 		}
 	}
-	// converting values based of settings UnitsTemperature
+	// 根据温度单位设置转换数值。
 	if UnitsTemperature == "F" {
 		drive.OutsideTempAvg = celsiusToFahrenheit(drive.OutsideTempAvg)
 		drive.InsideTempAvg = celsiusToFahrenheit(drive.InsideTempAvg)
 	}
-	// adjusting to timezone differences from UTC to be userspecific
+	// 按用户配置时区转换时间字段。
 	drive.StartDate = getTimeInTimeZone(drive.StartDate)
 	drive.EndDate = getTimeInTimeZone(drive.EndDate)
 
-	// getting detailed drive data from database
+	// 从数据库读取行程位置采样明细。
 	query = `
 		 			SELECT
 						id AS detail_id,
@@ -189,22 +196,22 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		 			ORDER BY id ASC;`
 	rows, err := db.Query(query, DriveID)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError2, err.Error())
 		return
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
-		// creating drivedetails object based on struct
+		// 创建行程采样对象。
 		drivedetails := DrivePositionRowV1{}
 
-		// scanning row and putting values into the drive
+		// 将当前行扫描到行程采样对象。
 		err = rows.Scan(
 			&drivedetails.DetailID,
 			&drivedetails.Date,
@@ -232,7 +239,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 			&drivedetails.BatteryInfo.BatteryHeaterNoPower,
 		)
 
-		// converting values based of settings UnitsLength
+		// 根据长度单位设置转换数值。
 		if UnitsLength == "mi" {
 			drivedetails.Odometer = kilometersToMiles(drivedetails.Odometer)
 			drivedetails.Speed = int(kilometersToMiles(float64(drivedetails.Speed)))
@@ -240,28 +247,28 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 			drivedetails.BatteryInfo.IdealBatteryRange = kilometersToMilesNilSupport(drivedetails.BatteryInfo.IdealBatteryRange)
 			drivedetails.BatteryInfo.RatedBatteryRange = kilometersToMilesNilSupport(drivedetails.BatteryInfo.RatedBatteryRange)
 		}
-		// converting values based of settings UnitsTemperature
+		// 根据温度单位设置转换数值。
 		if UnitsTemperature == "F" {
 			drivedetails.ClimateInfo.InsideTemp = celsiusToFahrenheitNilSupport(drivedetails.ClimateInfo.InsideTemp)
 			drivedetails.ClimateInfo.OutsideTemp = celsiusToFahrenheitNilSupport(drivedetails.ClimateInfo.OutsideTemp)
 			drivedetails.ClimateInfo.DriverTempSetting = celsiusToFahrenheitNilSupport(drivedetails.ClimateInfo.DriverTempSetting)
 			drivedetails.ClimateInfo.PassengerTempSetting = celsiusToFahrenheitNilSupport(drivedetails.ClimateInfo.PassengerTempSetting)
 		}
-		// adjusting to timezone differences from UTC to be userspecific
+		// 按用户配置时区转换时间字段。
 		drivedetails.Date = getTimeInTimeZone(drivedetails.Date)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError2, err.Error())
 			return
 		}
 
-		// appending drive to drive
+		// 追加行程采样到响应列表。
 		DriveDetailsData = append(DriveDetailsData, drivedetails)
 		drive.DriveDetails = DriveDetailsData
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError2, err.Error())
@@ -282,6 +289,6 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsDrivesDetailsV1", jsonData)
 }

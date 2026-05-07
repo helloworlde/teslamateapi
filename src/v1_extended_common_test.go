@@ -84,4 +84,3 @@ func TestDBTimeRangeUsesLocalTimezoneAndExclusiveEnd(t *testing.T) {
 		t.Fatalf("unexpected exclusive end UTC: %s", endUTC)
 	}
 }
-

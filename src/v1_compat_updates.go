@@ -5,15 +5,25 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsUpdatesV1 func
+// TeslaMateAPICarsUpdatesV1 返回兼容响应结构的车辆软件更新历史。
+// @Summary 软件更新列表
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param page query int false "页码"
+// @Param show query int false "每页数量"
+// @Success 200 {object} UpdatesListV1Envelope
+// @Router /v1/cars/{CarID}/updates [get]
 func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var CarsUpdatesError1 = "Unable to load updates."
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
-	// query options to modify query when collecting data
+	// 读取分页查询参数。
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
 
@@ -22,7 +32,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 		CarData     CarRefV1
 	)
 
-	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
+	// 基于页码计算偏移量；页码最小为 1。
 	if ResultPage > 0 {
 		ResultPage--
 	} else {
@@ -30,7 +40,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	}
 	ResultPage = (ResultPage * ResultShow)
 
-	// getting data from database
+	// 从数据库读取软件更新数据。
 	query := `
 		SELECT
 			updates.id,
@@ -45,23 +55,23 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 		LIMIT $2 OFFSET $3;`
 	rows, err := db.Query(query, CarID, ResultShow, ResultPage)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsUpdatesV1", CarsUpdatesError1, err.Error())
 		return
 
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
-		// creating update object based on struct
+		// 创建软件更新记录对象。
 		update := UpdatesListItemV1{}
 
-		// scanning row and putting values into the update
+		// 将当前行扫描到软件更新记录。
 		err = rows.Scan(
 			&update.UpdateID,
 			&CarData.CarName,
@@ -70,22 +80,22 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 			&update.Version,
 		)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsUpdatesV1", CarsUpdatesError1, err.Error())
 			return
 		}
 
-		// adjusting to timezone differences from UTC to be userspecific
+		// 按用户配置时区转换时间字段。
 		update.StartDate = getTimeInTimeZone(update.StartDate)
 		update.EndDate = getTimeInTimeZone(update.EndDate)
 
-		// appending update to UpdatesData
+		// 追加软件更新记录到响应列表。
 		UpdatesData = append(UpdatesData, update)
 		CarData.CarID = CarID
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsUpdatesV1", CarsUpdatesError1, err.Error())
@@ -99,6 +109,6 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsUpdatesV1", jsonData)
 }

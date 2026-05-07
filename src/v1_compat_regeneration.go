@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// RegenerationSummary 描述估算的动能回收能量指标。
 type RegenerationSummary struct {
 	Coverage                     HistorySummaryCoverage `json:"coverage"`
 	MetricsEstimated             bool                   `json:"metrics_estimated"`

@@ -7,6 +7,7 @@ import (
 	"github.com/lib/pq"
 )
 
+// ParkingStateBreakdown 描述一个停车状态时长分桶。
 type ParkingStateBreakdown struct {
 	State        string  `json:"state"`
 	SessionCount int     `json:"session_count"`
@@ -14,6 +15,7 @@ type ParkingStateBreakdown struct {
 	Share        float64 `json:"share"`
 }
 
+// ParkingHistorySummary 描述停车聚合指标。
 type ParkingHistorySummary struct {
 	Coverage           HistorySummaryCoverage  `json:"coverage"`
 	SessionCount       int                     `json:"session_count"`

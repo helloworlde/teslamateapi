@@ -18,7 +18,7 @@ import (
 	"github.com/thanhpk/randstr"
 )
 
-// statusInfo holds the status info for a car
+// statusInfo 保存单辆车的 MQTT 状态信息。
 type statusInfo struct {
 	MQTTDataDisplayName                string
 	MQTTDataState                      string
@@ -103,14 +103,14 @@ type statusCache struct {
 	mqttDisabled  bool
 	mqttConnected bool
 
-	topicScan string // scan parameter (expect it to generate car ID then relevant parameter)
+	topicScan string // MQTT topic 扫描格式，用于解析车辆 ID 和状态字段。
 
 	cache map[int]*statusInfo
 	mu    sync.Mutex
 }
 
 func getMQTTNameSpace() (MQTTNameSpace string) {
-	// adding MQTTNameSpace info
+	// 读取 MQTT 命名空间。
 	MQTTNameSpace = getEnv("MQTT_NAMESPACE", "")
 	if len(MQTTNameSpace) > 0 {
 		MQTTNameSpace = ("/" + MQTTNameSpace)
@@ -122,17 +122,17 @@ func startMQTT() (*statusCache, error) {
 	s := statusCache{
 		cache: make(map[int]*statusInfo),
 	}
-	// getting mqtt flag
+	// 读取 MQTT 禁用开关。
 	s.mqttDisabled = getEnvAsBool("DISABLE_MQTT", false)
 	if s.mqttDisabled {
 		return nil, errors.New("[notice] TeslaMateAPICarsStatusV1 DISABLE_MQTT is set to true.. can not return status for car without mqtt")
 	}
 
-	// default values that get might get overwritten..
+	// 设置可被环境变量覆盖的默认值。
 	MQTTPort := 0
 	MQTTProtocol := "tcp"
 
-	// creating connection string towards mqtt
+	// 构建 MQTT 连接参数。
 	MQTTTLS := getEnvAsBool("MQTT_TLS", false)
 	if MQTTTLS {
 		MQTTPort = getEnvAsInt("MQTT_PORT", 8883)
@@ -146,26 +146,26 @@ func startMQTT() (*statusCache, error) {
 	MQTTClientId := getEnv("MQTT_CLIENTID", randstr.String(4))
 	// MQTTInvCert := getEnvAsBool("MQTT_TLS_ACCEPT_INVALID_CERTS", false)
 
-	// creating mqttURL to connect with
-	// mqtt[s]://@host.domain[:port]
+	// 构建 MQTT broker URL。
+	// 格式：mqtt[s]://@host.domain[:port]
 	mqttURL := fmt.Sprintf("%s://%s:%d", MQTTProtocol, MQTTHost, MQTTPort)
 
-	// create options for the MQTT client connection
+	// 创建 MQTT 客户端连接选项。
 	opts := mqtt.NewClientOptions().AddBroker(mqttURL)
-	// setting generic MQTT settings in opts
-	opts.SetKeepAlive(2 * time.Second)               // setting keepalive for client
-	opts.SetDefaultPublishHandler(s.newMessage)      // using f mqtt.MessageHandler function
-	opts.SetConnectionLostHandler(s.connectionLost)  // Logs ConnectionLost events
-	opts.SetReconnectingHandler(reconnectingHandler) // Logs reconnect events
+	// 设置通用 MQTT 客户端参数。
+	opts.SetKeepAlive(2 * time.Second)               // 设置客户端 keepalive。
+	opts.SetDefaultPublishHandler(s.newMessage)      // 设置默认消息处理器。
+	opts.SetConnectionLostHandler(s.connectionLost)  // 记录连接丢失事件。
+	opts.SetReconnectingHandler(reconnectingHandler) // 记录重连事件。
 	opts.SetConnectionAttemptHandler(connectingHandler)
 	opts.SetOnConnectHandler(s.connectedHandler)
-	opts.SetPingTimeout(1 * time.Second)             // setting pingtimeout for client
-	opts.SetClientID("teslamateapi-" + MQTTClientId) // setting mqtt client id for TeslaMateApi
-	opts.SetCleanSession(true)                       // removal of all subscriptions on disconnect
-	opts.SetOrderMatters(false)                      // don't care about order (removes need for callbacks to return immediately)
-	opts.SetAutoReconnect(true)                      // if connection drops automatically re-establish it
+	opts.SetPingTimeout(1 * time.Second)             // 设置客户端 ping 超时。
+	opts.SetClientID("teslamateapi-" + MQTTClientId) // 设置 TeslaMateApi MQTT 客户端 ID。
+	opts.SetCleanSession(true)                       // 断开连接时移除所有订阅。
+	opts.SetOrderMatters(false)                      // 不要求消息有序，避免回调阻塞。
+	opts.SetAutoReconnect(true)                      // 连接断开后自动重连。
 	opts.AutoReconnect = true
-	// setting authentication if provided
+	// 按需设置认证信息。
 	if len(MQTTUser) > 0 {
 		opts.SetUsername(MQTTUser)
 	}
@@ -173,24 +173,24 @@ func startMQTT() (*statusCache, error) {
 		opts.SetPassword(MQTTPass)
 	}
 
-	// creating MQTT connection with options
+	// 使用连接选项创建 MQTT 连接。
 	m := mqtt.NewClient(opts)
 	if token := m.Connect(); token.Wait() && token.Error() != nil {
 		return nil, fmt.Errorf("[error] TeslaMateAPICarsStatusV1 failed to connect to MQTT: %w", token.Error())
-		// Note : May want to use opts.ConnectRetry which will keep trying the connection
+		// 可按需改用 opts.ConnectRetry 持续重试连接。
 	}
 
-	// showing mqtt successfully connected
+	// 调试模式下记录 MQTT 连接成功信息。
 	if gin.IsDebugging() {
 		log.Println("[debug] TeslaMateAPICarsStatusV1 successfully connected to mqtt.")
 	}
 
 	s.topicScan = fmt.Sprintf("teslamate%s/cars/%%d/%%s", getMQTTNameSpace())
 
-	// setting readyz endpoint to true (when using MQTT)
+	// 使用 MQTT 时，连接成功后将 readyz 置为 true。
 	isReady.Store(true)
 
-	// Thats all - newMessage will be called when something new arrives
+	// 后续 MQTT 消息由 newMessage 处理。
 	return &s, nil
 }
 
@@ -208,30 +208,30 @@ func (s *statusCache) connectedHandler(c mqtt.Client) {
 	log.Println("[info] mqtt connected.")
 	s.mqttConnected = true
 
-	// Subscribe - we will accept info on any car...
+	// 订阅所有车辆状态 topic。
 	topic := fmt.Sprintf("teslamate%s/cars/#", getMQTTNameSpace())
 	if token := c.Subscribe(topic, 0, s.newMessage); token.Wait() && token.Error() != nil {
-		log.Panic(token.Error()) // Note : May want to use opts.ConnectRetry which will keep trying the connection
+		log.Panic(token.Error()) // 可按需改用 opts.ConnectRetry 持续重试连接。
 	}
 	log.Println("[info] subscribed to: " + topic)
 
-	// setting readyz endpoint to true (when using MQTT)
+	// 使用 MQTT 时，订阅成功后将 readyz 置为 true。
 	isReady.Store(true)
 }
 
-// connectionLost - called by mqtt package when the connection get lost
+// connectionLost 在 MQTT 连接丢失时被客户端回调。
 func (s *statusCache) connectionLost(c mqtt.Client, err error) {
 	log.Println("[error] MQTT connection lost: " + err.Error())
 	s.mqttConnected = false
 
-	// setting readyz endpoint to false (when using MQTT)
+	// 使用 MQTT 时，连接丢失后将 readyz 置为 false。
 	isReady.Store(false)
 }
 
-// newMessage - called by mqtt package when new message received
+// newMessage 在收到 MQTT 消息时被客户端回调。
 func (s *statusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
-	//log.Println("[info] mqtt - received: " + string(msg.Topic()) + " with value: " + string(msg.Payload()))
-	// topic is in the format teslamateMQTT_NAMESPACE/cars/carID/display_name
+	//log.Println("[info] mqtt - 收到: " + string(msg.Topic()) + " 值: " + string(msg.Payload()))
+	// topic 格式为 teslamateMQTT_NAMESPACE/cars/carID/display_name。
 	var (
 		carID     int
 		MqttTopic string
@@ -242,7 +242,7 @@ func (s *statusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
-	// extracting the last part of topic
+	// 解析 topic 末尾的状态字段。
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	stat := s.cache[carID]
@@ -251,8 +251,8 @@ func (s *statusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
 		s.cache[carID] = stat
 	}
 
-	//log.Printf(MqttTopic + " set to: " + string(msg.Payload()))
-	// running if-else statements to collect data and put into overall vars..
+	//log.Printf(MqttTopic + " 设置为: " + string(msg.Payload()))
+	// 根据 topic 字段写入状态缓存。
 	switch MqttTopic {
 	case "display_name":
 		stat.MQTTDataDisplayName = string(msg.Payload())
@@ -407,17 +407,17 @@ func (s *statusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
 		stat.MQTTDataActiveRoute.TrafficMinutesDelay = tmp.TrafficMinutesDelay
 		stat.MQTTDataActiveRoute.Location = statusInfoLocation(tmp.Location)
 
-	// deprecated
+	// 已废弃字段。
 	case "latitude", "longitude", "active_route_destination", "active_route_latitude", "active_route_longitude":
-		// doing nothing
+		// 保持兼容，不写入新数据。
 
-	// default
+	// 默认分支。
 	default:
 		log.Printf("[warning] TeslaMateAPICarsStatusV1 mqtt.MessageHandler issue.. extraction of data for %s not implemented!", MqttTopic)
 	}
 }
 
-// TeslaMateAPICarsStatusV1 func
+// TeslaMateAPICarsStatusV1 返回基于 MQTT 缓存的兼容车辆状态。
 func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 	if s.mqttDisabled {
 		log.Println("[notice] TeslaMateAPICarsStatusV1 DISABLE_MQTT is set to true.. can not return status for car without mqtt!")
@@ -431,28 +431,28 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		return
 	}
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	carID := convertStringToInteger(c.Param("CarID"))
 
-	// Now see what data we have on the car
+	// 查找车辆在 MQTT 缓存中的状态。
 	s.mu.Lock()
 	stat := s.cache[carID]
 	s.mu.Unlock()
 
 	if stat == nil {
-		// or should it be http.StatusNoContent instead?
+		// 兼容旧接口，保持错误响应封装。
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatusV1", "no info on this car ID", "-")
 		return
 	}
 
-	// creating required vars
+	// 创建响应所需变量。
 	var (
 		CarData                                      CarRefV1
 		MQTTInformationData                          CarMQTTStatusPayloadV1
 		UnitsLength, UnitsPressure, UnitsTemperature string
 	)
 
-	// getting data from database (assume that carID is unique!)
+	// 从数据库读取车辆和单位信息。
 	query := `
 		SELECT
 			id,
@@ -469,13 +469,13 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		&UnitsPressure,
 		&UnitsTemperature)
 
-	// checking for errors in query (this will include no rows found)
+	// 检查查询错误，包括未找到车辆。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatusV1", "Unable to load cars.", err.Error())
 		return
 	}
 
-	// setting data from MQTT into data fields to return
+	// 将 MQTT 缓存数据写入响应字段。
 	MQTTInformationData.DisplayName = stat.MQTTDataDisplayName
 	MQTTInformationData.State = stat.MQTTDataState
 	MQTTInformationData.StateSince = stat.MQTTDataStateSince
@@ -546,16 +546,16 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 	MQTTInformationData.TpmsDetails.TpmsSoftWarningRL = stat.MQTTDataTpmsSoftWarningRL
 	MQTTInformationData.TpmsDetails.TpmsSoftWarningRR = stat.MQTTDataTpmsSoftWarningRR
 
-	// DEPRECATAD - setting values for deprecated fields
+	// 为兼容旧客户端保留已废弃字段。
 	MQTTInformationData.CarGeodata.Latitude = stat.MQTTDataLocation.Latitude
 	MQTTInformationData.CarGeodata.Longitude = stat.MQTTDataLocation.Longitude
 	MQTTInformationData.DrivingDetails.ActiveRouteDestination = stat.MQTTDataActiveRoute.Destination
 	MQTTInformationData.DrivingDetails.ActiveRouteLatitude = stat.MQTTDataActiveRoute.Location.Latitude
 	MQTTInformationData.DrivingDetails.ActiveRouteLongitude = stat.MQTTDataActiveRoute.Location.Longitude
 
-	// converting values based of settings UnitsLength
+	// 根据长度单位设置转换数值。
 	if UnitsLength == "mi" {
-		// drive.OdometerDetails.OdometerStart = kilometersToMiles(drive.OdometerDetails.OdometerStart)
+		// 历史兼容示例：行程里程字段转换为英里。
 		MQTTInformationData.Odometer = kilometersToMiles(MQTTInformationData.Odometer)
 		MQTTInformationData.DrivingDetails.ActiveRoute.DistanceToArrival = kilometersToMiles(MQTTInformationData.DrivingDetails.ActiveRoute.DistanceToArrival)
 		MQTTInformationData.DrivingDetails.Speed = kilometersToMilesInteger(MQTTInformationData.DrivingDetails.Speed)
@@ -563,20 +563,20 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		MQTTInformationData.BatteryDetails.RatedBatteryRange = kilometersToMiles(MQTTInformationData.BatteryDetails.RatedBatteryRange)
 		MQTTInformationData.BatteryDetails.IdealBatteryRange = kilometersToMiles(MQTTInformationData.BatteryDetails.IdealBatteryRange)
 	}
-	// converting values based of settings UnitsPressure
+	// 根据压力单位设置转换数值。
 	if UnitsPressure == "psi" {
 		MQTTInformationData.TpmsDetails.TpmsPressureFL = barToPsi(MQTTInformationData.TpmsDetails.TpmsPressureFL)
 		MQTTInformationData.TpmsDetails.TpmsPressureFR = barToPsi(MQTTInformationData.TpmsDetails.TpmsPressureFR)
 		MQTTInformationData.TpmsDetails.TpmsPressureRL = barToPsi(MQTTInformationData.TpmsDetails.TpmsPressureRL)
 		MQTTInformationData.TpmsDetails.TpmsPressureRR = barToPsi(MQTTInformationData.TpmsDetails.TpmsPressureRR)
 	}
-	// converting values based of settings UnitsTemperature
+	// 根据温度单位设置转换数值。
 	if UnitsTemperature == "F" {
 		MQTTInformationData.ClimateDetails.InsideTemp = celsiusToFahrenheit(MQTTInformationData.ClimateDetails.InsideTemp)
 		MQTTInformationData.ClimateDetails.OutsideTemp = celsiusToFahrenheit(MQTTInformationData.ClimateDetails.OutsideTemp)
 	}
 
-	// adjusting to timezone differences from UTC to be userspecific
+	// 按用户配置时区转换时间字段。
 	MQTTInformationData.StateSince = getTimeInTimeZone(MQTTInformationData.StateSince)
 	MQTTInformationData.ChargingDetails.ScheduledChargingStartTime = getTimeInTimeZone(MQTTInformationData.ChargingDetails.ScheduledChargingStartTime)
 
@@ -592,6 +592,6 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsStatusV1", jsonData)
 }

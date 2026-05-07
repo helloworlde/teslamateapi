@@ -14,7 +14,7 @@ func TestSanitizedRequestURIRedactsTokenQueryValues(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/command?token=secret&access_token=a&refresh_token=r&keep=value", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/cars/1/status?token=secret&access_token=a&refresh_token=r&keep=value", nil)
 
 	uri := sanitizedRequestURI(c)
 	if strings.Contains(uri, "secret") || strings.Contains(uri, "access_token=a") || strings.Contains(uri, "refresh_token=r") {

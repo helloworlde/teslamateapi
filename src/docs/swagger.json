@@ -1,16 +1,8 @@
 {
-    "schemes": [
-        "http",
-        "https"
-    ],
     "swagger": "2.0",
     "info": {
-        "description": "基于 TeslaMate 数据库的 REST API，提供车辆、充电、行程、统计、图表、时间线和洞察数据。原 TeslaMateApi 兼容接口保持响应结构；扩展接口按当前项目最佳实践重新设计，可能包含破坏性变更。日期参数支持 RFC3339、带时区偏移、本地日期时间和纯日期；未带时区的本地日期使用环境变量配置的时区。",
-        "title": "TeslaMateApi",
-        "contact": {},
-        "version": "1.0"
+        "contact": {}
     },
-    "basePath": "/api",
     "paths": {
         "/": {
             "get": {
@@ -18,7 +10,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "系统"
                 ],
                 "summary": "API 根路径",
                 "responses": {
@@ -37,9 +29,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "系统"
                 ],
-                "summary": "Health check",
+                "summary": "健康检查",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -56,7 +48,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "系统"
                 ],
                 "summary": "连通性检查",
                 "responses": {
@@ -75,9 +67,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "系统"
                 ],
-                "summary": "Readiness check",
+                "summary": "就绪检查",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -100,7 +92,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "系统"
                 ],
                 "summary": "API v1 根路径",
                 "responses": {
@@ -115,14 +107,14 @@
         },
         "/v1/cars": {
             "get": {
-                "description": "兼容接口：返回全部车辆。历史兼容原因下，部分数据库空值仍可能表现为空字符串或 0；部分旧错误仍可能以 HTTP 200 返回只包含 error 字段的 JSON。",
+                "description": "兼容接口：使用历史响应封装返回全部车辆。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
-                "summary": "查询车辆列表",
+                "summary": "车辆列表",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -135,14 +127,14 @@
         },
         "/v1/cars/{CarID}": {
             "get": {
-                "description": "兼容接口：返回匹配车辆，结果位于 data.cars 中，通常只有一条。历史兼容原因下，部分旧错误仍可能以 HTTP 200 返回只包含 error 字段的 JSON。",
+                "description": "兼容接口：在 data.cars 中返回匹配车辆。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
-                "summary": "查询单车信息",
+                "summary": "车辆详情",
                 "parameters": [
                     {
                         "type": "integer",
@@ -165,12 +157,11 @@
         },
         "/v1/cars/{CarID}/battery-health": {
             "get": {
-                "description": "兼容接口：保留原 battery-health 响应结构。需要图表友好数据时，建议使用 `/v1/cars/{CarID}/series/battery?metrics=range,soc`。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
                 "summary": "电池健康",
                 "parameters": [
@@ -193,82 +184,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/calendar": {
-            "get": {
-                "description": "扩展接口：按 day/week/month 聚合行程和充电数据，返回总体 summary 和倒序 bucket 列表。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "日历聚合",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "聚合粒度：day|week|month",
-                        "name": "bucket",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.CalendarV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/charges": {
             "get": {
-                "description": "列表项含每条充电会话首条采样行的 conn_charge_cable（接口/线缆类型）与 fast_charger_brand（直流快充品牌，可选）。",
+                "description": "兼容接口：保持历史充电列表响应封装。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
-                "summary": "查询充电记录",
+                "summary": "充电列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -280,13 +205,13 @@
                     },
                     {
                         "type": "string",
-                        "description": "开始时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期",
+                        "description": "开始时间",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "结束时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期",
+                        "description": "结束时间",
                         "name": "endDate",
                         "in": "query"
                     },
@@ -316,13 +241,13 @@
                     },
                     {
                         "type": "string",
-                        "description": "start_date|-start_date|duration|-duration|cost|-cost|energy|-energy",
+                        "description": "排序表达式",
                         "name": "sort",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "summary,location,energy,cost",
+                        "description": "逗号分隔的可选分区",
                         "name": "include",
                         "in": "query"
                     }
@@ -343,9 +268,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
-                "summary": "当前充电状态",
+                "summary": "当前充电",
                 "parameters": [
                     {
                         "type": "integer",
@@ -372,7 +297,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
                 "summary": "充电详情",
                 "parameters": [
@@ -386,7 +311,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "充电记录 ID",
+                        "description": "充电 ID",
                         "name": "ChargeID",
                         "in": "path",
                         "required": true
@@ -402,286 +327,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/command": {
-            "get": {
-                "description": "仅在 ENABLE_COMMANDS=true 时注册。接口响应永远不会暴露 Tesla 账号 access/refresh token。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "查询可用命令",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.EnabledCommandsV1Envelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/command/{Command}": {
-            "post": {
-                "description": "仅在 ENABLE_COMMANDS=true 且命令被允许时注册。接口响应永远不会暴露 Tesla 账号 access/refresh token。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "执行车辆命令",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "命令名称",
-                        "name": "Command",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/dashboard": {
-            "get": {
-                "description": "扩展接口：仅返回所选时间范围内的整车级统计和概览。实时状态、时序图、分布图、洞察、时间线、行程明细、充电明细分别由独立接口提供。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "车辆仪表盘统计",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "时间范围类型：year|month|week|custom",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "参考日期，支持 YYYY-MM-DD 或 RFC3339",
-                        "name": "date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "自定义范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "自定义范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.DashboardV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/distributions/charges": {
-            "get": {
-                "description": "扩展接口：返回充电开始小时、星期、补能量、时长、功率、费用等分布桶。桶顺序固定，并补齐 0 值。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "充电分布数据",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "逗号分隔指标：start_hour,weekday,energy,duration,power,cost",
-                        "name": "metrics",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.DistributionsV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/distributions/drives": {
-            "get": {
-                "description": "扩展接口：返回行程开始小时、星期、距离、时长、速度、能耗效率等分布桶。桶顺序固定，并补齐 0 值。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "行程分布数据",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "逗号分隔指标：start_hour,weekday,distance,duration,speed,efficiency",
-                        "name": "metrics",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.DistributionsV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/cars/{CarID}/drives": {
             "get": {
+                "description": "兼容接口：保持历史行程列表响应封装。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
-                "summary": "查询行程记录",
+                "summary": "行程列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -693,26 +348,14 @@
                     },
                     {
                         "type": "string",
-                        "description": "开始时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期",
+                        "description": "开始时间",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "结束时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期",
+                        "description": "结束时间",
                         "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "最小行程距离",
-                        "name": "minDistance",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "最大行程距离",
-                        "name": "maxDistance",
                         "in": "query"
                     },
                     {
@@ -741,14 +384,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency",
+                        "description": "排序表达式",
                         "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "summary,locations,energy",
-                        "name": "include",
                         "in": "query"
                     }
                 ],
@@ -768,7 +405,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "兼容 API"
                 ],
                 "summary": "行程详情",
                 "parameters": [
@@ -798,16 +435,44 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/insights": {
+        "/v1/cars/{CarID}/status": {
             "get": {
-                "description": "扩展接口：将当前时间范围与上一个等长基线范围对比，生成效率、费用、充电、电池和异常类洞察。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Extended API"
+                    "兼容 API"
                 ],
-                "summary": "洞察",
+                "summary": "当前车辆状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.CarStatusV1Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/updates": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "兼容 API"
+                ],
+                "summary": "软件更新列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -819,26 +484,190 @@
                     },
                     {
                         "type": "string",
-                        "description": "范围开始时间",
+                        "description": "开始时间",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围结束时间",
+                        "description": "结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "show",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.UpdatesListV1Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/globalsettings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "兼容 API"
+                ],
+                "summary": "全局设置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.GlobalsettingsV1Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统"
+                ],
+                "summary": "API v2 根路径",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.APISystemMessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/activity": {
+            "get": {
+                "description": "扩展接口 v2：返回按日、周或月聚合的活动数据。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "活动日历",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围结束时间",
                         "name": "endDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "逗号分隔类型：efficiency,cost,charging,driving,battery,anomaly",
-                        "name": "types",
+                        "description": "day|week|month",
+                        "name": "bucket",
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "可选指标",
+                        "name": "metrics",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.ActivityV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analysis/insights": {
+            "get": {
+                "description": "扩展接口 v2：返回所选周期的派生洞察卡片。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "分析洞察",
+                "parameters": [
+                    {
                         "type": "integer",
-                        "description": "洞察数量限制，1-100，默认 20",
-                        "name": "limit",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围结束时间",
+                        "name": "endDate",
                         "in": "query"
                     }
                 ],
@@ -870,16 +699,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/locations": {
+        "/v2/cars/{CarID}/analysis/records": {
             "get": {
-                "description": "扩展接口：合并行程起终点和充电地点，返回事件次数、坐标、充电能量、费用和最近出现时间。",
+                "description": "扩展接口 v2：返回全量或按年份过滤的个人最佳纪录。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Extended API"
+                    "扩展 API"
                 ],
-                "summary": "地点聚合",
+                "summary": "分析纪录",
                 "parameters": [
                     {
                         "type": "integer",
@@ -891,20 +720,369 @@
                     },
                     {
                         "type": "string",
-                        "description": "范围开始时间",
+                        "description": "可选年份过滤",
+                        "name": "year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.RecordsV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analysis/trends": {
+            "get": {
+                "description": "扩展接口 v2：返回周期之间的指标趋势。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "分析趋势",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围开始时间",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围结束时间",
+                        "description": "自定义范围结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.TrendsV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/charges": {
+            "get": {
+                "description": "扩展接口 v2：返回分页充电会话。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "充电会话",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间",
                         "name": "endDate",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "最大地点数量，最多 100",
+                        "description": "每页数量",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.HistoryListV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/distributions": {
+            "get": {
+                "description": "扩展接口 v2：通过 scope=drives|charges 返回统一直方图。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "指标分布",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "drives|charges",
+                        "name": "scope",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "逗号分隔的指标列表",
+                        "name": "metrics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.DistributionsV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/drives": {
+            "get": {
+                "description": "扩展接口 v2：返回分页行程会话。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "行程会话",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.HistoryListV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/locations": {
+            "get": {
+                "description": "扩展接口 v2：聚合行程和充电地点。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "位置聚合",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最大地点数量",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "可选分区",
+                        "name": "include",
                         "in": "query"
                     }
                 ],
@@ -936,46 +1114,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/logging": {
+        "/v2/cars/{CarID}/locations/heatmap": {
             "get": {
-                "description": "仅在 ENABLE_COMMANDS=true 时注册，只返回允许的日志采集命令。",
+                "description": "扩展接口 v2：返回请求周期内的访问点热力图。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "扩展 API"
                 ],
-                "summary": "查询日志采集状态",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.EnabledCommandsV1Envelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/logging/{Command}": {
-            "put": {
-                "description": "仅在 ENABLE_COMMANDS=true 且日志采集命令被允许时注册。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "更新日志采集状态",
+                "summary": "位置热力图",
                 "parameters": [
                     {
                         "type": "integer",
@@ -987,50 +1135,19 @@
                     },
                     {
                         "type": "string",
-                        "description": "日志采集命令",
-                        "name": "Command",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/map/visited": {
-            "get": {
-                "description": "扩展接口：返回访问过的坐标点、边界和热力图基础数据，用于地图覆盖范围渲染。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "访问地图",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围开始时间",
+                        "description": "自定义范围开始时间",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围结束时间",
+                        "description": "自定义范围结束时间",
                         "name": "endDate",
                         "in": "query"
                     }
@@ -1063,58 +1180,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/realtime": {
+        "/v2/cars/{CarID}/series": {
             "get": {
-                "description": "扩展接口：从最新位置、最新状态和最新充电过程派生当前车辆快照，用于替代 dashboard 中原本揉杂的实时信息。",
+                "description": "扩展接口 v2：通过 scope=drives|charges|battery|states 返回统一时序数据。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Extended API"
+                    "扩展 API"
                 ],
-                "summary": "实时车辆快照",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.RealtimeV2Envelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/series/battery": {
-            "get": {
-                "description": "扩展接口：返回电量百分比和额定续航等电池时序指标，按时间倒序排列。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "电池时序数据",
+                "summary": "时序数据",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1126,301 +1201,104 @@
                     },
                     {
                         "type": "string",
-                        "description": "逗号分隔指标：soc,range",
+                        "description": "drives|charges|battery|states",
+                        "name": "scope",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "逗号分隔的指标列表",
                         "name": "metrics",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "聚合粒度：raw|hour|day|week|month|year",
+                        "description": "raw|hour|day|week|month|year",
                         "name": "bucket",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
+                        "description": "asc|desc",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.SeriesV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/series/charges": {
-            "get": {
-                "description": "扩展接口：按 bucket 聚合充电指标，默认包含 start_soc 和 end_soc，并把同一时间点的多个指标合并到一个 point 对象中。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "充电时序数据",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "逗号分隔指标：energy,power,cost,start_soc,end_soc",
-                        "name": "metrics",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "聚合粒度：raw|hour|day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.SeriesV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/series/drives": {
-            "get": {
-                "description": "扩展接口：按 bucket 聚合行程指标，并把同一时间点的多个指标合并到一个 point 对象中，按时间倒序返回。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "行程时序数据",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "逗号分隔指标：distance,efficiency,speed,max_speed,motor_power,regen_power,elevation,outside_temp,inside_temp,energy,regeneration",
-                        "name": "metrics",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "聚合粒度：raw|hour|day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.SeriesV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/series/states": {
-            "get": {
-                "description": "扩展接口：返回车辆状态持续时间和停车能耗（vampire drain）等状态派生指标。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "状态时序数据",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "逗号分隔指标：duration,vampire_drain",
-                        "name": "metrics",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "聚合粒度：raw|hour|day|week|month|year",
-                        "name": "bucket",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.SeriesV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/statistics": {
-            "get": {
-                "description": "扩展接口：返回 overview、drive、charge、battery 等明确分区，覆盖效率、费用、能量、停车等聚合指标。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "分区统计",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "时间范围类型：year|month|week|custom",
+                        "description": "week|month|year|custom",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "参考日期，支持 YYYY-MM-DD 或 RFC3339",
+                        "description": "自定义范围开始时间",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "自定义范围结束时间",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.SeriesV2Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.v1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/stats": {
+            "get": {
+                "description": "扩展接口 v2：返回行程、充电、电池和停车的周期核心指标。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "扩展 API"
+                ],
+                "summary": "周期统计",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "week|month|year|custom",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "参考日期",
                         "name": "date",
                         "in": "query"
                     },
@@ -1441,7 +1319,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.StatisticsV2Envelope"
+                            "$ref": "#/definitions/main.StatsV2Envelope"
                         }
                     },
                     "400": {
@@ -1465,15 +1343,16 @@
                 }
             }
         },
-        "/v1/cars/{CarID}/status": {
+        "/v2/cars/{CarID}/status": {
             "get": {
+                "description": "扩展接口 v2：返回最新已知车辆状态。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Compatible API"
+                    "扩展 API"
                 ],
-                "summary": "当前车辆状态",
+                "summary": "车辆状态快照",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1488,61 +1367,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/main.CarStatusV1Envelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/summary": {
-            "get": {
-                "description": "扩展接口：返回指定时间范围内的规范化摘要，包含 overview、driving、charging、parking、battery、efficiency、cost、quality、state 等稳定分区，不再依赖旧 include 参数拼装稀疏字段。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "车辆摘要",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "时间范围类型：year|month|week|custom，默认 month",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "period 模式下的参考日期",
-                        "name": "date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "自定义范围开始时间；出现时必须同时提供 endDate",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "自定义范围结束时间；出现时必须同时提供 startDate",
-                        "name": "endDate",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.SummaryV2Envelope"
+                            "$ref": "#/definitions/main.StatusV2Envelope"
                         }
                     },
                     "400": {
@@ -1561,168 +1386,6 @@
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/timeline": {
-            "get": {
-                "description": "扩展接口：统一返回行程、充电、状态活动时间线，支持分页，按时间倒序。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Extended API"
-                ],
-                "summary": "时间线",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "范围结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "分页大小",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "偏移量",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.TimelineV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/updates": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "查询车辆更新记录",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "show",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.UpdatesListV1Envelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/cars/{CarID}/wake_up": {
-            "post": {
-                "description": "仅在 ENABLE_COMMANDS=true 且 COMMANDS_WAKE、COMMANDS_ALL 或 COMMANDS_ALLOWLIST 允许 /wake_up 时注册。接口响应永远不会暴露 Tesla 账号 access/refresh token。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "唤醒车辆",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.TeslaPassthroughJSONBody"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/globalsettings": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Compatible API"
-                ],
-                "summary": "全局设置",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.GlobalsettingsV1Envelope"
                         }
                     }
                 }
@@ -1749,6 +1412,49 @@
                 "path": {
                     "type": "string",
                     "example": "/api/v1"
+                }
+            }
+        },
+        "main.ActivityBucketV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.ActivitySummaryV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.ActivityV2Data": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string",
+                    "example": "day"
+                },
+                "car_id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.ActivityBucketV2"
+                    }
+                },
+                "range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.ActivitySummaryV2"
+                }
+            }
+        },
+        "main.ActivityV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.ActivityV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
                 }
             }
         },
@@ -1794,49 +1500,6 @@
                 },
                 "rated_efficiency": {
                     "type": "number"
-                }
-            }
-        },
-        "main.CalendarBucketV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.CalendarSummaryV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.CalendarV2Data": {
-            "type": "object",
-            "properties": {
-                "bucket": {
-                    "type": "string",
-                    "example": "day"
-                },
-                "car_id": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.CalendarBucketV2"
-                    }
-                },
-                "range": {
-                    "$ref": "#/definitions/main.ExtendedRange"
-                },
-                "summary": {
-                    "$ref": "#/definitions/main.CalendarSummaryV2"
-                }
-            }
-        },
-        "main.CalendarV2Envelope": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/main.CalendarV2Data"
-                },
-                "meta": {
-                    "$ref": "#/definitions/main.ExtendedResponseMeta"
                 }
             }
         },
@@ -2318,7 +1981,7 @@
                     "type": "integer"
                 },
                 "conn_charge_cable": {
-                    "description": "TeslaMate charges 表中的充电接口/线缆类型（如 IEC、NEMA）；无采样记录时响应中不出现该字段",
+                    "description": "ConnChargeCable：TeslaMate `charges.conn_charge_cable`（如 IEC、NEMA）；无记录时 JSON 省略该字段。",
                     "type": "string"
                 },
                 "cost": {
@@ -2334,7 +1997,7 @@
                     "type": "string"
                 },
                 "fast_charger_brand": {
-                    "description": "TeslaMate charges 表中的直流快充桩品牌；交流充电或非快充时常为空，响应中可省略",
+                    "description": "FastChargerBrand：TeslaMate `charges.fast_charger_brand`（直流快充品牌）；交流或非快充时常为空，JSON 省略；无效占位 `\u003cinvalid\u003e` 不输出。",
                     "type": "string"
                 },
                 "latitude": {
@@ -2529,55 +2192,6 @@
             "properties": {
                 "data": {
                     "$ref": "#/definitions/main.CurrentChargeV1Data"
-                }
-            }
-        },
-        "main.DashboardCurrentSnapshot": {
-            "type": "object",
-            "properties": {
-                "charge": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "position": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "state": {
-                    "type": "object",
-                    "additionalProperties": {}
-                }
-            }
-        },
-        "main.DashboardOverview": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.DashboardV2Data": {
-            "type": "object",
-            "properties": {
-                "car_id": {
-                    "type": "integer"
-                },
-                "overview": {
-                    "$ref": "#/definitions/main.DashboardOverview"
-                },
-                "range": {
-                    "$ref": "#/definitions/main.ExtendedRange"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/main.StatisticsSummary"
-                }
-            }
-        },
-        "main.DashboardV2Envelope": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/main.DashboardV2Data"
-                },
-                "meta": {
-                    "$ref": "#/definitions/main.ExtendedResponseMeta"
                 }
             }
         },
@@ -2934,17 +2548,6 @@
                 }
             }
         },
-        "main.EnabledCommandsV1Envelope": {
-            "type": "object",
-            "properties": {
-                "enabled_commands": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "main.ExtendedRange": {
             "type": "object",
             "properties": {
@@ -3062,14 +2665,21 @@
                 }
             }
         },
-        "main.HistorySummaryCoverage": {
+        "main.HistoryListV2Envelope": {
             "type": "object",
             "properties": {
-                "end_date": {
-                    "type": "string"
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
                 },
-                "start_date": {
-                    "type": "string"
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/main.v1Pagination"
                 }
             }
         },
@@ -3326,39 +2936,41 @@
             "type": "object",
             "additionalProperties": {}
         },
-        "main.ParkingStateBreakdown": {
+        "main.RecordV2": {
             "type": "object",
             "properties": {
-                "duration_min": {
-                    "type": "integer"
+                "date": {},
+                "entity_id": {},
+                "entity_type": {
+                    "type": "string",
+                    "example": "drive"
                 },
-                "session_count": {
-                    "type": "integer"
-                },
-                "share": {
-                    "type": "number"
-                },
-                "state": {
+                "unit": {
                     "type": "string"
-                }
+                },
+                "value": {}
             }
         },
-        "main.RealtimeV2Data": {
+        "main.RecordsV2Data": {
             "type": "object",
             "properties": {
                 "car_id": {
                     "type": "integer"
                 },
-                "current": {
-                    "$ref": "#/definitions/main.DashboardCurrentSnapshot"
-                }
+                "records": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.RecordV2"
+                    }
+                },
+                "year_filter": {}
             }
         },
-        "main.RealtimeV2Envelope": {
+        "main.RecordsV2Envelope": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/main.RealtimeV2Data"
+                    "$ref": "#/definitions/main.RecordsV2Data"
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
@@ -3407,124 +3019,30 @@
                 }
             }
         },
-        "main.StateBreakdown": {
-            "type": "object",
-            "properties": {
-                "duration_min": {
-                    "type": "integer"
-                },
-                "session_count": {
-                    "type": "integer"
-                },
-                "share": {
-                    "type": "number"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.StatisticsBatteryV2": {
+        "main.StatsSectionV2": {
             "type": "object",
             "additionalProperties": {}
         },
-        "main.StatisticsChargeV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.StatisticsDriveV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.StatisticsOverviewV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.StatisticsSummary": {
-            "type": "object",
-            "properties": {
-                "average_consumption_gross": {
-                    "type": "number"
-                },
-                "average_consumption_net": {
-                    "type": "number"
-                },
-                "average_cost_per_100_distance": {
-                    "type": "number"
-                },
-                "average_cost_per_kwh": {
-                    "type": "number"
-                },
-                "average_energy_used_per_charge": {
-                    "type": "number"
-                },
-                "average_outside_temp": {
-                    "type": "number"
-                },
-                "average_speed": {
-                    "type": "number"
-                },
-                "charge_count": {
-                    "type": "integer"
-                },
-                "charging_efficiency": {
-                    "type": "number"
-                },
-                "consumption_overhead": {
-                    "type": "number"
-                },
-                "coverage": {
-                    "$ref": "#/definitions/main.HistorySummaryCoverage"
-                },
-                "data_complete": {
-                    "type": "boolean"
-                },
-                "distance": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "driving_efficiency": {
-                    "type": "number"
-                },
-                "energy_added": {
-                    "type": "number"
-                },
-                "energy_used": {
-                    "type": "number"
-                },
-                "max_speed": {
-                    "type": "integer"
-                },
-                "time_driven_min": {
-                    "type": "integer"
-                },
-                "total_cost": {
-                    "type": "number"
-                },
-                "trips": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.StatisticsV2Data": {
+        "main.StatsV2Data": {
             "type": "object",
             "properties": {
                 "battery": {
-                    "$ref": "#/definitions/main.StatisticsBatteryV2"
+                    "$ref": "#/definitions/main.StatsSectionV2"
                 },
-                "car_id": {
-                    "type": "integer"
+                "charges": {
+                    "$ref": "#/definitions/main.StatsSectionV2"
                 },
-                "charge": {
-                    "$ref": "#/definitions/main.StatisticsChargeV2"
+                "drives": {
+                    "$ref": "#/definitions/main.StatsSectionV2"
                 },
-                "drive": {
-                    "$ref": "#/definitions/main.StatisticsDriveV2"
+                "generated_at": {
+                    "type": "string"
                 },
-                "overview": {
-                    "$ref": "#/definitions/main.StatisticsOverviewV2"
+                "odometer": {
+                    "type": "number"
+                },
+                "parking": {
+                    "$ref": "#/definitions/main.StatsSectionV2"
                 },
                 "period": {
                     "type": "string",
@@ -3535,11 +3053,11 @@
                 }
             }
         },
-        "main.StatisticsV2Envelope": {
+        "main.StatsV2Envelope": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/main.StatisticsV2Data"
+                    "$ref": "#/definitions/main.StatsV2Data"
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
@@ -3588,6 +3106,10 @@
                     "type": "integer"
                 }
             }
+        },
+        "main.StatusBatteryV2": {
+            "type": "object",
+            "additionalProperties": {}
         },
         "main.StatusCarDetailsV1": {
             "type": "object",
@@ -3754,6 +3276,14 @@
                 }
             }
         },
+        "main.StatusEnvironmentV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "main.StatusPositionV2": {
+            "type": "object",
+            "additionalProperties": {}
+        },
         "main.StatusTPMSV1": {
             "type": "object",
             "properties": {
@@ -3783,6 +3313,44 @@
                 }
             }
         },
+        "main.StatusV2Data": {
+            "type": "object",
+            "properties": {
+                "active_charge": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "battery": {
+                    "$ref": "#/definitions/main.StatusBatteryV2"
+                },
+                "environment": {
+                    "$ref": "#/definitions/main.StatusEnvironmentV2"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "position": {
+                    "$ref": "#/definitions/main.StatusPositionV2"
+                },
+                "since": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.StatusV2Envelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.StatusV2Data"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.ExtendedResponseMeta"
+                }
+            }
+        },
         "main.StatusVersionsV1": {
             "type": "object",
             "properties": {
@@ -3797,479 +3365,67 @@
                 }
             }
         },
-        "main.SummaryV2Battery": {
+        "main.TrendV2Item": {
             "type": "object",
             "properties": {
-                "rated_range": {
-                    "$ref": "#/definitions/main.SummaryV2NullableRange"
-                },
-                "soc": {
-                    "$ref": "#/definitions/main.SummaryV2NullableRange"
-                },
-                "vampire_drain_energy": {
+                "change_percent": {
                     "type": "number"
+                },
+                "current": {},
+                "direction": {
+                    "type": "string",
+                    "example": "better"
+                },
+                "higher_is_better": {
+                    "type": "boolean"
+                },
+                "metric": {
+                    "type": "string",
+                    "example": "distance"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Distance Driven"
+                },
+                "previous": {},
+                "unit": {
+                    "type": "string",
+                    "example": "km"
                 }
             }
         },
-        "main.SummaryV2Car": {
+        "main.TrendsV2Data": {
             "type": "object",
             "properties": {
                 "car_id": {
-                    "type": "integer",
-                    "example": 1
+                    "type": "integer"
                 },
-                "car_name": {
+                "comparison_range": {
+                    "$ref": "#/definitions/main.ExtendedRange"
+                },
+                "period": {
                     "type": "string",
-                    "example": "Model 3"
-                }
-            }
-        },
-        "main.SummaryV2Charging": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "duration": {
-                    "$ref": "#/definitions/main.SummaryV2Duration"
-                },
-                "efficiency": {
-                    "type": "number"
-                },
-                "energy": {
-                    "$ref": "#/definitions/main.SummaryV2ChargingEnergy"
-                },
-                "power": {
-                    "$ref": "#/definitions/main.SummaryV2ChargingPower"
-                }
-            }
-        },
-        "main.SummaryV2ChargingEnergy": {
-            "type": "object",
-            "properties": {
-                "added": {
-                    "type": "number"
-                },
-                "average_added": {
-                    "type": "number"
-                },
-                "charger_used": {
-                    "type": "number"
-                },
-                "largest_added": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2ChargingPower": {
-            "type": "object",
-            "properties": {
-                "average": {
-                    "type": "number"
-                },
-                "max": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.SummaryV2Consumption": {
-            "type": "object",
-            "properties": {
-                "average": {
-                    "type": "number"
-                },
-                "best": {
-                    "type": "number"
-                },
-                "worst": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2Cost": {
-            "type": "object",
-            "properties": {
-                "average": {
-                    "type": "number"
-                },
-                "average_per_kwh": {
-                    "type": "number"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "highest": {
-                    "type": "number"
-                },
-                "per_100_distance": {
-                    "type": "number"
-                },
-                "total": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2Data": {
-            "type": "object",
-            "properties": {
-                "battery": {
-                    "$ref": "#/definitions/main.SummaryV2Battery"
-                },
-                "car": {
-                    "$ref": "#/definitions/main.SummaryV2Car"
-                },
-                "charging": {
-                    "$ref": "#/definitions/main.SummaryV2Charging"
-                },
-                "cost": {
-                    "$ref": "#/definitions/main.SummaryV2Cost"
-                },
-                "driving": {
-                    "$ref": "#/definitions/main.SummaryV2Driving"
-                },
-                "efficiency": {
-                    "$ref": "#/definitions/main.SummaryV2Efficiency"
-                },
-                "generated_at": {
-                    "type": "string"
-                },
-                "overview": {
-                    "$ref": "#/definitions/main.SummaryV2Overview"
-                },
-                "parking": {
-                    "$ref": "#/definitions/main.SummaryV2Parking"
-                },
-                "quality": {
-                    "$ref": "#/definitions/main.SummaryV2Quality"
+                    "example": "month"
                 },
                 "range": {
                     "$ref": "#/definitions/main.ExtendedRange"
                 },
-                "schema_version": {
-                    "type": "string",
-                    "example": "summary.v1"
-                },
-                "state": {
-                    "$ref": "#/definitions/main.SummaryV2VehicleState"
-                },
-                "units": {
-                    "$ref": "#/definitions/main.TeslaMateSummaryUnits"
+                "trends": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.TrendV2Item"
+                    }
                 }
             }
         },
-        "main.SummaryV2Driving": {
-            "type": "object",
-            "properties": {
-                "consumption": {
-                    "$ref": "#/definitions/main.SummaryV2Consumption"
-                },
-                "count": {
-                    "type": "integer"
-                },
-                "distance": {
-                    "type": "number"
-                },
-                "duration": {
-                    "$ref": "#/definitions/main.SummaryV2Duration"
-                },
-                "energy": {
-                    "$ref": "#/definitions/main.SummaryV2DrivingEnergy"
-                },
-                "power": {
-                    "$ref": "#/definitions/main.SummaryV2DrivingPower"
-                },
-                "speed": {
-                    "$ref": "#/definitions/main.SummaryV2Speed"
-                }
-            }
-        },
-        "main.SummaryV2DrivingEnergy": {
-            "type": "object",
-            "properties": {
-                "regenerated": {
-                    "type": "number"
-                },
-                "regeneration_ratio": {
-                    "type": "number"
-                },
-                "used": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2DrivingPower": {
-            "type": "object",
-            "properties": {
-                "peak_drive": {
-                    "type": "integer"
-                },
-                "peak_regen": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.SummaryV2Duration": {
-            "type": "object",
-            "properties": {
-                "average_min": {
-                    "type": "number"
-                },
-                "longest_min": {
-                    "type": "integer"
-                },
-                "total_min": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.SummaryV2Efficiency": {
-            "type": "object",
-            "properties": {
-                "charging_efficiency": {
-                    "type": "number"
-                },
-                "consumption_overhead": {
-                    "type": "number"
-                },
-                "drive_average_consumption": {
-                    "type": "number"
-                },
-                "drive_best_consumption": {
-                    "type": "number"
-                },
-                "drive_worst_consumption": {
-                    "type": "number"
-                },
-                "gross_consumption": {
-                    "type": "number"
-                },
-                "regeneration_ratio": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2Envelope": {
+        "main.TrendsV2Envelope": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/main.SummaryV2Data"
+                    "$ref": "#/definitions/main.TrendsV2Data"
                 },
                 "meta": {
                     "$ref": "#/definitions/main.ExtendedResponseMeta"
-                }
-            }
-        },
-        "main.SummaryV2NullableRange": {
-            "type": "object",
-            "properties": {
-                "end": {
-                    "type": "number"
-                },
-                "start": {
-                    "type": "number"
-                }
-            }
-        },
-        "main.SummaryV2Overview": {
-            "type": "object",
-            "properties": {
-                "charge_count": {
-                    "type": "integer"
-                },
-                "charge_duration_min": {
-                    "type": "integer"
-                },
-                "cost": {
-                    "type": "number"
-                },
-                "distance": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "drive_duration_min": {
-                    "type": "integer"
-                },
-                "energy_added": {
-                    "type": "number"
-                },
-                "energy_used": {
-                    "type": "number"
-                },
-                "latest_odometer": {
-                    "type": "number"
-                },
-                "parking_count": {
-                    "type": "integer"
-                },
-                "parking_duration_min": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.SummaryV2Parking": {
-            "type": "object",
-            "properties": {
-                "average_min": {
-                    "type": "number"
-                },
-                "count": {
-                    "type": "integer"
-                },
-                "dominant_state": {
-                    "type": "string"
-                },
-                "duration_min": {
-                    "type": "integer"
-                },
-                "longest_min": {
-                    "type": "integer"
-                },
-                "parked_share": {
-                    "type": "number"
-                },
-                "state_breakdown": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.ParkingStateBreakdown"
-                    }
-                }
-            }
-        },
-        "main.SummaryV2Quality": {
-            "type": "object",
-            "properties": {
-                "abnormal_charge_count": {
-                    "type": "integer"
-                },
-                "battery_snapshot_available": {
-                    "type": "boolean"
-                },
-                "congestion_like_drive_count": {
-                    "type": "integer"
-                },
-                "cost_available": {
-                    "type": "boolean"
-                },
-                "data_complete": {
-                    "type": "boolean"
-                },
-                "gross_consumption_available": {
-                    "type": "boolean"
-                },
-                "high_consumption_drive_count": {
-                    "type": "integer"
-                },
-                "low_efficiency_charge_count": {
-                    "type": "integer"
-                },
-                "low_speed_drive_count": {
-                    "type": "integer"
-                },
-                "regeneration_estimated": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "main.SummaryV2Speed": {
-            "type": "object",
-            "properties": {
-                "average": {
-                    "type": "number"
-                },
-                "max": {
-                    "type": "integer"
-                }
-            }
-        },
-        "main.SummaryV2VehicleState": {
-            "type": "object",
-            "properties": {
-                "breakdown": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.StateBreakdown"
-                    }
-                },
-                "current": {
-                    "type": "string"
-                },
-                "last_state_change": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.TeslaMateSummaryUnits": {
-            "type": "object",
-            "properties": {
-                "unit_of_consumption": {
-                    "type": "string"
-                },
-                "unit_of_cost_per_distance": {
-                    "type": "string"
-                },
-                "unit_of_length": {
-                    "type": "string"
-                },
-                "unit_of_speed": {
-                    "type": "string"
-                },
-                "unit_of_temperature": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.TeslaPassthroughJSONBody": {
-            "type": "object",
-            "additionalProperties": true
-        },
-        "main.TimelineEventV2": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string"
-                },
-                "entity_id": {
-                    "type": "integer"
-                },
-                "entity_type": {
-                    "type": "string",
-                    "example": "drive"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "summary": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string",
-                    "example": "drive"
-                }
-            }
-        },
-        "main.TimelineV2Envelope": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/main.TimelineEventV2"
-                    }
-                },
-                "meta": {
-                    "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "pagination": {
-                    "$ref": "#/definitions/main.v1Pagination"
                 }
             }
         },
@@ -4448,13 +3604,6 @@
                     "type": "integer"
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }

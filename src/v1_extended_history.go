@@ -8,8 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// TeslaMateAPICarsDrivesHistoryV2 returns a paginated list of drive sessions.
-// Query params: ?limit=20&offset=0&startDate=&endDate=
+// TeslaMateAPICarsDrivesHistoryV2 返回分页行程会话列表。
+// @Summary 行程会话
+// @Description 扩展接口 v2：返回分页行程会话。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param limit query int false "每页数量"
+// @Param offset query int false "偏移量"
+// @Success 200 {object} HistoryListV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/drives [get]
 func TeslaMateAPICarsDrivesHistoryV2(c *gin.Context) {
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsDrivesHistoryV2")
 	if !ok {
@@ -34,8 +45,19 @@ func TeslaMateAPICarsDrivesHistoryV2(c *gin.Context) {
 	writeV1List(c, drives, v1Pagination{Limit: limit, Offset: offset, Total: total}, buildV1MetaFromCar(ctx, appUsersTimezone.String()))
 }
 
-// TeslaMateAPICarsChargesHistoryV2 returns a paginated list of charge sessions.
-// Query params: ?limit=20&offset=0&startDate=&endDate=
+// TeslaMateAPICarsChargesHistoryV2 返回分页充电会话列表。
+// @Summary 充电会话
+// @Description 扩展接口 v2：返回分页充电会话。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param limit query int false "每页数量"
+// @Param offset query int false "偏移量"
+// @Success 200 {object} HistoryListV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/charges [get]
 func TeslaMateAPICarsChargesHistoryV2(c *gin.Context) {
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsChargesHistoryV2")
 	if !ok {
@@ -145,15 +167,15 @@ func fetchDrivesHistory(carID int, unitsLength, unitsTemperature, startUTC, endU
 	total := 0
 	for rows.Next() {
 		var (
-			id                                    int
-			startedAt, endedAt                    sql.NullString
-			durationMin                           sql.NullInt64
-			distance, avgSpeed                    sql.NullFloat64
-			speedMax                              sql.NullInt64
+			id                                      int
+			startedAt, endedAt                      sql.NullString
+			durationMin                             sql.NullInt64
+			distance, avgSpeed                      sql.NullFloat64
+			speedMax                                sql.NullInt64
 			energyUsed, efficiencyWhKm, outsideTemp sql.NullFloat64
-			startSOC, endSOC                      sql.NullInt64
-			startLocation, endLocation            sql.NullString
-			totalCount                            int
+			startSOC, endSOC                        sql.NullInt64
+			startLocation, endLocation              sql.NullString
+			totalCount                              int
 		)
 		if err := rows.Scan(&id, &startedAt, &endedAt, &durationMin, &distance, &avgSpeed,
 			&speedMax, &energyUsed, &efficiencyWhKm, &startSOC, &endSOC,
@@ -268,14 +290,14 @@ func fetchChargesHistory(carID int, unitsLength, _ string, startUTC, endUTC stri
 	total := 0
 	for rows.Next() {
 		var (
-			id                                         int
-			startedAt, endedAt                         sql.NullString
-			durationMin                                sql.NullInt64
-			energyAdded, energyUsed, efficiency, cost  sql.NullFloat64
-			maxPower, avgPower                         sql.NullFloat64
-			startSOC, endSOC                           sql.NullInt64
-			location                                   sql.NullString
-			totalCount                                 int
+			id                                        int
+			startedAt, endedAt                        sql.NullString
+			durationMin                               sql.NullInt64
+			energyAdded, energyUsed, efficiency, cost sql.NullFloat64
+			maxPower, avgPower                        sql.NullFloat64
+			startSOC, endSOC                          sql.NullInt64
+			location                                  sql.NullString
+			totalCount                                int
 		)
 		if err := rows.Scan(&id, &startedAt, &endedAt, &durationMin,
 			&energyAdded, &energyUsed, &efficiency, &cost,
@@ -306,7 +328,7 @@ func fetchChargesHistory(carID int, unitsLength, _ string, startUTC, endUTC stri
 	return result, total, nil
 }
 
-// itoa converts an int to its string representation for use in SQL placeholder construction.
+// itoa 将 int 转换为字符串，用于构造 SQL 占位符。
 func itoa(n int) string {
 	const digits = "0123456789"
 	if n < 10 {

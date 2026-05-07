@@ -11,8 +11,8 @@ import (
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
-// fetchBatterySnapshot returns battery SOC and range at the start/end of the period.
-// Raw km values are cached unit-independently; unit conversion is applied after retrieval.
+// fetchBatterySnapshot 返回周期开始和结束时的电池电量与续航。
+// 缓存中保存与单位无关的原始公里值，读取后再应用单位转换。
 func fetchBatterySnapshot(carID int, startUTC, endUTC, unitsLength string) (map[string]any, error) {
 	key := aggregatecache.Key("battery_snapshot", carID, startUTC, endUTC)
 	raw, err := aggregatecache.Value(key, aggregatecache.TTL(endUTC), func() (map[string]any, error) {

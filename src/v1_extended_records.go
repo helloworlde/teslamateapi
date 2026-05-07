@@ -10,8 +10,16 @@ import (
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
-// TeslaMateAPICarsRecordsV2 returns all-time personal best records for the car.
-// Accepts optional ?year=YYYY to scope records to a specific year.
+// TeslaMateAPICarsRecordsV2 返回车辆个人最佳纪录。
+// @Summary 分析纪录
+// @Description 扩展接口 v2：返回全量或按年份过滤的个人最佳纪录。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param year query string false "可选年份过滤"
+// @Success 200 {object} RecordsV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/analysis/records [get]
 func TeslaMateAPICarsAnalysisRecordsV2(c *gin.Context) {
 	ctx, ok := loadAPICarContext(c, "TeslaMateAPICarsRecordsV2")
 	if !ok {
@@ -44,20 +52,20 @@ func fetchCarRecordsUncached(carID int, unitsLength, unitsTemperature, yearFilte
 	}
 
 	type driveRecord struct {
-		LongestDistanceKm  sql.NullFloat64
-		LongestDistanceID  sql.NullInt64
-		LongestDistDate    sql.NullString
-		BestEfficiencyWhKm sql.NullFloat64
-		BestEfficiencyID   sql.NullInt64
-		BestEfficiencyDate sql.NullString
-		HighestSpeedKmh    sql.NullInt64
-		HighestSpeedID     sql.NullInt64
-		HighestSpeedDate   sql.NullString
-		LongestDurationMin sql.NullInt64
-		LongestDurationID  sql.NullInt64
+		LongestDistanceKm   sql.NullFloat64
+		LongestDistanceID   sql.NullInt64
+		LongestDistDate     sql.NullString
+		BestEfficiencyWhKm  sql.NullFloat64
+		BestEfficiencyID    sql.NullInt64
+		BestEfficiencyDate  sql.NullString
+		HighestSpeedKmh     sql.NullInt64
+		HighestSpeedID      sql.NullInt64
+		HighestSpeedDate    sql.NullString
+		LongestDurationMin  sql.NullInt64
+		LongestDurationID   sql.NullInt64
 		LongestDurationDate sql.NullString
-		ColdestTempC       sql.NullFloat64
-		ColdestTempDate    sql.NullString
+		ColdestTempC        sql.NullFloat64
+		ColdestTempDate     sql.NullString
 	}
 
 	driveQuery := `
@@ -160,7 +168,7 @@ func fetchCarRecordsUncached(carID int, unitsLength, unitsTemperature, yearFilte
 		return nil, err
 	}
 
-	// Apply unit conversion
+	// 应用单位转换。
 	distUnit := "km"
 	speedUnit := "km/h"
 	consumptionUnit := "Wh/km"

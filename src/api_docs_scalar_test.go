@@ -15,23 +15,42 @@ import (
 func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 	s := docs.SwaggerInfo.ReadDoc()
 	for _, sub := range []string{
-		"/v1/cars/{CarID}/summary",
-		"/v1/cars/{CarID}/dashboard",
-		"/v1/cars/{CarID}/realtime",
-		"/v1/cars/{CarID}/calendar",
-		"/v1/cars/{CarID}/statistics",
-		"/v1/cars/{CarID}/series/drives",
-		"/v1/cars/{CarID}/series/charges",
-		"/v1/cars/{CarID}/series/battery",
-		"/v1/cars/{CarID}/series/states",
-		"/v1/cars/{CarID}/distributions/drives",
-		"/v1/cars/{CarID}/distributions/charges",
-		"/v1/cars/{CarID}/timeline",
-		"/v1/cars/{CarID}/insights",
-		"/v1/cars/{CarID}/locations",
+		"/v1/cars",
+		"/v1/cars/{CarID}/charges",
+		"/v1/cars/{CarID}/drives",
+		"/v1/cars/{CarID}/status",
+		"/v2/cars/{CarID}/status",
+		"/v2/cars/{CarID}/stats",
+		"/v2/cars/{CarID}/activity",
+		"/v2/cars/{CarID}/series",
+		"/v2/cars/{CarID}/distributions",
+		"/v2/cars/{CarID}/drives",
+		"/v2/cars/{CarID}/charges",
+		"/v2/cars/{CarID}/locations",
+		"/v2/cars/{CarID}/locations/heatmap",
+		"/v2/cars/{CarID}/analysis/insights",
+		"/v2/cars/{CarID}/analysis/trends",
+		"/v2/cars/{CarID}/analysis/records",
 	} {
 		if !strings.Contains(s, sub) {
 			t.Fatalf("OpenAPI doc missing %q", sub)
+		}
+	}
+}
+
+func TestOpenAPIDocumentDoesNotExposeExtendedV1Routes(t *testing.T) {
+	s := docs.SwaggerInfo.ReadDoc()
+	for _, sub := range []string{
+		"/v1/cars/{CarID}/stats",
+		"/v1/cars/{CarID}/activity",
+		"/v1/cars/{CarID}/series",
+		"/v1/cars/{CarID}/distributions",
+		"/v1/cars/{CarID}/analysis/insights",
+		"/v1/cars/{CarID}/analysis/trends",
+		"/v1/cars/{CarID}/analysis/records",
+	} {
+		if strings.Contains(s, sub) {
+			t.Fatalf("OpenAPI doc exposes extended v1 route %q", sub)
 		}
 	}
 }
@@ -97,21 +116,18 @@ func TestOpenAPIExtendedRoutesUseConcreteResponseModels(t *testing.T) {
 	}
 	paths, _ := root["paths"].(map[string]any)
 	expected := map[string]string{
-		"/v1/cars/{CarID}/summary":               "#/definitions/main.SummaryV2Envelope",
-		"/v1/cars/{CarID}/dashboard":             "#/definitions/main.DashboardV2Envelope",
-		"/v1/cars/{CarID}/realtime":              "#/definitions/main.RealtimeV2Envelope",
-		"/v1/cars/{CarID}/calendar":              "#/definitions/main.CalendarV2Envelope",
-		"/v1/cars/{CarID}/statistics":            "#/definitions/main.StatisticsV2Envelope",
-		"/v1/cars/{CarID}/series/drives":         "#/definitions/main.SeriesV2Envelope",
-		"/v1/cars/{CarID}/series/charges":        "#/definitions/main.SeriesV2Envelope",
-		"/v1/cars/{CarID}/series/battery":        "#/definitions/main.SeriesV2Envelope",
-		"/v1/cars/{CarID}/series/states":         "#/definitions/main.SeriesV2Envelope",
-		"/v1/cars/{CarID}/distributions/drives":  "#/definitions/main.DistributionsV2Envelope",
-		"/v1/cars/{CarID}/distributions/charges": "#/definitions/main.DistributionsV2Envelope",
-		"/v1/cars/{CarID}/insights":              "#/definitions/main.InsightsV2Envelope",
-		"/v1/cars/{CarID}/timeline":              "#/definitions/main.TimelineV2Envelope",
-		"/v1/cars/{CarID}/map/visited":           "#/definitions/main.VisitedMapV2Envelope",
-		"/v1/cars/{CarID}/locations":             "#/definitions/main.LocationsV2Envelope",
+		"/v2/cars/{CarID}/status":            "#/definitions/main.StatusV2Envelope",
+		"/v2/cars/{CarID}/stats":             "#/definitions/main.StatsV2Envelope",
+		"/v2/cars/{CarID}/activity":          "#/definitions/main.ActivityV2Envelope",
+		"/v2/cars/{CarID}/series":            "#/definitions/main.SeriesV2Envelope",
+		"/v2/cars/{CarID}/distributions":     "#/definitions/main.DistributionsV2Envelope",
+		"/v2/cars/{CarID}/drives":            "#/definitions/main.HistoryListV2Envelope",
+		"/v2/cars/{CarID}/charges":           "#/definitions/main.HistoryListV2Envelope",
+		"/v2/cars/{CarID}/locations":         "#/definitions/main.LocationsV2Envelope",
+		"/v2/cars/{CarID}/locations/heatmap": "#/definitions/main.VisitedMapV2Envelope",
+		"/v2/cars/{CarID}/analysis/insights": "#/definitions/main.InsightsV2Envelope",
+		"/v2/cars/{CarID}/analysis/trends":   "#/definitions/main.TrendsV2Envelope",
+		"/v2/cars/{CarID}/analysis/records":  "#/definitions/main.RecordsV2Envelope",
 	}
 	for path, want := range expected {
 		node, ok := paths[path].(map[string]any)
@@ -140,9 +156,9 @@ func TestOpenAPIExtendedModelsExposeExpectedDataSections(t *testing.T) {
 	}
 	defs, _ := root["definitions"].(map[string]any)
 	expectProps := map[string][]string{
-		"main.SummaryV2Data":       {"schema_version", "car", "range", "units", "overview", "driving", "charging", "parking", "battery", "efficiency", "cost", "quality", "state", "generated_at"},
-		"main.DashboardV2Data":     {"car_id", "range", "overview", "statistics"},
-		"main.RealtimeV2Data":      {"car_id", "current"},
+		"main.StatusV2Data":        {"state", "since", "battery", "position", "environment", "odometer", "active_charge"},
+		"main.StatsV2Data":         {"period", "range", "drives", "charges", "battery", "parking", "odometer", "generated_at"},
+		"main.ActivityV2Data":      {"car_id", "range", "bucket", "summary", "items"},
 		"main.SeriesV2Data":        {"car_id", "scope", "bucket", "range", "metrics", "points"},
 		"main.LocationsV2Data":     {"car_id", "range", "summary", "locations"},
 		"main.LocationAggregateV2": {"name", "latitude", "longitude", "drive_start_count", "drive_end_count", "drive_count", "charge_count", "charge_energy_kwh", "charge_cost", "total_event_count", "last_seen"},
@@ -165,8 +181,9 @@ func TestDocsRoutesReturnContent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	docsui.RegisterRoutes(r.Group("/api/v1"), "/api/v1")
+	docsui.RegisterRoutes(r.Group("/api/v2"), "/api/v2")
 
-	for _, path := range []string{"/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json"} {
+	for _, path := range []string{"/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json", "/api/v2/docs/openapi.json", "/api/v2/docs/swagger/doc.json"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
@@ -194,8 +211,9 @@ func TestDocsRouteAliases(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	docsui.RegisterRoutes(r.Group("/api/v1"), "/api/v1")
+	docsui.RegisterRoutes(r.Group("/api/v2"), "/api/v2")
 
-	for _, path := range []string{"/api/v1/docs", "/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json"} {
+	for _, path := range []string{"/api/v1/docs", "/api/v1/docs/openapi.json", "/api/v1/docs/swagger/doc.json", "/api/v2/docs", "/api/v2/docs/openapi.json", "/api/v2/docs/swagger/doc.json"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)

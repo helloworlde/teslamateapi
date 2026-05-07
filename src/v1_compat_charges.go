@@ -9,16 +9,31 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsChargesV1 返回车辆充电会话列表；每条记录附带该会话首条 charges 采样行的 conn_charge_cable 与 fast_charger_brand（若有）。
+// TeslaMateAPICarsChargesV1 返回兼容响应结构的车辆充电会话列表。
+// @Summary 充电列表
+// @Description 兼容接口：保持历史充电列表响应封装。
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param page query int false "页码"
+// @Param show query int false "每页数量"
+// @Param limit query int false "每页数量别名"
+// @Param offset query int false "偏移量别名"
+// @Param sort query string false "排序表达式"
+// @Param include query string false "逗号分隔的可选分区"
+// @Success 200 {object} ChargesListV1Envelope
+// @Router /v1/cars/{CarID}/charges [get]
 func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var CarsChargesError1 = "Unable to load charges."
 	var CarsChargesError2 = "Invalid date format."
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
-	// query options to modify query when collecting data
+	// 读取分页和排序查询参数。
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
 	limit := convertStringToInteger(c.DefaultQuery("limit", "0"))
@@ -26,7 +41,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 	sortRaw := strings.TrimSpace(c.DefaultQuery("sort", "-start_date"))
 	_ = c.Query("include")
 
-	// get startDate and endDate from query parameters
+	// 从查询参数读取开始和结束时间。
 	parsedStartDate, err := parseDateParam(c.Query("startDate"))
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesV1", CarsChargesError2, err.Error())
@@ -51,7 +66,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			ResultPage = offset
 		}
 	} else {
-		// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
+		// 基于页码计算偏移量；页码最小为 1。
 		if ResultPage > 0 {
 			ResultPage--
 		} else {
@@ -80,7 +95,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 		orderBy = "charge_energy_added DESC"
 	}
 
-	// getting data from database
+	// 从数据库读取充电数据。
 	query := `
 		SELECT
 			charging_processes.id AS charge_id,
@@ -121,12 +136,12 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 		WHERE charging_processes.car_id = $1
 		  AND charging_processes.end_date IS NOT NULL`
 
-	// Parameters to be passed to the query
+	// 查询参数列表。
 	var queryParams []any
 	queryParams = append(queryParams, CarID)
 	paramIndex := 2
 
-	// Add date filtering if provided
+	// 按需追加日期过滤。
 	if parsedStartDate != "" {
 		query += fmt.Sprintf(" AND charging_processes.start_date >= $%d", paramIndex)
 		queryParams = append(queryParams, parsedStartDate)
@@ -146,23 +161,23 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	rows, err := db.Query(query, queryParams...)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesV1", CarsChargesError1, err.Error())
 		return
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
-		// creating charge object based on struct
+		// 创建充电记录对象。
 		charge := ChargeListItemV1{}
 		var connCable, fastBrand sql.NullString
 
-		// scanning row and putting values into the charge
+		// 将当前行扫描到充电记录。
 		err = rows.Scan(
 			&charge.ChargeID,
 			&charge.StartDate,
@@ -199,7 +214,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			charge.FastChargerBrand = &s
 		}
 
-		// converting values based of settings UnitsLength
+		// 根据长度单位设置转换数值。
 		if UnitsLength == "mi" {
 			charge.RangeIdeal.StartRange = kilometersToMiles(charge.RangeIdeal.StartRange)
 			charge.RangeIdeal.EndRange = kilometersToMiles(charge.RangeIdeal.EndRange)
@@ -207,26 +222,26 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			charge.RangeRated.EndRange = kilometersToMiles(charge.RangeRated.EndRange)
 			charge.Odometer = kilometersToMiles(charge.Odometer)
 		}
-		// converting values based of settings UnitsTemperature
+		// 根据温度单位设置转换数值。
 		if UnitsTemperature == "F" {
 			charge.OutsideTempAvg = celsiusToFahrenheit(charge.OutsideTempAvg)
 		}
 
-		// adjusting to timezone differences from UTC to be userspecific
+		// 按用户配置时区转换时间字段。
 		charge.StartDate = getTimeInTimeZone(charge.StartDate)
 		charge.EndDate = getTimeInTimeZone(charge.EndDate)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesV1", CarsChargesError1, err.Error())
 			return
 		}
 
-		// appending charge to ChargesData
+		// 追加充电记录到响应列表。
 		ChargesData = append(ChargesData, charge)
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsChargesV1", CarsChargesError1, err.Error())
@@ -247,6 +262,6 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsChargesV1", jsonData)
 }

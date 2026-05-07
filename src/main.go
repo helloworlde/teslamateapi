@@ -23,63 +23,54 @@ import (
 
 const (
 	headerAPIVersion  = "API-Version"
-	dbTimestampFormat = "2006-01-02T15:04:05Z" // format used in postgres for dates
+	dbTimestampFormat = "2006-01-02T15:04:05Z" // PostgreSQL 时间字段使用的格式。
 )
 
 var (
-	// application readyz endpoint value for k8s
+	// Kubernetes readyz 探针使用的应用就绪状态。
 	isReady *atomic.Value
 
-	// setting TeslaMateApi parameters
+	// TeslaMateApi 运行参数。
 	apiVersion = "unspecified"
 
-	// defining db var
+	// 全局数据库连接池。
 	db *sql.DB
 
-	// app-settings
+	// 应用使用的本地时区。
 	appUsersTimezone *time.Location
 )
 
-// main function
+// main 初始化运行环境、路由和 HTTP 服务。
 func main() {
-	// setup of readiness endpoint code
+	// 初始化就绪探针状态。
 	isReady = &atomic.Value{}
 	isReady.Store(false)
 
-	// setting log parameters
+	// 设置日志格式。
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
-	// setting application to ReleaseMode if DEBUG_MODE is false
+	// DEBUG_MODE 未开启时使用 Gin 发布模式。
 	if !getEnvAsBool("DEBUG_MODE", false) {
-		// setting GIN_MODE to ReleaseMode
+		// 将 GIN_MODE 设置为发布模式。
 		gin.SetMode(gin.ReleaseMode)
 		log.Printf("[info] TeslaMateApi running in release mode.")
 	} else {
-		// setting GIN_MODE to DebugMode
+		// 将 GIN_MODE 设置为调试模式。
 		gin.SetMode(gin.DebugMode)
 		log.Printf("[info] TeslaMateApi running in debug mode.")
 	}
 
-	// getting app-settings from environment
+	// 从环境变量读取应用配置。
 	appUsersTimezone, _ = time.LoadLocation(getEnv("TZ", "Europe/Berlin"))
 	if gin.IsDebugging() {
 		log.Println("[debug] TeslaMateApi appUsersTimezone:", appUsersTimezone)
 	}
 
-	// init of API with connection to database
+	// 初始化数据库连接。
 	initDBconnection()
 	defer db.Close()
 
-	// run initAuthToken to validate environment vars
-	if commandRoutesEnabled() {
-		initAuthToken()
-	}
-	// initialize allowList stored for /command section
-	if commandRoutesEnabled() {
-		initCommandAllowList()
-	}
-
-	// Connect to the MQTT broker
+	// 连接 MQTT，用于兼容状态接口的实时数据缓存。
 	statusCache, err := startMQTT()
 	mqttStatusCache = statusCache
 	if getEnvAsBool("DISABLE_MQTT", false) {
@@ -90,19 +81,11 @@ func main() {
 		}
 	}
 
-	if commandRoutesEnabled() && getEnvAsBool("API_TOKEN_DISABLE", false) {
-		log.Println("[warning] validateAuthToken - header authorization bearer token disabled. Authorization: Bearer token will not be required for commands.")
-	}
-
-	if teslaApiHost := getEnv("TESLA_API_HOST", ""); teslaApiHost != "" {
-		log.Printf("[info] TESLA_API_HOST is set: %s", teslaApiHost)
-	}
-
-	// kicking off Gin in value r
+	// 初始化 Gin 路由。
 	r := gin.Default()
 	docs.SwaggerInfo.BasePath = "/api"
 
-	// gin middleware to enable GZIP support
+	// 启用 GZIP 响应压缩。
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	r.Use(func(c *gin.Context) {
@@ -110,75 +93,70 @@ func main() {
 		c.Next()
 	})
 
-	// set 404 not found page
+	// 设置 404 响应。
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 
-	// disable proxy feature of gin
+	// 禁用 Gin 的代理信任配置。
 	_ = r.SetTrustedProxies(nil)
 
-	// root endpoint telling API is running
+	// 根路径返回 API 运行状态。
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
 	})
 
-	// TeslaMateApi /api endpoints
+	// 注册 TeslaMateApi /api 路由。
 	api := r.Group("/api")
 	BasePathV1 := api.BasePath() + "/v1"
+	BasePathV2 := api.BasePath() + "/v2"
 	{
-		// TeslaMateApi /api root
-		api.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": api.BasePath()})
-		})
+		// 注册 TeslaMateApi /api 根路由。
+		api.GET("/", apiRoot)
 
-		// TeslaMateApi /api/v1 endpoints
+		// 注册 TeslaMateApi /api/v1 路由。
 		v1 := api.Group("/v1")
 		{
-			// TeslaMateApi /api/v1 root
-			v1.GET("/", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
-			})
+			// 注册 TeslaMateApi /api/v1 根路由。
+			v1.GET("/", apiV1Root)
 			docsui.RegisterRoutes(v1, BasePathV1)
 			registerCompatibleV1Routes(v1)
 		}
 
-		// TeslaMateApi /api/v2 endpoints
+		// 注册 TeslaMateApi /api/v2 路由。
 		v2 := api.Group("/v2")
 		{
-			// TeslaMateApi /api/v2 root
-			v2.GET("/", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": v2.BasePath()})
-			})
-			docsui.RegisterRoutes(v2, "/2")
-			registerExtendedV1Routes(v2)
+			// 注册 TeslaMateApi /api/v2 根路由。
+			v2.GET("/", apiV2Root)
+			docsui.RegisterRoutes(v2, BasePathV2)
+			registerExtendedV2Routes(v2)
 		}
 
-		// /api/ping endpoint
-		api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
+		// 注册 /api/ping 存活检查。
+		api.GET("/ping", apiPing)
 
-		// health endpoints for kubernetes
+		// 注册 Kubernetes 健康检查路由。
 		api.GET("/healthz", healthz)
 		api.GET("/readyz", readyz)
 	}
 
-	// build the http server
+	// 创建 HTTP 服务。
 	listenAddr := getEnv("TESLAMATEAPI_LISTEN_ADDR", ":8080")
 	server := &http.Server{
 		Addr:    listenAddr,
 		Handler: r,
 	}
 
-	// setting readyz endpoint to true (if not using MQTT)
+	// 禁用 MQTT 时，数据库初始化完成即可认为服务就绪。
 	if getEnvAsBool("DISABLE_MQTT", false) {
 		isReady.Store(true)
 	}
 
-	// graceful shutdown
+	// 处理优雅关闭。
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 
-	// we run a go routine that will receive the shutdown input
+	// 后台等待关闭信号。
 	go func() {
 		<-quit
 		log.Println("[info] TeslaMateAPI received shutdown input")
@@ -188,7 +166,7 @@ func main() {
 	}()
 
 	log.Printf("[info] TeslaMateAPI listening on %s", listenAddr)
-	// run the server
+	// 启动 HTTP 服务。
 	if err := server.ListenAndServe(); err != nil {
 		if err == http.ErrServerClosed {
 			log.Println("[info] TeslaMateAPI server gracefully shut down")
@@ -198,11 +176,51 @@ func main() {
 	}
 }
 
-// initDBconnection func
+// apiRoot 返回 /api 根路径状态。
+// @Summary API 根路径
+// @Tags 系统
+// @Produce json
+// @Success 200 {object} APISystemMessageResponse
+// @Router / [get]
+func apiRoot(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": "/api"})
+}
+
+// apiV1Root 返回 /api/v1 根路径状态。
+// @Summary API v1 根路径
+// @Tags 系统
+// @Produce json
+// @Success 200 {object} APISystemMessageResponse
+// @Router /v1 [get]
+func apiV1Root(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": "/api/v1"})
+}
+
+// apiV2Root 返回 /api/v2 根路径状态。
+// @Summary API v2 根路径
+// @Tags 系统
+// @Produce json
+// @Success 200 {object} APISystemMessageResponse
+// @Router /v2 [get]
+func apiV2Root(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": "/api/v2"})
+}
+
+// apiPing 返回简单的 API 存活响应。
+// @Summary 连通性检查
+// @Tags 系统
+// @Produce json
+// @Success 200 {object} APISystemMessageResponse
+// @Router /ping [get]
+func apiPing(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "pong"})
+}
+
+// initDBconnection 初始化数据库连接池。
 func initDBconnection() {
 	var err error
 
-	// read environment variables with defaults for connection string
+	// 读取数据库连接环境变量及默认值。
 	dbhost := getEnv("DATABASE_HOST", "database")
 	dbport := getEnvAsInt("DATABASE_PORT", 5432)
 	dbuser := getEnv("DATABASE_USER", "teslamate")
@@ -212,7 +230,7 @@ func initDBconnection() {
 	dbsslmode := getEnv("DATABASE_SSL", "disable")
 	dbsslrootcert := getEnv("DATABASE_SSL_CA_CERT_FILE", "")
 
-	// convert boolean-like SSL mode for backwards compatibility
+	// 兼容历史布尔写法的 SSL 模式配置。
 	switch dbsslmode {
 	case "true", "noverify":
 		dbsslmode = "require"
@@ -220,26 +238,26 @@ func initDBconnection() {
 		dbsslmode = "disable"
 	}
 
-	// construct connection string
+	// 构建 PostgreSQL 连接字符串。
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d", dbhost, dbport, dbuser, dbpass, dbname, dbsslmode, dbtimeout)
 
-	// add SSL certificate configuration if provided
+	// 如配置了 SSL 根证书，则加入连接参数。
 	if dbsslrootcert != "" {
 		psqlInfo += " sslrootcert=" + dbsslrootcert
 	}
 
-	// open database connection
+	// 打开数据库连接池。
 	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
 		log.Fatalf("[error] initDBconnection - database connection error: %v", err)
 	}
 
-	// test database connection
+	// 测试数据库连通性。
 	if err = db.Ping(); err != nil {
 		log.Fatalf("[error] initDBconnection - database ping error: %v", err)
 	}
 
-	// showing database successfully connected
+	// 调试模式下记录数据库连接成功信息。
 	if gin.IsDebugging() {
 		log.Println("[debug] initDBconnection - database connection established successfully.")
 	}
@@ -276,7 +294,7 @@ func getTimeInTimeZone(datestring string) string {
 		return ""
 	}
 
-	// Parse RFC3339/db timestamps first; fallback to API parser.
+	// 优先解析 RFC3339 或数据库时间格式，失败后回退到 API 时间解析器。
 	t, err := time.Parse(dbTimestampFormat, datestring)
 	if err != nil {
 		t, err = parseAPITime(datestring, time.UTC)
@@ -288,10 +306,10 @@ func getTimeInTimeZone(datestring string) string {
 		}
 	}
 
-	// formatting in users location in RFC3339 format
+	// 按用户配置时区输出 RFC3339 时间。
 	ReturnDate := t.In(appUsersTimezone).Format(time.RFC3339)
 
-	// logging time conversion to log
+	// 记录时区转换结果，便于排查响应时间字段。
 	if gin.IsDebugging() {
 		log.Println("[debug] getTimeInTimeZone - UTC", t.Format(time.RFC3339), "time converted to", appUsersTimezone, "is", ReturnDate)
 	}
@@ -310,7 +328,7 @@ func parseDateParam(datestring string) (string, error) {
 	return t.UTC().Format(dbTimestampFormat), nil
 }
 
-// getEnv func - read an environment or return a default value
+// getEnv 读取环境变量；变量不存在或为空时返回默认值。
 func getEnv(key string, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists && value != "" {
 		return value
@@ -318,7 +336,7 @@ func getEnv(key string, defaultVal string) string {
 	return defaultVal
 }
 
-// getEnvAsBool func - read an environment variable into a bool or return default value
+// getEnvAsBool 读取布尔环境变量；解析失败时返回默认值。
 func getEnvAsBool(name string, defaultVal bool) bool {
 	valStr := getEnv(name, "")
 	if val, err := strconv.ParseBool(valStr); err == nil {
@@ -327,7 +345,7 @@ func getEnvAsBool(name string, defaultVal bool) bool {
 	return defaultVal
 }
 
-// getEnvAsInt func - read an environment variable into integer or return a default value
+// getEnvAsInt 读取整数环境变量；解析失败时返回默认值。
 func getEnvAsInt(name string, defaultVal int) int {
 	valueStr := getEnv(name, "")
 	if value, err := strconv.Atoi(valueStr); err == nil {
@@ -336,7 +354,7 @@ func getEnvAsInt(name string, defaultVal int) int {
 	return defaultVal
 }
 
-// convertStringToBool func - converts a string to boolean, returning false on failure
+// convertStringToBool 将字符串转换为布尔值；解析失败时返回 false。
 func convertStringToBool(data string) bool {
 	value, err := strconv.ParseBool(data)
 	if err != nil {
@@ -348,7 +366,7 @@ func convertStringToBool(data string) bool {
 	return value
 }
 
-// convertStringToFloat func - converts a string to float64, returning 0.0 on failure
+// convertStringToFloat 将字符串转换为 float64；解析失败时返回 0。
 func convertStringToFloat(data string) float64 {
 	value, err := strconv.ParseFloat(data, 64)
 	if err != nil {
@@ -360,7 +378,7 @@ func convertStringToFloat(data string) float64 {
 	return value
 }
 
-// convertStringToInteger func - converts a string to int, returning 0 on failure
+// convertStringToInteger 将字符串转换为 int；解析失败时返回 0。
 func convertStringToInteger(data string) int {
 	value, err := strconv.Atoi(data)
 	if err != nil {
@@ -372,51 +390,51 @@ func convertStringToInteger(data string) int {
 	return value
 }
 
-// kilometersToMiles func
+// kilometersToMiles 将公里转换为英里。
 func kilometersToMiles(km float64) float64 {
 	return (km * 0.62137119223733)
 }
 
-// kilometersToMilesNilSupport func
+// kilometersToMilesNilSupport 将可空公里数转换为英里。
 func kilometersToMilesNilSupport(km NullFloat64) NullFloat64 {
 	km.Float64 = (km.Float64 * 0.62137119223733)
 	return (km)
 }
 
-// milesToKilometers func
+// milesToKilometers 将英里转换为公里。
 func milesToKilometers(mi float64) float64 {
 	return (mi * 1.609344)
 }
 
-// kilometersToMilesInteger func
+// kilometersToMilesInteger 将整数公里数转换为整数英里数。
 func kilometersToMilesInteger(km int) int {
 	return int(float64(km) * 0.62137119223733)
 }
 
-// barToPsi func
+// barToPsi 将 bar 转换为 psi。
 func barToPsi(bar float64) float64 {
 	return (bar * 14.503773800722)
 }
 
-// celsiusToFahrenheit func
+// celsiusToFahrenheit 将摄氏度转换为华氏度。
 func celsiusToFahrenheit(c float64) float64 {
 	return (c*9/5 + 32)
 }
 
-// celsiusToFahrenheitNilSupport func
+// celsiusToFahrenheitNilSupport 将可空摄氏度转换为华氏度。
 func celsiusToFahrenheitNilSupport(c NullFloat64) NullFloat64 {
 	c.Float64 = (c.Float64*9/5 + 32)
 	return (c)
 }
 
-// checkArrayContainsString func - check if string is inside stringarray
+// checkArrayContainsString 判断字符串是否存在于字符串数组中。
 func checkArrayContainsString(s []string, e string) bool {
 	return slices.Contains(s, e)
 }
 
-// healthz godoc
-// @Summary Health check
-// @Tags System
+// healthz 返回服务存活状态。
+// @Summary 健康检查
+// @Tags 系统
 // @Produce json
 // @Success 200 {object} APISystemMessageResponse
 // @Router /healthz [get]
@@ -424,9 +442,9 @@ func healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusText(http.StatusOK)})
 }
 
-// readyz godoc
-// @Summary Readiness check
-// @Tags System
+// readyz 返回服务就绪状态。
+// @Summary 就绪检查
+// @Tags 系统
 // @Produce json
 // @Success 200 {object} APISystemMessageResponse
 // @Failure 503 {object} APISystemErrorBody

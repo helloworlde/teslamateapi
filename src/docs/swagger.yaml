@@ -1,4 +1,3 @@
-basePath: /api
 definitions:
   main.APISystemErrorBody:
     properties:
@@ -14,6 +13,35 @@ definitions:
       path:
         example: /api/v1
         type: string
+    type: object
+  main.ActivityBucketV2:
+    additionalProperties: {}
+    type: object
+  main.ActivitySummaryV2:
+    additionalProperties: {}
+    type: object
+  main.ActivityV2Data:
+    properties:
+      bucket:
+        example: day
+        type: string
+      car_id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/main.ActivityBucketV2'
+        type: array
+      range:
+        $ref: '#/definitions/main.ExtendedRange'
+      summary:
+        $ref: '#/definitions/main.ActivitySummaryV2'
+    type: object
+  main.ActivityV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.ActivityV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
   main.BatteryHealthV1Data:
     properties:
@@ -43,35 +71,6 @@ definitions:
         type: number
       rated_efficiency:
         type: number
-    type: object
-  main.CalendarBucketV2:
-    additionalProperties: {}
-    type: object
-  main.CalendarSummaryV2:
-    additionalProperties: {}
-    type: object
-  main.CalendarV2Data:
-    properties:
-      bucket:
-        example: day
-        type: string
-      car_id:
-        type: integer
-      items:
-        items:
-          $ref: '#/definitions/main.CalendarBucketV2'
-        type: array
-      range:
-        $ref: '#/definitions/main.ExtendedRange'
-      summary:
-        $ref: '#/definitions/main.CalendarSummaryV2'
-    type: object
-  main.CalendarV2Envelope:
-    properties:
-      data:
-        $ref: '#/definitions/main.CalendarV2Data'
-      meta:
-        $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
   main.CarGeodataV1:
     properties:
@@ -389,7 +388,8 @@ definitions:
       charge_id:
         type: integer
       conn_charge_cable:
-        description: TeslaMate charges 表中的充电接口/线缆类型（如 IEC、NEMA）；无采样记录时响应中不出现该字段
+        description: ConnChargeCable：TeslaMate `charges.conn_charge_cable`（如 IEC、NEMA）；无记录时
+          JSON 省略该字段。
         type: string
       cost:
         type: number
@@ -400,7 +400,8 @@ definitions:
       end_date:
         type: string
       fast_charger_brand:
-        description: TeslaMate charges 表中的直流快充桩品牌；交流充电或非快充时常为空，响应中可省略
+        description: FastChargerBrand：TeslaMate `charges.fast_charger_brand`（直流快充品牌）；交流或非快充时常为空，JSON
+          省略；无效占位 `<invalid>` 不输出。
         type: string
       latitude:
         type: number
@@ -528,39 +529,6 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/main.CurrentChargeV1Data'
-    type: object
-  main.DashboardCurrentSnapshot:
-    properties:
-      charge:
-        additionalProperties: {}
-        type: object
-      position:
-        additionalProperties: {}
-        type: object
-      state:
-        additionalProperties: {}
-        type: object
-    type: object
-  main.DashboardOverview:
-    additionalProperties: {}
-    type: object
-  main.DashboardV2Data:
-    properties:
-      car_id:
-        type: integer
-      overview:
-        $ref: '#/definitions/main.DashboardOverview'
-      range:
-        $ref: '#/definitions/main.ExtendedRange'
-      statistics:
-        $ref: '#/definitions/main.StatisticsSummary'
-    type: object
-  main.DashboardV2Envelope:
-    properties:
-      data:
-        $ref: '#/definitions/main.DashboardV2Data'
-      meta:
-        $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
   main.DistributionsV2Data:
     properties:
@@ -793,13 +761,6 @@ definitions:
       data:
         $ref: '#/definitions/main.DrivesListV1Data'
     type: object
-  main.EnabledCommandsV1Envelope:
-    properties:
-      enabled_commands:
-        items:
-          type: string
-        type: array
-    type: object
   main.ExtendedRange:
     properties:
       end:
@@ -876,12 +837,17 @@ definitions:
       unit_of_temperature:
         type: string
     type: object
-  main.HistorySummaryCoverage:
+  main.HistoryListV2Envelope:
     properties:
-      end_date:
-        type: string
-      start_date:
-        type: string
+      data:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+      pagination:
+        $ref: '#/definitions/main.v1Pagination'
     type: object
   main.InsightSummaryV2:
     properties:
@@ -1053,28 +1019,31 @@ definitions:
   main.MetricSeriesPointV2:
     additionalProperties: {}
     type: object
-  main.ParkingStateBreakdown:
+  main.RecordV2:
     properties:
-      duration_min:
-        type: integer
-      session_count:
-        type: integer
-      share:
-        type: number
-      state:
+      date: {}
+      entity_id: {}
+      entity_type:
+        example: drive
         type: string
+      unit:
+        type: string
+      value: {}
     type: object
-  main.RealtimeV2Data:
+  main.RecordsV2Data:
     properties:
       car_id:
         type: integer
-      current:
-        $ref: '#/definitions/main.DashboardCurrentSnapshot'
+      records:
+        additionalProperties:
+          $ref: '#/definitions/main.RecordV2'
+        type: object
+      year_filter: {}
     type: object
-  main.RealtimeV2Envelope:
+  main.RecordsV2Envelope:
     properties:
       data:
-        $ref: '#/definitions/main.RealtimeV2Data'
+        $ref: '#/definitions/main.RecordsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
@@ -1106,96 +1075,33 @@ definitions:
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
-  main.StateBreakdown:
-    properties:
-      duration_min:
-        type: integer
-      session_count:
-        type: integer
-      share:
-        type: number
-      state:
-        type: string
-    type: object
-  main.StatisticsBatteryV2:
+  main.StatsSectionV2:
     additionalProperties: {}
     type: object
-  main.StatisticsChargeV2:
-    additionalProperties: {}
-    type: object
-  main.StatisticsDriveV2:
-    additionalProperties: {}
-    type: object
-  main.StatisticsOverviewV2:
-    additionalProperties: {}
-    type: object
-  main.StatisticsSummary:
-    properties:
-      average_consumption_gross:
-        type: number
-      average_consumption_net:
-        type: number
-      average_cost_per_100_distance:
-        type: number
-      average_cost_per_kwh:
-        type: number
-      average_energy_used_per_charge:
-        type: number
-      average_outside_temp:
-        type: number
-      average_speed:
-        type: number
-      charge_count:
-        type: integer
-      charging_efficiency:
-        type: number
-      consumption_overhead:
-        type: number
-      coverage:
-        $ref: '#/definitions/main.HistorySummaryCoverage'
-      data_complete:
-        type: boolean
-      distance:
-        type: number
-      drive_count:
-        type: integer
-      driving_efficiency:
-        type: number
-      energy_added:
-        type: number
-      energy_used:
-        type: number
-      max_speed:
-        type: integer
-      time_driven_min:
-        type: integer
-      total_cost:
-        type: number
-      trips:
-        type: integer
-    type: object
-  main.StatisticsV2Data:
+  main.StatsV2Data:
     properties:
       battery:
-        $ref: '#/definitions/main.StatisticsBatteryV2'
-      car_id:
-        type: integer
-      charge:
-        $ref: '#/definitions/main.StatisticsChargeV2'
-      drive:
-        $ref: '#/definitions/main.StatisticsDriveV2'
-      overview:
-        $ref: '#/definitions/main.StatisticsOverviewV2'
+        $ref: '#/definitions/main.StatsSectionV2'
+      charges:
+        $ref: '#/definitions/main.StatsSectionV2'
+      drives:
+        $ref: '#/definitions/main.StatsSectionV2'
+      generated_at:
+        type: string
+      odometer:
+        type: number
+      parking:
+        $ref: '#/definitions/main.StatsSectionV2'
       period:
         example: month
         type: string
       range:
         $ref: '#/definitions/main.ExtendedRange'
     type: object
-  main.StatisticsV2Envelope:
+  main.StatsV2Envelope:
     properties:
       data:
-        $ref: '#/definitions/main.StatisticsV2Data'
+        $ref: '#/definitions/main.StatsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
     type: object
@@ -1226,6 +1132,9 @@ definitions:
         type: number
       usable_battery_level:
         type: integer
+    type: object
+  main.StatusBatteryV2:
+    additionalProperties: {}
     type: object
   main.StatusCarDetailsV1:
     properties:
@@ -1335,6 +1244,12 @@ definitions:
       speed:
         type: integer
     type: object
+  main.StatusEnvironmentV2:
+    additionalProperties: {}
+    type: object
+  main.StatusPositionV2:
+    additionalProperties: {}
+    type: object
   main.StatusTPMSV1:
     properties:
       tpms_pressure_fl:
@@ -1354,6 +1269,31 @@ definitions:
       tpms_soft_warning_rr:
         type: boolean
     type: object
+  main.StatusV2Data:
+    properties:
+      active_charge:
+        additionalProperties: {}
+        type: object
+      battery:
+        $ref: '#/definitions/main.StatusBatteryV2'
+      environment:
+        $ref: '#/definitions/main.StatusEnvironmentV2'
+      odometer:
+        type: number
+      position:
+        $ref: '#/definitions/main.StatusPositionV2'
+      since:
+        type: string
+      state:
+        type: string
+    type: object
+  main.StatusV2Envelope:
+    properties:
+      data:
+        $ref: '#/definitions/main.StatusV2Data'
+      meta:
+        $ref: '#/definitions/main.ExtendedResponseMeta'
+    type: object
   main.StatusVersionsV1:
     properties:
       update_available:
@@ -1363,317 +1303,49 @@ definitions:
       version:
         type: string
     type: object
-  main.SummaryV2Battery:
+  main.TrendV2Item:
     properties:
-      rated_range:
-        $ref: '#/definitions/main.SummaryV2NullableRange'
-      soc:
-        $ref: '#/definitions/main.SummaryV2NullableRange'
-      vampire_drain_energy:
+      change_percent:
         type: number
+      current: {}
+      direction:
+        example: better
+        type: string
+      higher_is_better:
+        type: boolean
+      metric:
+        example: distance
+        type: string
+      name:
+        example: Distance Driven
+        type: string
+      previous: {}
+      unit:
+        example: km
+        type: string
     type: object
-  main.SummaryV2Car:
+  main.TrendsV2Data:
     properties:
       car_id:
-        example: 1
         type: integer
-      car_name:
-        example: Model 3
+      comparison_range:
+        $ref: '#/definitions/main.ExtendedRange'
+      period:
+        example: month
         type: string
-    type: object
-  main.SummaryV2Charging:
-    properties:
-      count:
-        type: integer
-      duration:
-        $ref: '#/definitions/main.SummaryV2Duration'
-      efficiency:
-        type: number
-      energy:
-        $ref: '#/definitions/main.SummaryV2ChargingEnergy'
-      power:
-        $ref: '#/definitions/main.SummaryV2ChargingPower'
-    type: object
-  main.SummaryV2ChargingEnergy:
-    properties:
-      added:
-        type: number
-      average_added:
-        type: number
-      charger_used:
-        type: number
-      largest_added:
-        type: number
-    type: object
-  main.SummaryV2ChargingPower:
-    properties:
-      average:
-        type: number
-      max:
-        type: integer
-    type: object
-  main.SummaryV2Consumption:
-    properties:
-      average:
-        type: number
-      best:
-        type: number
-      worst:
-        type: number
-    type: object
-  main.SummaryV2Cost:
-    properties:
-      average:
-        type: number
-      average_per_kwh:
-        type: number
-      currency:
-        type: string
-      highest:
-        type: number
-      per_100_distance:
-        type: number
-      total:
-        type: number
-    type: object
-  main.SummaryV2Data:
-    properties:
-      battery:
-        $ref: '#/definitions/main.SummaryV2Battery'
-      car:
-        $ref: '#/definitions/main.SummaryV2Car'
-      charging:
-        $ref: '#/definitions/main.SummaryV2Charging'
-      cost:
-        $ref: '#/definitions/main.SummaryV2Cost'
-      driving:
-        $ref: '#/definitions/main.SummaryV2Driving'
-      efficiency:
-        $ref: '#/definitions/main.SummaryV2Efficiency'
-      generated_at:
-        type: string
-      overview:
-        $ref: '#/definitions/main.SummaryV2Overview'
-      parking:
-        $ref: '#/definitions/main.SummaryV2Parking'
-      quality:
-        $ref: '#/definitions/main.SummaryV2Quality'
       range:
         $ref: '#/definitions/main.ExtendedRange'
-      schema_version:
-        example: summary.v1
-        type: string
-      state:
-        $ref: '#/definitions/main.SummaryV2VehicleState'
-      units:
-        $ref: '#/definitions/main.TeslaMateSummaryUnits'
+      trends:
+        items:
+          $ref: '#/definitions/main.TrendV2Item'
+        type: array
     type: object
-  main.SummaryV2Driving:
-    properties:
-      consumption:
-        $ref: '#/definitions/main.SummaryV2Consumption'
-      count:
-        type: integer
-      distance:
-        type: number
-      duration:
-        $ref: '#/definitions/main.SummaryV2Duration'
-      energy:
-        $ref: '#/definitions/main.SummaryV2DrivingEnergy'
-      power:
-        $ref: '#/definitions/main.SummaryV2DrivingPower'
-      speed:
-        $ref: '#/definitions/main.SummaryV2Speed'
-    type: object
-  main.SummaryV2DrivingEnergy:
-    properties:
-      regenerated:
-        type: number
-      regeneration_ratio:
-        type: number
-      used:
-        type: number
-    type: object
-  main.SummaryV2DrivingPower:
-    properties:
-      peak_drive:
-        type: integer
-      peak_regen:
-        type: integer
-    type: object
-  main.SummaryV2Duration:
-    properties:
-      average_min:
-        type: number
-      longest_min:
-        type: integer
-      total_min:
-        type: integer
-    type: object
-  main.SummaryV2Efficiency:
-    properties:
-      charging_efficiency:
-        type: number
-      consumption_overhead:
-        type: number
-      drive_average_consumption:
-        type: number
-      drive_best_consumption:
-        type: number
-      drive_worst_consumption:
-        type: number
-      gross_consumption:
-        type: number
-      regeneration_ratio:
-        type: number
-    type: object
-  main.SummaryV2Envelope:
+  main.TrendsV2Envelope:
     properties:
       data:
-        $ref: '#/definitions/main.SummaryV2Data'
+        $ref: '#/definitions/main.TrendsV2Data'
       meta:
         $ref: '#/definitions/main.ExtendedResponseMeta'
-    type: object
-  main.SummaryV2NullableRange:
-    properties:
-      end:
-        type: number
-      start:
-        type: number
-    type: object
-  main.SummaryV2Overview:
-    properties:
-      charge_count:
-        type: integer
-      charge_duration_min:
-        type: integer
-      cost:
-        type: number
-      distance:
-        type: number
-      drive_count:
-        type: integer
-      drive_duration_min:
-        type: integer
-      energy_added:
-        type: number
-      energy_used:
-        type: number
-      latest_odometer:
-        type: number
-      parking_count:
-        type: integer
-      parking_duration_min:
-        type: integer
-    type: object
-  main.SummaryV2Parking:
-    properties:
-      average_min:
-        type: number
-      count:
-        type: integer
-      dominant_state:
-        type: string
-      duration_min:
-        type: integer
-      longest_min:
-        type: integer
-      parked_share:
-        type: number
-      state_breakdown:
-        items:
-          $ref: '#/definitions/main.ParkingStateBreakdown'
-        type: array
-    type: object
-  main.SummaryV2Quality:
-    properties:
-      abnormal_charge_count:
-        type: integer
-      battery_snapshot_available:
-        type: boolean
-      congestion_like_drive_count:
-        type: integer
-      cost_available:
-        type: boolean
-      data_complete:
-        type: boolean
-      gross_consumption_available:
-        type: boolean
-      high_consumption_drive_count:
-        type: integer
-      low_efficiency_charge_count:
-        type: integer
-      low_speed_drive_count:
-        type: integer
-      regeneration_estimated:
-        type: boolean
-    type: object
-  main.SummaryV2Speed:
-    properties:
-      average:
-        type: number
-      max:
-        type: integer
-    type: object
-  main.SummaryV2VehicleState:
-    properties:
-      breakdown:
-        items:
-          $ref: '#/definitions/main.StateBreakdown'
-        type: array
-      current:
-        type: string
-      last_state_change:
-        type: string
-    type: object
-  main.TeslaMateSummaryUnits:
-    properties:
-      unit_of_consumption:
-        type: string
-      unit_of_cost_per_distance:
-        type: string
-      unit_of_length:
-        type: string
-      unit_of_speed:
-        type: string
-      unit_of_temperature:
-        type: string
-    type: object
-  main.TeslaPassthroughJSONBody:
-    additionalProperties: true
-    type: object
-  main.TimelineEventV2:
-    properties:
-      end_date:
-        type: string
-      entity_id:
-        type: integer
-      entity_type:
-        example: drive
-        type: string
-      id:
-        type: string
-      start_date:
-        type: string
-      summary:
-        additionalProperties: {}
-        type: object
-      title:
-        type: string
-      type:
-        example: drive
-        type: string
-    type: object
-  main.TimelineV2Envelope:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/main.TimelineEventV2'
-        type: array
-      meta:
-        $ref: '#/definitions/main.ExtendedResponseMeta'
-      pagination:
-        $ref: '#/definitions/main.v1Pagination'
     type: object
   main.UnitsLengthTempPressureV1:
     properties:
@@ -1791,10 +1463,6 @@ definitions:
     type: object
 info:
   contact: {}
-  description: 基于 TeslaMate 数据库的 REST API，提供车辆、充电、行程、统计、图表、时间线和洞察数据。原 TeslaMateApi
-    兼容接口保持响应结构；扩展接口按当前项目最佳实践重新设计，可能包含破坏性变更。日期参数支持 RFC3339、带时区偏移、本地日期时间和纯日期；未带时区的本地日期使用环境变量配置的时区。
-  title: TeslaMateApi
-  version: "1.0"
 paths:
   /:
     get:
@@ -1807,7 +1475,7 @@ paths:
             $ref: '#/definitions/main.APISystemMessageResponse'
       summary: API 根路径
       tags:
-      - System
+      - 系统
   /healthz:
     get:
       produces:
@@ -1817,9 +1485,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.APISystemMessageResponse'
-      summary: Health check
+      summary: 健康检查
       tags:
-      - System
+      - 系统
   /ping:
     get:
       produces:
@@ -1831,7 +1499,7 @@ paths:
             $ref: '#/definitions/main.APISystemMessageResponse'
       summary: 连通性检查
       tags:
-      - System
+      - 系统
   /readyz:
     get:
       produces:
@@ -1845,9 +1513,9 @@ paths:
           description: Service Unavailable
           schema:
             $ref: '#/definitions/main.APISystemErrorBody'
-      summary: Readiness check
+      summary: 就绪检查
       tags:
-      - System
+      - 系统
   /v1:
     get:
       produces:
@@ -1859,11 +1527,10 @@ paths:
             $ref: '#/definitions/main.APISystemMessageResponse'
       summary: API v1 根路径
       tags:
-      - System
+      - 系统
   /v1/cars:
     get:
-      description: 兼容接口：返回全部车辆。历史兼容原因下，部分数据库空值仍可能表现为空字符串或 0；部分旧错误仍可能以 HTTP 200 返回只包含
-        error 字段的 JSON。
+      description: 兼容接口：使用历史响应封装返回全部车辆。
       produces:
       - application/json
       responses:
@@ -1871,13 +1538,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.CarsV1Envelope'
-      summary: 查询车辆列表
+      summary: 车辆列表
       tags:
-      - Compatible API
+      - 兼容 API
   /v1/cars/{CarID}:
     get:
-      description: 兼容接口：返回匹配车辆，结果位于 data.cars 中，通常只有一条。历史兼容原因下，部分旧错误仍可能以 HTTP 200
-        返回只包含 error 字段的 JSON。
+      description: 兼容接口：在 data.cars 中返回匹配车辆。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -1892,12 +1558,11 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.CarsV1Envelope'
-      summary: 查询单车信息
+      summary: 车辆详情
       tags:
-      - Compatible API
+      - 兼容 API
   /v1/cars/{CarID}/battery-health:
     get:
-      description: 兼容接口：保留原 battery-health 响应结构。需要图表友好数据时，建议使用 `/v1/cars/{CarID}/series/battery?metrics=range,soc`。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -1914,54 +1579,10 @@ paths:
             $ref: '#/definitions/main.BatteryHealthV1Envelope'
       summary: 电池健康
       tags:
-      - Compatible API
-  /v1/cars/{CarID}/calendar:
-    get:
-      description: 扩展接口：按 day/week/month 聚合行程和充电数据，返回总体 summary 和倒序 bucket 列表。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      - description: 聚合粒度：day|week|month
-        in: query
-        name: bucket
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.CalendarV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 日历聚合
-      tags:
-      - Extended API
+      - 兼容 API
   /v1/cars/{CarID}/charges:
     get:
-      description: 列表项含每条充电会话首条采样行的 conn_charge_cable（接口/线缆类型）与 fast_charger_brand（直流快充品牌，可选）。
+      description: 兼容接口：保持历史充电列表响应封装。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -1969,11 +1590,11 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 开始时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期
+      - description: 开始时间
         in: query
         name: startDate
         type: string
-      - description: 结束时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期
+      - description: 结束时间
         in: query
         name: endDate
         type: string
@@ -1993,11 +1614,11 @@ paths:
         in: query
         name: offset
         type: integer
-      - description: start_date|-start_date|duration|-duration|cost|-cost|energy|-energy
+      - description: 排序表达式
         in: query
         name: sort
         type: string
-      - description: summary,location,energy,cost
+      - description: 逗号分隔的可选分区
         in: query
         name: include
         type: string
@@ -2008,9 +1629,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.ChargesListV1Envelope'
-      summary: 查询充电记录
+      summary: 充电列表
       tags:
-      - Compatible API
+      - 兼容 API
   /v1/cars/{CarID}/charges/{ChargeID}:
     get:
       parameters:
@@ -2020,7 +1641,7 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 充电记录 ID
+      - description: 充电 ID
         in: path
         name: ChargeID
         required: true
@@ -2034,7 +1655,7 @@ paths:
             $ref: '#/definitions/main.ChargeDetailsV1Envelope'
       summary: 充电详情
       tags:
-      - Compatible API
+      - 兼容 API
   /v1/cars/{CarID}/charges/current:
     get:
       parameters:
@@ -2051,194 +1672,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.CurrentChargeV1Envelope'
-      summary: 当前充电状态
+      summary: 当前充电
       tags:
-      - Compatible API
-  /v1/cars/{CarID}/command:
-    get:
-      description: 仅在 ENABLE_COMMANDS=true 时注册。接口响应永远不会暴露 Tesla 账号 access/refresh
-        token。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.EnabledCommandsV1Envelope'
-      summary: 查询可用命令
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/command/{Command}:
-    post:
-      description: 仅在 ENABLE_COMMANDS=true 且命令被允许时注册。接口响应永远不会暴露 Tesla 账号 access/refresh
-        token。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 命令名称
-        in: path
-        name: Command
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
-      summary: 执行车辆命令
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/dashboard:
-    get:
-      description: 扩展接口：仅返回所选时间范围内的整车级统计和概览。实时状态、时序图、分布图、洞察、时间线、行程明细、充电明细分别由独立接口提供。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 时间范围类型：year|month|week|custom
-        in: query
-        name: period
-        type: string
-      - description: 参考日期，支持 YYYY-MM-DD 或 RFC3339
-        in: query
-        name: date
-        type: string
-      - description: 自定义范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 自定义范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.DashboardV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 车辆仪表盘统计
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/distributions/charges:
-    get:
-      description: 扩展接口：返回充电开始小时、星期、补能量、时长、功率、费用等分布桶。桶顺序固定，并补齐 0 值。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 逗号分隔指标：start_hour,weekday,energy,duration,power,cost
-        in: query
-        name: metrics
-        type: string
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.DistributionsV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 充电分布数据
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/distributions/drives:
-    get:
-      description: 扩展接口：返回行程开始小时、星期、距离、时长、速度、能耗效率等分布桶。桶顺序固定，并补齐 0 值。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 逗号分隔指标：start_hour,weekday,distance,duration,speed,efficiency
-        in: query
-        name: metrics
-        type: string
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.DistributionsV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 行程分布数据
-      tags:
-      - Extended API
+      - 兼容 API
   /v1/cars/{CarID}/drives:
     get:
+      description: 兼容接口：保持历史行程列表响应封装。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2246,22 +1685,14 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 开始时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期
+      - description: 开始时间
         in: query
         name: startDate
         type: string
-      - description: 结束时间，支持 RFC3339、带时区偏移、本地日期时间和纯日期
+      - description: 结束时间
         in: query
         name: endDate
         type: string
-      - description: 最小行程距离
-        in: query
-        name: minDistance
-        type: number
-      - description: 最大行程距离
-        in: query
-        name: maxDistance
-        type: number
       - description: 页码
         in: query
         name: page
@@ -2278,13 +1709,9 @@ paths:
         in: query
         name: offset
         type: integer
-      - description: start_date|-start_date|distance|-distance|duration|-duration|efficiency|-efficiency
+      - description: 排序表达式
         in: query
         name: sort
-        type: string
-      - description: summary,locations,energy
-        in: query
-        name: include
         type: string
       produces:
       - application/json
@@ -2293,9 +1720,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/main.DrivesListV1Envelope'
-      summary: 查询行程记录
+      summary: 行程列表
       tags:
-      - Compatible API
+      - 兼容 API
   /v1/cars/{CarID}/drives/{DriveID}:
     get:
       parameters:
@@ -2319,10 +1746,9 @@ paths:
             $ref: '#/definitions/main.DriveDetailsV1Envelope'
       summary: 行程详情
       tags:
-      - Compatible API
-  /v1/cars/{CarID}/insights:
+      - 兼容 API
+  /v1/cars/{CarID}/status:
     get:
-      description: 扩展接口：将当前时间范围与上一个等长基线范围对比，生成效率、费用、充电、电池和异常类洞察。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2330,22 +1756,149 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 范围开始时间
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.CarStatusV1Envelope'
+      summary: 当前车辆状态
+      tags:
+      - 兼容 API
+  /v1/cars/{CarID}/updates:
+    get:
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: 开始时间
         in: query
         name: startDate
         type: string
-      - description: 范围结束时间
+      - description: 结束时间
         in: query
         name: endDate
         type: string
-      - description: 逗号分隔类型：efficiency,cost,charging,driving,battery,anomaly
+      - description: 页码
         in: query
-        name: types
-        type: string
-      - description: 洞察数量限制，1-100，默认 20
-        in: query
-        name: limit
+        name: page
         type: integer
+      - description: 每页数量
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.UpdatesListV1Envelope'
+      summary: 软件更新列表
+      tags:
+      - 兼容 API
+  /v1/globalsettings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.GlobalsettingsV1Envelope'
+      summary: 全局设置
+      tags:
+      - 兼容 API
+  /v2:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.APISystemMessageResponse'
+      summary: API v2 根路径
+      tags:
+      - 系统
+  /v2/cars/{CarID}/activity:
+    get:
+      description: 扩展接口 v2：返回按日、周或月聚合的活动数据。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: week|month|year|custom
+        in: query
+        name: period
+        type: string
+      - description: 自定义范围开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 自定义范围结束时间
+        in: query
+        name: endDate
+        type: string
+      - description: day|week|month
+        in: query
+        name: bucket
+        type: string
+      - description: 可选指标
+        in: query
+        name: metrics
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ActivityV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 活动日历
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/analysis/insights:
+    get:
+      description: 扩展接口 v2：返回所选周期的派生洞察卡片。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: week|month|year|custom
+        in: query
+        name: period
+        type: string
+      - description: 自定义范围开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 自定义范围结束时间
+        in: query
+        name: endDate
+        type: string
       produces:
       - application/json
       responses:
@@ -2365,12 +1918,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 洞察
+      summary: 分析洞察
       tags:
-      - Extended API
-  /v1/cars/{CarID}/locations:
+      - 扩展 API
+  /v2/cars/{CarID}/analysis/records:
     get:
-      description: 扩展接口：合并行程起终点和充电地点，返回事件次数、坐标、充电能量、费用和最近出现时间。
+      description: 扩展接口 v2：返回全量或按年份过滤的个人最佳纪录。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2378,18 +1931,251 @@ paths:
         name: CarID
         required: true
         type: integer
-      - description: 范围开始时间
+      - description: 可选年份过滤
+        in: query
+        name: year
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.RecordsV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 分析纪录
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/analysis/trends:
+    get:
+      description: 扩展接口 v2：返回周期之间的指标趋势。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: week|month|year|custom
+        in: query
+        name: period
+        type: string
+      - description: 自定义范围开始时间
         in: query
         name: startDate
         type: string
-      - description: 范围结束时间
+      - description: 自定义范围结束时间
         in: query
         name: endDate
         type: string
-      - description: 最大地点数量，最多 100
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.TrendsV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 分析趋势
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/charges:
+    get:
+      description: 扩展接口 v2：返回分页充电会话。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: 开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 结束时间
+        in: query
+        name: endDate
+        type: string
+      - description: 每页数量
         in: query
         name: limit
         type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HistoryListV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 充电会话
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/distributions:
+    get:
+      description: 扩展接口 v2：通过 scope=drives|charges 返回统一直方图。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: drives|charges
+        in: query
+        name: scope
+        required: true
+        type: string
+      - description: 逗号分隔的指标列表
+        in: query
+        name: metrics
+        type: string
+      - description: week|month|year|custom
+        in: query
+        name: period
+        type: string
+      - description: 自定义范围开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 自定义范围结束时间
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.DistributionsV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 指标分布
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/drives:
+    get:
+      description: 扩展接口 v2：返回分页行程会话。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: 开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 结束时间
+        in: query
+        name: endDate
+        type: string
+      - description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HistoryListV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 行程会话
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/locations:
+    get:
+      description: 扩展接口 v2：聚合行程和充电地点。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: 开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 结束时间
+        in: query
+        name: endDate
+        type: string
+      - description: 最大地点数量
+        in: query
+        name: limit
+        type: integer
+      - description: 可选分区
+        in: query
+        name: include
+        type: string
       produces:
       - application/json
       responses:
@@ -2409,12 +2195,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 地点聚合
+      summary: 位置聚合
       tags:
-      - Extended API
-  /v1/cars/{CarID}/logging:
+      - 扩展 API
+  /v2/cars/{CarID}/locations/heatmap:
     get:
-      description: 仅在 ENABLE_COMMANDS=true 时注册，只返回允许的日志采集命令。
+      description: 扩展接口 v2：返回请求周期内的访问点热力图。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2422,56 +2208,15 @@ paths:
         name: CarID
         required: true
         type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.EnabledCommandsV1Envelope'
-      summary: 查询日志采集状态
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/logging/{Command}:
-    put:
-      description: 仅在 ENABLE_COMMANDS=true 且日志采集命令被允许时注册。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 日志采集命令
-        in: path
-        name: Command
-        required: true
+      - description: week|month|year|custom
+        in: query
+        name: period
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
-      summary: 更新日志采集状态
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/map/visited:
-    get:
-      description: 扩展接口：返回访问过的坐标点、边界和热力图基础数据，用于地图覆盖范围渲染。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 范围开始时间
+      - description: 自定义范围开始时间
         in: query
         name: startDate
         type: string
-      - description: 范围结束时间
+      - description: 自定义范围结束时间
         in: query
         name: endDate
         type: string
@@ -2494,12 +2239,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 访问地图
+      summary: 位置热力图
       tags:
-      - Extended API
-  /v1/cars/{CarID}/realtime:
+      - 扩展 API
+  /v2/cars/{CarID}/series:
     get:
-      description: 扩展接口：从最新位置、最新状态和最新充电过程派生当前车辆快照，用于替代 dashboard 中原本揉杂的实时信息。
+      description: 扩展接口 v2：通过 scope=drives|charges|battery|states 返回统一时序数据。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2507,232 +2252,72 @@ paths:
         name: CarID
         required: true
         type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.RealtimeV2Envelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 实时车辆快照
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/series/battery:
-    get:
-      description: 扩展接口：返回电量百分比和额定续航等电池时序指标，按时间倒序排列。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
+      - description: drives|charges|battery|states
+        in: query
+        name: scope
         required: true
-        type: integer
-      - description: 逗号分隔指标：soc,range
+        type: string
+      - description: 逗号分隔的指标列表
         in: query
         name: metrics
         type: string
-      - description: 聚合粒度：raw|hour|day|week|month|year
+      - description: raw|hour|day|week|month|year
         in: query
         name: bucket
         type: string
-      - description: 范围开始时间
+      - description: asc|desc
         in: query
-        name: startDate
+        name: sort
         type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SeriesV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 电池时序数据
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/series/charges:
-    get:
-      description: 扩展接口：按 bucket 聚合充电指标，默认包含 start_soc 和 end_soc，并把同一时间点的多个指标合并到一个
-        point 对象中。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 逗号分隔指标：energy,power,cost,start_soc,end_soc
-        in: query
-        name: metrics
-        type: string
-      - description: 聚合粒度：raw|hour|day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SeriesV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 充电时序数据
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/series/drives:
-    get:
-      description: 扩展接口：按 bucket 聚合行程指标，并把同一时间点的多个指标合并到一个 point 对象中，按时间倒序返回。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 逗号分隔指标：distance,efficiency,speed,max_speed,motor_power,regen_power,elevation,outside_temp,inside_temp,energy,regeneration
-        in: query
-        name: metrics
-        type: string
-      - description: 聚合粒度：raw|hour|day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SeriesV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 行程时序数据
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/series/states:
-    get:
-      description: 扩展接口：返回车辆状态持续时间和停车能耗（vampire drain）等状态派生指标。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 逗号分隔指标：duration,vampire_drain
-        in: query
-        name: metrics
-        type: string
-      - description: 聚合粒度：raw|hour|day|week|month|year
-        in: query
-        name: bucket
-        type: string
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SeriesV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 状态时序数据
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/statistics:
-    get:
-      description: 扩展接口：返回 overview、drive、charge、battery 等明确分区，覆盖效率、费用、能量、停车等聚合指标。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 时间范围类型：year|month|week|custom
+      - description: week|month|year|custom
         in: query
         name: period
         type: string
-      - description: 参考日期，支持 YYYY-MM-DD 或 RFC3339
+      - description: 自定义范围开始时间
+        in: query
+        name: startDate
+        type: string
+      - description: 自定义范围结束时间
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.SeriesV2Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.v1ErrorEnvelope'
+      summary: 时序数据
+      tags:
+      - 扩展 API
+  /v2/cars/{CarID}/stats:
+    get:
+      description: 扩展接口 v2：返回行程、充电、电池和停车的周期核心指标。
+      parameters:
+      - default: 1
+        description: 车辆 ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: week|month|year|custom
+        in: query
+        name: period
+        type: string
+      - description: 参考日期
         in: query
         name: date
         type: string
@@ -2750,7 +2335,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.StatisticsV2Envelope'
+            $ref: '#/definitions/main.StatsV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -2763,11 +2348,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 分区统计
+      summary: 周期统计
       tags:
-      - Extended API
-  /v1/cars/{CarID}/status:
+      - 扩展 API
+  /v2/cars/{CarID}/status:
     get:
+      description: 扩展接口 v2：返回最新已知车辆状态。
       parameters:
       - default: 1
         description: 车辆 ID
@@ -2781,44 +2367,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.CarStatusV1Envelope'
-      summary: 当前车辆状态
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/summary:
-    get:
-      description: 扩展接口：返回指定时间范围内的规范化摘要，包含 overview、driving、charging、parking、battery、efficiency、cost、quality、state
-        等稳定分区，不再依赖旧 include 参数拼装稀疏字段。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 时间范围类型：year|month|week|custom，默认 month
-        in: query
-        name: period
-        type: string
-      - description: period 模式下的参考日期
-        in: query
-        name: date
-        type: string
-      - description: 自定义范围开始时间；出现时必须同时提供 endDate
-        in: query
-        name: startDate
-        type: string
-      - description: 自定义范围结束时间；出现时必须同时提供 startDate
-        in: query
-        name: endDate
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.SummaryV2Envelope'
+            $ref: '#/definitions/main.StatusV2Envelope'
         "400":
           description: Bad Request
           schema:
@@ -2831,123 +2380,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 车辆摘要
+      summary: 车辆状态快照
       tags:
-      - Extended API
-  /v1/cars/{CarID}/timeline:
-    get:
-      description: 扩展接口：统一返回行程、充电、状态活动时间线，支持分页，按时间倒序。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 范围开始时间
-        in: query
-        name: startDate
-        type: string
-      - description: 范围结束时间
-        in: query
-        name: endDate
-        type: string
-      - description: 分页大小
-        in: query
-        name: limit
-        type: integer
-      - description: 偏移量
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.TimelineV2Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/main.v1ErrorEnvelope'
-      summary: 时间线
-      tags:
-      - Extended API
-  /v1/cars/{CarID}/updates:
-    get:
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 页码
-        in: query
-        name: page
-        type: integer
-      - description: 每页数量
-        in: query
-        name: show
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.UpdatesListV1Envelope'
-      summary: 查询车辆更新记录
-      tags:
-      - Compatible API
-  /v1/cars/{CarID}/wake_up:
-    post:
-      description: 仅在 ENABLE_COMMANDS=true 且 COMMANDS_WAKE、COMMANDS_ALL 或 COMMANDS_ALLOWLIST
-        允许 /wake_up 时注册。接口响应永远不会暴露 Tesla 账号 access/refresh token。
-      parameters:
-      - default: 1
-        description: 车辆 ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.TeslaPassthroughJSONBody'
-      summary: 唤醒车辆
-      tags:
-      - Compatible API
-  /v1/globalsettings:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/main.GlobalsettingsV1Envelope'
-      summary: 全局设置
-      tags:
-      - Compatible API
-schemes:
-- http
-- https
-securityDefinitions:
-  BearerAuth:
-    in: header
-    name: Authorization
-    type: apiKey
+      - 扩展 API
 swagger: "2.0"

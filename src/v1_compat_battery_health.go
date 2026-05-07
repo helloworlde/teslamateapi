@@ -5,12 +5,18 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsBatteryHealthV1 func
+// TeslaMateAPICarsBatteryHealthV1 返回兼容响应结构的电池健康指标。
+// @Summary 电池健康
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Success 200 {object} BatteryHealthV1Envelope
+// @Router /v1/cars/{CarID}/battery-health [get]
 func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	var CarsBatteryHealthError1 = "Unable to load battery health data."
 	CarID := convertStringToInteger(c.Param("CarID"))
 
-	// creating required vars
+	// 创建响应所需变量。
 	var (
 		CarName                       NullString
 		Efficiency                    float64
@@ -220,7 +226,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		LEFT JOIN CurrentCapacity ON true
 	WHERE cars.id = $1;`
 
-	// execute query
+	// 执行查询。
 	err := db.QueryRow(query, CarID).Scan(
 		&MaxRangeRated,
 		&MaxRangeIdeal,
@@ -235,7 +241,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		&CarName,
 	)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsBatteryHealthV1", CarsBatteryHealthError1, err.Error())
 		return
@@ -248,7 +254,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		BatteryHealthPercentage: 0,
 	}
 
-	// Select the correct range based on preferred_range setting
+	// 根据 preferred_range 设置选择续航类型。
 	if PreferredRange == "ideal" {
 		batteryHealth.MaxRange = MaxRangeIdeal
 		batteryHealth.CurrentRange = CurrentRangeIdeal
@@ -257,12 +263,12 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.CurrentRange = CurrentRangeRated
 	}
 
-	// Calculate battery health percentage
+	// 计算电池健康百分比。
 	if MaxCapacity > 0 {
 		batteryHealth.BatteryHealthPercentage = (CurrentCapacity / MaxCapacity) * 100
 	}
 
-	// converting values based on settings UnitsLength
+	// 根据长度单位设置转换数值。
 	if UnitsLength == "mi" {
 		batteryHealth.MaxRange = kilometersToMiles(batteryHealth.MaxRange)
 		batteryHealth.CurrentRange = kilometersToMiles(batteryHealth.CurrentRange)

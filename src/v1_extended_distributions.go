@@ -10,14 +10,26 @@ import (
 	aggregatecache "github.com/tobiasehlert/teslamateapi/src/internal/aggregatecache"
 )
 
-// scopeDefaultDistributions maps each scope to its default distribution metrics.
+// scopeDefaultDistributions 将每个 scope 映射到默认分布指标集合。
 var scopeDefaultDistributions = map[string][]string{
 	"drives":  {"start_hour", "weekday", "distance", "duration", "speed", "efficiency"},
 	"charges": {"start_hour", "weekday", "energy", "duration", "power", "cost"},
 }
 
-// TeslaMateAPICarsDistributionsV2 is the unified distribution histogram endpoint.
-// Required: ?scope=drives|charges
+// TeslaMateAPICarsDistributionsV2 是统一分布直方图接口。
+// @Summary 指标分布
+// @Description 扩展接口 v2：通过 scope=drives|charges 返回统一直方图。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param scope query string true "drives|charges"
+// @Param metrics query string false "逗号分隔的指标列表"
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Success 200 {object} DistributionsV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/distributions [get]
 func TeslaMateAPICarsDistributionsV2(c *gin.Context) {
 	scope := strings.ToLower(strings.TrimSpace(c.Query("scope")))
 	defaults, ok := scopeDefaultDistributions[scope]

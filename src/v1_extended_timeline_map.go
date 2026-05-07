@@ -8,6 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TeslaMateAPICarsLocationsHeatmapV2 返回访问地点热力图数据。
+// @Summary 位置热力图
+// @Description 扩展接口 v2：返回请求周期内的访问点热力图。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Success 200 {object} VisitedMapV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/locations/heatmap [get]
 func TeslaMateAPICarsLocationsHeatmapV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {

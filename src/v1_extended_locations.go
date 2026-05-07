@@ -9,6 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TeslaMateAPICarsLocationsV2 返回行程和充电地点聚合。
+// @Summary 位置聚合
+// @Description 扩展接口 v2：聚合行程和充电地点。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param limit query int false "最大地点数量"
+// @Param include query string false "可选分区"
+// @Success 200 {object} LocationsV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/locations [get]
 func TeslaMateAPICarsLocationsV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {

@@ -7,11 +7,13 @@ import (
 	"strings"
 )
 
+// GrossConsumptionSummary 描述总能耗和额外损耗指标。
 type GrossConsumptionSummary struct {
 	AverageConsumptionGross *float64 `json:"average_consumption_gross"`
 	DataComplete            *bool    `json:"data_complete"`
 }
 
+// StatisticsSummary 描述推导出的效率、成本和完整性统计。
 type StatisticsSummary struct {
 	Coverage                   HistorySummaryCoverage `json:"coverage"`
 	Trips                      int                    `json:"trips"`
@@ -36,6 +38,7 @@ type StatisticsSummary struct {
 	DataComplete               *bool                  `json:"data_complete"`
 }
 
+// StateBreakdown 描述一个车辆状态时长分桶。
 type StateBreakdown struct {
 	State        string  `json:"state"`
 	SessionCount int     `json:"session_count"`
@@ -43,6 +46,7 @@ type StateBreakdown struct {
 	Share        float64 `json:"share"`
 }
 
+// StateSummary 描述当前状态和状态时长聚合。
 type StateSummary struct {
 	Coverage        HistorySummaryCoverage `json:"coverage"`
 	CurrentState    *string                `json:"current_state"`
@@ -51,6 +55,7 @@ type StateSummary struct {
 	StateBreakdown  []StateBreakdown       `json:"state_breakdown"`
 }
 
+// StateTimelineItem 描述一个原始状态时间段。
 type StateTimelineItem struct {
 	TimelineID  string  `json:"timeline_id"`
 	State       string  `json:"state"`
@@ -61,6 +66,7 @@ type StateTimelineItem struct {
 	IsOpen      bool    `json:"is_open"`
 }
 
+// ActivityTimelineEvent 描述一个规范化后的活动时间线事件。
 type ActivityTimelineEvent struct {
 	ID          string         `json:"id"`
 	SourceID    string         `json:"source_id"`
@@ -217,9 +223,9 @@ func fetchGrossConsumptionSummary(driveSummary *DriveHistorySummary, chargeSumma
 	}
 }
 
-// fetchStatisticsSummary builds TeslaMate-style statistics for the selected period.
-// Net consumption (Wh/km or Wh/mi): energy removed from the traction battery per distance, inferred from rated range loss where data is complete.
-// Gross consumption: wall-side or grid-side energy per distance (charge_energy_used preferred, else charge_energy_added) over the same distance window.
+// fetchStatisticsSummary 为指定周期构建 TeslaMate 风格统计。
+// 净能耗表示每单位距离从动力电池消耗的能量；数据完整时通过额定续航损失推导。
+// 总能耗表示同一距离窗口内墙端或电网侧能量，优先使用 charge_energy_used，否则使用 charge_energy_added。
 func fetchStatisticsSummary(
 	CarID int,
 	parsedStartDate string,

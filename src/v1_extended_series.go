@@ -21,7 +21,7 @@ type metricDef struct {
 	ChartType string
 }
 
-// scopeDefaultMetrics maps each scope to its default metric set.
+// scopeDefaultMetrics 将每个 scope 映射到默认指标集合。
 var scopeDefaultMetrics = map[string][]string{
 	"drives":  {"distance", "speed", "max_speed", "motor_power", "regen_power", "elevation", "outside_temp", "efficiency", "energy", "regeneration"},
 	"charges": {"energy", "power", "cost", "start_soc", "end_soc"},
@@ -29,8 +29,22 @@ var scopeDefaultMetrics = map[string][]string{
 	"states":  {"duration", "vampire_drain"},
 }
 
-// TeslaMateAPICarsSeriesV2 is the unified time-series endpoint.
-// Required: ?scope=drives|charges|battery|states
+// TeslaMateAPICarsSeriesV2 是统一时序接口。
+// @Summary 时序数据
+// @Description 扩展接口 v2：通过 scope=drives|charges|battery|states 返回统一时序数据。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param scope query string true "drives|charges|battery|states"
+// @Param metrics query string false "逗号分隔的指标列表"
+// @Param bucket query string false "raw|hour|day|week|month|year"
+// @Param sort query string false "asc|desc"
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Success 200 {object} SeriesV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/series [get]
 func TeslaMateAPICarsSeriesV2(c *gin.Context) {
 	scope := strings.ToLower(strings.TrimSpace(c.Query("scope")))
 	defaults, ok := scopeDefaultMetrics[scope]
@@ -70,7 +84,7 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 		return
 	}
 
-	// Validate all metrics before starting any DB work.
+	// 在启动数据库查询前校验全部指标。
 	defs := make([]metricDef, len(metrics))
 	for i, metric := range metrics {
 		def, ok := metricDefinition(scope, metric)
@@ -84,7 +98,7 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 
 	startUTC, endUTC := dbTimeRange(dr)
 
-	// Fetch all metrics concurrently; indexed by position so no mutex needed.
+	// 并发读取所有指标；按位置写入结果，不需要互斥锁。
 	pointsSlice := make([][]map[string]any, len(metrics))
 	g := new(errgroup.Group)
 	for i, metric := range metrics {
@@ -124,8 +138,8 @@ func writeScopedSeries(c *gin.Context, scope string, defaultMetrics []string) {
 	}, buildV1MetaFromCar(ctx, dr.Timezone.String()))
 }
 
-// mergeMetricSeries merges per-metric point slices into wide-table rows keyed by time.
-// sortOrder is "asc" (oldest first, default) or "desc" (newest first).
+// mergeMetricSeries 将各指标数据点按时间合并为宽表行。
+// sortOrder 为 asc 时按旧到新排序，为 desc 时按新到旧排序。
 func mergeMetricSeries(defs []metricDef, values map[string][]map[string]any, sortOrder string) []map[string]any {
 	byTime := make(map[string]map[string]any)
 	times := make([]string, 0)

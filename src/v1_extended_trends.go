@@ -8,8 +8,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// TeslaMateAPICarsTrendsV2 returns period-over-period trend indicators for key metrics.
-// Always compares the requested period against the immediately preceding equivalent period.
+// TeslaMateAPICarsTrendsV2 返回核心指标的环比趋势。
+// @Summary 分析趋势
+// @Description 扩展接口 v2：返回周期之间的指标趋势。
+// @Tags 扩展 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param period query string false "week|month|year|custom"
+// @Param startDate query string false "自定义范围开始时间"
+// @Param endDate query string false "自定义范围结束时间"
+// @Success 200 {object} TrendsV2Envelope
+// @Failure 400,404,500 {object} v1ErrorEnvelope
+// @Router /v2/cars/{CarID}/analysis/trends [get]
 func TeslaMateAPICarsAnalysisTrendsV2(c *gin.Context) {
 	dr, err := parseDateRangeStrictOrDefault(c, "month")
 	if err != nil {
@@ -101,20 +111,20 @@ func buildTrends(
 	trend := func(metric, name, unit string, cur, prev any, higherIsBetter bool) map[string]any {
 		direction := trendDirection(cur, prev, higherIsBetter)
 		return map[string]any{
-			"metric":          metric,
-			"name":            name,
-			"unit":            unit,
-			"current":         cur,
-			"previous":        prev,
-			"change_percent":  calcDeltaPercent(cur, prev),
-			"direction":       direction,
+			"metric":           metric,
+			"name":             name,
+			"unit":             unit,
+			"current":          cur,
+			"previous":         prev,
+			"change_percent":   calcDeltaPercent(cur, prev),
+			"direction":        direction,
 			"higher_is_better": higherIsBetter,
 		}
 	}
 
 	result := make([]map[string]any, 0, 10)
 
-	// Drive metrics
+	// 行程指标。
 	var curDist, prevDist any
 	var curEfficiency, prevEfficiency any
 	var curSpeed, prevSpeed any
@@ -138,7 +148,7 @@ func buildTrends(
 		trend("avg_speed", "Average Speed", speedUnit, curSpeed, prevSpeed, false),
 	)
 
-	// Charge metrics
+	// 充电指标。
 	var curEnergyAdded, prevEnergyAdded any
 	var curChargeCost, prevChargeCost any
 	var curChargeCount, prevChargeCount any
@@ -162,7 +172,7 @@ func buildTrends(
 		trend("charging_efficiency", "Charging Efficiency", "%", curChargingEff, prevChargingEff, true),
 	)
 
-	// Parking / battery
+	// 停车和电池指标。
 	result = append(result,
 		trend("vampire_drain", "Vampire Drain", "kWh", curPark, prevPark, false),
 	)

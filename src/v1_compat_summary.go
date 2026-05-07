@@ -7,11 +7,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// HistorySummaryCoverage 描述聚合数据实际覆盖的源数据范围。
 type HistorySummaryCoverage struct {
 	StartDate *string `json:"start_date"`
 	EndDate   *string `json:"end_date"`
 }
 
+// DriveHistorySummary 描述兼容接口和 v2 接口共享的行程聚合指标。
 type DriveHistorySummary struct {
 	Coverage                 HistorySummaryCoverage `json:"coverage"`
 	DriveCount               int                    `json:"drive_count"`
@@ -34,6 +36,7 @@ type DriveHistorySummary struct {
 	HighConsumptionTripCount int                    `json:"high_consumption_trip_count"`
 }
 
+// ChargeHistorySummary 描述兼容接口和 v2 接口共享的充电聚合指标。
 type ChargeHistorySummary struct {
 	Coverage                 HistorySummaryCoverage `json:"coverage"`
 	ChargeCount              int                    `json:"charge_count"`
@@ -55,12 +58,15 @@ type ChargeHistorySummary struct {
 	LowEfficiencyChargeCount int                    `json:"low_efficiency_charge_count"`
 	AbnormalChargeCount      int                    `json:"abnormal_charge_count"`
 }
+
+// SummaryTimeSeriesPoint 描述一个通用时序数据点。
 type SummaryTimeSeriesPoint struct {
 	ID    string  `json:"id"`
 	Date  string  `json:"date"`
 	Value float64 `json:"value"`
 }
 
+// SummaryCategoryValue 描述一个分类数值指标。
 type SummaryCategoryValue struct {
 	ID     string         `json:"id"`
 	Label  string         `json:"label"`
@@ -69,6 +75,8 @@ type SummaryCategoryValue struct {
 	Unit   string         `json:"unit,omitempty"`
 	Extra  map[string]any `json:"extra,omitempty"`
 }
+
+// TeslaMateSummaryUnits 描述摘要类响应返回的单位标签。
 type TeslaMateSummaryUnits struct {
 	UnitsLength           string `json:"unit_of_length"`
 	UnitsTemperature      string `json:"unit_of_temperature"`

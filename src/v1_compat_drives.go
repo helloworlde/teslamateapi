@@ -8,16 +8,30 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsDrivesV1 func
+// TeslaMateAPICarsDrivesV1 返回兼容响应结构的行程历史。
+// @Summary 行程列表
+// @Description 兼容接口：保持历史行程列表响应封装。
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Param startDate query string false "开始时间"
+// @Param endDate query string false "结束时间"
+// @Param page query int false "页码"
+// @Param show query int false "每页数量"
+// @Param limit query int false "每页数量别名"
+// @Param offset query int false "偏移量别名"
+// @Param sort query string false "排序表达式"
+// @Success 200 {object} DrivesListV1Envelope
+// @Router /v1/cars/{CarID}/drives [get]
 func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
-	// define error messages
+	// 定义错误消息。
 	var CarsDrivesError1 = "Unable to load drives."
 	var CarsDrivesError2 = "Invalid date format."
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	CarID := convertStringToInteger(c.Param("CarID"))
-	// query options to modify query when collecting data
+	// 读取分页和排序查询参数。
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
 	limit := convertStringToInteger(c.DefaultQuery("limit", "0"))
@@ -25,7 +39,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	sortRaw := strings.TrimSpace(c.DefaultQuery("sort", "-start_date"))
 	_ = c.Query("include")
 
-	// get startDate and endDate from query parameters
+	// 从查询参数读取开始和结束时间。
 	parsedStartDate, err := parseDateParam(c.Query("startDate"))
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError2, err.Error())
@@ -36,7 +50,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError2, err.Error())
 		return
 	}
-	// get optional minDistance and maxDistance filters from query parameters
+	// 从查询参数读取可选的最小和最大距离过滤条件。
 	minDistanceParam := c.Query("minDistance")
 	minDistance := 0.0
 	if minDistanceParam != "" {
@@ -67,7 +81,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			ResultPage = offset
 		}
 	} else {
-		// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
+		// 基于页码计算偏移量；页码最小为 1。
 		if ResultPage > 0 {
 			ResultPage--
 		} else {
@@ -96,7 +110,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		orderBy = "consumption_net DESC"
 	}
 
-	// getting data from database
+	// 从数据库读取行程数据。
 	query := `
 		SELECT
 			drives.id AS drive_id,
@@ -150,12 +164,12 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
 		WHERE drives.car_id=$1 AND end_date IS NOT NULL`
 
-	// Parameters to be passed to the query
+	// 查询参数列表。
 	var queryParams []any
 	queryParams = append(queryParams, CarID)
 	paramIndex := 2
 
-	// Add date filtering if provided
+	// 按需追加日期过滤。
 	if parsedStartDate != "" {
 		query += fmt.Sprintf(" AND drives.start_date >= $%d", paramIndex)
 		queryParams = append(queryParams, parsedStartDate)
@@ -167,7 +181,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		paramIndex++
 	}
 
-	// Add minimum/maximum distance filtering if provided
+	// 按需追加最小和最大距离过滤。
 	if minDistance > 0 || maxDistance > 0 {
 		var unitsLength string
 		err = db.QueryRow("SELECT unit_of_length FROM settings LIMIT 1").Scan(&unitsLength)
@@ -209,22 +223,22 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	rows, err := db.Query(query, queryParams...)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
 		return
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
-		// creating drive object based on struct
+		// 创建行程记录对象。
 		drive := DriveListItemV1{}
 
-		// scanning row and putting values into the drive
+		// 将当前行扫描到行程记录。
 		err = rows.Scan(
 			&drive.DriveID,
 			&drive.StartDate,
@@ -261,7 +275,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			&CarName,
 		)
 
-		// converting values based of settings UnitsLength
+		// 根据长度单位设置转换数值。
 		if UnitsLength == "mi" {
 			drive.OdometerDetails.OdometerStart = kilometersToMiles(drive.OdometerDetails.OdometerStart)
 			drive.OdometerDetails.OdometerEnd = kilometersToMiles(drive.OdometerDetails.OdometerEnd)
@@ -278,27 +292,27 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 				*drive.ConsumptionNet = whPerKmToWhPerMi(*drive.ConsumptionNet)
 			}
 		}
-		// converting values based of settings UnitsTemperature
+		// 根据温度单位设置转换数值。
 		if UnitsTemperature == "F" {
 			drive.OutsideTempAvg = celsiusToFahrenheit(drive.OutsideTempAvg)
 			drive.InsideTempAvg = celsiusToFahrenheit(drive.InsideTempAvg)
 		}
 
-		// adjusting to timezone differences from UTC to be userspecific
+		// 按用户配置时区转换时间字段。
 		drive.StartDate = getTimeInTimeZone(drive.StartDate)
 		drive.EndDate = getTimeInTimeZone(drive.EndDate)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
 			return
 		}
 
-		// appending drive to DrivesData
+		// 追加行程记录到响应列表。
 		DrivesData = append(DrivesData, drive)
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
@@ -319,6 +333,6 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsDrivesV1", jsonData)
 }

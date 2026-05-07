@@ -5,23 +5,45 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsV1 func
-func TeslaMateAPICarsV1(c *gin.Context) {
+// TeslaMateAPICarsListV1 返回兼容 v1 响应结构的全部车辆。
+// @Summary 车辆列表
+// @Description 兼容接口：使用历史响应封装返回全部车辆。
+// @Tags 兼容 API
+// @Produce json
+// @Success 200 {object} CarsV1Envelope
+// @Router /v1/cars [get]
+func TeslaMateAPICarsListV1(c *gin.Context) {
+	handleCarsV1(c)
+}
 
-	// define error messages
+// TeslaMateAPICarByIDV1 返回兼容 v1 响应结构的单辆车。
+// @Summary 车辆详情
+// @Description 兼容接口：在 data.cars 中返回匹配车辆。
+// @Tags 兼容 API
+// @Produce json
+// @Param CarID path int true "车辆 ID" default(1)
+// @Success 200 {object} CarsV1Envelope
+// @Router /v1/cars/{CarID} [get]
+func TeslaMateAPICarByIDV1(c *gin.Context) {
+	handleCarsV1(c)
+}
+
+func handleCarsV1(c *gin.Context) {
+
+	// 定义错误消息。
 	var CarsError1 = "Unable to load cars."
 
-	// getting CarID param from URL
+	// 从 URL 读取车辆 ID。
 	ParamCarID := c.Param("CarID")
 	var CarID int
 	if ParamCarID != "" {
 		CarID = convertStringToInteger(ParamCarID)
 	}
 
-	// creating required vars
+	// 创建响应数据容器。
 	var CarsData []CarsV1Car
 
-	// getting data from database
+	// 从数据库读取车辆数据。
 	query := `
 		SELECT
 			cars.id,
@@ -50,21 +72,21 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		ORDER BY id;`
 	rows, err := db.Query(query)
 
-	// checking for errors in query
+	// 检查查询错误。
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsV1", CarsError1, err.Error())
 		return
 	}
 
-	// defer closing rows
+	// 延迟关闭结果集。
 	defer rows.Close()
 
-	// looping through all results
+	// 遍历查询结果。
 	for rows.Next() {
 
 		car := CarsV1Car{}
 
-		// scanning row and putting values into the car
+		// 将当前行扫描到车辆对象。
 		err = rows.Scan(
 			&car.CarID,
 			&car.CarDetails.EID,
@@ -89,16 +111,16 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			&car.TeslaMateStats.TotalUpdates,
 		)
 
-		// checking for errors after scanning
+		// 检查扫描错误。
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsV1", CarsError1, err.Error())
 			return
 		}
 
-		// appending car to CarsData if CarID is 0 or is CarID matches car.CarID
+		// 未指定车辆 ID 时返回全部车辆；指定时只返回匹配车辆。
 		if CarID == 0 && len(ParamCarID) == 0 || CarID != 0 && CarID == car.CarID {
 
-			// adjusting to timezone differences from UTC to be userspecific
+			// 按用户配置时区转换时间字段。
 			car.TeslaMateDetails.InsertedAt = getTimeInTimeZone(car.TeslaMateDetails.InsertedAt)
 			car.TeslaMateDetails.UpdatedAt = getTimeInTimeZone(car.TeslaMateDetails.UpdatedAt)
 
@@ -106,7 +128,7 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		}
 	}
 
-	// checking for errors in the rows result
+	// 检查结果集遍历错误。
 	err = rows.Err()
 	if err != nil {
 		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsV1", CarsError1, err.Error())
@@ -117,7 +139,7 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		Data: CarsV1Data{Cars: CarsData},
 	}
 
-	// return jsonData
+	// 返回响应数据。
 	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsV1", jsonData)
 
 }
