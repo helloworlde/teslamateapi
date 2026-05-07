@@ -1,0 +1,286 @@
+basePath: /api
+definitions:
+  main.APIErrorBody:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+    type: object
+  main.APIErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/main.APIErrorBody'
+    type: object
+  main.V2BatterySummary:
+    properties:
+      latest_battery_level_percent:
+        type: integer
+      latest_ideal_range_km:
+        type: number
+      latest_rated_range_km:
+        type: number
+    type: object
+  main.V2ChargingSummary:
+    properties:
+      cost:
+        type: number
+      duration_min:
+        type: number
+      energy_added_kwh:
+        type: number
+      energy_used_kwh:
+        type: number
+      session_count:
+        type: integer
+    type: object
+  main.V2ComparisonValue:
+    properties:
+      current:
+        type: number
+      delta:
+        type: number
+      delta_percent:
+        type: number
+      previous:
+        type: number
+    type: object
+  main.V2CostSummary:
+    properties:
+      charging_cost:
+        type: number
+      cost_per_100km:
+        type: number
+      cost_per_km:
+        type: number
+    type: object
+  main.V2DataQuality:
+    properties:
+      complete:
+        type: boolean
+      missing_fields:
+        items:
+          type: string
+        type: array
+      sample_count:
+        type: integer
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  main.V2DrivingSummary:
+    properties:
+      avg_consumption_wh_per_km:
+        type: number
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      duration_min:
+        type: number
+      max_speed_kmh:
+        type: number
+    type: object
+  main.V2InfoAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2InfoResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2InfoResponse:
+    properties:
+      features:
+        items:
+          type: string
+        type: array
+      scope:
+        example: analytics
+        type: string
+      version:
+        example: v2
+        type: string
+    type: object
+  main.V2Meta:
+    properties:
+      car_id:
+        type: integer
+      compare:
+        type: string
+      data_quality:
+        $ref: '#/definitions/main.V2DataQuality'
+      end:
+        type: string
+      generated_at:
+        type: string
+      period:
+        type: string
+      start:
+        type: string
+      timezone:
+        type: string
+      unit:
+        $ref: '#/definitions/main.V2Unit'
+    type: object
+  main.V2ParkingSummary:
+    properties:
+      asleep_duration_min:
+        type: number
+      offline_duration_min:
+        type: number
+      online_duration_min:
+        type: number
+      parked_duration_min:
+        type: number
+      vampire_drain_percent:
+        type: number
+    type: object
+  main.V2Summary:
+    properties:
+      battery:
+        $ref: '#/definitions/main.V2BatterySummary'
+      charging:
+        $ref: '#/definitions/main.V2ChargingSummary'
+      cost:
+        $ref: '#/definitions/main.V2CostSummary'
+      driving:
+        $ref: '#/definitions/main.V2DrivingSummary'
+      parking:
+        $ref: '#/definitions/main.V2ParkingSummary'
+      updates:
+        $ref: '#/definitions/main.V2UpdateSummary'
+    type: object
+  main.V2SummaryAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2SummaryResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2SummaryResponse:
+    properties:
+      comparison:
+        additionalProperties:
+          $ref: '#/definitions/main.V2ComparisonValue'
+        type: object
+      summary:
+        $ref: '#/definitions/main.V2Summary'
+    type: object
+  main.V2Unit:
+    properties:
+      currency:
+        example: CNY
+        type: string
+      distance:
+        example: km
+        type: string
+      energy:
+        example: kWh
+        type: string
+      power:
+        example: kW
+        type: string
+      temperature:
+        example: C
+        type: string
+    type: object
+  main.V2UpdateSummary:
+    properties:
+      latest_version:
+        type: string
+      update_count:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: REST API for TeslaMate data, including V1 resources and V2 objective
+    analytics.
+  title: TeslaMateApi
+  version: "2.0"
+paths:
+  /v2:
+    get:
+      description: Returns the V2 analytics API version, scope, and currently advertised
+        feature groups.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2InfoAPIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 API capability information
+      tags:
+      - V2 Summary
+  /v2/cars/{CarID}/analytics/summary:
+    get:
+      description: Returns objective driving, charging, parking, battery, update,
+        and charging-cost summary metrics for one car in a selected period.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Comparison mode
+        enum:
+        - none
+        - previous_period
+        - previous_year
+        - lifetime_average
+        in: query
+        name: compare
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2SummaryAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 period summary analytics
+      tags:
+      - V2 Summary
+swagger: "2.0"

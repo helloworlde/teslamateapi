@@ -38,6 +38,10 @@ var (
 	appUsersTimezone *time.Location
 )
 
+// @title TeslaMateApi
+// @version 2.0
+// @description REST API for TeslaMate data, including V1 resources and V2 objective analytics.
+// @BasePath /api
 // main function
 func main() {
 	// setup of readiness endpoint code
@@ -168,6 +172,9 @@ func main() {
 			// v1 /api/v1/globalsettings endpoints
 			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
 		}
+
+		RegisterV2Routes(api, nil)
+		RegisterDocsRoutes(api)
 
 		// /api/ping endpoint
 		api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
