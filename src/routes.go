@@ -9,9 +9,12 @@ func registerCompatibleV1Routes(v1 *gin.RouterGroup) {
 	v1.GET("/cars", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID", TeslaMateAPICarsV1)
 	v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
+	v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesV1)
 	v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
 	v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
+	v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 	v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
+	v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusRouteV1)
 	v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
 	v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
 
