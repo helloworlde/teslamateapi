@@ -39,7 +39,7 @@ func registerCommandV1Routes(v1 *gin.RouterGroup) {
 
 func registerExtendedV1Routes(v1 *gin.RouterGroup) {
 	// Real-time vehicle state — no period param, always fresh.
-	v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
+	//v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
 
 	// Period KPIs — unified stats replacing the old summary/statistics/dashboard trio.
 	v1.GET("/cars/:CarID/stats", TeslaMateAPICarsStatsV2)
@@ -53,9 +53,9 @@ func registerExtendedV1Routes(v1 *gin.RouterGroup) {
 	// Unified distribution histograms with ?scope=drives|charges.
 	v1.GET("/cars/:CarID/distributions", TeslaMateAPICarsDistributionsV2)
 
-	// Paginated event history, one resource per event type.
-	v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
-	v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
+	//// Paginated event history, one resource per event type.
+	//v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
+	//v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
 
 	// Spatial data.
 	v1.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)
