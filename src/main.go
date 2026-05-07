@@ -141,7 +141,17 @@ func main() {
 			})
 			docsui.RegisterRoutes(v1, BasePathV1)
 			registerCompatibleV1Routes(v1)
-			registerExtendedV1Routes(v1)
+		}
+
+		// TeslaMateApi /api/v2 endpoints
+		v2 := api.Group("/v2")
+		{
+			// TeslaMateApi /api/v2 root
+			v2.GET("/", func(c *gin.Context) {
+				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": v2.BasePath()})
+			})
+			docsui.RegisterRoutes(v2, "/2")
+			registerExtendedV1Routes(v2)
 		}
 
 		// /api/ping endpoint

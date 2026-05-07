@@ -37,32 +37,32 @@ func registerCommandV1Routes(v1 *gin.RouterGroup) {
 	v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
 }
 
-func registerExtendedV1Routes(v1 *gin.RouterGroup) {
+func registerExtendedV1Routes(group *gin.RouterGroup) {
 	// Real-time vehicle state — no period param, always fresh.
-	//v1.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
+	group.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
 
 	// Period KPIs — unified stats replacing the old summary/statistics/dashboard trio.
-	v1.GET("/cars/:CarID/stats", TeslaMateAPICarsStatsV2)
+	group.GET("/cars/:CarID/stats", TeslaMateAPICarsStatsV2)
 
 	// Calendar-style activity view.
-	v1.GET("/cars/:CarID/activity", TeslaMateAPICarsActivityV2)
+	group.GET("/cars/:CarID/activity", TeslaMateAPICarsActivityV2)
 
 	// Unified time series with ?scope=drives|charges|battery|states.
-	v1.GET("/cars/:CarID/series", TeslaMateAPICarsSeriesV2)
+	group.GET("/cars/:CarID/series", TeslaMateAPICarsSeriesV2)
 
 	// Unified distribution histograms with ?scope=drives|charges.
-	v1.GET("/cars/:CarID/distributions", TeslaMateAPICarsDistributionsV2)
+	group.GET("/cars/:CarID/distributions", TeslaMateAPICarsDistributionsV2)
 
-	//// Paginated event history, one resource per event type.
-	//v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
-	//v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
+	// Paginated event history, one resource per event type.
+	group.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
+	group.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
 
 	// Spatial data.
-	v1.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)
-	v1.GET("/cars/:CarID/locations/heatmap", TeslaMateAPICarsLocationsHeatmapV2)
+	group.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)
+	group.GET("/cars/:CarID/locations/heatmap", TeslaMateAPICarsLocationsHeatmapV2)
 
 	// Analytical features grouped under /analysis/.
-	v1.GET("/cars/:CarID/analysis/insights", TeslaMateAPICarsAnalysisInsightsV2)
-	v1.GET("/cars/:CarID/analysis/trends", TeslaMateAPICarsAnalysisTrendsV2)
-	v1.GET("/cars/:CarID/analysis/records", TeslaMateAPICarsAnalysisRecordsV2)
+	group.GET("/cars/:CarID/analysis/insights", TeslaMateAPICarsAnalysisInsightsV2)
+	group.GET("/cars/:CarID/analysis/trends", TeslaMateAPICarsAnalysisTrendsV2)
+	group.GET("/cars/:CarID/analysis/records", TeslaMateAPICarsAnalysisRecordsV2)
 }
