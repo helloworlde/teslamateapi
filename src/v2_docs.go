@@ -95,6 +95,7 @@ func buildOpenAPISpec() gin.H {
 		"tags": []gin.H{
 			{"name": "V1", "description": "Existing V1 TeslaMate resource endpoints."},
 			{"name": "V2 Summary", "description": "V2 analytics base and summary endpoints."},
+			{"name": "V2 Driving Analytics", "description": "V2 objective driving statistics, trends, distributions, and rankings."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -136,6 +137,49 @@ func buildOpenAPISpec() gin.H {
 					},
 				},
 			},
+			"/v2/cars/{CarID}/analytics/driving": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Driving Analytics"},
+					"summary":     "V2 driving analytics summary",
+					"description": "Returns objective driving statistics and optional previous-period comparison for one car.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 driving analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/driving/timeseries": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Driving Analytics"},
+					"summary":     "V2 driving analytics timeseries",
+					"description": "Returns driving metrics grouped by day, week, month, or year for charting.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
+					),
+					"responses": analyticsResponses("V2 driving timeseries response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/driving/distribution": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Driving Analytics"},
+					"summary":     "V2 driving analytics distribution",
+					"description": "Returns drive-count, distance, and duration distribution for a selected factual dimension.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("dimension", "string", []string{"hour_of_day", "day_of_week", "distance_bucket", "duration_bucket", "speed_bucket", "consumption_bucket", "temperature_bucket"}),
+					),
+					"responses": analyticsResponses("V2 driving distribution response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/driving/ranking": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Driving Analytics"},
+					"summary":     "V2 driving analytics ranking",
+					"description": "Returns objective top drives or top driving days by selected ranking type.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("type", "string", []string{"longest_distance", "longest_duration", "highest_speed", "lowest_consumption", "highest_consumption", "highest_distance_day"}),
+						queryParam("limit", "integer", nil),
+					),
+					"responses": analyticsResponses("V2 driving ranking response"),
+				},
+			},
 		},
 	}
 }
@@ -163,6 +207,33 @@ func operationWithParams(tag string, summary string, description string, params 
 
 func okJSONResponse(description string) gin.H {
 	return gin.H{"200": gin.H{"description": description, "content": jsonContent(gin.H{"type": "object"})}}
+}
+
+func analyticsResponses(description string) gin.H {
+	return gin.H{
+		"200": gin.H{"description": description, "content": jsonContent(gin.H{"type": "object"})},
+		"400": gin.H{"description": "Invalid request", "content": jsonContent(apiErrorSchema())},
+		"404": gin.H{"description": "Car not found", "content": jsonContent(apiErrorSchema())},
+		"500": gin.H{"description": "Internal error", "content": jsonContent(apiErrorSchema())},
+	}
+}
+
+func apiErrorSchema() gin.H {
+	return gin.H{
+		"type": "object",
+		"properties": gin.H{
+			"error": gin.H{
+				"type": "object",
+				"properties": gin.H{
+					"code":    gin.H{"type": "string"},
+					"message": gin.H{"type": "string"},
+					"details": gin.H{},
+				},
+				"required": []string{"code", "message"},
+			},
+		},
+		"required": []string{"error"},
+	}
 }
 
 func jsonContent(schema gin.H) gin.H {

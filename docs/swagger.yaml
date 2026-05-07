@@ -70,6 +70,121 @@ definitions:
           type: string
         type: array
     type: object
+  main.V2DrivingAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2DrivingResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2DrivingAnalyticsSummary:
+    properties:
+      avg_consumption_wh_per_km:
+        type: number
+      avg_distance_km:
+        type: number
+      avg_duration_min:
+        type: number
+      avg_outside_temp_c:
+        type: number
+      avg_speed_kmh:
+        type: number
+      battery_level_used_percent:
+        type: number
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      duration_min:
+        type: number
+      estimated_energy_consumed_kwh:
+        type: number
+      estimated_regenerated_energy_kwh:
+        type: number
+      max_speed_kmh:
+        type: number
+      range_loss_km:
+        type: number
+      total_ascent_m:
+        type: number
+      total_descent_m:
+        type: number
+    type: object
+  main.V2DrivingDistributionAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2DrivingDistributionResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2DrivingDistributionItem:
+    properties:
+      bucket:
+        type: string
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      duration_min:
+        type: number
+    type: object
+  main.V2DrivingDistributionResponse:
+    properties:
+      dimension:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/main.V2DrivingDistributionItem'
+        type: array
+    type: object
+  main.V2DrivingRankingAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2DrivingRankingResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2DrivingRankingItem:
+    properties:
+      distance_km:
+        type: number
+      drive_id:
+        type: integer
+      duration_min:
+        type: number
+      end_time:
+        type: string
+      max_speed_kmh:
+        type: number
+      metric_unit:
+        type: string
+      metric_value:
+        type: number
+      period_start:
+        type: string
+      rank:
+        type: integer
+      start_time:
+        type: string
+    type: object
+  main.V2DrivingRankingResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/main.V2DrivingRankingItem'
+        type: array
+      type:
+        type: string
+    type: object
+  main.V2DrivingResponse:
+    properties:
+      comparison:
+        additionalProperties:
+          $ref: '#/definitions/main.V2ComparisonValue'
+        type: object
+      summary:
+        $ref: '#/definitions/main.V2DrivingAnalyticsSummary'
+    type: object
   main.V2DrivingSummary:
     properties:
       avg_consumption_wh_per_km:
@@ -82,6 +197,39 @@ definitions:
         type: number
       max_speed_kmh:
         type: number
+    type: object
+  main.V2DrivingTimeseriesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2DrivingTimeseriesResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2DrivingTimeseriesItem:
+    properties:
+      avg_consumption_wh_per_km:
+        type: number
+      avg_speed_kmh:
+        type: number
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      duration_min:
+        type: number
+      estimated_energy_consumed_kwh:
+        type: number
+      period_start:
+        type: string
+    type: object
+  main.V2DrivingTimeseriesResponse:
+    properties:
+      group_by:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/main.V2DrivingTimeseriesItem'
+        type: array
     type: object
   main.V2InfoAPIResponse:
     properties:
@@ -218,6 +366,275 @@ paths:
       summary: V2 API capability information
       tags:
       - V2 Summary
+  /v2/cars/{CarID}/analytics/driving:
+    get:
+      description: Returns objective driving statistics and optional previous-period
+        comparison for one car.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Comparison mode
+        enum:
+        - none
+        - previous_period
+        - previous_year
+        - lifetime_average
+        in: query
+        name: compare
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2DrivingAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 driving analytics summary
+      tags:
+      - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/driving/distribution:
+    get:
+      description: Returns drive-count, distance, and duration distribution for a
+        selected factual dimension.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Distribution dimension
+        enum:
+        - hour_of_day
+        - day_of_week
+        - distance_bucket
+        - duration_bucket
+        - speed_bucket
+        - consumption_bucket
+        - temperature_bucket
+        in: query
+        name: dimension
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2DrivingDistributionAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 driving analytics distribution
+      tags:
+      - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/driving/ranking:
+    get:
+      description: Returns objective top drives or top driving days by selected ranking
+        type.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Ranking type
+        enum:
+        - longest_distance
+        - longest_duration
+        - highest_speed
+        - lowest_consumption
+        - highest_consumption
+        - highest_distance_day
+        in: query
+        name: type
+        type: string
+      - description: Result limit from 1 to 100
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2DrivingRankingAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 driving analytics ranking
+      tags:
+      - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/driving/timeseries:
+    get:
+      description: Returns driving metrics grouped by day, week, month, or year for
+        charting.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Timeseries grouping
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2DrivingTimeseriesAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 driving analytics timeseries
+      tags:
+      - V2 Driving Analytics
   /v2/cars/{CarID}/analytics/summary:
     get:
       description: Returns objective driving, charging, parking, battery, update,

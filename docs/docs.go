@@ -41,6 +41,385 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/driving": {
+            "get": {
+                "description": "Returns objective driving statistics and optional previous-period comparison for one car.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Driving Analytics"
+                ],
+                "summary": "V2 driving analytics summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "none",
+                            "previous_period",
+                            "previous_year",
+                            "lifetime_average"
+                        ],
+                        "type": "string",
+                        "description": "Comparison mode",
+                        "name": "compare",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2DrivingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/driving/distribution": {
+            "get": {
+                "description": "Returns drive-count, distance, and duration distribution for a selected factual dimension.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Driving Analytics"
+                ],
+                "summary": "V2 driving analytics distribution",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "hour_of_day",
+                            "day_of_week",
+                            "distance_bucket",
+                            "duration_bucket",
+                            "speed_bucket",
+                            "consumption_bucket",
+                            "temperature_bucket"
+                        ],
+                        "type": "string",
+                        "description": "Distribution dimension",
+                        "name": "dimension",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2DrivingDistributionAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/driving/ranking": {
+            "get": {
+                "description": "Returns objective top drives or top driving days by selected ranking type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Driving Analytics"
+                ],
+                "summary": "V2 driving analytics ranking",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "longest_distance",
+                            "longest_duration",
+                            "highest_speed",
+                            "lowest_consumption",
+                            "highest_consumption",
+                            "highest_distance_day"
+                        ],
+                        "type": "string",
+                        "description": "Ranking type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit from 1 to 100",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2DrivingRankingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/driving/timeseries": {
+            "get": {
+                "description": "Returns driving metrics grouped by day, week, month, or year for charting.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Driving Analytics"
+                ],
+                "summary": "V2 driving analytics timeseries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "Timeseries grouping",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2DrivingTimeseriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/summary": {
             "get": {
                 "description": "Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.",
@@ -243,6 +622,183 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2DrivingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2DrivingResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2DrivingAnalyticsSummary": {
+            "type": "object",
+            "properties": {
+                "avg_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "avg_distance_km": {
+                    "type": "number"
+                },
+                "avg_duration_min": {
+                    "type": "number"
+                },
+                "avg_outside_temp_c": {
+                    "type": "number"
+                },
+                "avg_speed_kmh": {
+                    "type": "number"
+                },
+                "battery_level_used_percent": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "estimated_energy_consumed_kwh": {
+                    "type": "number"
+                },
+                "estimated_regenerated_energy_kwh": {
+                    "type": "number"
+                },
+                "max_speed_kmh": {
+                    "type": "number"
+                },
+                "range_loss_km": {
+                    "type": "number"
+                },
+                "total_ascent_m": {
+                    "type": "number"
+                },
+                "total_descent_m": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2DrivingDistributionAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2DrivingDistributionResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2DrivingDistributionItem": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2DrivingDistributionResponse": {
+            "type": "object",
+            "properties": {
+                "dimension": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2DrivingDistributionItem"
+                    }
+                }
+            }
+        },
+        "main.V2DrivingRankingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2DrivingRankingResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2DrivingRankingItem": {
+            "type": "object",
+            "properties": {
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_id": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "max_speed_kmh": {
+                    "type": "number"
+                },
+                "metric_unit": {
+                    "type": "string"
+                },
+                "metric_value": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2DrivingRankingResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2DrivingRankingItem"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2DrivingResponse": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.V2ComparisonValue"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2DrivingAnalyticsSummary"
+                }
+            }
+        },
         "main.V2DrivingSummary": {
             "type": "object",
             "properties": {
@@ -260,6 +816,57 @@ const docTemplate = `{
                 },
                 "max_speed_kmh": {
                     "type": "number"
+                }
+            }
+        },
+        "main.V2DrivingTimeseriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2DrivingTimeseriesResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2DrivingTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "avg_speed_kmh": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "estimated_energy_consumed_kwh": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2DrivingTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2DrivingTimeseriesItem"
+                    }
                 }
             }
         },
