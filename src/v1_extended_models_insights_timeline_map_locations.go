@@ -84,13 +84,6 @@ type RecordV2 struct {
 	EntityID   any    `json:"entity_id"`
 }
 
-// HistoryListV2Envelope 描述 v2 分页历史列表响应。
-type HistoryListV2Envelope struct {
-	Data       []map[string]any     `json:"data"`
-	Pagination v1Pagination         `json:"pagination"`
-	Meta       ExtendedResponseMeta `json:"meta"`
-}
-
 // TimelineV2Envelope 描述为 schema 兼容保留的旧 timeline 响应。
 type TimelineV2Envelope struct {
 	Data       []TimelineEventV2    `json:"data"`

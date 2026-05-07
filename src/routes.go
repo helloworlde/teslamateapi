@@ -20,9 +20,6 @@ func registerCompatibleV1Routes(v1 *gin.RouterGroup) {
 }
 
 func registerExtendedV2Routes(group *gin.RouterGroup) {
-	// 实时车辆状态，不接受 period 参数，始终返回最新快照。
-	group.GET("/cars/:CarID/status", TeslaMateAPICarsStatusV2)
-
 	// 周期核心指标，统一替代旧的 summary、statistics、dashboard 组合。
 	group.GET("/cars/:CarID/stats", TeslaMateAPICarsStatsV2)
 
@@ -34,10 +31,6 @@ func registerExtendedV2Routes(group *gin.RouterGroup) {
 
 	// 统一分布直方图接口，通过 scope 选择 drives 或 charges。
 	group.GET("/cars/:CarID/distributions", TeslaMateAPICarsDistributionsV2)
-
-	// 分页事件历史，每类事件使用独立资源。
-	group.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesHistoryV2)
-	group.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesHistoryV2)
 
 	// 空间位置数据。
 	group.GET("/cars/:CarID/locations", TeslaMateAPICarsLocationsV2)

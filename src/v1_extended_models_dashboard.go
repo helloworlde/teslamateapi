@@ -1,31 +1,5 @@
 package main
 
-// StatusV2Envelope 描述 v2 车辆状态接口响应。
-type StatusV2Envelope struct {
-	Data StatusV2Data         `json:"data"`
-	Meta ExtendedResponseMeta `json:"meta"`
-}
-
-// StatusV2Data 描述 v2 车辆状态接口的 data 对象。
-type StatusV2Data struct {
-	State        *string             `json:"state"`
-	Since        *string             `json:"since"`
-	Battery      StatusBatteryV2     `json:"battery"`
-	Position     StatusPositionV2    `json:"position"`
-	Environment  StatusEnvironmentV2 `json:"environment"`
-	Odometer     *float64            `json:"odometer"`
-	ActiveCharge map[string]any      `json:"active_charge"`
-}
-
-// StatusBatteryV2 描述 v2 车辆状态中的电池字段。
-type StatusBatteryV2 map[string]any
-
-// StatusPositionV2 描述 v2 车辆状态中的位置字段。
-type StatusPositionV2 map[string]any
-
-// StatusEnvironmentV2 描述 v2 车辆状态中的环境字段。
-type StatusEnvironmentV2 map[string]any
-
 // StatsV2Envelope 描述 v2 周期统计接口响应。
 type StatsV2Envelope struct {
 	Data StatsV2Data          `json:"data"`

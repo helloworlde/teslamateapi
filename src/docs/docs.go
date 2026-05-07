@@ -830,78 +830,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v2/cars/{CarID}/charges": {
-            "get": {
-                "description": "扩展接口 v2：返回分页充电会话。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "扩展 API"
-                ],
-                "summary": "充电会话",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "偏移量",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.HistoryListV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
         "/v2/cars/{CarID}/distributions": {
             "get": {
                 "description": "扩展接口 v2：通过 scope=drives|charges 返回统一直方图。",
@@ -958,78 +886,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.DistributionsV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/drives": {
-            "get": {
-                "description": "扩展接口 v2：返回分页行程会话。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "扩展 API"
-                ],
-                "summary": "行程会话",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "开始时间",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "结束时间",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "偏移量",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.HistoryListV2Envelope"
                         }
                     },
                     "400": {
@@ -1331,54 +1187,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/main.StatsV2Envelope"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/main.v1ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/status": {
-            "get": {
-                "description": "扩展接口 v2：返回最新已知车辆状态。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "扩展 API"
-                ],
-                "summary": "车辆状态快照",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/main.StatusV2Envelope"
                         }
                     },
                     "400": {
@@ -2676,24 +2484,6 @@ const docTemplate = `{
                 }
             }
         },
-        "main.HistoryListV2Envelope": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {}
-                    }
-                },
-                "meta": {
-                    "$ref": "#/definitions/main.ExtendedResponseMeta"
-                },
-                "pagination": {
-                    "$ref": "#/definitions/main.v1Pagination"
-                }
-            }
-        },
         "main.InsightSummaryV2": {
             "type": "object",
             "properties": {
@@ -3118,10 +2908,6 @@ const docTemplate = `{
                 }
             }
         },
-        "main.StatusBatteryV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
         "main.StatusCarDetailsV1": {
             "type": "object",
             "properties": {
@@ -3287,14 +3073,6 @@ const docTemplate = `{
                 }
             }
         },
-        "main.StatusEnvironmentV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
-        "main.StatusPositionV2": {
-            "type": "object",
-            "additionalProperties": {}
-        },
         "main.StatusTPMSV1": {
             "type": "object",
             "properties": {
@@ -3321,44 +3099,6 @@ const docTemplate = `{
                 },
                 "tpms_soft_warning_rr": {
                     "type": "boolean"
-                }
-            }
-        },
-        "main.StatusV2Data": {
-            "type": "object",
-            "properties": {
-                "active_charge": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "battery": {
-                    "$ref": "#/definitions/main.StatusBatteryV2"
-                },
-                "environment": {
-                    "$ref": "#/definitions/main.StatusEnvironmentV2"
-                },
-                "odometer": {
-                    "type": "number"
-                },
-                "position": {
-                    "$ref": "#/definitions/main.StatusPositionV2"
-                },
-                "since": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "main.StatusV2Envelope": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/main.StatusV2Data"
-                },
-                "meta": {
-                    "$ref": "#/definitions/main.ExtendedResponseMeta"
                 }
             }
         },
@@ -3601,32 +3341,32 @@ const docTemplate = `{
                     "$ref": "#/definitions/main.v1Error"
                 }
             }
-        },
-        "main.v1Pagination": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer"
-                },
-                "offset": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
         }
-    }
+    },
+    "tags": [
+        {
+            "description": "原 TeslaMateApi 兼容路由，尽量保持历史响应形态。部分历史处理器失败时仍可能返回 HTTP 200 和包含 error 字段的 JSON。",
+            "name": "兼容 API"
+        },
+        {
+            "description": "重新设计的扩展路由，按摘要、仪表盘、实时、时序、分布、洞察、时间线、地图等职责拆分。",
+            "name": "扩展 API"
+        },
+        {
+            "description": "健康检查、连通性检查和文档入口。",
+            "name": "系统"
+        }
+    ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
-	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	BasePath:         "/api",
+	Schemes:          []string{"http", "https"},
+	Title:            "TeslaMateApi",
+	Description:      "基于 TeslaMate 数据库的 REST API，提供车辆、充电、行程、统计、图表、时间线和洞察数据。原 TeslaMateApi 兼容接口保持响应结构；扩展接口按当前项目最佳实践重新设计，可能包含破坏性变更。日期参数支持 RFC3339、带时区偏移、本地日期时间和纯日期；未带时区的本地日期使用环境变量配置的时区。",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

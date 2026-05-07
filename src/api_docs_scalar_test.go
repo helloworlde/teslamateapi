@@ -19,13 +19,10 @@ func TestOpenAPIDocumentContainsStatisticsAndInsights(t *testing.T) {
 		"/v1/cars/{CarID}/charges",
 		"/v1/cars/{CarID}/drives",
 		"/v1/cars/{CarID}/status",
-		"/v2/cars/{CarID}/status",
 		"/v2/cars/{CarID}/stats",
 		"/v2/cars/{CarID}/activity",
 		"/v2/cars/{CarID}/series",
 		"/v2/cars/{CarID}/distributions",
-		"/v2/cars/{CarID}/drives",
-		"/v2/cars/{CarID}/charges",
 		"/v2/cars/{CarID}/locations",
 		"/v2/cars/{CarID}/locations/heatmap",
 		"/v2/cars/{CarID}/analysis/insights",
@@ -48,9 +45,12 @@ func TestOpenAPIDocumentDoesNotExposeExtendedV1Routes(t *testing.T) {
 		"/v1/cars/{CarID}/analysis/insights",
 		"/v1/cars/{CarID}/analysis/trends",
 		"/v1/cars/{CarID}/analysis/records",
+		"/v2/cars/{CarID}/status",
+		"/v2/cars/{CarID}/drives",
+		"/v2/cars/{CarID}/charges",
 	} {
 		if strings.Contains(s, sub) {
-			t.Fatalf("OpenAPI doc exposes extended v1 route %q", sub)
+			t.Fatalf("OpenAPI doc exposes removed route %q", sub)
 		}
 	}
 }
@@ -116,13 +116,10 @@ func TestOpenAPIExtendedRoutesUseConcreteResponseModels(t *testing.T) {
 	}
 	paths, _ := root["paths"].(map[string]any)
 	expected := map[string]string{
-		"/v2/cars/{CarID}/status":            "#/definitions/main.StatusV2Envelope",
 		"/v2/cars/{CarID}/stats":             "#/definitions/main.StatsV2Envelope",
 		"/v2/cars/{CarID}/activity":          "#/definitions/main.ActivityV2Envelope",
 		"/v2/cars/{CarID}/series":            "#/definitions/main.SeriesV2Envelope",
 		"/v2/cars/{CarID}/distributions":     "#/definitions/main.DistributionsV2Envelope",
-		"/v2/cars/{CarID}/drives":            "#/definitions/main.HistoryListV2Envelope",
-		"/v2/cars/{CarID}/charges":           "#/definitions/main.HistoryListV2Envelope",
 		"/v2/cars/{CarID}/locations":         "#/definitions/main.LocationsV2Envelope",
 		"/v2/cars/{CarID}/locations/heatmap": "#/definitions/main.VisitedMapV2Envelope",
 		"/v2/cars/{CarID}/analysis/insights": "#/definitions/main.InsightsV2Envelope",
@@ -156,7 +153,6 @@ func TestOpenAPIExtendedModelsExposeExpectedDataSections(t *testing.T) {
 	}
 	defs, _ := root["definitions"].(map[string]any)
 	expectProps := map[string][]string{
-		"main.StatusV2Data":        {"state", "since", "battery", "position", "environment", "odometer", "active_charge"},
 		"main.StatsV2Data":         {"period", "range", "drives", "charges", "battery", "parking", "odometer", "generated_at"},
 		"main.ActivityV2Data":      {"car_id", "range", "bucket", "summary", "items"},
 		"main.SeriesV2Data":        {"car_id", "scope", "bucket", "range", "metrics", "points"},

@@ -93,13 +93,10 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/status",
 		"GET /api/v1/cars/:CarID/updates",
 		"GET /api/v1/globalsettings",
-		"GET /api/v2/cars/:CarID/status",
 		"GET /api/v2/cars/:CarID/stats",
 		"GET /api/v2/cars/:CarID/activity",
 		"GET /api/v2/cars/:CarID/series",
 		"GET /api/v2/cars/:CarID/distributions",
-		"GET /api/v2/cars/:CarID/drives",
-		"GET /api/v2/cars/:CarID/charges",
 		"GET /api/v2/cars/:CarID/locations",
 		"GET /api/v2/cars/:CarID/locations/heatmap",
 		"GET /api/v2/cars/:CarID/analysis/insights",
@@ -120,9 +117,12 @@ func TestRouteRegistryContainsNewRoutes(t *testing.T) {
 		"GET /api/v1/cars/:CarID/analysis/insights",
 		"GET /api/v1/cars/:CarID/analysis/trends",
 		"GET /api/v1/cars/:CarID/analysis/records",
+		"GET /api/v2/cars/:CarID/status",
+		"GET /api/v2/cars/:CarID/drives",
+		"GET /api/v2/cars/:CarID/charges",
 	} {
 		if routes[key] {
-			t.Fatalf("extended route must not be registered on v1: %s", key)
+			t.Fatalf("route must not be registered: %s", key)
 		}
 	}
 }
@@ -158,7 +158,6 @@ func TestIntegrationRedesignedEndpoints(t *testing.T) {
 	r := buildTestRouter()
 	carID := getEnvAsInt("TESLAMATEAPI_ENDPOINT_CAR_ID", 1)
 	paths := []string{
-		"/api/v2/cars/%d/status",
 		"/api/v2/cars/%d/stats",
 		"/api/v2/cars/%d/activity?startDate=2026-04-01&endDate=2026-04-30",
 		"/api/v2/cars/%d/series?scope=drives&startDate=2026-04-01&endDate=2026-04-30&metrics=distance,speed",

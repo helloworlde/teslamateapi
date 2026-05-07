@@ -125,7 +125,6 @@
 
 - `v1_compat_*.go`: 原 TeslaMateApi 兼容接口，保持历史路由和响应结构。
 - `v1_extended_summary.go`: 扩展摘要接口。
-- `v1_extended_dashboard.go`: 车辆级 dashboard 和实时快照接口。
 - `v1_extended_calendar.go`: 日历聚合。
 - `v1_extended_series.go`: 按领域拆分的时序数据。
 - `v1_extended_distributions.go`: 按领域拆分的分布桶。

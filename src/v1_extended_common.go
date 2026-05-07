@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -37,12 +36,6 @@ type v1Pagination struct {
 type v1ObjectEnvelope struct {
 	Data any    `json:"data"`
 	Meta v1Meta `json:"meta"`
-}
-
-type v1ListEnvelope struct {
-	Data       any          `json:"data"`
-	Pagination v1Pagination `json:"pagination"`
-	Meta       v1Meta       `json:"meta"`
 }
 
 type v1Error struct {
@@ -102,29 +95,6 @@ func writeV1Object(c *gin.Context, data any, meta v1Meta) {
 		Data: data,
 		Meta: meta,
 	})
-}
-
-func writeV1List(c *gin.Context, data any, pagination v1Pagination, meta v1Meta) {
-	c.JSON(http.StatusOK, v1ListEnvelope{
-		Data:       data,
-		Pagination: pagination,
-		Meta:       meta,
-	})
-}
-
-func parseOffsetLimit(c *gin.Context, defaultLimit, maxLimit int) (int, int, error) {
-	limit, err := strconv.Atoi(strings.TrimSpace(c.DefaultQuery("limit", strconv.Itoa(defaultLimit))))
-	if err != nil || limit <= 0 {
-		return 0, 0, fmt.Errorf("limit must be positive integer")
-	}
-	if limit > maxLimit {
-		limit = maxLimit
-	}
-	offset, err := strconv.Atoi(strings.TrimSpace(c.DefaultQuery("offset", "0")))
-	if err != nil || offset < 0 {
-		return 0, 0, fmt.Errorf("offset must be integer >= 0")
-	}
-	return offset, limit, nil
 }
 
 func parseTimezoneParam(c *gin.Context) (*time.Location, string, error) {
