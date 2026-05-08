@@ -14,18 +14,18 @@
 
 | ID | 问题 | 状态 | 文件 | Commit |
 |----|------|------|------|--------|
-| P0-1 | positions 表扫描性能风险 | Pending | v2_battery_repository.go, v2_efficiency_repository.go | |
-| P0-2 | /timeline 缺少游标分页 | Pending | v2_handler.go, v2_lifecycle_repository.go | |
-| P0-3 | /lifecycle 忽略时间参数 | Pending | v2_handler.go, v2_lifecycle_repository.go, v2_lifecycle_service.go | |
-| P0-4 | /insights 劫持 compare 参数 | Pending | v2_insight_service.go | |
+| P0-1 | positions 表扫描性能风险 | ✅ Done | v2_battery_repository.go | 222d264 |
+| P0-2 | /timeline 缺少游标分页 | ✅ Done | v2_handler.go, v2_lifecycle_repository.go | 222d264 |
+| P0-3 | /lifecycle 忽略时间参数 | ✅ Done | v2_handler.go, v2_lifecycle_repository.go, v2_lifecycle_service.go | 222d264 |
+| P0-4 | /insights 劫持 compare 参数 | ✅ Done | v2_insight_service.go | 222d264 |
 
 ## P1 — 应该修复
 
 | ID | 问题 | 状态 | 文件 | Commit |
 |----|------|------|------|--------|
-| P1-1 | /reports 串行 N 次查询 | Pending | v2_report_service.go | |
-| P1-2 | /reports include 模块不完整 | Pending | v2_report_service.go | |
-| P1-3 | CarExists 重复查询 | Pending | v2_handler.go | |
+| P1-1 | /reports 串行 N 次查询 | ✅ Done | v2_report_service.go | 222d264 |
+| P1-2 | /reports include 模块不完整 | ✅ Done | v2_report_service.go | 222d264 |
+| P1-3 | CarExists 重复查询 | ✅ Done | v2_handler.go | 222d264 |
 
 ## 详细记录
 
