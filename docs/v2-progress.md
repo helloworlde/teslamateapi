@@ -21,8 +21,8 @@
 | T06 | Done |  | `/api/v2/cars/{CarID}/analytics/efficiency`, `/factors` | Yes | Yes | Yes | Supports estimated energy/consumption summary and factual factor groupings by temperature, speed, distance, elevation, location, hour, and weekday without causal claims. |
 | T07 | Done |  | `/api/v2/cars/{CarID}/analytics/cost` | Yes | Yes | Yes | Supports charging-cost scope, explicit excluded external cost categories, cost by period/location, and data-quality warnings for missing cost or energy data. Runtime curl verification intentionally skipped per temporary user instruction. |
 | T08 | Done |  | `/api/v2/cars/{CarID}/analytics/locations` | Yes | Yes | Yes | Aggregates drive starts/ends, charging, inferred parking, charging cost, and estimated vampire drain by geofence/address with sort options. Runtime curl verification intentionally skipped per temporary user instruction. |
-| T09 | Pending |  | updates | No | No | No |  |
-| T10 | Pending |  | lifecycle, timeline | No | No | No |  |
-| T11 | Pending |  | calendar | No | No | No |  |
-| T12 | Pending |  | reports | No | No | No |  |
-| T13 | Pending |  | insights | No | No | No |  |
+| T09 | Done |  | `/api/v2/cars/{CarID}/analytics/updates` | Yes | Yes | Yes | OTA update history with version list, update_count, latest_version, avg_duration_min. UTC half-open interval filtering. curl verification skipped per user instruction. |
+| T10 | Done |  | `/api/v2/cars/{CarID}/analytics/lifecycle`, `/api/v2/cars/{CarID}/timeline` | Yes | Yes | Yes | Lifecycle cumulative stats from first recorded event; timeline returns unified drive/charge/park/update events with type/start/end/title/metrics, supports type filter and order. curl verification skipped per user instruction. |
+| T11 | Done |  | `/api/v2/cars/{CarID}/calendar` | Yes | Yes | Yes | Daily aggregation over requested date range; fills gaps with zero rows; activity_level computed from fixed thresholds for driving/charging/parking_drain. UTC half-open interval; local date output. curl verification skipped per user instruction. |
+| T12 | Done |  | `/api/v2/cars/{CarID}/reports` | Yes | Yes | Yes | Composite period report composing existing analytics services; sections hidden when no data; include param controls modules; no SQL duplication. curl verification skipped per user instruction. |
+| T13 | Done |  | `/api/v2/cars/{CarID}/insights` | Yes | Yes | Yes | Objective insights with evidence and baseline_period; minimum sample rules enforced; no subjective language; supports category/min_severity filters; 10 insight types implemented. curl verification skipped per user instruction. |

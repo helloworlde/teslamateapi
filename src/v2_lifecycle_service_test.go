@@ -1,0 +1,136 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+)
+
+type fakeV2LifecycleRepository struct {
+	exists    bool
+	lifecycle V2LifecycleResponse
+	events    []V2TimelineEvent
+	total     int64
+	err       error
+}
+
+func (r *fakeV2LifecycleRepository) CarExists(context.Context, int64) (bool, error) {
+	return r.exists, nil
+}
+
+func (r *fakeV2LifecycleRepository) Lifecycle(context.Context, int64) (V2LifecycleResponse, error) {
+	return r.lifecycle, r.err
+}
+
+func (r *fakeV2LifecycleRepository) Timeline(context.Context, int64, timeBound, timeBound, []string, int, string) ([]V2TimelineEvent, int64, error) {
+	return r.events, r.total, r.err
+}
+
+func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
+	firstAt := "2023-01-01T00:00:00Z"
+	lastAt := "2024-01-01T00:00:00Z"
+	daily := 50.0
+	monthly := daily * 30.44
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{
+		exists: true,
+		lifecycle: V2LifecycleResponse{
+			FirstRecordedAt:      &firstAt,
+			LastRecordedAt:       &lastAt,
+			RecordedDays:         365,
+			DriveCount:           100,
+			DistanceKM:           5000,
+			ChargingSessionCount: 50,
+			EnergyAddedKWh:       1000,
+			UpdateCount:          5,
+			AvgDailyDistanceKM:   &daily,
+			AvgMonthlyDistanceKM: &monthly,
+		},
+	})
+	response, quality, err := service.BuildLifecycle(context.Background(), "1", V2TimeRange{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if response.DriveCount != 100 {
+		t.Fatalf("expected drive_count 100, got %d", response.DriveCount)
+	}
+	if response.DistanceKM != 5000 {
+		t.Fatalf("expected distance_km 5000, got %f", response.DistanceKM)
+	}
+	if quality.SampleCount != 155 { // 100 + 50 + 5
+		t.Fatalf("expected sample_count 155, got %d", quality.SampleCount)
+	}
+}
+
+func TestV2LifecycleServiceCarNotFound(t *testing.T) {
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: false})
+	_, _, err := service.BuildLifecycle(context.Background(), "1", V2TimeRange{})
+	if !errors.Is(err, errV2CarNotFound) {
+		t.Fatalf("expected car not found, got %v", err)
+	}
+}
+
+func TestV2LifecycleServiceInvalidCarID(t *testing.T) {
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
+	_, _, err := service.BuildLifecycle(context.Background(), "bad", V2TimeRange{})
+	if err == nil || err.Error() != "invalid car id" {
+		t.Fatalf("expected invalid car id, got %v", err)
+	}
+}
+
+func TestV2LifecycleServiceBuildTimeline(t *testing.T) {
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{
+		exists: true,
+		events: []V2TimelineEvent{
+			{Type: "drive", ID: 1, StartTime: "2024-01-01T10:00:00Z", Title: "Drive 50.0 km"},
+			{Type: "charging", ID: 2, StartTime: "2024-01-01T12:00:00Z", Title: "Charging 20.00 kWh"},
+		},
+		total: 2,
+	})
+	response, quality, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
+		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+	}, nil, 50, "desc")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(response.Events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(response.Events))
+	}
+	if response.Total != 2 {
+		t.Fatalf("expected total 2, got %d", response.Total)
+	}
+	if quality.SampleCount != 2 {
+		t.Fatalf("expected sample_count 2, got %d", quality.SampleCount)
+	}
+}
+
+func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{
+		exists: true,
+		events: nil,
+		total:  0,
+	})
+	response, _, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
+		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+	}, nil, 50, "desc")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(response.Events) != 0 {
+		t.Fatalf("expected empty events")
+	}
+}
+
+func TestV2LifecycleServiceTimelineDefaultLimit(t *testing.T) {
+	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
+	response, _, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
+		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+	}, nil, 0, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	_ = response
+}
