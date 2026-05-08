@@ -336,6 +336,57 @@ definitions:
       previous:
         type: number
     type: object
+  main.V2CostAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2CostResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2CostDataScope:
+    properties:
+      excluded:
+        items:
+          type: string
+        type: array
+      included:
+        items:
+          type: string
+        type: array
+    type: object
+  main.V2CostLocationItem:
+    properties:
+      charging_cost:
+        type: number
+      energy_used_kwh:
+        type: number
+      location_name:
+        type: string
+    type: object
+  main.V2CostPeriodItem:
+    properties:
+      charging_cost:
+        type: number
+      energy_used_kwh:
+        type: number
+      period_start:
+        type: string
+    type: object
+  main.V2CostResponse:
+    properties:
+      cost_by_location:
+        items:
+          $ref: '#/definitions/main.V2CostLocationItem'
+        type: array
+      cost_by_period:
+        items:
+          $ref: '#/definitions/main.V2CostPeriodItem'
+        type: array
+      data_scope:
+        $ref: '#/definitions/main.V2CostDataScope'
+      summary:
+        $ref: '#/definitions/main.V2CostSummaryDetails'
+    type: object
   main.V2CostSummary:
     properties:
       charging_cost:
@@ -343,6 +394,21 @@ definitions:
       cost_per_100km:
         type: number
       cost_per_km:
+        type: number
+    type: object
+  main.V2CostSummaryDetails:
+    properties:
+      charging_cost:
+        type: number
+      cost_per_100km:
+        type: number
+      cost_per_km:
+        type: number
+      cost_per_kwh:
+        type: number
+      distance_km:
+        type: number
+      energy_used_kwh:
         type: number
     type: object
   main.V2DataQuality:
@@ -1326,6 +1392,72 @@ paths:
       summary: V2 charging analytics by charger type
       tags:
       - V2 Charging Analytics
+  /v2/cars/{CarID}/analytics/cost:
+    get:
+      description: Returns objective charging-cost analytics. Current data scope includes
+        charging_cost only and excludes insurance, maintenance, parking, depreciation,
+        tire, and repair costs.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Cost grouping
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2CostAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 cost analytics
+      tags:
+      - V2 Cost Analytics
   /v2/cars/{CarID}/analytics/driving:
     get:
       description: Returns objective driving statistics and optional previous-period

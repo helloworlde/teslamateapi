@@ -741,6 +741,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/cost": {
+            "get": {
+                "description": "Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Cost Analytics"
+                ],
+                "summary": "V2 cost analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "Cost grouping",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2CostAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/driving": {
             "get": {
                 "description": "Returns objective driving statistics and optional previous-period comparison for one car.",
@@ -2160,6 +2252,85 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2CostAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2CostResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2CostDataScope": {
+            "type": "object",
+            "properties": {
+                "excluded": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "included": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "main.V2CostLocationItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "location_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2CostPeriodItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2CostResponse": {
+            "type": "object",
+            "properties": {
+                "cost_by_location": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2CostLocationItem"
+                    }
+                },
+                "cost_by_period": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2CostPeriodItem"
+                    }
+                },
+                "data_scope": {
+                    "$ref": "#/definitions/main.V2CostDataScope"
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2CostSummaryDetails"
+                }
+            }
+        },
         "main.V2CostSummary": {
             "type": "object",
             "properties": {
@@ -2170,6 +2341,29 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "cost_per_km": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2CostSummaryDetails": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "cost_per_100km": {
+                    "type": "number"
+                },
+                "cost_per_km": {
+                    "type": "number"
+                },
+                "cost_per_kwh": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
                     "type": "number"
                 }
             }

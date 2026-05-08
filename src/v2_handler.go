@@ -46,6 +46,10 @@ type V2EfficiencyBuilder interface {
 	BuildEfficiencyFactors(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2EfficiencyFactorsResponse, V2DataQuality, int64, error)
 }
 
+type V2CostBuilder interface {
+	BuildCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2CostResponse, V2DataQuality, int64, error)
+}
+
 type V2Handlers struct {
 	summaryBuilder    V2SummaryBuilder
 	drivingBuilder    V2DrivingBuilder
@@ -53,6 +57,7 @@ type V2Handlers struct {
 	parkingBuilder    V2ParkingBuilder
 	batteryBuilder    V2BatteryBuilder
 	efficiencyBuilder V2EfficiencyBuilder
+	costBuilder       V2CostBuilder
 	now               func() time.Time
 }
 
@@ -74,6 +79,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	var parkingRepository V2ParkingRepository
 	var batteryRepository V2BatteryRepository
 	var efficiencyRepository V2EfficiencyRepository
+	var costRepository V2CostRepository
 	if summaryRepository == nil && db != nil {
 		repository := NewPostgresV2SummaryRepository(db)
 		summaryRepository = repository
@@ -82,11 +88,13 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		parkingRepository = NewPostgresV2ParkingRepository(db)
 		batteryRepository = NewPostgresV2BatteryRepository(db)
 		efficiencyRepository = NewPostgresV2EfficiencyRepository(db)
+		costRepository = NewPostgresV2CostRepository(db)
 	}
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), NewV2DrivingService(drivingRepository), NewV2ChargingService(chargingRepository))
 	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
 	handlers.batteryBuilder = NewV2BatteryService(batteryRepository)
 	handlers.efficiencyBuilder = NewV2EfficiencyService(efficiencyRepository)
+	handlers.costBuilder = NewV2CostService(costRepository)
 
 	v2 := api.Group("/v2")
 	{
@@ -110,6 +118,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2.GET("/cars/:CarID/analytics/battery/distribution", handlers.BatteryDistribution)
 		v2.GET("/cars/:CarID/analytics/efficiency", handlers.Efficiency)
 		v2.GET("/cars/:CarID/analytics/efficiency/factors", handlers.EfficiencyFactors)
+		v2.GET("/cars/:CarID/analytics/cost", handlers.Cost)
 	}
 }
 
@@ -810,5 +819,53 @@ func handleV2EfficiencyError(c *gin.Context, err error) {
 		v2BadRequest(c, "Invalid car id.", nil)
 	default:
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 efficiency analytics.", err.Error())
+	}
+}
+
+// Cost godoc
+//
+// @Summary V2 cost analytics
+// @Description Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.
+// @Tags V2 Cost Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param group_by query string false "Cost grouping" Enums(day, week, month, year)
+// @Success 200 {object} V2CostAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/cost [get]
+func (h V2Handlers) Cost(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	if h.costBuilder == nil {
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 cost service is not configured.", nil)
+		return
+	}
+	response, quality, carID, err := h.costBuilder.BuildCost(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	if err != nil {
+		handleV2CostError(c, err)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+func handleV2CostError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, errV2CarNotFound):
+		v2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+	case errors.Is(err, errV2InvalidDrivingGroupBy):
+		v2BadRequest(c, "Invalid cost group_by.", nil)
+	case err.Error() == "invalid car id":
+		v2BadRequest(c, "Invalid car id.", nil)
+	default:
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 cost analytics.", err.Error())
 	}
 }

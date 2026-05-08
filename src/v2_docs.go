@@ -100,6 +100,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V2 Parking Analytics", "description": "V2 objective parking duration, state, location, and estimated drain analytics."},
 			{"name": "V2 Battery Analytics", "description": "V2 objective battery range samples, estimated full-range trends, and battery level distributions."},
 			{"name": "V2 Efficiency Analytics", "description": "V2 objective efficiency statistics and factual factor groupings."},
+			{"name": "V2 Cost Analytics", "description": "V2 objective charging-cost statistics with explicit included and excluded cost scopes."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -307,6 +308,17 @@ func buildOpenAPISpec() gin.H {
 						queryParam("dimension", "string", []string{"temperature", "speed", "distance", "elevation", "location", "hour_of_day", "day_of_week"}),
 					),
 					"responses": analyticsResponses("V2 efficiency factors response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/cost": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Cost Analytics"},
+					"summary":     "V2 cost analytics",
+					"description": "Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
+					),
+					"responses": analyticsResponses("V2 cost analytics response"),
 				},
 			},
 		},

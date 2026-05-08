@@ -19,7 +19,7 @@
 | T04 | Done |  | `/api/v2/cars/{CarID}/analytics/parking`, `/locations`, `/states` | Yes | Yes | Yes | Supports state-duration summary, previous-period comparison, inferred parking sessions, inferred location aggregation, state breakdown, and estimated parking drain data quality warnings. |
 | T05 | Done |  | `/api/v2/cars/{CarID}/analytics/battery`, `/timeseries`, `/distribution` | Yes | Yes | Yes | Supports latest battery/range samples, estimated full-range trend, battery-level distribution buckets, previous-period comparison, and data-quality warnings that estimates are not official SOH. |
 | T06 | Done |  | `/api/v2/cars/{CarID}/analytics/efficiency`, `/factors` | Yes | Yes | Yes | Supports estimated energy/consumption summary and factual factor groupings by temperature, speed, distance, elevation, location, hour, and weekday without causal claims. |
-| T07 | Pending |  | cost | No | No | No |  |
+| T07 | Done |  | `/api/v2/cars/{CarID}/analytics/cost` | Yes | Yes | Yes | Supports charging-cost scope, explicit excluded external cost categories, cost by period/location, and data-quality warnings for missing cost or energy data. Runtime curl verification intentionally skipped per temporary user instruction. |
 | T08 | Pending |  | locations | No | No | No |  |
 | T09 | Pending |  | updates | No | No | No |  |
 | T10 | Pending |  | lifecycle, timeline | No | No | No |  |
