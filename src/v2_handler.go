@@ -41,13 +41,19 @@ type V2BatteryBuilder interface {
 	BuildBatteryDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryDistributionResponse, V2DataQuality, int64, error)
 }
 
+type V2EfficiencyBuilder interface {
+	BuildEfficiency(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2EfficiencyResponse, V2DataQuality, int64, error)
+	BuildEfficiencyFactors(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2EfficiencyFactorsResponse, V2DataQuality, int64, error)
+}
+
 type V2Handlers struct {
-	summaryBuilder  V2SummaryBuilder
-	drivingBuilder  V2DrivingBuilder
-	chargingBuilder V2ChargingBuilder
-	parkingBuilder  V2ParkingBuilder
-	batteryBuilder  V2BatteryBuilder
-	now             func() time.Time
+	summaryBuilder    V2SummaryBuilder
+	drivingBuilder    V2DrivingBuilder
+	chargingBuilder   V2ChargingBuilder
+	parkingBuilder    V2ParkingBuilder
+	batteryBuilder    V2BatteryBuilder
+	efficiencyBuilder V2EfficiencyBuilder
+	now               func() time.Time
 }
 
 func NewV2Handlers(summaryBuilder V2SummaryBuilder, drivingBuilder V2DrivingBuilder, chargingBuilder ...V2ChargingBuilder) V2Handlers {
@@ -67,6 +73,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	var chargingRepository V2ChargingRepository
 	var parkingRepository V2ParkingRepository
 	var batteryRepository V2BatteryRepository
+	var efficiencyRepository V2EfficiencyRepository
 	if summaryRepository == nil && db != nil {
 		repository := NewPostgresV2SummaryRepository(db)
 		summaryRepository = repository
@@ -74,10 +81,12 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		chargingRepository = NewPostgresV2ChargingRepository(db)
 		parkingRepository = NewPostgresV2ParkingRepository(db)
 		batteryRepository = NewPostgresV2BatteryRepository(db)
+		efficiencyRepository = NewPostgresV2EfficiencyRepository(db)
 	}
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), NewV2DrivingService(drivingRepository), NewV2ChargingService(chargingRepository))
 	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
 	handlers.batteryBuilder = NewV2BatteryService(batteryRepository)
+	handlers.efficiencyBuilder = NewV2EfficiencyService(efficiencyRepository)
 
 	v2 := api.Group("/v2")
 	{
@@ -99,6 +108,8 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2.GET("/cars/:CarID/analytics/battery", handlers.Battery)
 		v2.GET("/cars/:CarID/analytics/battery/timeseries", handlers.BatteryTimeseries)
 		v2.GET("/cars/:CarID/analytics/battery/distribution", handlers.BatteryDistribution)
+		v2.GET("/cars/:CarID/analytics/efficiency", handlers.Efficiency)
+		v2.GET("/cars/:CarID/analytics/efficiency/factors", handlers.EfficiencyFactors)
 	}
 }
 
@@ -721,5 +732,83 @@ func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
 		v2BadRequest(c, "Invalid car id.", nil)
 	default:
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 battery analytics.", err.Error())
+	}
+}
+
+// Efficiency godoc
+//
+// @Summary V2 efficiency analytics summary
+// @Description Returns objective drive efficiency metrics, including estimated energy consumption, average/best/worst consumption, average temperature, and average speed.
+// @Tags V2 Efficiency Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} V2EfficiencyAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/efficiency [get]
+func (h V2Handlers) Efficiency(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	if h.efficiencyBuilder == nil {
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 efficiency service is not configured.", nil)
+		return
+	}
+	response, quality, carID, err := h.efficiencyBuilder.BuildEfficiency(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2EfficiencyError(c, err)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+// EfficiencyFactors godoc
+//
+// @Summary V2 efficiency factor analytics
+// @Description Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.
+// @Tags V2 Efficiency Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param dimension query string false "Factor dimension" Enums(temperature, speed, distance, elevation, location, hour_of_day, day_of_week)
+// @Success 200 {object} V2EfficiencyFactorsAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/efficiency/factors [get]
+func (h V2Handlers) EfficiencyFactors(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	response, quality, carID, err := h.efficiencyBuilder.BuildEfficiencyFactors(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("dimension"))
+	if err != nil {
+		handleV2EfficiencyError(c, err)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+func handleV2EfficiencyError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, errV2CarNotFound):
+		v2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+	case errors.Is(err, errV2InvalidEfficiencyDimension):
+		v2BadRequest(c, "Invalid efficiency dimension.", nil)
+	case err.Error() == "invalid car id":
+		v2BadRequest(c, "Invalid car id.", nil)
+	default:
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 efficiency analytics.", err.Error())
 	}
 }

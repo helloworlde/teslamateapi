@@ -521,6 +521,72 @@ definitions:
           $ref: '#/definitions/main.V2DrivingTimeseriesItem'
         type: array
     type: object
+  main.V2EfficiencyAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2EfficiencyResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2EfficiencyFactorItem:
+    properties:
+      avg_consumption_wh_per_km:
+        type: number
+      avg_speed_kmh:
+        type: number
+      avg_temperature_c:
+        type: number
+      bucket:
+        type: string
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      estimated_energy_consumed_kwh:
+        type: number
+    type: object
+  main.V2EfficiencyFactorsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2EfficiencyFactorsResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2EfficiencyFactorsResponse:
+    properties:
+      dimension:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/main.V2EfficiencyFactorItem'
+        type: array
+    type: object
+  main.V2EfficiencyResponse:
+    properties:
+      summary:
+        $ref: '#/definitions/main.V2EfficiencySummary'
+    type: object
+  main.V2EfficiencySummary:
+    properties:
+      avg_consumption_wh_per_km:
+        type: number
+      avg_speed_kmh:
+        type: number
+      avg_temperature_c:
+        type: number
+      best_consumption_wh_per_km:
+        type: number
+      distance_km:
+        type: number
+      drive_count:
+        type: integer
+      estimated_energy_consumed_kwh:
+        type: number
+      estimated_regenerated_energy_kwh:
+        type: number
+      worst_consumption_wh_per_km:
+        type: number
+    type: object
   main.V2InfoAPIResponse:
     properties:
       data:
@@ -1529,6 +1595,131 @@ paths:
       summary: V2 driving analytics timeseries
       tags:
       - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/efficiency:
+    get:
+      description: Returns objective drive efficiency metrics, including estimated
+        energy consumption, average/best/worst consumption, average temperature, and
+        average speed.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2EfficiencyAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 efficiency analytics summary
+      tags:
+      - V2 Efficiency Analytics
+  /v2/cars/{CarID}/analytics/efficiency/factors:
+    get:
+      description: Returns factual efficiency metrics grouped by one selected dimension.
+        Bucketed results do not imply causation.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Factor dimension
+        enum:
+        - temperature
+        - speed
+        - distance
+        - elevation
+        - location
+        - hour_of_day
+        - day_of_week
+        in: query
+        name: dimension
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2EfficiencyFactorsAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 efficiency factor analytics
+      tags:
+      - V2 Efficiency Analytics
   /v2/cars/{CarID}/analytics/parking:
     get:
       description: Returns objective parked duration, state duration, inferred parking

@@ -1120,6 +1120,181 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/efficiency": {
+            "get": {
+                "description": "Returns objective drive efficiency metrics, including estimated energy consumption, average/best/worst consumption, average temperature, and average speed.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Efficiency Analytics"
+                ],
+                "summary": "V2 efficiency analytics summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2EfficiencyAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/efficiency/factors": {
+            "get": {
+                "description": "Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Efficiency Analytics"
+                ],
+                "summary": "V2 efficiency factor analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "temperature",
+                            "speed",
+                            "distance",
+                            "elevation",
+                            "location",
+                            "hour_of_day",
+                            "day_of_week"
+                        ],
+                        "type": "string",
+                        "description": "Factor dimension",
+                        "name": "dimension",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2EfficiencyFactorsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/parking": {
             "get": {
                 "description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
@@ -2267,6 +2442,108 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/main.V2DrivingTimeseriesItem"
                     }
+                }
+            }
+        },
+        "main.V2EfficiencyAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2EfficiencyResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2EfficiencyFactorItem": {
+            "type": "object",
+            "properties": {
+                "avg_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "avg_speed_kmh": {
+                    "type": "number"
+                },
+                "avg_temperature_c": {
+                    "type": "number"
+                },
+                "bucket": {
+                    "type": "string"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "estimated_energy_consumed_kwh": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2EfficiencyFactorsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2EfficiencyFactorsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2EfficiencyFactorsResponse": {
+            "type": "object",
+            "properties": {
+                "dimension": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2EfficiencyFactorItem"
+                    }
+                }
+            }
+        },
+        "main.V2EfficiencyResponse": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/main.V2EfficiencySummary"
+                }
+            }
+        },
+        "main.V2EfficiencySummary": {
+            "type": "object",
+            "properties": {
+                "avg_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "avg_speed_kmh": {
+                    "type": "number"
+                },
+                "avg_temperature_c": {
+                    "type": "number"
+                },
+                "best_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "estimated_energy_consumed_kwh": {
+                    "type": "number"
+                },
+                "estimated_regenerated_energy_kwh": {
+                    "type": "number"
+                },
+                "worst_consumption_wh_per_km": {
+                    "type": "number"
                 }
             }
         },

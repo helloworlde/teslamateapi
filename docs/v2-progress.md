@@ -18,7 +18,7 @@
 | T03 | Done |  | `/api/v2/cars/{CarID}/analytics/charging`, `/timeseries`, `/locations`, `/types`, `/cost` | Yes | Yes | Yes | Supports summary, previous-period comparison, chart timeseries, location aggregation, charger type aggregation, and charging cost analytics. Time buckets and outputs use the selected/default timezone. |
 | T04 | Done |  | `/api/v2/cars/{CarID}/analytics/parking`, `/locations`, `/states` | Yes | Yes | Yes | Supports state-duration summary, previous-period comparison, inferred parking sessions, inferred location aggregation, state breakdown, and estimated parking drain data quality warnings. |
 | T05 | Done |  | `/api/v2/cars/{CarID}/analytics/battery`, `/timeseries`, `/distribution` | Yes | Yes | Yes | Supports latest battery/range samples, estimated full-range trend, battery-level distribution buckets, previous-period comparison, and data-quality warnings that estimates are not official SOH. |
-| T06 | Pending |  | efficiency | No | No | No |  |
+| T06 | Done |  | `/api/v2/cars/{CarID}/analytics/efficiency`, `/factors` | Yes | Yes | Yes | Supports estimated energy/consumption summary and factual factor groupings by temperature, speed, distance, elevation, location, hour, and weekday without causal claims. |
 | T07 | Pending |  | cost | No | No | No |  |
 | T08 | Pending |  | locations | No | No | No |  |
 | T09 | Pending |  | updates | No | No | No |  |

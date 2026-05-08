@@ -99,6 +99,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V2 Charging Analytics", "description": "V2 objective charging statistics, trends, locations, types, and costs."},
 			{"name": "V2 Parking Analytics", "description": "V2 objective parking duration, state, location, and estimated drain analytics."},
 			{"name": "V2 Battery Analytics", "description": "V2 objective battery range samples, estimated full-range trends, and battery level distributions."},
+			{"name": "V2 Efficiency Analytics", "description": "V2 objective efficiency statistics and factual factor groupings."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -286,6 +287,26 @@ func buildOpenAPISpec() gin.H {
 					"description": "Returns battery_level sample counts grouped into 10 percent buckets.",
 					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
 					"responses":   analyticsResponses("V2 battery distribution response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/efficiency": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Efficiency Analytics"},
+					"summary":     "V2 efficiency analytics summary",
+					"description": "Returns objective drive efficiency metrics, including estimated energy consumption, consumption range, average temperature, and average speed.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 efficiency analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/efficiency/factors": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Efficiency Analytics"},
+					"summary":     "V2 efficiency factor analytics",
+					"description": "Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("dimension", "string", []string{"temperature", "speed", "distance", "elevation", "location", "hour_of_day", "day_of_week"}),
+					),
+					"responses": analyticsResponses("V2 efficiency factors response"),
 				},
 			},
 		},
