@@ -1387,6 +1387,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/lifecycle": {
+            "get": {
+                "description": "Returns cumulative lifetime statistics for a car since the first recorded data point.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Lifecycle"
+                ],
+                "summary": "V2 lifetime cumulative analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2LifecycleAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/locations": {
             "get": {
                 "description": "Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.",
@@ -1823,6 +1903,451 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v2/cars/{CarID}/analytics/updates": {
+            "get": {
+                "description": "Returns OTA update history statistics for a car in the selected period.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Update Analytics"
+                ],
+                "summary": "V2 update analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2UpdateAnalyticsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/calendar": {
+            "get": {
+                "description": "Returns per-day aggregated statistics for calendar/heatmap views. All dates in the requested range are returned, with zeros for days without data.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Calendar"
+                ],
+                "summary": "V2 calendar daily aggregation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD or RFC3339)",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD or RFC3339)",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2CalendarAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/insights": {
+            "get": {
+                "description": "Returns factual, evidence-backed insights based on period comparison. No subjective evaluations.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Insights"
+                ],
+                "summary": "V2 objective insights",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by category: driving,charging,parking,battery,cost,lifecycle",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "info",
+                            "warning"
+                        ],
+                        "type": "string",
+                        "description": "Minimum severity: info,warning",
+                        "name": "min_severity",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2InsightAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/reports": {
+            "get": {
+                "description": "Returns a structured period report combining multiple analytics modules. Only sections with data are included.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Reports"
+                ],
+                "summary": "V2 period report",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated module list: summary,driving,charging,updates",
+                        "name": "include",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ReportAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/timeline": {
+            "get": {
+                "description": "Returns a unified chronological timeline of drive, charging, update, and state events.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Lifecycle"
+                ],
+                "summary": "V2 unified event timeline",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated event types: drive,charging,update",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Max results",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort order",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2TimelineAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1843,6 +2368,20 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "$ref": "#/definitions/main.APIErrorBody"
+                }
+            }
+        },
+        "main.V2ActivityLevel": {
+            "type": "object",
+            "properties": {
+                "charging": {
+                    "type": "integer"
+                },
+                "driving": {
+                    "type": "integer"
+                },
+                "parking_drain": {
+                    "type": "integer"
                 }
             }
         },
@@ -2000,6 +2539,66 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/main.V2BatteryTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "main.V2CalendarAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2CalendarResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2CalendarDay": {
+            "type": "object",
+            "properties": {
+                "activity_level": {
+                    "$ref": "#/definitions/main.V2ActivityLevel"
+                },
+                "charging_cost": {
+                    "type": "number"
+                },
+                "charging_session_count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "drive_duration_min": {
+                    "type": "number"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "parking_duration_min": {
+                    "type": "number"
+                },
+                "update_count": {
+                    "type": "integer"
+                },
+                "vampire_drain_percent": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2CalendarResponse": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2CalendarDay"
                     }
                 }
             }
@@ -2864,6 +3463,123 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2Insight": {
+            "type": "object",
+            "properties": {
+                "baseline_period": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "current_period": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "evidence": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2InsightAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2InsightResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2InsightResponse": {
+            "type": "object",
+            "properties": {
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2Insight"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2LifecycleAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2LifecycleResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2LifecycleResponse": {
+            "type": "object",
+            "properties": {
+                "avg_consumption_wh_per_km": {
+                    "type": "number"
+                },
+                "avg_daily_distance_km": {
+                    "type": "number"
+                },
+                "avg_monthly_distance_km": {
+                    "type": "number"
+                },
+                "charging_cost": {
+                    "type": "number"
+                },
+                "charging_session_count": {
+                    "type": "integer"
+                },
+                "cost_per_100km": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "drive_count": {
+                    "type": "integer"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "first_recorded_at": {
+                    "type": "string"
+                },
+                "last_recorded_at": {
+                    "type": "string"
+                },
+                "recorded_days": {
+                    "type": "integer"
+                },
+                "update_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "main.V2LocationAnalyticsAPIResponse": {
             "type": "object",
             "properties": {
@@ -3150,6 +3866,52 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2ReportAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ReportResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ReportResponse": {
+            "type": "object",
+            "properties": {
+                "period": {
+                    "type": "string"
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ReportSection"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2ReportSection": {
+            "type": "object",
+            "properties": {
+                "data_quality": {
+                    "$ref": "#/definitions/main.V2DataQuality"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "main.V2Summary": {
             "type": "object",
             "properties": {
@@ -3198,6 +3960,55 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2TimelineAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2TimelineResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2TimelineEvent": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2TimelineResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2TimelineEvent"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "main.V2Unit": {
             "type": "object",
             "properties": {
@@ -3223,6 +4034,40 @@ const docTemplate = `{
                 }
             }
         },
+        "main.V2UpdateAnalyticsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2UpdateAnalyticsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2UpdateAnalyticsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_update_duration_min": {
+                    "type": "number"
+                },
+                "latest_updated_at": {
+                    "type": "string"
+                },
+                "latest_version": {
+                    "type": "string"
+                },
+                "update_count": {
+                    "type": "integer"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2UpdateVersion"
+                    }
+                }
+            }
+        },
         "main.V2UpdateSummary": {
             "type": "object",
             "properties": {
@@ -3231,6 +4076,23 @@ const docTemplate = `{
                 },
                 "update_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "main.V2UpdateVersion": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         }
