@@ -34,6 +34,442 @@
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/charging": {
+            "get": {
+                "description": "Returns objective charging statistics and optional previous-period comparison for one car.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Charging Analytics"
+                ],
+                "summary": "V2 charging analytics summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "none",
+                            "previous_period",
+                            "previous_year",
+                            "lifetime_average"
+                        ],
+                        "type": "string",
+                        "description": "Comparison mode",
+                        "name": "compare",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ChargingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging/cost": {
+            "get": {
+                "description": "Returns objective charging cost, energy, and distance-normalized cost metrics.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Charging Analytics"
+                ],
+                "summary": "V2 charging cost analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "Cost grouping",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ChargingCostAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging/locations": {
+            "get": {
+                "description": "Returns objective charging metrics grouped by geofence or address.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Charging Analytics"
+                ],
+                "summary": "V2 charging analytics by location",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ChargingLocationsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging/timeseries": {
+            "get": {
+                "description": "Returns charging metrics grouped by day, week, month, or year for charting.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Charging Analytics"
+                ],
+                "summary": "V2 charging analytics timeseries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "Timeseries grouping",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ChargingTimeseriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging/types": {
+            "get": {
+                "description": "Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Charging Analytics"
+                ],
+                "summary": "V2 charging analytics by charger type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ChargingTypesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/driving": {
             "get": {
                 "description": "Returns objective driving statistics and optional previous-period comparison for one car.",
@@ -541,6 +977,217 @@
                 }
             }
         },
+        "main.V2ChargingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ChargingResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ChargingAnalyticsSummary": {
+            "type": "object",
+            "properties": {
+                "ac_energy_kwh": {
+                    "type": "number"
+                },
+                "ac_session_count": {
+                    "type": "integer"
+                },
+                "avg_cost_per_kwh": {
+                    "type": "number"
+                },
+                "avg_duration_min": {
+                    "type": "number"
+                },
+                "avg_power_kw": {
+                    "type": "number"
+                },
+                "charging_efficiency_percent": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "dc_energy_kwh": {
+                    "type": "number"
+                },
+                "dc_session_count": {
+                    "type": "integer"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "end_battery_avg_percent": {
+                    "type": "number"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "max_power_kw": {
+                    "type": "number"
+                },
+                "session_count": {
+                    "type": "integer"
+                },
+                "start_battery_avg_percent": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2ChargingCostAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ChargingCostResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ChargingCostLocationItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "location_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2ChargingCostPeriodItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2ChargingCostResponse": {
+            "type": "object",
+            "properties": {
+                "cost_by_location": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ChargingCostLocationItem"
+                    }
+                },
+                "cost_by_period": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ChargingCostPeriodItem"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2ChargingCostSummary"
+                }
+            }
+        },
+        "main.V2ChargingCostSummary": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "type": "number"
+                },
+                "cost_per_100km": {
+                    "type": "number"
+                },
+                "cost_per_km": {
+                    "type": "number"
+                },
+                "cost_per_kwh": {
+                    "type": "number"
+                },
+                "distance_km": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2ChargingLocationItem": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "integer"
+                },
+                "charging_efficiency_percent": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "geofence_id": {
+                    "type": "integer"
+                },
+                "location_name": {
+                    "type": "string"
+                },
+                "session_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2ChargingLocationsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ChargingLocationsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ChargingLocationsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ChargingLocationItem"
+                    }
+                }
+            }
+        },
+        "main.V2ChargingResponse": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.V2ComparisonValue"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2ChargingAnalyticsSummary"
+                }
+            }
+        },
         "main.V2ChargingSummary": {
             "type": "object",
             "properties": {
@@ -558,6 +1205,99 @@
                 },
                 "session_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "main.V2ChargingTimeseriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ChargingTimeseriesResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ChargingTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_power_kw": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration_min": {
+                    "type": "number"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "session_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2ChargingTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ChargingTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "main.V2ChargingTypeItem": {
+            "type": "object",
+            "properties": {
+                "charging_type": {
+                    "type": "string"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "energy_used_kwh": {
+                    "type": "number"
+                },
+                "session_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2ChargingTypesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ChargingTypesResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ChargingTypesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ChargingTypeItem"
+                    }
                 }
             }
         },

@@ -96,6 +96,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V1", "description": "Existing V1 TeslaMate resource endpoints."},
 			{"name": "V2 Summary", "description": "V2 analytics base and summary endpoints."},
 			{"name": "V2 Driving Analytics", "description": "V2 objective driving statistics, trends, distributions, and rankings."},
+			{"name": "V2 Charging Analytics", "description": "V2 objective charging statistics, trends, locations, types, and costs."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -178,6 +179,55 @@ func buildOpenAPISpec() gin.H {
 						queryParam("limit", "integer", nil),
 					),
 					"responses": analyticsResponses("V2 driving ranking response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/charging": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Charging Analytics"},
+					"summary":     "V2 charging analytics summary",
+					"description": "Returns objective charging statistics and optional previous-period comparison for one car.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 charging analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/charging/timeseries": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Charging Analytics"},
+					"summary":     "V2 charging analytics timeseries",
+					"description": "Returns charging metrics grouped by day, week, month, or year for charting.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
+					),
+					"responses": analyticsResponses("V2 charging timeseries response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/charging/locations": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Charging Analytics"},
+					"summary":     "V2 charging analytics by location",
+					"description": "Returns objective charging metrics grouped by geofence or address.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 charging locations response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/charging/types": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Charging Analytics"},
+					"summary":     "V2 charging analytics by charger type",
+					"description": "Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 charging types response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/charging/cost": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Charging Analytics"},
+					"summary":     "V2 charging cost analytics",
+					"description": "Returns objective charging cost, energy, and distance-normalized cost metrics.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
+					),
+					"responses": analyticsResponses("V2 charging cost response"),
 				},
 			},
 		},

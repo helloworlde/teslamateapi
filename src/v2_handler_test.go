@@ -48,6 +48,37 @@ func (b fakeV2DrivingBuilder) BuildRanking(context.Context, string, V2TimeRange,
 	return b.rankingResponse, b.quality, b.carID, b.err
 }
 
+type fakeV2ChargingBuilder struct {
+	chargingResponse   V2ChargingResponse
+	timeseriesResponse V2ChargingTimeseriesResponse
+	locationsResponse  V2ChargingLocationsResponse
+	typesResponse      V2ChargingTypesResponse
+	costResponse       V2ChargingCostResponse
+	quality            V2DataQuality
+	carID              int64
+	err                error
+}
+
+func (b fakeV2ChargingBuilder) BuildCharging(context.Context, string, V2TimeRange) (V2ChargingResponse, V2DataQuality, int64, error) {
+	return b.chargingResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ChargingBuilder) BuildChargingTimeseries(context.Context, string, V2TimeRange, string) (V2ChargingTimeseriesResponse, V2DataQuality, int64, error) {
+	return b.timeseriesResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ChargingBuilder) BuildChargingLocations(context.Context, string, V2TimeRange) (V2ChargingLocationsResponse, V2DataQuality, int64, error) {
+	return b.locationsResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ChargingBuilder) BuildChargingTypes(context.Context, string, V2TimeRange) (V2ChargingTypesResponse, V2DataQuality, int64, error) {
+	return b.typesResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ChargingBuilder) BuildChargingCost(context.Context, string, V2TimeRange, string) (V2ChargingCostResponse, V2DataQuality, int64, error) {
+	return b.costResponse, b.quality, b.carID, b.err
+}
+
 func TestV2InfoHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -175,6 +206,49 @@ func TestV2DrivingRankingHandlerRejectsInvalidType(t *testing.T) {
 	}
 }
 
+func TestV2ChargingHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	handlers := NewV2Handlers(nil, nil, fakeV2ChargingBuilder{
+		chargingResponse: V2ChargingResponse{
+			Summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 42},
+		},
+		quality: V2DataQuality{Complete: true, SampleCount: 2},
+		carID:   1,
+	})
+	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
+	router.GET("/api/v2/cars/:CarID/analytics/charging", handlers.Charging)
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/analytics/charging?period=custom&start=2026-05-01T00:00:00Z&end=2026-05-02T00:00:00Z", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	var payload V2ChargingAPIResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if payload.Data.Summary.SessionCount != 2 || payload.Meta.CarID != 1 {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
+func TestV2ChargingCostHandlerRejectsInvalidGroupBy(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	handlers := NewV2Handlers(nil, nil, fakeV2ChargingBuilder{err: errV2InvalidDrivingGroupBy})
+	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
+	router.GET("/api/v2/cars/:CarID/analytics/charging/cost", handlers.ChargingCost)
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/analytics/charging/cost?group_by=hour", nil))
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("unexpected status: %d body=%s", recorder.Code, recorder.Body.String())
+	}
+}
+
 func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 	spec := buildOpenAPISpec()
 	paths, ok := spec["paths"].(gin.H)
@@ -189,9 +263,14 @@ func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 		"/v2/cars/{CarID}/analytics/driving/timeseries",
 		"/v2/cars/{CarID}/analytics/driving/distribution",
 		"/v2/cars/{CarID}/analytics/driving/ranking",
+		"/v2/cars/{CarID}/analytics/charging",
+		"/v2/cars/{CarID}/analytics/charging/timeseries",
+		"/v2/cars/{CarID}/analytics/charging/locations",
+		"/v2/cars/{CarID}/analytics/charging/types",
+		"/v2/cars/{CarID}/analytics/charging/cost",
 	} {
 		if _, ok := paths[path]; !ok {
-			t.Fatalf("driving path missing from spec: %s", path)
+			t.Fatalf("analytics path missing from spec: %s", path)
 		}
 	}
 }
@@ -213,7 +292,7 @@ func TestDocsRoutesServeSwaggerAndScalar(t *testing.T) {
 	if scalarRecorder.Code != http.StatusOK {
 		t.Fatalf("unexpected scalar status: %d body=%s", scalarRecorder.Code, scalarRecorder.Body.String())
 	}
-	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") {
+	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/charging/cost") {
 		t.Fatalf("scalar body does not include expected content")
 	}
 	if body := scalarRecorder.Body.String(); strings.Contains(body, "cdn.jsdelivr.net") || !strings.Contains(body, scalarLocalScriptPath) {

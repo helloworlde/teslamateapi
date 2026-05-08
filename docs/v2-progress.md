@@ -15,7 +15,7 @@
 | T00 | Done |  | V2 base framework, `/api/v2`, `/api/docs`, `/api/docs/swagger.json`, `/api/docs/scalar` | Yes | Yes | Yes | scalar-go wired to the generated OpenAPI JSON handler. |
 | T01 | Done |  | `/api/v2/cars/{CarID}/analytics/summary` | Yes | Yes | Yes | Supports `none` and `previous_period`; `previous_year` and `lifetime_average` return explicit not implemented errors. |
 | T02 | Done |  | `/api/v2/cars/{CarID}/analytics/driving`, `/timeseries`, `/distribution`, `/ranking` | Yes | Yes | Yes | Supports summary, previous-period comparison, chart timeseries, dimension distributions, and objective rankings. Ranking SQL is qualified; time buckets and outputs use the selected/default timezone. |
-| T03 | Pending |  | charging | No | No | No |  |
+| T03 | Done |  | `/api/v2/cars/{CarID}/analytics/charging`, `/timeseries`, `/locations`, `/types`, `/cost` | Yes | Yes | Yes | Supports summary, previous-period comparison, chart timeseries, location aggregation, charger type aggregation, and charging cost analytics. Time buckets and outputs use the selected/default timezone. |
 | T04 | Pending |  | parking | No | No | No |  |
 | T05 | Pending |  | battery | No | No | No |  |
 | T06 | Pending |  | efficiency | No | No | No |  |
