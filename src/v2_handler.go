@@ -50,6 +50,10 @@ type V2CostBuilder interface {
 	BuildCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2CostResponse, V2DataQuality, int64, error)
 }
 
+type V2LocationBuilder interface {
+	BuildLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange, sort string) (V2LocationAnalyticsResponse, V2DataQuality, int64, error)
+}
+
 type V2Handlers struct {
 	summaryBuilder    V2SummaryBuilder
 	drivingBuilder    V2DrivingBuilder
@@ -58,6 +62,7 @@ type V2Handlers struct {
 	batteryBuilder    V2BatteryBuilder
 	efficiencyBuilder V2EfficiencyBuilder
 	costBuilder       V2CostBuilder
+	locationBuilder   V2LocationBuilder
 	now               func() time.Time
 }
 
@@ -80,6 +85,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	var batteryRepository V2BatteryRepository
 	var efficiencyRepository V2EfficiencyRepository
 	var costRepository V2CostRepository
+	var locationRepository V2LocationRepository
 	if summaryRepository == nil && db != nil {
 		repository := NewPostgresV2SummaryRepository(db)
 		summaryRepository = repository
@@ -89,12 +95,14 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		batteryRepository = NewPostgresV2BatteryRepository(db)
 		efficiencyRepository = NewPostgresV2EfficiencyRepository(db)
 		costRepository = NewPostgresV2CostRepository(db)
+		locationRepository = NewPostgresV2LocationRepository(db)
 	}
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), NewV2DrivingService(drivingRepository), NewV2ChargingService(chargingRepository))
 	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
 	handlers.batteryBuilder = NewV2BatteryService(batteryRepository)
 	handlers.efficiencyBuilder = NewV2EfficiencyService(efficiencyRepository)
 	handlers.costBuilder = NewV2CostService(costRepository)
+	handlers.locationBuilder = NewV2LocationService(locationRepository)
 
 	v2 := api.Group("/v2")
 	{
@@ -119,6 +127,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2.GET("/cars/:CarID/analytics/efficiency", handlers.Efficiency)
 		v2.GET("/cars/:CarID/analytics/efficiency/factors", handlers.EfficiencyFactors)
 		v2.GET("/cars/:CarID/analytics/cost", handlers.Cost)
+		v2.GET("/cars/:CarID/analytics/locations", handlers.Locations)
 	}
 }
 
@@ -867,5 +876,53 @@ func handleV2CostError(c *gin.Context, err error) {
 		v2BadRequest(c, "Invalid car id.", nil)
 	default:
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 cost analytics.", err.Error())
+	}
+}
+
+// Locations godoc
+//
+// @Summary V2 location analytics
+// @Description Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.
+// @Tags V2 Location Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param sort query string false "Sort mode" Enums(drive_start_count_desc, drive_end_count_desc, charging_session_count_desc, parking_duration_desc, charging_cost_desc)
+// @Success 200 {object} V2LocationAnalyticsAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/locations [get]
+func (h V2Handlers) Locations(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	if h.locationBuilder == nil {
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 location service is not configured.", nil)
+		return
+	}
+	response, quality, carID, err := h.locationBuilder.BuildLocations(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("sort"))
+	if err != nil {
+		handleV2LocationError(c, err)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+func handleV2LocationError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, errV2CarNotFound):
+		v2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+	case errors.Is(err, errV2InvalidLocationSort):
+		v2BadRequest(c, "Invalid location sort.", nil)
+	case err.Error() == "invalid car id":
+		v2BadRequest(c, "Invalid car id.", nil)
+	default:
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 location analytics.", err.Error())
 	}
 }

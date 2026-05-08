@@ -101,6 +101,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V2 Battery Analytics", "description": "V2 objective battery range samples, estimated full-range trends, and battery level distributions."},
 			{"name": "V2 Efficiency Analytics", "description": "V2 objective efficiency statistics and factual factor groupings."},
 			{"name": "V2 Cost Analytics", "description": "V2 objective charging-cost statistics with explicit included and excluded cost scopes."},
+			{"name": "V2 Location Analytics", "description": "V2 objective usage metrics grouped by geofence or address."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -319,6 +320,17 @@ func buildOpenAPISpec() gin.H {
 						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
 					),
 					"responses": analyticsResponses("V2 cost analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/locations": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Location Analytics"},
+					"summary":     "V2 location analytics",
+					"description": "Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("sort", "string", []string{"drive_start_count_desc", "drive_end_count_desc", "charging_session_count_desc", "parking_duration_desc", "charging_cost_desc"}),
+					),
+					"responses": analyticsResponses("V2 location analytics response"),
 				},
 			},
 		},

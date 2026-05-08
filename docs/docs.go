@@ -1387,6 +1387,99 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/locations": {
+            "get": {
+                "description": "Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Location Analytics"
+                ],
+                "summary": "V2 location analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "drive_start_count_desc",
+                            "drive_end_count_desc",
+                            "charging_session_count_desc",
+                            "parking_duration_desc",
+                            "charging_cost_desc"
+                        ],
+                        "type": "string",
+                        "description": "Sort mode",
+                        "name": "sort",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2LocationAnalyticsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/parking": {
             "get": {
                 "description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
@@ -2768,6 +2861,69 @@ const docTemplate = `{
                 "version": {
                     "type": "string",
                     "example": "v2"
+                }
+            }
+        },
+        "main.V2LocationAnalyticsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2LocationAnalyticsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2LocationAnalyticsItem": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "integer"
+                },
+                "charging_cost": {
+                    "type": "number"
+                },
+                "charging_session_count": {
+                    "type": "integer"
+                },
+                "drive_end_count": {
+                    "type": "integer"
+                },
+                "drive_start_count": {
+                    "type": "integer"
+                },
+                "energy_added_kwh": {
+                    "type": "number"
+                },
+                "geofence_id": {
+                    "type": "integer"
+                },
+                "location_name": {
+                    "type": "string"
+                },
+                "parking_duration_min": {
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "type": "integer"
+                },
+                "vampire_drain_percent": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2LocationAnalyticsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2LocationAnalyticsItem"
+                    }
+                },
+                "sort": {
+                    "type": "string"
                 }
             }
         },
