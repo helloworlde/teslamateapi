@@ -144,6 +144,9 @@ func parseV2ClientTime(value string, location *time.Location) (time.Time, error)
 	if t, err := time.Parse(time.RFC3339, value); err == nil {
 		return t, nil
 	}
+	if t, err := time.ParseInLocation("2006-01-02", value, location); err == nil {
+		return t, nil
+	}
 	normalized := strings.ReplaceAll(value, "T", " ")
 	return time.ParseInLocation(time.DateTime, normalized, location)
 }

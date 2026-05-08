@@ -38,8 +38,6 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 				drives.distance,
 				drives.duration_min,
 				drives.outside_temp_avg,
-				start_position.elevation AS start_elevation,
-				end_position.elevation AS end_elevation,
 				CASE WHEN drives.duration_min > 0 THEN drives.distance / drives.duration_min * 60 END AS avg_speed_kmh,
 				CASE
 					WHEN drives.distance > 0
@@ -131,6 +129,7 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 	if err != nil {
 		return nil, V2EfficiencyStats{}, err
 	}
+	needsTZ := dimension == "hour_of_day" || dimension == "day_of_week"
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		WITH drive_metrics AS (
 			SELECT
@@ -155,6 +154,8 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 						AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0
 					THEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000
 				END AS consumption_wh_per_km,
+				start_position.elevation AS start_elevation,
+				end_position.elevation AS end_elevation,
 				%s AS bucket
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
@@ -180,7 +181,13 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 		FROM drive_metrics
 		GROUP BY bucket
 		ORDER BY bucket`, bucketSQL, joins),
-		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time, timeRange.Timezone,
+		func() []any {
+			args := []any{carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time}
+			if needsTZ {
+				args = append(args, timeRange.Timezone)
+			}
+			return args
+		}()...,
 	)
 	if err != nil {
 		return nil, V2EfficiencyStats{}, err
