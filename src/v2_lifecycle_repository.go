@@ -21,7 +21,8 @@ func (r PostgresV2LifecycleRepository) CarExists(ctx context.Context, carID int6
 	return exists, err
 }
 
-func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int64) (V2LifecycleResponse, error) {
+// Lifecycle returns cumulative stats from the first recorded event up to asOf (inclusive).
+func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int64, asOf time.Time) (V2LifecycleResponse, error) {
 	var response V2LifecycleResponse
 
 	var firstDate, lastDate sql.NullTime
@@ -33,8 +34,8 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 			MAX(d.end_date) as last_date,
 			COUNT(*) as drive_count,
 			COALESCE(SUM(d.distance), 0) as distance_km
-		FROM drives d WHERE d.car_id = $1 AND d.end_date IS NOT NULL`,
-		carID,
+		FROM drives d WHERE d.car_id = $1 AND d.end_date IS NOT NULL AND d.end_date <= $2`,
+		carID, asOf,
 	).Scan(&firstDate, &lastDate, &driveCount, &distanceKM)
 	if err != nil {
 		return response, err
@@ -75,8 +76,8 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 			COALESCE(SUM(charge_energy_added), 0) as energy_added_kwh,
 			COALESCE(SUM(GREATEST(COALESCE(charge_energy_used, 0), COALESCE(charge_energy_added, 0))), 0) as energy_used_kwh,
 			COALESCE(SUM(cost), 0) as cost
-		FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL`,
-		carID,
+		FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL AND end_date <= $2`,
+		carID, asOf,
 	).Scan(&sessionCount, &energyAdded, &energyUsed, &cost)
 	if err != nil {
 		return response, err
@@ -94,7 +95,6 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 		response.ChargingCost = cost.Float64
 	}
 
-	// Cost per 100km
 	if response.DistanceKM > 0 && response.ChargingCost > 0 {
 		costPer100 := response.ChargingCost / response.DistanceKM * 100
 		response.CostPer100KM = &costPer100
@@ -116,8 +116,8 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 		) AS avg_consumption_wh_per_km
 		FROM drives
 		LEFT JOIN cars ON cars.id = drives.car_id
-		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL`,
-		carID,
+		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.end_date <= $2`,
+		carID, asOf,
 	).Scan(&avgConsumption)
 	if err != nil {
 		return response, err
@@ -128,7 +128,7 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 
 	// Updates
 	var updateCount sql.NullInt64
-	err = r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM updates WHERE car_id = $1`, carID).Scan(&updateCount)
+	err = r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM updates WHERE car_id = $1 AND start_date <= $2`, carID, asOf).Scan(&updateCount)
 	if err != nil {
 		return response, err
 	}
@@ -139,16 +139,31 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 	return response, nil
 }
 
-func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64, start, end timeBound, eventTypes []string, limit int, order string) ([]V2TimelineEvent, int64, error) {
+// Timeline returns cursor-paginated unified event list.
+// If before is set: return events with start_date < before, order DESC.
+// If after is set: return events with start_date > after, order ASC.
+// Otherwise: return most recent events DESC.
+// hasMore=true means there are additional events beyond the returned page.
+// nextCursor is the start_time of the boundary event for the next page call.
+func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64, eventTypes []string, limit int, before, after *time.Time) ([]V2TimelineEvent, bool, *time.Time, error) {
 	orderDir := "DESC"
-	if order == "asc" {
+	cursorCond := ""
+	var cursorArg interface{} = time.Time{}
+	hasCursor := false
+
+	if before != nil {
+		cursorCond = "AND start_date < $5"
+		cursorArg = *before
+		orderDir = "DESC"
+		hasCursor = true
+	} else if after != nil {
+		cursorCond = "AND start_date > $5"
+		cursorArg = *after
 		orderDir = "ASC"
+		hasCursor = true
 	}
 
-	// Build union query based on event types
-	var unions []string
 	typeFilter := len(eventTypes) == 0
-
 	includeType := func(t string) bool {
 		if typeFilter {
 			return true
@@ -161,32 +176,35 @@ func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64
 		return false
 	}
 
+	var unions []string
 	if includeType("drive") {
 		unions = append(unions, fmt.Sprintf(`
 			(SELECT 'drive' as type, id, start_date, end_date,
 				COALESCE(distance::text, '') as title_metric
-			FROM drives WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3
-			ORDER BY start_date %s LIMIT $4)`, orderDir))
+			FROM drives WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3 %s
+			ORDER BY start_date %s LIMIT $4)`, cursorCond, orderDir))
 	}
 	if includeType("charging") {
 		unions = append(unions, fmt.Sprintf(`
 			(SELECT 'charging' as type, id, start_date, end_date,
 				COALESCE(charge_energy_added::text, '') as title_metric
-			FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3
-			ORDER BY start_date %s LIMIT $4)`, orderDir))
+			FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3 %s
+			ORDER BY start_date %s LIMIT $4)`, cursorCond, orderDir))
 	}
 	if includeType("update") {
 		unions = append(unions, fmt.Sprintf(`
 			(SELECT 'update' as type, id, start_date, end_date,
 				COALESCE(version, '') as title_metric
-			FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3
-			ORDER BY start_date %s LIMIT $4)`, orderDir))
+			FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3 %s
+			ORDER BY start_date %s LIMIT $4)`, cursorCond, orderDir))
 	}
 
 	if len(unions) == 0 {
-		return []V2TimelineEvent{}, 0, nil
+		return []V2TimelineEvent{}, false, nil, nil
 	}
 
+	// Fetch limit+1 to detect has_more
+	fetchLimit := limit + 1
 	query := fmt.Sprintf(`
 		SELECT type, id, start_date, end_date, title_metric
 		FROM (
@@ -198,9 +216,19 @@ func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64
 		orderDir,
 	)
 
-	rows, err := r.db.QueryContext(ctx, query, carID, start.Time, end.Time, limit)
+	// Epoch sentinel for "no lower bound" (start_date bound)
+	epochStart := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	epochEnd := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
+
+	var rows *sql.Rows
+	var err error
+	if hasCursor {
+		rows, err = r.db.QueryContext(ctx, query, carID, epochStart, epochEnd, fetchLimit, cursorArg)
+	} else {
+		rows, err = r.db.QueryContext(ctx, query, carID, epochStart, epochEnd, fetchLimit)
+	}
 	if err != nil {
-		return nil, 0, err
+		return nil, false, nil, err
 	}
 	defer rows.Close()
 
@@ -211,7 +239,7 @@ func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64
 		var startDate time.Time
 		var endDate sql.NullTime
 		if err := rows.Scan(&evType, &id, &startDate, &endDate, &titleMetric); err != nil {
-			return nil, 0, err
+			return nil, false, nil, err
 		}
 		ev := V2TimelineEvent{
 			Type:      evType,
@@ -235,10 +263,22 @@ func (r PostgresV2LifecycleRepository) Timeline(ctx context.Context, carID int64
 		events = append(events, ev)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		return nil, false, nil, err
 	}
 
-	return events, int64(len(events)), nil
+	hasMore := len(events) > limit
+	if hasMore {
+		events = events[:limit]
+	}
+
+	var nextCursor *time.Time
+	if hasMore && len(events) > 0 {
+		last := events[len(events)-1]
+		t, _ := time.Parse(time.RFC3339, last.StartTime)
+		nextCursor = &t
+	}
+
+	return events, hasMore, nextCursor, nil
 }
 
 func joinStrings(ss []string, sep string) string {

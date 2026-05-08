@@ -113,6 +113,7 @@ func TestV2ReportServiceBuildReport(t *testing.T) {
 			quality: V2DataQuality{Complete: true, SampleCount: 2},
 			carID:   1,
 		},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	response, quality, err := service.BuildReport(context.Background(), "1", V2TimeRange{Period: "month"}, nil)
@@ -152,6 +153,7 @@ func TestV2ReportServiceSkipsEmptyModules(t *testing.T) {
 			response: V2UpdateAnalyticsResponse{UpdateCount: 0, Versions: []V2UpdateVersion{}},
 			quality:  V2DataQuality{Complete: true},
 		},
+		nil, nil, nil, nil, nil, nil,
 	)
 
 	response, _, err := service.BuildReport(context.Background(), "1", V2TimeRange{}, nil)
@@ -170,7 +172,7 @@ func TestV2ReportServiceIncludeFilter(t *testing.T) {
 			response: V2SummaryResponse{Summary: V2Summary{Driving: V2DrivingSummary{DriveCount: 5}}},
 			quality:  V2DataQuality{Complete: true, SampleCount: 5},
 		},
-		nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 
 	response, _, err := service.BuildReport(context.Background(), "1", V2TimeRange{}, []string{"summary"})
@@ -183,7 +185,7 @@ func TestV2ReportServiceIncludeFilter(t *testing.T) {
 }
 
 func TestV2ReportServiceInvalidCarID(t *testing.T) {
-	service := NewV2ReportService(nil, nil, nil, nil)
+	service := NewV2ReportService(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	_, _, err := service.BuildReport(context.Background(), "bad", V2TimeRange{}, nil)
 	if err == nil || err.Error() != "invalid car id" {
 		t.Fatalf("expected invalid car id, got %v", err)

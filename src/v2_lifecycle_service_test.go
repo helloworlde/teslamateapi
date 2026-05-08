@@ -11,7 +11,7 @@ type fakeV2LifecycleRepository struct {
 	exists    bool
 	lifecycle V2LifecycleResponse
 	events    []V2TimelineEvent
-	total     int64
+	hasMore   bool
 	err       error
 }
 
@@ -19,12 +19,12 @@ func (r *fakeV2LifecycleRepository) CarExists(context.Context, int64) (bool, err
 	return r.exists, nil
 }
 
-func (r *fakeV2LifecycleRepository) Lifecycle(context.Context, int64) (V2LifecycleResponse, error) {
+func (r *fakeV2LifecycleRepository) Lifecycle(_ context.Context, _ int64, _ time.Time) (V2LifecycleResponse, error) {
 	return r.lifecycle, r.err
 }
 
-func (r *fakeV2LifecycleRepository) Timeline(context.Context, int64, timeBound, timeBound, []string, int, string) ([]V2TimelineEvent, int64, error) {
-	return r.events, r.total, r.err
+func (r *fakeV2LifecycleRepository) Timeline(_ context.Context, _ int64, _ []string, _ int, _, _ *time.Time) ([]V2TimelineEvent, bool, *time.Time, error) {
+	return r.events, r.hasMore, nil, r.err
 }
 
 func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
@@ -47,7 +47,7 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 			AvgMonthlyDistanceKM: &monthly,
 		},
 	})
-	response, quality, err := service.BuildLifecycle(context.Background(), "1", V2TimeRange{})
+	response, quality, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 
 func TestV2LifecycleServiceCarNotFound(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: false})
-	_, _, err := service.BuildLifecycle(context.Background(), "1", V2TimeRange{})
+	_, _, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
 	if !errors.Is(err, errV2CarNotFound) {
 		t.Fatalf("expected car not found, got %v", err)
 	}
@@ -72,7 +72,7 @@ func TestV2LifecycleServiceCarNotFound(t *testing.T) {
 
 func TestV2LifecycleServiceInvalidCarID(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
-	_, _, err := service.BuildLifecycle(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildLifecycle(context.Background(), "bad", time.Time{})
 	if err == nil || err.Error() != "invalid car id" {
 		t.Fatalf("expected invalid car id, got %v", err)
 	}
@@ -85,12 +85,9 @@ func TestV2LifecycleServiceBuildTimeline(t *testing.T) {
 			{Type: "drive", ID: 1, StartTime: "2024-01-01T10:00:00Z", Title: "Drive 50.0 km"},
 			{Type: "charging", ID: 2, StartTime: "2024-01-01T12:00:00Z", Title: "Charging 20.00 kWh"},
 		},
-		total: 2,
+		hasMore: false,
 	})
-	response, quality, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
-		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-	}, nil, 50, "desc")
+	response, quality, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,12 +106,8 @@ func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{
 		exists: true,
 		events: nil,
-		total:  0,
 	})
-	response, _, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
-		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-	}, nil, 50, "desc")
+	response, _, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -125,10 +118,7 @@ func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
 
 func TestV2LifecycleServiceTimelineDefaultLimit(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
-	response, _, err := service.BuildTimeline(context.Background(), "1", V2TimeRange{
-		Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-	}, nil, 0, "")
+	response, _, err := service.BuildTimeline(context.Background(), "1", nil, 0, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

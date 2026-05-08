@@ -26,15 +26,28 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 		return V2InsightResponse{}, V2DataQuality{}, err
 	}
 
-	// Need previous period to compare
-	if timeRange.PreviousStart == nil || timeRange.PreviousEnd == nil {
-		// Force previous period comparison
+	// Compute baseline period internally — never modify the caller's timeRange.
+	var prevStart, prevEnd time.Time
+	if timeRange.PreviousStart != nil && timeRange.PreviousEnd != nil {
+		prevStart = *timeRange.PreviousStart
+		prevEnd = *timeRange.PreviousEnd
+	} else {
 		duration := timeRange.End.Sub(timeRange.Start)
-		prevEnd := timeRange.Start
-		prevStart := prevEnd.Add(-duration)
-		timeRange.PreviousStart = &prevStart
-		timeRange.PreviousEnd = &prevEnd
-		timeRange.Compare = "previous_period"
+		prevEnd = timeRange.Start
+		prevStart = prevEnd.Add(-duration)
+	}
+	// currentTR strips comparison so downstream builders don't do redundant compare fetches.
+	currentTR := timeRange
+	currentTR.Compare = "none"
+	currentTR.PreviousStart = nil
+	currentTR.PreviousEnd = nil
+
+	prevTR := V2TimeRange{
+		Period:   timeRange.Period,
+		Timezone: timeRange.Timezone,
+		Compare:  "none",
+		Start:    prevStart,
+		End:      prevEnd,
 	}
 
 	currentPeriodStr := fmt.Sprintf("%s to %s",
@@ -42,8 +55,8 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 		timeRange.End.Format("2006-01-02"),
 	)
 	previousPeriodStr := fmt.Sprintf("%s to %s",
-		timeRange.PreviousStart.Format("2006-01-02"),
-		timeRange.PreviousEnd.Format("2006-01-02"),
+		prevStart.Format("2006-01-02"),
+		prevEnd.Format("2006-01-02"),
 	)
 
 	var insights []V2Insight
@@ -51,19 +64,12 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 
 	// Driving insights
 	if s.drivingBuilder != nil && (category == "" || category == "driving" || category == "cost") {
-		currentDriving, _, _, err := s.drivingBuilder.BuildDriving(ctx, carIDParam, timeRange)
+		currentDriving, _, _, err := s.drivingBuilder.BuildDriving(ctx, carIDParam, currentTR)
 		if err != nil {
 			return V2InsightResponse{}, V2DataQuality{}, err
 		}
 
-		prevTimeRange := V2TimeRange{
-			Period:   timeRange.Period,
-			Timezone: timeRange.Timezone,
-			Compare:  "none",
-			Start:    *timeRange.PreviousStart,
-			End:      *timeRange.PreviousEnd,
-		}
-		previousDriving, _, _, err := s.drivingBuilder.BuildDriving(ctx, carIDParam, prevTimeRange)
+		previousDriving, _, _, err := s.drivingBuilder.BuildDriving(ctx, carIDParam, prevTR)
 		if err != nil {
 			return V2InsightResponse{}, V2DataQuality{}, err
 		}
@@ -106,19 +112,12 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 
 	// Charging insights
 	if s.chargingBuilder != nil && (category == "" || category == "charging" || category == "cost") {
-		currentCharging, _, _, err := s.chargingBuilder.BuildCharging(ctx, carIDParam, timeRange)
+		currentCharging, _, _, err := s.chargingBuilder.BuildCharging(ctx, carIDParam, currentTR)
 		if err != nil {
 			return V2InsightResponse{}, V2DataQuality{}, err
 		}
 
-		prevTimeRange := V2TimeRange{
-			Period:   timeRange.Period,
-			Timezone: timeRange.Timezone,
-			Compare:  "none",
-			Start:    *timeRange.PreviousStart,
-			End:      *timeRange.PreviousEnd,
-		}
-		previousCharging, _, _, err := s.chargingBuilder.BuildCharging(ctx, carIDParam, prevTimeRange)
+		previousCharging, _, _, err := s.chargingBuilder.BuildCharging(ctx, carIDParam, prevTR)
 		if err != nil {
 			return V2InsightResponse{}, V2DataQuality{}, err
 		}

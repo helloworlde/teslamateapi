@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"strings"
+	"time"
 )
 
 type V2LifecycleRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
-	Lifecycle(ctx context.Context, carID int64) (V2LifecycleResponse, error)
-	Timeline(ctx context.Context, carID int64, start, end timeBound, eventTypes []string, limit int, order string) ([]V2TimelineEvent, int64, error)
+	Lifecycle(ctx context.Context, carID int64, asOf time.Time) (V2LifecycleResponse, error)
+	Timeline(ctx context.Context, carID int64, eventTypes []string, limit int, before, after *time.Time) ([]V2TimelineEvent, bool, *time.Time, error)
 }
 
 type V2LifecycleService struct {
@@ -19,7 +20,8 @@ func NewV2LifecycleService(repository V2LifecycleRepository) V2LifecycleService 
 	return V2LifecycleService{repository: repository}
 }
 
-func (s V2LifecycleService) BuildLifecycle(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2LifecycleResponse, V2DataQuality, error) {
+// BuildLifecycle returns cumulative stats up to asOf (defaults to now if zero).
+func (s V2LifecycleService) BuildLifecycle(ctx context.Context, carIDParam string, asOf time.Time) (V2LifecycleResponse, V2DataQuality, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
 		return V2LifecycleResponse{}, V2DataQuality{}, err
@@ -27,10 +29,15 @@ func (s V2LifecycleService) BuildLifecycle(ctx context.Context, carIDParam strin
 	if err := s.ensureCarExists(ctx, carID); err != nil {
 		return V2LifecycleResponse{}, V2DataQuality{}, err
 	}
-	response, err := s.repository.Lifecycle(ctx, carID)
+	if asOf.IsZero() {
+		asOf = time.Now().UTC()
+	}
+	response, err := s.repository.Lifecycle(ctx, carID, asOf)
 	if err != nil {
 		return V2LifecycleResponse{}, V2DataQuality{}, err
 	}
+	asOfStr := asOf.Format(time.RFC3339)
+	response.AsOf = &asOfStr
 	quality := V2DataQuality{
 		Complete:    true,
 		SampleCount: response.DriveCount + response.ChargingSessionCount + response.UpdateCount,
@@ -38,19 +45,14 @@ func (s V2LifecycleService) BuildLifecycle(ctx context.Context, carIDParam strin
 	return response, quality, nil
 }
 
-func (s V2LifecycleService) BuildTimeline(ctx context.Context, carIDParam string, timeRange V2TimeRange, eventTypes []string, limit int, order string) (V2TimelineResponse, V2DataQuality, error) {
+// BuildTimeline returns cursor-paginated events. before/after are cursor timestamps.
+func (s V2LifecycleService) BuildTimeline(ctx context.Context, carIDParam string, eventTypes []string, limit int, before, after *time.Time) (V2TimelineResponse, V2DataQuality, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
 		return V2TimelineResponse{}, V2DataQuality{}, err
 	}
 	if err := s.ensureCarExists(ctx, carID); err != nil {
 		return V2TimelineResponse{}, V2DataQuality{}, err
-	}
-	if order != "asc" && order != "desc" && order != "" {
-		order = "desc"
-	}
-	if order == "" {
-		order = "desc"
 	}
 	if limit <= 0 {
 		limit = 50
@@ -59,18 +61,29 @@ func (s V2LifecycleService) BuildTimeline(ctx context.Context, carIDParam string
 		limit = 200
 	}
 
-	events, total, err := s.repository.Timeline(ctx, carID, asTimeBound(timeRange.Start), asTimeBound(timeRange.End), eventTypes, limit, order)
+	events, hasMore, nextCursor, err := s.repository.Timeline(ctx, carID, eventTypes, limit, before, after)
 	if err != nil {
 		return V2TimelineResponse{}, V2DataQuality{}, err
 	}
 	if events == nil {
 		events = []V2TimelineEvent{}
 	}
+
+	resp := V2TimelineResponse{
+		Events:  events,
+		Total:   int64(len(events)),
+		HasMore: hasMore,
+	}
+	if nextCursor != nil {
+		s := nextCursor.Format(time.RFC3339)
+		resp.NextCursor = &s
+	}
+
 	quality := V2DataQuality{
 		Complete:    true,
-		SampleCount: total,
+		SampleCount: int64(len(events)),
 	}
-	return V2TimelineResponse{Events: events, Total: total}, quality, nil
+	return resp, quality, nil
 }
 
 func (s V2LifecycleService) ensureCarExists(ctx context.Context, carID int64) error {
