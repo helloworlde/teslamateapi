@@ -79,6 +79,27 @@ func (b fakeV2ChargingBuilder) BuildChargingCost(context.Context, string, V2Time
 	return b.costResponse, b.quality, b.carID, b.err
 }
 
+type fakeV2ParkingBuilder struct {
+	parkingResponse   V2ParkingResponse
+	locationsResponse V2ParkingLocationsResponse
+	statesResponse    V2ParkingStatesResponse
+	quality           V2DataQuality
+	carID             int64
+	err               error
+}
+
+func (b fakeV2ParkingBuilder) BuildParking(context.Context, string, V2TimeRange) (V2ParkingResponse, V2DataQuality, int64, error) {
+	return b.parkingResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ParkingBuilder) BuildParkingLocations(context.Context, string, V2TimeRange) (V2ParkingLocationsResponse, V2DataQuality, int64, error) {
+	return b.locationsResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2ParkingBuilder) BuildParkingStates(context.Context, string, V2TimeRange) (V2ParkingStatesResponse, V2DataQuality, int64, error) {
+	return b.statesResponse, b.quality, b.carID, b.err
+}
+
 func TestV2InfoHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -249,6 +270,35 @@ func TestV2ChargingCostHandlerRejectsInvalidGroupBy(t *testing.T) {
 	}
 }
 
+func TestV2ParkingHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	handlers := NewV2Handlers(nil, nil)
+	handlers.parkingBuilder = fakeV2ParkingBuilder{
+		parkingResponse: V2ParkingResponse{
+			Summary: V2ParkingAnalyticsSummary{ParkingSessionCount: 2, ParkedDurationMin: 120},
+		},
+		quality: V2DataQuality{Complete: true, SampleCount: 2},
+		carID:   1,
+	}
+	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
+	router.GET("/api/v2/cars/:CarID/analytics/parking", handlers.Parking)
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/analytics/parking?period=custom&start=2026-05-01T00:00:00Z&end=2026-05-02T00:00:00Z", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	var payload V2ParkingAPIResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if payload.Data.Summary.ParkingSessionCount != 2 || payload.Meta.CarID != 1 {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
 func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 	spec := buildOpenAPISpec()
 	paths, ok := spec["paths"].(gin.H)
@@ -268,6 +318,9 @@ func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 		"/v2/cars/{CarID}/analytics/charging/locations",
 		"/v2/cars/{CarID}/analytics/charging/types",
 		"/v2/cars/{CarID}/analytics/charging/cost",
+		"/v2/cars/{CarID}/analytics/parking",
+		"/v2/cars/{CarID}/analytics/parking/locations",
+		"/v2/cars/{CarID}/analytics/parking/states",
 	} {
 		if _, ok := paths[path]; !ok {
 			t.Fatalf("analytics path missing from spec: %s", path)
@@ -292,7 +345,7 @@ func TestDocsRoutesServeSwaggerAndScalar(t *testing.T) {
 	if scalarRecorder.Code != http.StatusOK {
 		t.Fatalf("unexpected scalar status: %d body=%s", scalarRecorder.Code, scalarRecorder.Body.String())
 	}
-	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/charging/cost") {
+	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/charging/cost") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/parking/states") {
 		t.Fatalf("scalar body does not include expected content")
 	}
 	if body := scalarRecorder.Body.String(); strings.Contains(body, "cdn.jsdelivr.net") || !strings.Contains(body, scalarLocalScriptPath) {

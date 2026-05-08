@@ -97,6 +97,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V2 Summary", "description": "V2 analytics base and summary endpoints."},
 			{"name": "V2 Driving Analytics", "description": "V2 objective driving statistics, trends, distributions, and rankings."},
 			{"name": "V2 Charging Analytics", "description": "V2 objective charging statistics, trends, locations, types, and costs."},
+			{"name": "V2 Parking Analytics", "description": "V2 objective parking duration, state, location, and estimated drain analytics."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -228,6 +229,33 @@ func buildOpenAPISpec() gin.H {
 						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
 					),
 					"responses": analyticsResponses("V2 charging cost response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/parking": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Parking Analytics"},
+					"summary":     "V2 parking analytics summary",
+					"description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 parking analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/parking/locations": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Parking Analytics"},
+					"summary":     "V2 parking analytics by location",
+					"description": "Returns inferred parking sessions and parked duration grouped by geofence or address.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 parking locations response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/parking/states": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Parking Analytics"},
+					"summary":     "V2 parking state analytics",
+					"description": "Returns online, asleep, offline, and unknown state durations, shares, and transition counts.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 parking states response"),
 				},
 			},
 		},

@@ -29,10 +29,17 @@ type V2ChargingBuilder interface {
 	BuildChargingCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2ChargingCostResponse, V2DataQuality, int64, error)
 }
 
+type V2ParkingBuilder interface {
+	BuildParking(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingResponse, V2DataQuality, int64, error)
+	BuildParkingLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingLocationsResponse, V2DataQuality, int64, error)
+	BuildParkingStates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingStatesResponse, V2DataQuality, int64, error)
+}
+
 type V2Handlers struct {
 	summaryBuilder  V2SummaryBuilder
 	drivingBuilder  V2DrivingBuilder
 	chargingBuilder V2ChargingBuilder
+	parkingBuilder  V2ParkingBuilder
 	now             func() time.Time
 }
 
@@ -51,13 +58,16 @@ func NewV2Handlers(summaryBuilder V2SummaryBuilder, drivingBuilder V2DrivingBuil
 func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepository) {
 	var drivingRepository V2DrivingRepository
 	var chargingRepository V2ChargingRepository
+	var parkingRepository V2ParkingRepository
 	if summaryRepository == nil && db != nil {
 		repository := NewPostgresV2SummaryRepository(db)
 		summaryRepository = repository
 		drivingRepository = NewPostgresV2DrivingRepository(db)
 		chargingRepository = NewPostgresV2ChargingRepository(db)
+		parkingRepository = NewPostgresV2ParkingRepository(db)
 	}
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), NewV2DrivingService(drivingRepository), NewV2ChargingService(chargingRepository))
+	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
 
 	v2 := api.Group("/v2")
 	{
@@ -73,6 +83,9 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2.GET("/cars/:CarID/analytics/charging/locations", handlers.ChargingLocations)
 		v2.GET("/cars/:CarID/analytics/charging/types", handlers.ChargingTypes)
 		v2.GET("/cars/:CarID/analytics/charging/cost", handlers.ChargingCost)
+		v2.GET("/cars/:CarID/analytics/parking", handlers.Parking)
+		v2.GET("/cars/:CarID/analytics/parking/locations", handlers.ParkingLocations)
+		v2.GET("/cars/:CarID/analytics/parking/states", handlers.ParkingStates)
 	}
 }
 
@@ -476,5 +489,113 @@ func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
 		v2BadRequest(c, "Invalid car id.", nil)
 	default:
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 charging analytics.", err.Error())
+	}
+}
+
+// Parking godoc
+//
+// @Summary V2 parking analytics summary
+// @Description Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.
+// @Tags V2 Parking Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param compare query string false "Comparison mode" Enums(none, previous_period, previous_year, lifetime_average)
+// @Success 200 {object} V2ParkingAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/parking [get]
+func (h V2Handlers) Parking(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	if h.parkingBuilder == nil {
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 parking service is not configured.", nil)
+		return
+	}
+	response, quality, carID, err := h.parkingBuilder.BuildParking(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2ParkingError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+// ParkingLocations godoc
+//
+// @Summary V2 parking analytics by location
+// @Description Returns inferred parking sessions and parked duration grouped by geofence or address.
+// @Tags V2 Parking Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} V2ParkingLocationsAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/parking/locations [get]
+func (h V2Handlers) ParkingLocations(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	response, quality, carID, err := h.parkingBuilder.BuildParkingLocations(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2ParkingError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+// ParkingStates godoc
+//
+// @Summary V2 parking state analytics
+// @Description Returns online, asleep, offline, and unknown state durations, shares, and transition counts.
+// @Tags V2 Parking Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} V2ParkingStatesAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/parking/states [get]
+func (h V2Handlers) ParkingStates(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	response, quality, carID, err := h.parkingBuilder.BuildParkingStates(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2ParkingError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
+	switch {
+	case errors.Is(err, errV2CarNotFound):
+		v2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+	case errors.Is(err, errV2CompareUnsupported):
+		v2Error(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Requested comparison mode is not implemented for this API.", gin.H{"compare": timeRange.Compare})
+	case err.Error() == "invalid car id":
+		v2BadRequest(c, "Invalid car id.", nil)
+	default:
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 parking analytics.", err.Error())
 	}
 }

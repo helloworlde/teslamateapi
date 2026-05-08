@@ -856,6 +856,258 @@ const docTemplate = `{
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/parking": {
+            "get": {
+                "description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Parking Analytics"
+                ],
+                "summary": "V2 parking analytics summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "none",
+                            "previous_period",
+                            "previous_year",
+                            "lifetime_average"
+                        ],
+                        "type": "string",
+                        "description": "Comparison mode",
+                        "name": "compare",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ParkingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/parking/locations": {
+            "get": {
+                "description": "Returns inferred parking sessions and parked duration grouped by geofence or address.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Parking Analytics"
+                ],
+                "summary": "V2 parking analytics by location",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ParkingLocationsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/parking/states": {
+            "get": {
+                "description": "Returns online, asleep, offline, and unknown state durations, shares, and transition counts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Parking Analytics"
+                ],
+                "summary": "V2 parking state analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2ParkingStatesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/summary": {
             "get": {
                 "description": "Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.",
@@ -1669,6 +1921,177 @@ const docTemplate = `{
                 },
                 "unit": {
                     "$ref": "#/definitions/main.V2Unit"
+                }
+            }
+        },
+        "main.V2ParkingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ParkingResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ParkingAnalyticsSummary": {
+            "type": "object",
+            "properties": {
+                "asleep_duration_min": {
+                    "type": "number"
+                },
+                "avg_drain_percent_per_day": {
+                    "type": "number"
+                },
+                "avg_parked_duration_min": {
+                    "type": "number"
+                },
+                "estimated_vampire_drain_kwh": {
+                    "type": "number"
+                },
+                "offline_duration_min": {
+                    "type": "number"
+                },
+                "online_duration_min": {
+                    "type": "number"
+                },
+                "parked_duration_min": {
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "type": "integer"
+                },
+                "state_transition_count": {
+                    "type": "integer"
+                },
+                "vampire_drain_percent": {
+                    "type": "number"
+                },
+                "vampire_drain_range_km": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2ParkingLocationItem": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "type": "integer"
+                },
+                "asleep_duration_min": {
+                    "type": "number"
+                },
+                "avg_parked_duration_min": {
+                    "type": "number"
+                },
+                "estimated_vampire_drain_kwh": {
+                    "type": "number"
+                },
+                "geofence_id": {
+                    "type": "integer"
+                },
+                "location_name": {
+                    "type": "string"
+                },
+                "offline_duration_min": {
+                    "type": "number"
+                },
+                "online_duration_min": {
+                    "type": "number"
+                },
+                "parked_duration_min": {
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "type": "integer"
+                },
+                "vampire_drain_percent": {
+                    "type": "number"
+                },
+                "vampire_drain_range_km": {
+                    "type": "number"
+                }
+            }
+        },
+        "main.V2ParkingLocationsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ParkingLocationsResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ParkingLocationsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ParkingLocationItem"
+                    }
+                }
+            }
+        },
+        "main.V2ParkingResponse": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.V2ComparisonValue"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2ParkingAnalyticsSummary"
+                }
+            }
+        },
+        "main.V2ParkingStateItem": {
+            "type": "object",
+            "properties": {
+                "duration_min": {
+                    "type": "number"
+                },
+                "percent": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "transition_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2ParkingStatesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2ParkingStatesResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2ParkingStatesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2ParkingStateItem"
+                    }
+                },
+                "state_transition_count": {
+                    "type": "integer"
+                },
+                "total_duration_min": {
+                    "type": "number"
                 }
             }
         },
