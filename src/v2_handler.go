@@ -35,11 +35,18 @@ type V2ParkingBuilder interface {
 	BuildParkingStates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingStatesResponse, V2DataQuality, int64, error)
 }
 
+type V2BatteryBuilder interface {
+	BuildBattery(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryResponse, V2DataQuality, int64, error)
+	BuildBatteryTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2BatteryTimeseriesResponse, V2DataQuality, int64, error)
+	BuildBatteryDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryDistributionResponse, V2DataQuality, int64, error)
+}
+
 type V2Handlers struct {
 	summaryBuilder  V2SummaryBuilder
 	drivingBuilder  V2DrivingBuilder
 	chargingBuilder V2ChargingBuilder
 	parkingBuilder  V2ParkingBuilder
+	batteryBuilder  V2BatteryBuilder
 	now             func() time.Time
 }
 
@@ -59,15 +66,18 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	var drivingRepository V2DrivingRepository
 	var chargingRepository V2ChargingRepository
 	var parkingRepository V2ParkingRepository
+	var batteryRepository V2BatteryRepository
 	if summaryRepository == nil && db != nil {
 		repository := NewPostgresV2SummaryRepository(db)
 		summaryRepository = repository
 		drivingRepository = NewPostgresV2DrivingRepository(db)
 		chargingRepository = NewPostgresV2ChargingRepository(db)
 		parkingRepository = NewPostgresV2ParkingRepository(db)
+		batteryRepository = NewPostgresV2BatteryRepository(db)
 	}
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), NewV2DrivingService(drivingRepository), NewV2ChargingService(chargingRepository))
 	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
+	handlers.batteryBuilder = NewV2BatteryService(batteryRepository)
 
 	v2 := api.Group("/v2")
 	{
@@ -86,6 +96,9 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2.GET("/cars/:CarID/analytics/parking", handlers.Parking)
 		v2.GET("/cars/:CarID/analytics/parking/locations", handlers.ParkingLocations)
 		v2.GET("/cars/:CarID/analytics/parking/states", handlers.ParkingStates)
+		v2.GET("/cars/:CarID/analytics/battery", handlers.Battery)
+		v2.GET("/cars/:CarID/analytics/battery/timeseries", handlers.BatteryTimeseries)
+		v2.GET("/cars/:CarID/analytics/battery/distribution", handlers.BatteryDistribution)
 	}
 }
 
@@ -597,5 +610,116 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 		v2BadRequest(c, "Invalid car id.", nil)
 	default:
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 parking analytics.", err.Error())
+	}
+}
+
+// Battery godoc
+//
+// @Summary V2 battery analytics summary
+// @Description Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.
+// @Tags V2 Battery Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param compare query string false "Comparison mode" Enums(none, previous_period, previous_year, lifetime_average)
+// @Success 200 {object} V2BatteryAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/battery [get]
+func (h V2Handlers) Battery(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	if h.batteryBuilder == nil {
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 battery service is not configured.", nil)
+		return
+	}
+	response, quality, carID, err := h.batteryBuilder.BuildBattery(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2BatteryError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+// BatteryTimeseries godoc
+//
+// @Summary V2 battery analytics timeseries
+// @Description Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.
+// @Tags V2 Battery Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Param group_by query string false "Timeseries grouping" Enums(day, week, month, year)
+// @Success 200 {object} V2BatteryTimeseriesAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/battery/timeseries [get]
+func (h V2Handlers) BatteryTimeseries(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	response, quality, carID, err := h.batteryBuilder.BuildBatteryTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	if err != nil {
+		handleV2BatteryError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+// BatteryDistribution godoc
+//
+// @Summary V2 battery level distribution
+// @Description Returns battery_level sample counts grouped into 10 percent buckets from 0-10 through 90-100.
+// @Tags V2 Battery Analytics
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
+// @Param start query string false "Start datetime in RFC3339 format"
+// @Param end query string false "End datetime in RFC3339 format"
+// @Param timezone query string false "IANA timezone"
+// @Success 200 {object} V2BatteryDistributionAPIResponse
+// @Failure 400 {object} APIErrorResponse
+// @Failure 404 {object} APIErrorResponse
+// @Failure 500 {object} APIErrorResponse
+// @Router /v2/cars/{CarID}/analytics/battery/distribution [get]
+func (h V2Handlers) BatteryDistribution(c *gin.Context) {
+	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	if err != nil {
+		v2BadRequest(c, "Invalid analytics query.", err.Error())
+		return
+	}
+	response, quality, carID, err := h.batteryBuilder.BuildBatteryDistribution(c.Request.Context(), c.Param("CarID"), timeRange)
+	if err != nil {
+		handleV2BatteryError(c, err, timeRange)
+		return
+	}
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+}
+
+func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
+	switch {
+	case errors.Is(err, errV2CarNotFound):
+		v2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+	case errors.Is(err, errV2CompareUnsupported):
+		v2Error(c, http.StatusNotImplemented, "NOT_IMPLEMENTED", "Requested comparison mode is not implemented for this API.", gin.H{"compare": timeRange.Compare})
+	case errors.Is(err, errV2InvalidDrivingGroupBy):
+		v2BadRequest(c, "Invalid battery group_by.", nil)
+	case err.Error() == "invalid car id":
+		v2BadRequest(c, "Invalid car id.", nil)
+	default:
+		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 battery analytics.", err.Error())
 	}
 }

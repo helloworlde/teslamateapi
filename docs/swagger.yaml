@@ -13,6 +13,70 @@ definitions:
       error:
         $ref: '#/definitions/main.APIErrorBody'
     type: object
+  main.V2BatteryAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2BatteryResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2BatteryAnalyticsSummary:
+    properties:
+      baseline_ideal_range_at_100_percent_km:
+        type: number
+      baseline_rated_range_at_100_percent_km:
+        type: number
+      estimated_ideal_range_at_100_percent_km:
+        type: number
+      estimated_range_degradation_percent:
+        type: number
+      estimated_rated_range_at_100_percent_km:
+        type: number
+      latest_battery_level_percent:
+        type: integer
+      latest_ideal_range_km:
+        type: number
+      latest_rated_range_km:
+        type: number
+      sample_count:
+        type: integer
+    type: object
+  main.V2BatteryDistributionAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2BatteryDistributionResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2BatteryDistributionItem:
+    properties:
+      bucket:
+        type: string
+      max_battery_level_percent:
+        type: integer
+      min_battery_level_percent:
+        type: integer
+      percent:
+        type: number
+      sample_count:
+        type: integer
+    type: object
+  main.V2BatteryDistributionResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/main.V2BatteryDistributionItem'
+        type: array
+    type: object
+  main.V2BatteryResponse:
+    properties:
+      comparison:
+        additionalProperties:
+          $ref: '#/definitions/main.V2ComparisonValue'
+        type: object
+      summary:
+        $ref: '#/definitions/main.V2BatteryAnalyticsSummary'
+    type: object
   main.V2BatterySummary:
     properties:
       latest_battery_level_percent:
@@ -21,6 +85,35 @@ definitions:
         type: number
       latest_rated_range_km:
         type: number
+    type: object
+  main.V2BatteryTimeseriesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/main.V2BatteryTimeseriesResponse'
+      meta:
+        $ref: '#/definitions/main.V2Meta'
+    type: object
+  main.V2BatteryTimeseriesItem:
+    properties:
+      avg_battery_level_percent:
+        type: number
+      estimated_ideal_range_at_100_percent_km:
+        type: number
+      estimated_rated_range_at_100_percent_km:
+        type: number
+      period_start:
+        type: string
+      sample_count:
+        type: integer
+    type: object
+  main.V2BatteryTimeseriesResponse:
+    properties:
+      group_by:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/main.V2BatteryTimeseriesItem'
+        type: array
     type: object
   main.V2ChargingAPIResponse:
     properties:
@@ -674,6 +767,193 @@ paths:
       summary: V2 API capability information
       tags:
       - V2 Summary
+  /v2/cars/{CarID}/analytics/battery:
+    get:
+      description: Returns objective latest battery range samples, estimated full-range
+        values, baseline range, and estimated range degradation. These estimates are
+        not official state of health.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Comparison mode
+        enum:
+        - none
+        - previous_period
+        - previous_year
+        - lifetime_average
+        in: query
+        name: compare
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2BatteryAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 battery analytics summary
+      tags:
+      - V2 Battery Analytics
+  /v2/cars/{CarID}/analytics/battery/distribution:
+    get:
+      description: Returns battery_level sample counts grouped into 10 percent buckets
+        from 0-10 through 90-100.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2BatteryDistributionAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 battery level distribution
+      tags:
+      - V2 Battery Analytics
+  /v2/cars/{CarID}/analytics/battery/timeseries:
+    get:
+      description: Returns estimated full rated and ideal range grouped by day, week,
+        month, or year for trend charts.
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        - lifetime
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Timeseries grouping
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.V2BatteryTimeseriesAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/main.APIErrorResponse'
+      summary: V2 battery analytics timeseries
+      tags:
+      - V2 Battery Analytics
   /v2/cars/{CarID}/analytics/charging:
     get:
       description: Returns objective charging statistics and optional previous-period

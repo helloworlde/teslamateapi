@@ -34,6 +34,270 @@
                 }
             }
         },
+        "/v2/cars/{CarID}/analytics/battery": {
+            "get": {
+                "description": "Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Battery Analytics"
+                ],
+                "summary": "V2 battery analytics summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "none",
+                            "previous_period",
+                            "previous_year",
+                            "lifetime_average"
+                        ],
+                        "type": "string",
+                        "description": "Comparison mode",
+                        "name": "compare",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2BatteryAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/battery/distribution": {
+            "get": {
+                "description": "Returns battery_level sample counts grouped into 10 percent buckets from 0-10 through 90-100.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Battery Analytics"
+                ],
+                "summary": "V2 battery level distribution",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2BatteryDistributionAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/battery/timeseries": {
+            "get": {
+                "description": "Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Battery Analytics"
+                ],
+                "summary": "V2 battery analytics timeseries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom",
+                            "lifetime"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "Timeseries grouping",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/main.V2BatteryTimeseriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/cars/{CarID}/analytics/charging": {
             "get": {
                 "description": "Returns objective charging statistics and optional previous-period comparison for one car.",
@@ -1215,6 +1479,105 @@
                 }
             }
         },
+        "main.V2BatteryAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2BatteryResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2BatteryAnalyticsSummary": {
+            "type": "object",
+            "properties": {
+                "baseline_ideal_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "baseline_rated_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "estimated_ideal_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "estimated_range_degradation_percent": {
+                    "type": "number"
+                },
+                "estimated_rated_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "latest_battery_level_percent": {
+                    "type": "integer"
+                },
+                "latest_ideal_range_km": {
+                    "type": "number"
+                },
+                "latest_rated_range_km": {
+                    "type": "number"
+                },
+                "sample_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2BatteryDistributionAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2BatteryDistributionResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2BatteryDistributionItem": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string"
+                },
+                "max_battery_level_percent": {
+                    "type": "integer"
+                },
+                "min_battery_level_percent": {
+                    "type": "integer"
+                },
+                "percent": {
+                    "type": "number"
+                },
+                "sample_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2BatteryDistributionResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2BatteryDistributionItem"
+                    }
+                }
+            }
+        },
+        "main.V2BatteryResponse": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/main.V2ComparisonValue"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/main.V2BatteryAnalyticsSummary"
+                }
+            }
+        },
         "main.V2BatterySummary": {
             "type": "object",
             "properties": {
@@ -1226,6 +1589,51 @@
                 },
                 "latest_rated_range_km": {
                     "type": "number"
+                }
+            }
+        },
+        "main.V2BatteryTimeseriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/main.V2BatteryTimeseriesResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/main.V2Meta"
+                }
+            }
+        },
+        "main.V2BatteryTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_battery_level_percent": {
+                    "type": "number"
+                },
+                "estimated_ideal_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "estimated_rated_range_at_100_percent_km": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "sample_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "main.V2BatteryTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/main.V2BatteryTimeseriesItem"
+                    }
                 }
             }
         },

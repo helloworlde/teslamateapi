@@ -100,6 +100,27 @@ func (b fakeV2ParkingBuilder) BuildParkingStates(context.Context, string, V2Time
 	return b.statesResponse, b.quality, b.carID, b.err
 }
 
+type fakeV2BatteryBuilder struct {
+	batteryResponse      V2BatteryResponse
+	timeseriesResponse   V2BatteryTimeseriesResponse
+	distributionResponse V2BatteryDistributionResponse
+	quality              V2DataQuality
+	carID                int64
+	err                  error
+}
+
+func (b fakeV2BatteryBuilder) BuildBattery(context.Context, string, V2TimeRange) (V2BatteryResponse, V2DataQuality, int64, error) {
+	return b.batteryResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2BatteryBuilder) BuildBatteryTimeseries(context.Context, string, V2TimeRange, string) (V2BatteryTimeseriesResponse, V2DataQuality, int64, error) {
+	return b.timeseriesResponse, b.quality, b.carID, b.err
+}
+
+func (b fakeV2BatteryBuilder) BuildBatteryDistribution(context.Context, string, V2TimeRange) (V2BatteryDistributionResponse, V2DataQuality, int64, error) {
+	return b.distributionResponse, b.quality, b.carID, b.err
+}
+
 func TestV2InfoHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -299,6 +320,41 @@ func TestV2ParkingHandlerSuccess(t *testing.T) {
 	}
 }
 
+func TestV2BatteryHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	latestLevel := int64(80)
+	estimatedRated := 430.0
+	handlers := NewV2Handlers(nil, nil)
+	handlers.batteryBuilder = fakeV2BatteryBuilder{
+		batteryResponse: V2BatteryResponse{
+			Summary: V2BatteryAnalyticsSummary{
+				LatestBatteryLevelPercent:         &latestLevel,
+				EstimatedRatedRangeAt100PercentKM: &estimatedRated,
+				SampleCount:                       8,
+			},
+		},
+		quality: V2DataQuality{Complete: false, SampleCount: 8, Warnings: []string{"estimated"}},
+		carID:   1,
+	}
+	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
+	router.GET("/api/v2/cars/:CarID/analytics/battery", handlers.Battery)
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/analytics/battery?period=custom&start=2026-05-01T00:00:00Z&end=2026-05-02T00:00:00Z", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	var payload V2BatteryAPIResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	if payload.Data.Summary.LatestBatteryLevelPercent == nil || *payload.Data.Summary.LatestBatteryLevelPercent != 80 || payload.Meta.CarID != 1 {
+		t.Fatalf("unexpected payload: %#v", payload)
+	}
+}
+
 func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 	spec := buildOpenAPISpec()
 	paths, ok := spec["paths"].(gin.H)
@@ -321,6 +377,9 @@ func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
 		"/v2/cars/{CarID}/analytics/parking",
 		"/v2/cars/{CarID}/analytics/parking/locations",
 		"/v2/cars/{CarID}/analytics/parking/states",
+		"/v2/cars/{CarID}/analytics/battery",
+		"/v2/cars/{CarID}/analytics/battery/timeseries",
+		"/v2/cars/{CarID}/analytics/battery/distribution",
 	} {
 		if _, ok := paths[path]; !ok {
 			t.Fatalf("analytics path missing from spec: %s", path)
@@ -345,7 +404,7 @@ func TestDocsRoutesServeSwaggerAndScalar(t *testing.T) {
 	if scalarRecorder.Code != http.StatusOK {
 		t.Fatalf("unexpected scalar status: %d body=%s", scalarRecorder.Code, scalarRecorder.Body.String())
 	}
-	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/charging/cost") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/parking/states") {
+	if body := scalarRecorder.Body.String(); !strings.Contains(body, "TeslaMateApi Reference") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/summary") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/driving/ranking") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/charging/cost") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/parking/states") || !strings.Contains(body, "/v2/cars/{CarID}/analytics/battery/distribution") {
 		t.Fatalf("scalar body does not include expected content")
 	}
 	if body := scalarRecorder.Body.String(); strings.Contains(body, "cdn.jsdelivr.net") || !strings.Contains(body, scalarLocalScriptPath) {

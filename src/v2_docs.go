@@ -98,6 +98,7 @@ func buildOpenAPISpec() gin.H {
 			{"name": "V2 Driving Analytics", "description": "V2 objective driving statistics, trends, distributions, and rankings."},
 			{"name": "V2 Charging Analytics", "description": "V2 objective charging statistics, trends, locations, types, and costs."},
 			{"name": "V2 Parking Analytics", "description": "V2 objective parking duration, state, location, and estimated drain analytics."},
+			{"name": "V2 Battery Analytics", "description": "V2 objective battery range samples, estimated full-range trends, and battery level distributions."},
 		},
 		"paths": gin.H{
 			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
@@ -256,6 +257,35 @@ func buildOpenAPISpec() gin.H {
 					"description": "Returns online, asleep, offline, and unknown state durations, shares, and transition counts.",
 					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
 					"responses":   analyticsResponses("V2 parking states response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/battery": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Battery Analytics"},
+					"summary":     "V2 battery analytics summary",
+					"description": "Returns latest battery samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 battery analytics response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/battery/timeseries": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Battery Analytics"},
+					"summary":     "V2 battery analytics timeseries",
+					"description": "Returns estimated full rated and ideal range grouped by day, week, month, or year.",
+					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
+					),
+					"responses": analyticsResponses("V2 battery timeseries response"),
+				},
+			},
+			"/v2/cars/{CarID}/analytics/battery/distribution": gin.H{
+				"get": gin.H{
+					"tags":        []string{"V2 Battery Analytics"},
+					"summary":     "V2 battery level distribution",
+					"description": "Returns battery_level sample counts grouped into 10 percent buckets.",
+					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
+					"responses":   analyticsResponses("V2 battery distribution response"),
 				},
 			},
 		},
