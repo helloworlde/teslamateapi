@@ -38,8 +38,6 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 				drives.distance,
 				drives.duration_min,
 				drives.outside_temp_avg,
-				start_position.elevation AS start_elevation,
-				end_position.elevation AS end_elevation,
 				CASE WHEN drives.duration_min > 0 THEN drives.distance / drives.duration_min * 60 END AS avg_speed_kmh,
 				CASE
 					WHEN drives.distance > 0
@@ -131,6 +129,7 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 	if err != nil {
 		return nil, V2EfficiencyStats{}, err
 	}
+	needsTZ := dimension == "hour_of_day" || dimension == "day_of_week"
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		WITH drive_metrics AS (
 			SELECT
@@ -155,6 +154,8 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 						AND (drives.start_rated_range_km - drives.end_rated_range_km) > 0
 					THEN (drives.start_rated_range_km - drives.end_rated_range_km) * cars.efficiency / drives.distance * 1000
 				END AS consumption_wh_per_km,
+				start_position.elevation AS start_elevation,
+				end_position.elevation AS end_elevation,
 				%s AS bucket
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
@@ -180,7 +181,13 @@ func (r PostgresV2EfficiencyRepository) Factors(ctx context.Context, carID int64
 		FROM drive_metrics
 		GROUP BY bucket
 		ORDER BY bucket`, bucketSQL, joins),
-		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time, timeRange.Timezone,
+		func() []any {
+			args := []any{carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time}
+			if needsTZ {
+				args = append(args, timeRange.Timezone)
+			}
+			return args
+		}()...,
 	)
 	if err != nil {
 		return nil, V2EfficiencyStats{}, err
@@ -226,40 +233,40 @@ func efficiencyFactorBucketSQL(dimension string) (string, string, error) {
 		return `CASE
 			WHEN drives.outside_temp_avg IS NULL THEN 'unknown'
 			WHEN drives.outside_temp_avg < -10 THEN '<-10'
-			WHEN drives.outside_temp_avg < 0 THEN '-10-000'
-			WHEN drives.outside_temp_avg < 10 THEN '000-010'
-			WHEN drives.outside_temp_avg < 20 THEN '010-020'
-			WHEN drives.outside_temp_avg < 30 THEN '020-030'
-			WHEN drives.outside_temp_avg < 40 THEN '030-040'
-			ELSE '040+'
+			WHEN drives.outside_temp_avg < 0 THEN '-10~0'
+			WHEN drives.outside_temp_avg < 10 THEN '0~10'
+			WHEN drives.outside_temp_avg < 20 THEN '10~20'
+			WHEN drives.outside_temp_avg < 30 THEN '20~30'
+			WHEN drives.outside_temp_avg < 40 THEN '30~40'
+			ELSE '40+'
 		END`, "", nil
 	case "speed":
 		return `CASE
 			WHEN drives.duration_min <= 0 OR drives.distance IS NULL THEN 'unknown'
-			WHEN drives.distance / drives.duration_min * 60 < 30 THEN '000-030'
-			WHEN drives.distance / drives.duration_min * 60 < 60 THEN '030-060'
-			WHEN drives.distance / drives.duration_min * 60 < 90 THEN '060-090'
-			WHEN drives.distance / drives.duration_min * 60 < 120 THEN '090-120'
+			WHEN drives.distance / drives.duration_min * 60 < 30 THEN '0~30'
+			WHEN drives.distance / drives.duration_min * 60 < 60 THEN '30~60'
+			WHEN drives.distance / drives.duration_min * 60 < 90 THEN '60~90'
+			WHEN drives.distance / drives.duration_min * 60 < 120 THEN '90~120'
 			ELSE '120+'
 		END`, "", nil
 	case "distance":
 		return `CASE
-			WHEN drives.distance < 5 THEN '000-005'
-			WHEN drives.distance < 10 THEN '005-010'
-			WHEN drives.distance < 25 THEN '010-025'
-			WHEN drives.distance < 50 THEN '025-050'
-			WHEN drives.distance < 100 THEN '050-100'
+			WHEN drives.distance < 5 THEN '0~5'
+			WHEN drives.distance < 10 THEN '5~10'
+			WHEN drives.distance < 25 THEN '10~25'
+			WHEN drives.distance < 50 THEN '25~50'
+			WHEN drives.distance < 100 THEN '50~100'
 			ELSE '100+'
 		END`, "", nil
 	case "elevation":
 		return `CASE
 			WHEN start_position.elevation IS NULL OR end_position.elevation IS NULL THEN 'unknown'
 			WHEN end_position.elevation - start_position.elevation < -200 THEN '<-200'
-			WHEN end_position.elevation - start_position.elevation < -100 THEN '-200--100'
-			WHEN end_position.elevation - start_position.elevation < -25 THEN '-100--025'
-			WHEN end_position.elevation - start_position.elevation <= 25 THEN '-025-025'
-			WHEN end_position.elevation - start_position.elevation <= 100 THEN '025-100'
-			WHEN end_position.elevation - start_position.elevation <= 200 THEN '100-200'
+			WHEN end_position.elevation - start_position.elevation < -100 THEN '-200~-100'
+			WHEN end_position.elevation - start_position.elevation < -25 THEN '-100~-25'
+			WHEN end_position.elevation - start_position.elevation <= 25 THEN '-25~25'
+			WHEN end_position.elevation - start_position.elevation <= 100 THEN '25~100'
+			WHEN end_position.elevation - start_position.elevation <= 200 THEN '100~200'
 			ELSE '200+'
 		END`, "", nil
 	case "location":

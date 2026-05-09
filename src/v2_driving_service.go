@@ -61,101 +61,101 @@ func NewV2DrivingService(repository V2DrivingRepository) V2DrivingService {
 	return V2DrivingService{repository: repository}
 }
 
-func (s V2DrivingService) BuildDriving(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2DrivingResponse, V2DataQuality, int64, error) {
+func (s V2DrivingService) BuildDriving(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2DrivingResponse, int64, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
-		return V2DrivingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingResponse{}, 0, err
 	}
 	if timeRange.Compare == "previous_year" || timeRange.Compare == "lifetime_average" {
-		return V2DrivingResponse{}, V2DataQuality{}, 0, errV2CompareUnsupported
+		return V2DrivingResponse{}, 0, errV2CompareUnsupported
 	}
 	if err := s.ensureCarExists(ctx, carID); err != nil {
-		return V2DrivingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingResponse{}, 0, err
 	}
 
-	summary, stats, err := s.repository.Summary(ctx, carID, asTimeBound(timeRange.Start), asTimeBound(timeRange.End))
+	summary, _, err := s.repository.Summary(ctx, carID, asTimeBound(timeRange.Start), asTimeBound(timeRange.End))
 	if err != nil {
-		return V2DrivingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingResponse{}, 0, err
 	}
 	response := V2DrivingResponse{Summary: summary}
 	if timeRange.Compare == "previous_period" && timeRange.PreviousStart != nil && timeRange.PreviousEnd != nil {
 		previous, _, err := s.repository.Summary(ctx, carID, asTimeBound(*timeRange.PreviousStart), asTimeBound(*timeRange.PreviousEnd))
 		if err != nil {
-			return V2DrivingResponse{}, V2DataQuality{}, 0, err
+			return V2DrivingResponse{}, 0, err
 		}
 		response.Comparison = buildV2DrivingComparison(summary, previous)
 	}
 
-	return response, buildV2DrivingDataQuality(stats), carID, nil
+	return response, carID, nil
 }
 
-func (s V2DrivingService) BuildTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2DrivingTimeseriesResponse, V2DataQuality, int64, error) {
+func (s V2DrivingService) BuildTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2DrivingTimeseriesResponse, int64, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
-		return V2DrivingTimeseriesResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingTimeseriesResponse{}, 0, err
 	}
 	if groupBy == "" {
 		groupBy = defaultV2DrivingGroupBy(timeRange.Period)
 	}
 	if !v2AllowedDrivingGroupBy[groupBy] {
-		return V2DrivingTimeseriesResponse{}, V2DataQuality{}, 0, errV2InvalidDrivingGroupBy
+		return V2DrivingTimeseriesResponse{}, 0, errV2InvalidDrivingGroupBy
 	}
 	if err := s.ensureCarExists(ctx, carID); err != nil {
-		return V2DrivingTimeseriesResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingTimeseriesResponse{}, 0, err
 	}
 
-	items, stats, err := s.repository.Timeseries(ctx, carID, timeRange, groupBy)
+	items, _, err := s.repository.Timeseries(ctx, carID, timeRange, groupBy)
 	if err != nil {
-		return V2DrivingTimeseriesResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingTimeseriesResponse{}, 0, err
 	}
-	return V2DrivingTimeseriesResponse{GroupBy: groupBy, Items: items}, buildV2DrivingDataQuality(stats), carID, nil
+	return V2DrivingTimeseriesResponse{GroupBy: groupBy, Items: items}, carID, nil
 }
 
-func (s V2DrivingService) BuildDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2DrivingDistributionResponse, V2DataQuality, int64, error) {
+func (s V2DrivingService) BuildDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2DrivingDistributionResponse, int64, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
-		return V2DrivingDistributionResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingDistributionResponse{}, 0, err
 	}
 	if dimension == "" {
 		dimension = "hour_of_day"
 	}
 	if !v2AllowedDrivingDimensions[dimension] {
-		return V2DrivingDistributionResponse{}, V2DataQuality{}, 0, errV2InvalidDrivingDimension
+		return V2DrivingDistributionResponse{}, 0, errV2InvalidDrivingDimension
 	}
 	if err := s.ensureCarExists(ctx, carID); err != nil {
-		return V2DrivingDistributionResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingDistributionResponse{}, 0, err
 	}
 
-	items, stats, err := s.repository.Distribution(ctx, carID, timeRange, dimension)
+	items, _, err := s.repository.Distribution(ctx, carID, timeRange, dimension)
 	if err != nil {
-		return V2DrivingDistributionResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingDistributionResponse{}, 0, err
 	}
-	return V2DrivingDistributionResponse{Dimension: dimension, Items: items}, buildV2DrivingDataQuality(stats), carID, nil
+	return V2DrivingDistributionResponse{Dimension: dimension, Items: items}, carID, nil
 }
 
-func (s V2DrivingService) BuildRanking(ctx context.Context, carIDParam string, timeRange V2TimeRange, rankingType string, limit int) (V2DrivingRankingResponse, V2DataQuality, int64, error) {
+func (s V2DrivingService) BuildRanking(ctx context.Context, carIDParam string, timeRange V2TimeRange, rankingType string, limit int) (V2DrivingRankingResponse, int64, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
-		return V2DrivingRankingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingRankingResponse{}, 0, err
 	}
 	if rankingType == "" {
 		rankingType = "longest_distance"
 	}
 	if !v2AllowedDrivingRankingTypes[rankingType] {
-		return V2DrivingRankingResponse{}, V2DataQuality{}, 0, errV2InvalidDrivingRanking
+		return V2DrivingRankingResponse{}, 0, errV2InvalidDrivingRanking
 	}
 	if limit <= 0 || limit > 100 {
 		limit = 10
 	}
 	if err := s.ensureCarExists(ctx, carID); err != nil {
-		return V2DrivingRankingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingRankingResponse{}, 0, err
 	}
 
-	items, stats, err := s.repository.Ranking(ctx, carID, timeRange, rankingType, limit)
+	items, _, err := s.repository.Ranking(ctx, carID, timeRange, rankingType, limit)
 	if err != nil {
-		return V2DrivingRankingResponse{}, V2DataQuality{}, 0, err
+		return V2DrivingRankingResponse{}, 0, err
 	}
-	return V2DrivingRankingResponse{Type: rankingType, Items: items}, buildV2DrivingDataQuality(stats), carID, nil
+	return V2DrivingRankingResponse{Type: rankingType, Items: items}, carID, nil
 }
 
 func parseV2CarID(carIDParam string) (int64, error) {
@@ -198,27 +198,6 @@ func buildV2DrivingComparison(current V2DrivingAnalyticsSummary, previous V2Driv
 	}
 }
 
-func buildV2DrivingDataQuality(stats V2DrivingStats) V2DataQuality {
-	quality := V2DataQuality{
-		Complete:    true,
-		SampleCount: stats.DriveRows,
-	}
-	if stats.DriveRows > 0 {
-		quality.Warnings = append(quality.Warnings, "estimated_energy_consumed_kwh is derived from rated range loss and vehicle efficiency when available.")
-		quality.Warnings = append(quality.Warnings, "estimated_regenerated_energy_kwh is not returned unless sufficient direct data exists.")
-		quality.Warnings = append(quality.Warnings, "total_ascent_m and total_descent_m are zero until elevation aggregation is implemented from position samples.")
-	}
-	if stats.DriveRows > 0 && stats.EnergyEstimateRows == 0 {
-		quality.MissingFields = append(quality.MissingFields, "drives.start_rated_range_km", "drives.end_rated_range_km", "cars.efficiency")
-	}
-	if stats.DriveRows > 0 && stats.TemperatureRows == 0 {
-		quality.MissingFields = append(quality.MissingFields, "drives.outside_temp_avg")
-	}
-	if len(quality.MissingFields) > 0 || len(quality.Warnings) > 0 {
-		quality.Complete = false
-	}
-	return quality
-}
 
 func v2LimitFromQuery(value string) int {
 	if value == "" {

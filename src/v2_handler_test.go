@@ -14,12 +14,11 @@ import (
 
 type fakeV2SummaryBuilder struct {
 	response V2SummaryResponse
-	quality  V2DataQuality
 	err      error
 }
 
-func (b fakeV2SummaryBuilder) BuildSummary(context.Context, string, V2TimeRange) (V2SummaryResponse, V2DataQuality, error) {
-	return b.response, b.quality, b.err
+func (b fakeV2SummaryBuilder) BuildSummary(context.Context, string, V2TimeRange) (V2SummaryResponse, error) {
+	return b.response, b.err
 }
 
 type fakeV2DrivingBuilder struct {
@@ -27,25 +26,24 @@ type fakeV2DrivingBuilder struct {
 	timeseriesResponse   V2DrivingTimeseriesResponse
 	distributionResponse V2DrivingDistributionResponse
 	rankingResponse      V2DrivingRankingResponse
-	quality              V2DataQuality
 	carID                int64
 	err                  error
 }
 
-func (b fakeV2DrivingBuilder) BuildDriving(context.Context, string, V2TimeRange) (V2DrivingResponse, V2DataQuality, int64, error) {
-	return b.drivingResponse, b.quality, b.carID, b.err
+func (b fakeV2DrivingBuilder) BuildDriving(context.Context, string, V2TimeRange) (V2DrivingResponse, int64, error) {
+	return b.drivingResponse, b.carID, b.err
 }
 
-func (b fakeV2DrivingBuilder) BuildTimeseries(context.Context, string, V2TimeRange, string) (V2DrivingTimeseriesResponse, V2DataQuality, int64, error) {
-	return b.timeseriesResponse, b.quality, b.carID, b.err
+func (b fakeV2DrivingBuilder) BuildTimeseries(context.Context, string, V2TimeRange, string) (V2DrivingTimeseriesResponse, int64, error) {
+	return b.timeseriesResponse, b.carID, b.err
 }
 
-func (b fakeV2DrivingBuilder) BuildDistribution(context.Context, string, V2TimeRange, string) (V2DrivingDistributionResponse, V2DataQuality, int64, error) {
-	return b.distributionResponse, b.quality, b.carID, b.err
+func (b fakeV2DrivingBuilder) BuildDistribution(context.Context, string, V2TimeRange, string) (V2DrivingDistributionResponse, int64, error) {
+	return b.distributionResponse, b.carID, b.err
 }
 
-func (b fakeV2DrivingBuilder) BuildRanking(context.Context, string, V2TimeRange, string, int) (V2DrivingRankingResponse, V2DataQuality, int64, error) {
-	return b.rankingResponse, b.quality, b.carID, b.err
+func (b fakeV2DrivingBuilder) BuildRanking(context.Context, string, V2TimeRange, string, int) (V2DrivingRankingResponse, int64, error) {
+	return b.rankingResponse, b.carID, b.err
 }
 
 type fakeV2ChargingBuilder struct {
@@ -54,109 +52,103 @@ type fakeV2ChargingBuilder struct {
 	locationsResponse  V2ChargingLocationsResponse
 	typesResponse      V2ChargingTypesResponse
 	costResponse       V2ChargingCostResponse
-	quality            V2DataQuality
 	carID              int64
 	err                error
 }
 
-func (b fakeV2ChargingBuilder) BuildCharging(context.Context, string, V2TimeRange) (V2ChargingResponse, V2DataQuality, int64, error) {
-	return b.chargingResponse, b.quality, b.carID, b.err
+func (b fakeV2ChargingBuilder) BuildCharging(context.Context, string, V2TimeRange) (V2ChargingResponse, int64, error) {
+	return b.chargingResponse, b.carID, b.err
 }
 
-func (b fakeV2ChargingBuilder) BuildChargingTimeseries(context.Context, string, V2TimeRange, string) (V2ChargingTimeseriesResponse, V2DataQuality, int64, error) {
-	return b.timeseriesResponse, b.quality, b.carID, b.err
+func (b fakeV2ChargingBuilder) BuildChargingTimeseries(context.Context, string, V2TimeRange, string) (V2ChargingTimeseriesResponse, int64, error) {
+	return b.timeseriesResponse, b.carID, b.err
 }
 
-func (b fakeV2ChargingBuilder) BuildChargingLocations(context.Context, string, V2TimeRange) (V2ChargingLocationsResponse, V2DataQuality, int64, error) {
-	return b.locationsResponse, b.quality, b.carID, b.err
+func (b fakeV2ChargingBuilder) BuildChargingLocations(context.Context, string, V2TimeRange) (V2ChargingLocationsResponse, int64, error) {
+	return b.locationsResponse, b.carID, b.err
 }
 
-func (b fakeV2ChargingBuilder) BuildChargingTypes(context.Context, string, V2TimeRange) (V2ChargingTypesResponse, V2DataQuality, int64, error) {
-	return b.typesResponse, b.quality, b.carID, b.err
+func (b fakeV2ChargingBuilder) BuildChargingTypes(context.Context, string, V2TimeRange) (V2ChargingTypesResponse, int64, error) {
+	return b.typesResponse, b.carID, b.err
 }
 
-func (b fakeV2ChargingBuilder) BuildChargingCost(context.Context, string, V2TimeRange, string) (V2ChargingCostResponse, V2DataQuality, int64, error) {
-	return b.costResponse, b.quality, b.carID, b.err
+func (b fakeV2ChargingBuilder) BuildChargingCost(context.Context, string, V2TimeRange, string) (V2ChargingCostResponse, int64, error) {
+	return b.costResponse, b.carID, b.err
 }
 
 type fakeV2ParkingBuilder struct {
 	parkingResponse   V2ParkingResponse
 	locationsResponse V2ParkingLocationsResponse
 	statesResponse    V2ParkingStatesResponse
-	quality           V2DataQuality
 	carID             int64
 	err               error
 }
 
-func (b fakeV2ParkingBuilder) BuildParking(context.Context, string, V2TimeRange) (V2ParkingResponse, V2DataQuality, int64, error) {
-	return b.parkingResponse, b.quality, b.carID, b.err
+func (b fakeV2ParkingBuilder) BuildParking(context.Context, string, V2TimeRange) (V2ParkingResponse, int64, error) {
+	return b.parkingResponse, b.carID, b.err
 }
 
-func (b fakeV2ParkingBuilder) BuildParkingLocations(context.Context, string, V2TimeRange) (V2ParkingLocationsResponse, V2DataQuality, int64, error) {
-	return b.locationsResponse, b.quality, b.carID, b.err
+func (b fakeV2ParkingBuilder) BuildParkingLocations(context.Context, string, V2TimeRange) (V2ParkingLocationsResponse, int64, error) {
+	return b.locationsResponse, b.carID, b.err
 }
 
-func (b fakeV2ParkingBuilder) BuildParkingStates(context.Context, string, V2TimeRange) (V2ParkingStatesResponse, V2DataQuality, int64, error) {
-	return b.statesResponse, b.quality, b.carID, b.err
+func (b fakeV2ParkingBuilder) BuildParkingStates(context.Context, string, V2TimeRange) (V2ParkingStatesResponse, int64, error) {
+	return b.statesResponse, b.carID, b.err
 }
 
 type fakeV2BatteryBuilder struct {
 	batteryResponse      V2BatteryResponse
 	timeseriesResponse   V2BatteryTimeseriesResponse
 	distributionResponse V2BatteryDistributionResponse
-	quality              V2DataQuality
 	carID                int64
 	err                  error
 }
 
-func (b fakeV2BatteryBuilder) BuildBattery(context.Context, string, V2TimeRange) (V2BatteryResponse, V2DataQuality, int64, error) {
-	return b.batteryResponse, b.quality, b.carID, b.err
+func (b fakeV2BatteryBuilder) BuildBattery(context.Context, string, V2TimeRange) (V2BatteryResponse, int64, error) {
+	return b.batteryResponse, b.carID, b.err
 }
 
-func (b fakeV2BatteryBuilder) BuildBatteryTimeseries(context.Context, string, V2TimeRange, string) (V2BatteryTimeseriesResponse, V2DataQuality, int64, error) {
-	return b.timeseriesResponse, b.quality, b.carID, b.err
+func (b fakeV2BatteryBuilder) BuildBatteryTimeseries(context.Context, string, V2TimeRange, string) (V2BatteryTimeseriesResponse, int64, error) {
+	return b.timeseriesResponse, b.carID, b.err
 }
 
-func (b fakeV2BatteryBuilder) BuildBatteryDistribution(context.Context, string, V2TimeRange) (V2BatteryDistributionResponse, V2DataQuality, int64, error) {
-	return b.distributionResponse, b.quality, b.carID, b.err
+func (b fakeV2BatteryBuilder) BuildBatteryDistribution(context.Context, string, V2TimeRange) (V2BatteryDistributionResponse, int64, error) {
+	return b.distributionResponse, b.carID, b.err
 }
 
 type fakeV2EfficiencyBuilder struct {
 	efficiencyResponse V2EfficiencyResponse
 	factorsResponse    V2EfficiencyFactorsResponse
-	quality            V2DataQuality
 	carID              int64
 	err                error
 }
 
-func (b fakeV2EfficiencyBuilder) BuildEfficiency(context.Context, string, V2TimeRange) (V2EfficiencyResponse, V2DataQuality, int64, error) {
-	return b.efficiencyResponse, b.quality, b.carID, b.err
+func (b fakeV2EfficiencyBuilder) BuildEfficiency(context.Context, string, V2TimeRange) (V2EfficiencyResponse, int64, error) {
+	return b.efficiencyResponse, b.carID, b.err
 }
 
-func (b fakeV2EfficiencyBuilder) BuildEfficiencyFactors(context.Context, string, V2TimeRange, string) (V2EfficiencyFactorsResponse, V2DataQuality, int64, error) {
-	return b.factorsResponse, b.quality, b.carID, b.err
+func (b fakeV2EfficiencyBuilder) BuildEfficiencyFactors(context.Context, string, V2TimeRange, string) (V2EfficiencyFactorsResponse, int64, error) {
+	return b.factorsResponse, b.carID, b.err
 }
 
 type fakeV2CostBuilder struct {
 	costResponse V2CostResponse
-	quality      V2DataQuality
 	carID        int64
 	err          error
 }
 
-func (b fakeV2CostBuilder) BuildCost(context.Context, string, V2TimeRange, string) (V2CostResponse, V2DataQuality, int64, error) {
-	return b.costResponse, b.quality, b.carID, b.err
+func (b fakeV2CostBuilder) BuildCost(context.Context, string, V2TimeRange, string) (V2CostResponse, int64, error) {
+	return b.costResponse, b.carID, b.err
 }
 
 type fakeV2LocationBuilder struct {
 	locationsResponse V2LocationAnalyticsResponse
-	quality           V2DataQuality
 	carID             int64
 	err               error
 }
 
-func (b fakeV2LocationBuilder) BuildLocations(context.Context, string, V2TimeRange, string) (V2LocationAnalyticsResponse, V2DataQuality, int64, error) {
-	return b.locationsResponse, b.quality, b.carID, b.err
+func (b fakeV2LocationBuilder) BuildLocations(context.Context, string, V2TimeRange, string) (V2LocationAnalyticsResponse, int64, error) {
+	return b.locationsResponse, b.carID, b.err
 }
 
 func TestV2InfoHandler(t *testing.T) {
@@ -208,7 +200,6 @@ func TestV2SummaryHandlerSuccess(t *testing.T) {
 				Driving: V2DrivingSummary{DriveCount: 1, DistanceKM: 12.5},
 			},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 1},
 	}, nil)
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/summary", handlers.Summary)
@@ -235,8 +226,7 @@ func TestV2DrivingHandlerSuccess(t *testing.T) {
 		drivingResponse: V2DrivingResponse{
 			Summary: V2DrivingAnalyticsSummary{DriveCount: 2, DistanceKM: 42},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	})
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/driving", handlers.Driving)
@@ -293,8 +283,7 @@ func TestV2ChargingHandlerSuccess(t *testing.T) {
 		chargingResponse: V2ChargingResponse{
 			Summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 42},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	})
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/charging", handlers.Charging)
@@ -337,8 +326,7 @@ func TestV2ParkingHandlerSuccess(t *testing.T) {
 		parkingResponse: V2ParkingResponse{
 			Summary: V2ParkingAnalyticsSummary{ParkingSessionCount: 2, ParkedDurationMin: 120},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	}
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/parking", handlers.Parking)
@@ -372,8 +360,7 @@ func TestV2BatteryHandlerSuccess(t *testing.T) {
 				SampleCount:                       8,
 			},
 		},
-		quality: V2DataQuality{Complete: false, SampleCount: 8, Warnings: []string{"estimated"}},
-		carID:   1,
+		carID: 1,
 	}
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/battery", handlers.Battery)
@@ -402,8 +389,7 @@ func TestV2EfficiencyHandlerSuccess(t *testing.T) {
 		efficiencyResponse: V2EfficiencyResponse{
 			Summary: V2EfficiencySummary{DriveCount: 2, DistanceKM: 42, AvgConsumptionWhPerKM: &avgConsumption},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	}
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/efficiency", handlers.Efficiency)
@@ -455,8 +441,7 @@ func TestV2CostHandlerSuccess(t *testing.T) {
 				CostPerKWh:    &costPerKWh,
 			},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	}
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/cost", handlers.Cost)
@@ -501,8 +486,7 @@ func TestV2LocationsHandlerSuccess(t *testing.T) {
 			Sort:  "parking_duration_desc",
 			Items: []V2LocationAnalyticsItem{{LocationName: "Home", DriveStartCount: 2, ParkingDurationMin: 120}},
 		},
-		quality: V2DataQuality{Complete: true, SampleCount: 2},
-		carID:   1,
+		carID: 1,
 	}
 	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
 	router.GET("/api/v2/cars/:CarID/analytics/locations", handlers.Locations)

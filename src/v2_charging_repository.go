@@ -115,7 +115,7 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2ChargingTimeseriesItem, V2ChargingStats, error) {
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			GREATEST(date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			COUNT(*) AS session_count,
 			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
 			SUM(charge_energy_used) AS energy_used_kwh,
@@ -365,7 +365,7 @@ func (r PostgresV2ChargingRepository) Cost(ctx context.Context, carID int64, tim
 func (r PostgresV2ChargingRepository) costByPeriod(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2ChargingCostPeriodItem, V2ChargingStats, error) {
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			GREATEST(date_trunc('%s', start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			SUM(cost) AS charging_cost,
 			SUM(charge_energy_used) AS energy_used_kwh,
 			COUNT(cost) AS cost_rows,

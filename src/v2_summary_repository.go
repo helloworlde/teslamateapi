@@ -56,6 +56,9 @@ func (r PostgresV2SummaryRepository) Summary(ctx context.Context, carID int64, s
 	if err := r.loadUpdateSummary(ctx, carID, start, end, &summary, &stats); err != nil {
 		return summary, stats, err
 	}
+	if err := r.loadVehicleSummary(ctx, carID, &summary); err != nil {
+		return summary, stats, err
+	}
 
 	if summary.Driving.DistanceKM > 0 {
 		costPerKM := summary.Charging.Cost / summary.Driving.DistanceKM
@@ -69,13 +72,28 @@ func (r PostgresV2SummaryRepository) Summary(ctx context.Context, carID int64, s
 }
 
 func (r PostgresV2SummaryRepository) loadDrivingSummary(ctx context.Context, carID int64, start timeBound, end timeBound, summary *V2Summary, stats *V2SummaryStats) error {
-	var avgConsumption sql.NullFloat64
+	var avgConsumption, bestEfficiency, worstEfficiency, netEnergy sql.NullFloat64
+	var longestDrive, avgSpeed, peakDrive, peakRegen sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS drive_count,
 			COALESCE(SUM(distance), 0) AS distance_km,
 			COALESCE(SUM(duration_min), 0) AS duration_min,
 			COALESCE(MAX(speed_max), 0) AS max_speed_kmh,
+			MAX(duration_min) AS longest_drive_duration_min,
+			AVG(CASE WHEN duration_min > 0 THEN distance / duration_min * 60 END) AS avg_speed_kmh,
+			MAX(power_max) AS peak_drive_power_kw,
+			-MIN(NULLIF(power_min, 0)) AS peak_regen_power_kw,
+			SUM(
+				CASE
+					WHEN distance > 0
+						AND start_rated_range_km IS NOT NULL
+						AND end_rated_range_km IS NOT NULL
+						AND cars.efficiency IS NOT NULL
+						AND (start_rated_range_km - end_rated_range_km) > 0
+					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency
+				END
+			) AS net_energy_kwh,
 			AVG(
 				CASE
 					WHEN distance > 0
@@ -84,9 +102,28 @@ func (r PostgresV2SummaryRepository) loadDrivingSummary(ctx context.Context, car
 						AND cars.efficiency IS NOT NULL
 						AND (start_rated_range_km - end_rated_range_km) > 0
 					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000
-					ELSE NULL
 				END
-			) AS avg_consumption_wh_per_km
+			) AS avg_consumption_wh_per_km,
+			MIN(
+				CASE
+					WHEN distance > 0
+						AND start_rated_range_km IS NOT NULL
+						AND end_rated_range_km IS NOT NULL
+						AND cars.efficiency IS NOT NULL
+						AND (start_rated_range_km - end_rated_range_km) > 0
+					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000
+				END
+			) AS best_efficiency_wh_per_km,
+			MAX(
+				CASE
+					WHEN distance > 0
+						AND start_rated_range_km IS NOT NULL
+						AND end_rated_range_km IS NOT NULL
+						AND cars.efficiency IS NOT NULL
+						AND (start_rated_range_km - end_rated_range_km) > 0
+					THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000
+				END
+			) AS worst_efficiency_wh_per_km
 		FROM drives
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1
@@ -99,43 +136,126 @@ func (r PostgresV2SummaryRepository) loadDrivingSummary(ctx context.Context, car
 		&summary.Driving.DistanceKM,
 		&summary.Driving.DurationMin,
 		&summary.Driving.MaxSpeedKMH,
+		&longestDrive,
+		&avgSpeed,
+		&peakDrive,
+		&peakRegen,
+		&netEnergy,
 		&avgConsumption,
+		&bestEfficiency,
+		&worstEfficiency,
 	)
 	if err != nil {
 		return err
 	}
+	if summary.Driving.DriveCount > 0 {
+		avg := summary.Driving.DistanceKM / float64(summary.Driving.DriveCount)
+		summary.Driving.AvgTripDistanceKM = &avg
+		avgDur := summary.Driving.DurationMin / float64(summary.Driving.DriveCount)
+		summary.Driving.AvgDurationMin = &avgDur
+	}
+	if longestDrive.Valid {
+		summary.Driving.LongestDriveDurationMin = &longestDrive.Float64
+	}
+	if avgSpeed.Valid {
+		summary.Driving.AvgSpeedKMH = &avgSpeed.Float64
+	}
+	if peakDrive.Valid {
+		summary.Driving.PeakDrivePowerKW = &peakDrive.Float64
+	}
+	if peakRegen.Valid {
+		summary.Driving.PeakRegenPowerKW = &peakRegen.Float64
+	}
+	if netEnergy.Valid {
+		summary.Driving.NetEnergyKWh = &netEnergy.Float64
+	}
 	if avgConsumption.Valid {
 		summary.Driving.AvgConsumptionWhPerKM = avgConsumption.Float64
+	}
+	if bestEfficiency.Valid {
+		summary.Driving.BestEfficiencyWhPerKM = &bestEfficiency.Float64
+	}
+	if worstEfficiency.Valid {
+		summary.Driving.WorstEfficiencyWhPerKM = &worstEfficiency.Float64
 	}
 	stats.DriveRows = summary.Driving.DriveCount
 	return nil
 }
 
 func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, carID int64, start timeBound, end timeBound, summary *V2Summary, stats *V2SummaryStats) error {
+	var longestSession, avgEnergy, largestSession, avgPower, maxPower, avgCost, maxCost sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS session_count,
-			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
-			COALESCE(SUM(GREATEST(COALESCE(charge_energy_used, 0), COALESCE(charge_energy_added, 0))), 0) AS energy_used_kwh,
-			COALESCE(SUM(duration_min), 0) AS duration_min,
-			COALESCE(SUM(cost), 0) AS cost,
-			COUNT(cost) AS cost_rows
-		FROM charging_processes
-		WHERE car_id = $1
-			AND end_date IS NOT NULL
-			AND start_date >= $2
-			AND start_date < $3`,
+			COALESCE(SUM(cp.charge_energy_added), 0) AS energy_added_kwh,
+			COALESCE(SUM(GREATEST(COALESCE(cp.charge_energy_used, 0), COALESCE(cp.charge_energy_added, 0))), 0) AS energy_used_kwh,
+			COALESCE(SUM(cp.duration_min), 0) AS duration_min,
+			MAX(cp.duration_min) AS longest_session_duration_min,
+			AVG(cp.charge_energy_added) AS avg_energy_added_kwh,
+			MAX(cp.charge_energy_added) AS largest_session_kwh,
+			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power_kw,
+			MAX(NULLIF(max_charge.charger_power, 0)) AS max_power_kw,
+			COALESCE(SUM(cp.cost), 0) AS cost,
+			COUNT(cp.cost) AS cost_rows,
+			AVG(cp.cost) AS avg_cost,
+			MAX(cp.cost) AS max_cost
+		FROM charging_processes cp
+		LEFT JOIN LATERAL (
+			SELECT MAX(charger_power) AS charger_power
+			FROM charges
+			WHERE charges.charging_process_id = cp.id
+		) max_charge ON true
+		WHERE cp.car_id = $1
+			AND cp.end_date IS NOT NULL
+			AND cp.start_date >= $2
+			AND cp.start_date < $3`,
 		carID, start.Time, end.Time,
 	).Scan(
 		&summary.Charging.SessionCount,
 		&summary.Charging.EnergyAddedKWh,
 		&summary.Charging.EnergyUsedKWh,
 		&summary.Charging.DurationMin,
+		&longestSession,
+		&avgEnergy,
+		&largestSession,
+		&avgPower,
+		&maxPower,
 		&summary.Charging.Cost,
 		&stats.CostRows,
+		&avgCost,
+		&maxCost,
 	)
 	if err != nil {
 		return err
+	}
+	if summary.Charging.SessionCount > 0 {
+		avgDur := summary.Charging.DurationMin / float64(summary.Charging.SessionCount)
+		summary.Charging.AvgDurationMin = &avgDur
+	}
+	if longestSession.Valid {
+		summary.Charging.LongestSessionDurationMin = &longestSession.Float64
+	}
+	if avgEnergy.Valid {
+		summary.Charging.AvgEnergyAddedKWh = &avgEnergy.Float64
+	}
+	if largestSession.Valid {
+		summary.Charging.LargestSessionKWh = &largestSession.Float64
+	}
+	if avgPower.Valid {
+		summary.Charging.AvgPowerKW = &avgPower.Float64
+	}
+	if maxPower.Valid {
+		summary.Charging.MaxPowerKW = &maxPower.Float64
+	}
+	if summary.Charging.EnergyUsedKWh > 0 {
+		eff := summary.Charging.EnergyAddedKWh / summary.Charging.EnergyUsedKWh * 100
+		summary.Charging.ChargeEfficiencyPercent = &eff
+	}
+	if avgCost.Valid {
+		summary.Charging.AvgCost = &avgCost.Float64
+	}
+	if maxCost.Valid {
+		summary.Charging.MaxCost = &maxCost.Float64
 	}
 	stats.ChargeRows = summary.Charging.SessionCount
 	return nil
@@ -228,6 +348,47 @@ func (r PostgresV2SummaryRepository) loadUpdateSummary(ctx context.Context, carI
 	if latestVersion.Valid {
 		value := latestVersion.String
 		summary.Updates.LatestVersion = &value
+	}
+	return nil
+}
+
+func (r PostgresV2SummaryRepository) loadVehicleSummary(ctx context.Context, carID int64, summary *V2Summary) error {
+	var odometer sql.NullFloat64
+	var ratedEfficiency sql.NullFloat64
+	err := r.db.QueryRowContext(ctx, `
+		SELECT MAX(d.end_km) AS odometer_km, c.efficiency AS rated_efficiency
+		FROM drives d
+		LEFT JOIN cars c ON c.id = d.car_id
+		WHERE d.car_id = $1 AND d.end_date IS NOT NULL`,
+		carID,
+	).Scan(&odometer, &ratedEfficiency)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
+	summary.Vehicle.TrackedDistanceKM = summary.Driving.DistanceKM
+	summary.Vehicle.TrackedDrives = summary.Driving.DriveCount
+	summary.Vehicle.TrackedCharges = summary.Charging.SessionCount
+
+	if odometer.Valid {
+		summary.Vehicle.OdometerKM = &odometer.Float64
+		if summary.Driving.DistanceKM > 0 && odometer.Float64 > 0 {
+			pct := summary.Driving.DistanceKM / odometer.Float64 * 100
+			summary.Vehicle.OdometerCoveragePercent = &pct
+		}
+	}
+	if ratedEfficiency.Valid {
+		v := ratedEfficiency.Float64 * 100
+		summary.Vehicle.RatedEfficiencyKWhPer100KM = &v
+	}
+	if summary.Driving.DistanceKM > 0 {
+		cons := summary.Charging.EnergyAddedKWh / summary.Driving.DistanceKM * 100
+		summary.Vehicle.TrackedConsumptionKWhPer100KM = &cons
+		wall := summary.Charging.EnergyUsedKWh / summary.Driving.DistanceKM * 100
+		summary.Vehicle.TrackedWallKWhPer100KM = &wall
+	}
+	if summary.Charging.ChargeEfficiencyPercent != nil {
+		summary.Vehicle.ChargeEfficiencyPercent = summary.Charging.ChargeEfficiencyPercent
 	}
 	return nil
 }

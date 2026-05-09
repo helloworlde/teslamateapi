@@ -144,11 +144,14 @@ func parseV2ClientTime(value string, location *time.Location) (time.Time, error)
 	if t, err := time.Parse(time.RFC3339, value); err == nil {
 		return t, nil
 	}
+	if t, err := time.ParseInLocation("2006-01-02", value, location); err == nil {
+		return t, nil
+	}
 	normalized := strings.ReplaceAll(value, "T", " ")
 	return time.ParseInLocation(time.DateTime, normalized, location)
 }
 
-func newV2Meta(carID int64, timeRange V2TimeRange, quality *V2DataQuality) V2Meta {
+func newV2Meta(carID int64, timeRange V2TimeRange) V2Meta {
 	location := timeRangeLocation(timeRange)
 	return V2Meta{
 		CarID:       carID,
@@ -159,7 +162,6 @@ func newV2Meta(carID int64, timeRange V2TimeRange, quality *V2DataQuality) V2Met
 		Compare:     timeRange.Compare,
 		Unit:        defaultV2Unit(),
 		GeneratedAt: time.Now().In(location).Format(time.RFC3339),
-		DataQuality: quality,
 	}
 }
 

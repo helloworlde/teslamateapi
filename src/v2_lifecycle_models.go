@@ -1,6 +1,7 @@
 package main
 
 type V2LifecycleResponse struct {
+	AsOf                  *string  `json:"as_of,omitempty"`
 	FirstRecordedAt       *string  `json:"first_recorded_at,omitempty"`
 	LastRecordedAt        *string  `json:"last_recorded_at,omitempty"`
 	RecordedDays          int64    `json:"recorded_days"`
@@ -27,8 +28,10 @@ type V2TimelineEvent struct {
 }
 
 type V2TimelineResponse struct {
-	Events []V2TimelineEvent `json:"events"`
-	Total  int64             `json:"total"`
+	Events     []V2TimelineEvent `json:"events"`
+	Total      int64             `json:"total"`
+	HasMore    bool              `json:"has_more"`
+	NextCursor *string           `json:"next_cursor,omitempty"`
 }
 
 // V2LifecycleAPIResponse is the swagger wrapper for lifecycle analytics

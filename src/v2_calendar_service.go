@@ -20,18 +20,18 @@ func NewV2CalendarService(repository V2CalendarRepository) V2CalendarService {
 	return V2CalendarService{repository: repository}
 }
 
-func (s V2CalendarService) BuildCalendar(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2CalendarResponse, V2DataQuality, int64, error) {
+func (s V2CalendarService) BuildCalendar(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2CalendarResponse, int64, error) {
 	carID, err := parseV2CarID(carIDParam)
 	if err != nil {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, err
+		return V2CalendarResponse{}, 0, err
 	}
 
 	exists, err := s.repository.CarExists(ctx, carID)
 	if err != nil {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, err
+		return V2CalendarResponse{}, 0, err
 	}
 	if !exists {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, errV2CarNotFound
+		return V2CalendarResponse{}, 0, errV2CarNotFound
 	}
 
 	location := timeRangeLocation(timeRange)
@@ -40,21 +40,20 @@ func (s V2CalendarService) BuildCalendar(ctx context.Context, carIDParam string,
 
 	drivingData, err := s.repository.DailyDriving(ctx, carID, start, end, location)
 	if err != nil {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, err
+		return V2CalendarResponse{}, 0, err
 	}
 	chargingData, err := s.repository.DailyCharging(ctx, carID, start, end, location)
 	if err != nil {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, err
+		return V2CalendarResponse{}, 0, err
 	}
 	updatesData, err := s.repository.DailyUpdates(ctx, carID, start, end, location)
 	if err != nil {
-		return V2CalendarResponse{}, V2DataQuality{}, 0, err
+		return V2CalendarResponse{}, 0, err
 	}
 
 	// Generate all dates in range
 	days := generateDateRange(timeRange.Start, timeRange.End, location)
 	var calendarDays []V2CalendarDay
-	var sampleCount int64
 
 	for _, dateStr := range days {
 		day := V2CalendarDay{Date: dateStr}
@@ -63,29 +62,21 @@ func (s V2CalendarService) BuildCalendar(ctx context.Context, carIDParam string,
 			day.DriveCount = d.DriveCount
 			day.DistanceKM = d.DistanceKM
 			day.DriveDurationMin = d.DriveDurationMin
-			sampleCount += day.DriveCount
 		}
 		if c, ok := chargingData[dateStr]; ok {
 			day.ChargingSessionCount = c.ChargingSessionCount
 			day.EnergyAddedKWh = c.EnergyAddedKWh
 			day.ChargingCost = c.ChargingCost
-			sampleCount += day.ChargingSessionCount
 		}
 		if count, ok := updatesData[dateStr]; ok {
 			day.UpdateCount = count
-			sampleCount += count
 		}
 
 		day.ActivityLevel = computeActivityLevel(day)
 		calendarDays = append(calendarDays, day)
 	}
 
-	quality := V2DataQuality{
-		Complete:    true,
-		SampleCount: sampleCount,
-	}
-
-	return V2CalendarResponse{Days: calendarDays}, quality, carID, nil
+	return V2CalendarResponse{Days: calendarDays}, carID, nil
 }
 
 func generateDateRange(start, end time.Time, location *time.Location) []string {

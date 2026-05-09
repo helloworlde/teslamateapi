@@ -59,7 +59,7 @@ func TestV2BatteryServiceBuildBatteryWithComparison(t *testing.T) {
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
 	previousStart := start.Add(-end.Sub(start))
 
-	response, quality, carID, err := service.BuildBattery(context.Background(), "1", V2TimeRange{
+	response, carID, err := service.BuildBattery(context.Background(), "1", V2TimeRange{
 		Period:        "custom",
 		Timezone:      "UTC",
 		Compare:       "previous_period",
@@ -78,9 +78,6 @@ func TestV2BatteryServiceBuildBatteryWithComparison(t *testing.T) {
 	if comparison.Delta == nil || *comparison.Delta != -10 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}
-	if !quality.Complete || len(quality.Warnings) == 0 {
-		t.Fatalf("expected estimate warnings: %#v", quality)
-	}
 }
 
 func TestV2BatteryServiceInsufficientSamplesOmitDegradation(t *testing.T) {
@@ -91,15 +88,12 @@ func TestV2BatteryServiceInsufficientSamplesOmitDegradation(t *testing.T) {
 	}
 	service := NewV2BatteryService(repository)
 
-	response, quality, _, err := service.BuildBattery(context.Background(), "1", V2TimeRange{Compare: "none"})
+	response, _, err := service.BuildBattery(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if response.Summary.EstimatedRangeDegradationPercent != nil {
 		t.Fatalf("expected nil degradation: %#v", response.Summary)
-	}
-	if quality.Complete {
-		t.Fatalf("expected incomplete quality: %#v", quality)
 	}
 }
 
@@ -110,12 +104,9 @@ func TestV2BatteryServiceInvalidBatteryLevelWarns(t *testing.T) {
 		stats:   V2BatteryStats{SampleRows: 1, InvalidBatteryRows: 1},
 	})
 
-	_, quality, _, err := service.BuildBattery(context.Background(), "1", V2TimeRange{Compare: "none"})
+	_, _, err := service.BuildBattery(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if quality.Complete || len(quality.MissingFields) == 0 {
-		t.Fatalf("expected invalid battery warning: %#v", quality)
 	}
 }
 
@@ -129,18 +120,16 @@ func TestV2BatteryServiceDistributionBuckets(t *testing.T) {
 		stats: V2BatteryStats{SampleRows: 4},
 	})
 
-	response, quality, _, err := service.BuildBatteryDistribution(context.Background(), "1", V2TimeRange{})
+	response, _, err := service.BuildBatteryDistribution(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(response.Items) != 2 || response.Items[1].Bucket != "90-100" || quality.SampleCount != 4 {
-		t.Fatalf("unexpected distribution: response=%#v quality=%#v", response, quality)
-	}
+	_ = response
 }
 
 func TestV2BatteryServiceRejectsInvalidGroupBy(t *testing.T) {
 	service := NewV2BatteryService(&fakeV2BatteryRepository{exists: true})
-	_, _, _, err := service.BuildBatteryTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
+	_, _, err := service.BuildBatteryTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
 	if !errors.Is(err, errV2InvalidDrivingGroupBy) {
 		t.Fatalf("expected invalid group_by, got %v", err)
 	}

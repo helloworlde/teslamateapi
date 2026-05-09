@@ -41,15 +41,12 @@ func TestV2CostServiceBuildCost(t *testing.T) {
 		stats: V2CostStats{SessionRows: 2, CostRows: 2, EnergyUsedRows: 2},
 	})
 
-	response, quality, carID, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
+	response, carID, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if carID != 1 || response.Summary.ChargingCost == nil || len(response.DataScope.Excluded) == 0 {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
-	}
-	if !quality.Complete || quality.SampleCount != 2 {
-		t.Fatalf("unexpected quality: %#v", quality)
 	}
 }
 
@@ -59,12 +56,9 @@ func TestV2CostServiceMissingCostWarns(t *testing.T) {
 		stats:  V2CostStats{SessionRows: 2, CostRows: 1, EnergyUsedRows: 2},
 	})
 
-	_, quality, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
+	_, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if quality.Complete || len(quality.MissingFields) == 0 {
-		t.Fatalf("expected missing cost warning: %#v", quality)
 	}
 }
 
@@ -78,7 +72,7 @@ func TestV2CostServiceDistanceZeroOmitsDistanceCosts(t *testing.T) {
 		stats: V2CostStats{SessionRows: 1, CostRows: 1, EnergyUsedRows: 1},
 	})
 
-	response, _, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
+	response, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +92,7 @@ func TestV2CostServiceEnergyUsedZeroOmitsCostPerKWh(t *testing.T) {
 		stats: V2CostStats{SessionRows: 1, CostRows: 1, EnergyUsedRows: 1},
 	})
 
-	response, _, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
+	response, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{Period: "month"}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,7 +103,7 @@ func TestV2CostServiceEnergyUsedZeroOmitsCostPerKWh(t *testing.T) {
 
 func TestV2CostServiceRejectsInvalidGroupBy(t *testing.T) {
 	service := NewV2CostService(&fakeV2CostRepository{exists: true})
-	_, _, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{}, "hour")
+	_, _, err := service.BuildCost(context.Background(), "1", V2TimeRange{}, "hour")
 	if !errors.Is(err, errV2InvalidDrivingGroupBy) {
 		t.Fatalf("expected invalid group_by, got %v", err)
 	}

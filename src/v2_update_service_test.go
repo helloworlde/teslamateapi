@@ -44,7 +44,7 @@ func TestV2UpdateServiceNormalRecords(t *testing.T) {
 		},
 		count: 2,
 	})
-	response, quality, carID, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
+	response, carID, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -57,9 +57,6 @@ func TestV2UpdateServiceNormalRecords(t *testing.T) {
 	if response.LatestVersion == nil || *response.LatestVersion != version {
 		t.Fatalf("expected latest_version %q", version)
 	}
-	if quality.SampleCount != 2 {
-		t.Fatalf("expected sample_count 2, got %d", quality.SampleCount)
-	}
 }
 
 func TestV2UpdateServiceNoRecords(t *testing.T) {
@@ -68,7 +65,7 @@ func TestV2UpdateServiceNoRecords(t *testing.T) {
 		response: V2UpdateAnalyticsResponse{UpdateCount: 0, Versions: []V2UpdateVersion{}},
 		count:    0,
 	})
-	response, quality, _, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
+	response, _, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,14 +78,11 @@ func TestV2UpdateServiceNoRecords(t *testing.T) {
 	if len(response.Versions) != 0 {
 		t.Fatalf("expected empty versions")
 	}
-	if quality.SampleCount != 0 {
-		t.Fatalf("expected sample_count 0")
-	}
 }
 
 func TestV2UpdateServiceInvalidCarID(t *testing.T) {
 	service := NewV2UpdateService(&fakeV2UpdateRepository{exists: true})
-	_, _, _, err := service.BuildUpdates(context.Background(), "abc", V2TimeRange{})
+	_, _, err := service.BuildUpdates(context.Background(), "abc", V2TimeRange{})
 	if err == nil || err.Error() != "invalid car id" {
 		t.Fatalf("expected invalid car id error, got %v", err)
 	}
@@ -96,7 +90,7 @@ func TestV2UpdateServiceInvalidCarID(t *testing.T) {
 
 func TestV2UpdateServiceCarNotFound(t *testing.T) {
 	service := NewV2UpdateService(&fakeV2UpdateRepository{exists: false})
-	_, _, _, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
+	_, _, err := service.BuildUpdates(context.Background(), "1", V2TimeRange{})
 	if !errors.Is(err, errV2CarNotFound) {
 		t.Fatalf("expected car not found error, got %v", err)
 	}
@@ -116,7 +110,7 @@ func TestV2UpdateServiceDefaultTimezone(t *testing.T) {
 		Start:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		End:      time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 	}
-	_, _, _, err := service.BuildUpdates(context.Background(), "1", timeRange)
+	_, _, err := service.BuildUpdates(context.Background(), "1", timeRange)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -133,7 +127,7 @@ func TestV2UpdateServiceTimezoneOverride(t *testing.T) {
 		Start:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		End:      time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 	}
-	_, _, _, err := service.BuildUpdates(context.Background(), "1", timeRange)
+	_, _, err := service.BuildUpdates(context.Background(), "1", timeRange)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

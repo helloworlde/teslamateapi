@@ -21,82 +21,26 @@ func (r PostgresV2BatteryRepository) CarExists(ctx context.Context, carID int64)
 	return exists, err
 }
 
+// Summary returns battery stats for the period.
+// Latest battery values come from a single point query on positions (LIMIT 1, uses index).
+// Sample count and baseline use drives + start_position PK join (avoids full positions scan).
 func (r PostgresV2BatteryRepository) Summary(ctx context.Context, carID int64, timeRange V2TimeRange) (V2BatteryAnalyticsSummary, V2BatteryStats, error) {
 	var summary V2BatteryAnalyticsSummary
 	var stats V2BatteryStats
-	var latestBattery sql.NullInt64
-	var latestRatedRange sql.NullFloat64
-	var latestIdealRange sql.NullFloat64
-	var latestEstimatedRated sql.NullFloat64
-	var latestEstimatedIdeal sql.NullFloat64
-	var baselineRated sql.NullFloat64
-	var baselineIdeal sql.NullFloat64
-	var invalidBatteryRows int64
 
+	// Latest values: single-row point query, relies on (car_id, date DESC) index
+	var latestBattery sql.NullInt64
+	var latestRatedRange, latestIdealRange sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
-		WITH period_positions AS (
-			SELECT
-				battery_level,
-				rated_battery_range_km,
-				ideal_battery_range_km,
-				CASE
-					WHEN battery_level > 0 AND rated_battery_range_km IS NOT NULL
-					THEN rated_battery_range_km / battery_level * 100
-				END AS estimated_rated_range_at_100,
-				CASE
-					WHEN battery_level > 0 AND ideal_battery_range_km IS NOT NULL
-					THEN ideal_battery_range_km / battery_level * 100
-				END AS estimated_ideal_range_at_100,
-				date
-			FROM positions
-			WHERE car_id = $1
-				AND date >= $2
-				AND date < $3
-		),
-		latest AS (
-			SELECT *
-			FROM period_positions
-			ORDER BY date DESC
-			LIMIT 1
-		),
-		baseline AS (
-			SELECT
-				MAX(rated_battery_range_km / battery_level * 100) FILTER (WHERE battery_level > 0 AND rated_battery_range_km IS NOT NULL) AS baseline_rated,
-				MAX(ideal_battery_range_km / battery_level * 100) FILTER (WHERE battery_level > 0 AND ideal_battery_range_km IS NOT NULL) AS baseline_ideal
-			FROM positions
-			WHERE car_id = $1
-		)
-		SELECT
-			(SELECT battery_level FROM latest) AS latest_battery_level,
-			(SELECT rated_battery_range_km FROM latest) AS latest_rated_range,
-			(SELECT ideal_battery_range_km FROM latest) AS latest_ideal_range,
-			(SELECT estimated_rated_range_at_100 FROM latest) AS latest_estimated_rated,
-			(SELECT estimated_ideal_range_at_100 FROM latest) AS latest_estimated_ideal,
-			baseline.baseline_rated,
-			baseline.baseline_ideal,
-			COUNT(*) FILTER (WHERE period_positions.battery_level > 0 AND (period_positions.rated_battery_range_km IS NOT NULL OR period_positions.ideal_battery_range_km IS NOT NULL)) AS sample_count,
-			COUNT(*) FILTER (WHERE period_positions.battery_level IS NULL OR period_positions.battery_level <= 0) AS invalid_battery_rows
-		FROM baseline
-		LEFT JOIN period_positions ON true
-		GROUP BY baseline.baseline_rated, baseline.baseline_ideal`,
+		SELECT battery_level, rated_battery_range_km, ideal_battery_range_km
+		FROM positions
+		WHERE car_id = $1 AND date >= $2 AND date < $3
+		ORDER BY date DESC LIMIT 1`,
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time,
-	).Scan(
-		&latestBattery,
-		&latestRatedRange,
-		&latestIdealRange,
-		&latestEstimatedRated,
-		&latestEstimatedIdeal,
-		&baselineRated,
-		&baselineIdeal,
-		&summary.SampleCount,
-		&invalidBatteryRows,
-	)
-	if err != nil {
+	).Scan(&latestBattery, &latestRatedRange, &latestIdealRange)
+	if err != nil && err != sql.ErrNoRows {
 		return summary, stats, err
 	}
-
-	stats.SampleRows = summary.SampleCount
-	stats.InvalidBatteryRows = invalidBatteryRows
 	if latestBattery.Valid {
 		summary.LatestBatteryLevelPercent = &latestBattery.Int64
 	}
@@ -106,37 +50,74 @@ func (r PostgresV2BatteryRepository) Summary(ctx context.Context, carID int64, t
 	if latestIdealRange.Valid {
 		summary.LatestIdealRangeKM = &latestIdealRange.Float64
 	}
-	if latestEstimatedRated.Valid {
-		summary.EstimatedRatedRangeAt100PercentKM = &latestEstimatedRated.Float64
+
+	// Estimated full range from latest observation
+	if latestBattery.Valid && latestBattery.Int64 > 0 && latestRatedRange.Valid {
+		v := latestRatedRange.Float64 / float64(latestBattery.Int64) * 100
+		summary.EstimatedRatedRangeAt100PercentKM = &v
 	}
-	if latestEstimatedIdeal.Valid {
-		summary.EstimatedIdealRangeAt100PercentKM = &latestEstimatedIdeal.Float64
+	if latestBattery.Valid && latestBattery.Int64 > 0 && latestIdealRange.Valid {
+		v := latestIdealRange.Float64 / float64(latestBattery.Int64) * 100
+		summary.EstimatedIdealRangeAt100PercentKM = &v
 	}
+
+	// Sample count + baseline from drives + start_position PK join (one position per drive, fast)
+	var sampleCount int64
+	var baselineRated, baselineIdeal sql.NullFloat64
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			COUNT(*) FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS sample_count,
+			MAX(CASE WHEN sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL
+				THEN drives.start_rated_range_km / sp.battery_level * 100 END) AS baseline_rated,
+			MAX(CASE WHEN sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL
+				THEN drives.start_rated_range_km / sp.battery_level * 100 END) AS baseline_ideal
+		FROM drives
+		LEFT JOIN positions sp ON sp.id = drives.start_position_id
+		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL`,
+		carID,
+	).Scan(&sampleCount, &baselineRated, &baselineIdeal)
+	if err != nil {
+		return summary, stats, err
+	}
+	summary.SampleCount = sampleCount
+	stats.SampleRows = sampleCount
+
 	if baselineRated.Valid {
 		summary.BaselineRatedRangeAt100PercentKM = &baselineRated.Float64
 	}
 	if baselineIdeal.Valid {
 		summary.BaselineIdealRangeAt100PercentKM = &baselineIdeal.Float64
 	}
-	if summary.SampleCount >= v2MinimumBatteryRangeSamples && latestEstimatedRated.Valid && baselineRated.Valid && baselineRated.Float64 > 0 {
-		summary.EstimatedRangeDegradationPercent = float64Ptr((baselineRated.Float64 - latestEstimatedRated.Float64) / baselineRated.Float64 * 100)
+
+	if sampleCount >= v2MinimumBatteryRangeSamples &&
+		summary.EstimatedRatedRangeAt100PercentKM != nil &&
+		baselineRated.Valid && baselineRated.Float64 > 0 {
+		degradation := (baselineRated.Float64 - *summary.EstimatedRatedRangeAt100PercentKM) / baselineRated.Float64 * 100
+		summary.EstimatedRangeDegradationPercent = &degradation
 	}
+
 	return summary, stats, nil
 }
 
+// Timeseries uses drives + start_position PK join to avoid full positions table scans.
+// Groups by start_date of each drive, computing estimated full-range from start battery.
 func (r PostgresV2BatteryRepository) Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2BatteryTimeseriesItem, V2BatteryStats, error) {
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', positions.date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
-			AVG(rated_battery_range_km / battery_level * 100) FILTER (WHERE battery_level > 0 AND rated_battery_range_km IS NOT NULL) AS estimated_rated_range_at_100,
-			AVG(ideal_battery_range_km / battery_level * 100) FILTER (WHERE battery_level > 0 AND ideal_battery_range_km IS NOT NULL) AS estimated_ideal_range_at_100,
-			AVG(battery_level) FILTER (WHERE battery_level IS NOT NULL) AS avg_battery_level,
-			COUNT(*) FILTER (WHERE battery_level > 0 AND (rated_battery_range_km IS NOT NULL OR ideal_battery_range_km IS NOT NULL)) AS sample_count,
-			COUNT(*) FILTER (WHERE battery_level IS NULL OR battery_level <= 0) AS invalid_battery_rows
-		FROM positions
-		WHERE positions.car_id = $1
-			AND positions.date >= $2
-			AND positions.date < $3
+			GREATEST(date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			AVG(drives.start_rated_range_km / sp.battery_level * 100)
+				FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS estimated_rated_range_at_100,
+			AVG(drives.start_rated_range_km / sp.battery_level * 100)
+				FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS estimated_ideal_range_at_100,
+			AVG(sp.battery_level) FILTER (WHERE sp.battery_level IS NOT NULL AND sp.battery_level > 0) AS avg_battery_level,
+			COUNT(*) FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS sample_count,
+			COUNT(*) FILTER (WHERE sp.battery_level IS NULL OR sp.battery_level <= 0) AS invalid_rows
+		FROM drives
+		LEFT JOIN positions sp ON sp.id = drives.start_position_id
+		WHERE drives.car_id = $1
+			AND drives.start_date >= $2
+			AND drives.start_date < $3
+			AND drives.end_date IS NOT NULL
 		GROUP BY 1
 		ORDER BY 1`, postgresDateTruncUnit(groupBy)),
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time, timeRange.Timezone,
@@ -176,36 +157,42 @@ func (r PostgresV2BatteryRepository) Timeseries(ctx context.Context, carID int64
 	return items, stats, rows.Err()
 }
 
+// Distribution uses drives + position PK joins to get start/end battery levels.
+// Avoids large positions table scans by using FK-based point lookups.
 func (r PostgresV2BatteryRepository) Distribution(ctx context.Context, carID int64, timeRange V2TimeRange) ([]V2BatteryDistributionItem, V2BatteryStats, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		WITH valid_positions AS (
-			SELECT battery_level
-			FROM positions
-			WHERE car_id = $1
-				AND date >= $2
-				AND date < $3
-				AND battery_level IS NOT NULL
-				AND battery_level >= 0
-				AND battery_level <= 100
+		WITH battery_samples AS (
+			SELECT sp.battery_level AS battery_level
+			FROM drives
+			LEFT JOIN positions sp ON sp.id = drives.start_position_id
+			WHERE drives.car_id = $1 AND drives.start_date >= $2 AND drives.start_date < $3
+				AND drives.end_date IS NOT NULL AND sp.battery_level IS NOT NULL
+				AND sp.battery_level >= 0 AND sp.battery_level <= 100
+			UNION ALL
+			SELECT ep.battery_level AS battery_level
+			FROM drives
+			LEFT JOIN positions ep ON ep.id = drives.end_position_id
+			WHERE drives.car_id = $1 AND drives.start_date >= $2 AND drives.start_date < $3
+				AND drives.end_date IS NOT NULL AND ep.battery_level IS NOT NULL
+				AND ep.battery_level >= 0 AND ep.battery_level <= 100
 		),
 		buckets AS (
 			SELECT generate_series(0, 90, 10)::int AS bucket_min
 		),
 		bucketed AS (
-			SELECT
-				LEAST((battery_level / 10) * 10, 90)::int AS bucket_min,
-				COUNT(*) AS sample_count
-			FROM valid_positions
-			GROUP BY 1
+			SELECT LEAST((battery_level / 10) * 10, 90)::int AS bucket_min, COUNT(*) AS sample_count
+			FROM battery_samples GROUP BY 1
 		),
 		total AS (
-			SELECT COUNT(*) AS sample_count FROM valid_positions
+			SELECT COUNT(*) AS sample_count FROM battery_samples
 		)
 		SELECT
 			buckets.bucket_min,
 			buckets.bucket_min + 10 AS bucket_max,
 			COALESCE(bucketed.sample_count, 0) AS sample_count,
-			CASE WHEN total.sample_count > 0 THEN COALESCE(bucketed.sample_count, 0)::float / total.sample_count * 100 ELSE 0 END AS percent
+			CASE WHEN total.sample_count > 0
+				THEN COALESCE(bucketed.sample_count, 0)::float / total.sample_count * 100
+				ELSE 0 END AS percent
 		FROM buckets
 		LEFT JOIN bucketed ON bucketed.bucket_min = buckets.bucket_min
 		CROSS JOIN total

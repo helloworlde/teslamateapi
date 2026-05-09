@@ -39,33 +39,26 @@ func TestV2EfficiencyServiceBuildSummary(t *testing.T) {
 		stats: V2EfficiencyStats{DriveRows: 2, EnergyEstimateRows: 2, TemperatureRows: 2},
 	})
 
-	response, quality, carID, err := service.BuildEfficiency(context.Background(), "1", V2TimeRange{})
+	response, carID, err := service.BuildEfficiency(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if carID != 1 || response.Summary.DriveCount != 2 || response.Summary.EstimatedEnergyConsumedKWh == nil {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
-	if !quality.Complete || quality.SampleCount != 2 {
-		t.Fatalf("unexpected quality: %#v", quality)
-	}
 }
 
 func TestV2EfficiencyServiceNoDrivesWarns(t *testing.T) {
 	service := NewV2EfficiencyService(&fakeV2EfficiencyRepository{exists: true})
-
-	response, quality, _, err := service.BuildEfficiency(context.Background(), "1", V2TimeRange{})
+	_, _, err := service.BuildEfficiency(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if response.Summary.DriveCount != 0 || quality.Complete {
-		t.Fatalf("expected no-drive warning: response=%#v quality=%#v", response, quality)
 	}
 }
 
 func TestV2EfficiencyServiceRejectsInvalidDimension(t *testing.T) {
 	service := NewV2EfficiencyService(&fakeV2EfficiencyRepository{exists: true})
-	_, _, _, err := service.BuildEfficiencyFactors(context.Background(), "1", V2TimeRange{}, "bad")
+	_, _, err := service.BuildEfficiencyFactors(context.Background(), "1", V2TimeRange{}, "bad")
 	if !errors.Is(err, errV2InvalidEfficiencyDimension) {
 		t.Fatalf("expected invalid dimension, got %v", err)
 	}

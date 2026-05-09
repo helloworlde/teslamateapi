@@ -121,7 +121,7 @@ func (r PostgresV2DrivingRepository) Timeseries(ctx context.Context, carID int64
 	truncUnit := postgresDateTruncUnit(groupBy)
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			GREATEST(date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			COUNT(*) AS drive_count,
 			COALESCE(SUM(drives.distance), 0) AS distance_km,
 			COALESCE(SUM(drives.duration_min), 0) AS duration_min,

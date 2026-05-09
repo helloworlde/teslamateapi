@@ -54,7 +54,7 @@ func TestV2DrivingServiceBuildDrivingWithComparison(t *testing.T) {
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
 	previousStart := start.Add(-end.Sub(start))
 
-	response, quality, carID, err := service.BuildDriving(context.Background(), "1", V2TimeRange{
+	response, carID, err := service.BuildDriving(context.Background(), "1", V2TimeRange{
 		Period:        "custom",
 		Timezone:      "UTC",
 		Compare:       "previous_period",
@@ -73,14 +73,11 @@ func TestV2DrivingServiceBuildDrivingWithComparison(t *testing.T) {
 	if comparison.Delta == nil || *comparison.Delta != 60 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}
-	if quality.SampleCount != 2 {
-		t.Fatalf("unexpected sample count: %d", quality.SampleCount)
-	}
 }
 
 func TestV2DrivingServiceNoDataReturnsEmpty(t *testing.T) {
 	service := NewV2DrivingService(&fakeV2DrivingRepository{exists: true})
-	response, _, _, err := service.BuildDriving(context.Background(), "1", V2TimeRange{Compare: "none"})
+	response, _, err := service.BuildDriving(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -91,7 +88,7 @@ func TestV2DrivingServiceNoDataReturnsEmpty(t *testing.T) {
 
 func TestV2DrivingServiceRejectsInvalidDimension(t *testing.T) {
 	service := NewV2DrivingService(&fakeV2DrivingRepository{exists: true})
-	_, _, _, err := service.BuildDistribution(context.Background(), "1", V2TimeRange{}, "bad")
+	_, _, err := service.BuildDistribution(context.Background(), "1", V2TimeRange{}, "bad")
 	if !errors.Is(err, errV2InvalidDrivingDimension) {
 		t.Fatalf("expected invalid dimension, got %v", err)
 	}
@@ -99,7 +96,7 @@ func TestV2DrivingServiceRejectsInvalidDimension(t *testing.T) {
 
 func TestV2DrivingServiceRejectsInvalidRankingType(t *testing.T) {
 	service := NewV2DrivingService(&fakeV2DrivingRepository{exists: true})
-	_, _, _, err := service.BuildRanking(context.Background(), "1", V2TimeRange{}, "bad", 10)
+	_, _, err := service.BuildRanking(context.Background(), "1", V2TimeRange{}, "bad", 10)
 	if !errors.Is(err, errV2InvalidDrivingRanking) {
 		t.Fatalf("expected invalid ranking type, got %v", err)
 	}
@@ -107,7 +104,7 @@ func TestV2DrivingServiceRejectsInvalidRankingType(t *testing.T) {
 
 func TestV2DrivingServiceRejectsInvalidGroupBy(t *testing.T) {
 	service := NewV2DrivingService(&fakeV2DrivingRepository{exists: true})
-	_, _, _, err := service.BuildTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
+	_, _, err := service.BuildTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
 	if !errors.Is(err, errV2InvalidDrivingGroupBy) {
 		t.Fatalf("expected invalid group_by, got %v", err)
 	}
@@ -115,7 +112,7 @@ func TestV2DrivingServiceRejectsInvalidGroupBy(t *testing.T) {
 
 func TestV2DrivingServiceRejectsInvalidCarID(t *testing.T) {
 	service := NewV2DrivingService(&fakeV2DrivingRepository{exists: true})
-	_, _, _, err := service.BuildDriving(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildDriving(context.Background(), "bad", V2TimeRange{})
 	if err == nil {
 		t.Fatal("expected invalid car id error")
 	}
