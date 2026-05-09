@@ -66,7 +66,7 @@ func TestParseV2AnalyticsQueryDefaultsTimezoneFromTZEnv(t *testing.T) {
 		t.Fatalf("unexpected UTC end: %s", got)
 	}
 
-	meta := newV2Meta(1, timeRange, nil)
+	meta := newV2Meta(1, timeRange)
 	if meta.Start != "2026-05-08T00:00:00+08:00" {
 		t.Fatalf("unexpected localized meta start: %s", meta.Start)
 	}

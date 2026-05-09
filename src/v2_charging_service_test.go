@@ -59,7 +59,7 @@ func TestV2ChargingServiceBuildChargingWithComparison(t *testing.T) {
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
 	previousStart := start.Add(-end.Sub(start))
 
-	response, quality, carID, err := service.BuildCharging(context.Background(), "1", V2TimeRange{
+	response, carID, err := service.BuildCharging(context.Background(), "1", V2TimeRange{
 		Period:        "custom",
 		Timezone:      "UTC",
 		Compare:       "previous_period",
@@ -78,22 +78,16 @@ func TestV2ChargingServiceBuildChargingWithComparison(t *testing.T) {
 	if comparison.Delta == nil || *comparison.Delta != 50 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}
-	if !quality.Complete || quality.SampleCount != 2 {
-		t.Fatalf("unexpected data quality: %#v", quality)
-	}
 }
 
 func TestV2ChargingServiceNoDataReturnsEmpty(t *testing.T) {
 	service := NewV2ChargingService(&fakeV2ChargingRepository{exists: true})
-	response, quality, _, err := service.BuildCharging(context.Background(), "1", V2TimeRange{Compare: "none"})
+	response, _, err := service.BuildCharging(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if response.Summary.SessionCount != 0 {
 		t.Fatalf("expected no sessions, got %#v", response.Summary)
-	}
-	if !quality.Complete {
-		t.Fatalf("expected complete no-data quality, got %#v", quality)
 	}
 }
 
@@ -103,21 +97,15 @@ func TestV2ChargingServiceMissingCostAndEnergyUsedWarns(t *testing.T) {
 		summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 40},
 		stats:   V2ChargingStats{SessionRows: 2, EnergyUsedRows: 1, CostRows: 0},
 	})
-	_, quality, _, err := service.BuildCharging(context.Background(), "1", V2TimeRange{Compare: "none"})
+	_, _, err := service.BuildCharging(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if quality.Complete {
-		t.Fatalf("expected incomplete quality: %#v", quality)
-	}
-	if len(quality.MissingFields) < 2 {
-		t.Fatalf("expected missing cost and energy fields: %#v", quality)
 	}
 }
 
 func TestV2ChargingServiceRejectsInvalidGroupBy(t *testing.T) {
 	service := NewV2ChargingService(&fakeV2ChargingRepository{exists: true})
-	_, _, _, err := service.BuildChargingTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
+	_, _, err := service.BuildChargingTimeseries(context.Background(), "1", V2TimeRange{}, "hour")
 	if !errors.Is(err, errV2InvalidDrivingGroupBy) {
 		t.Fatalf("expected invalid group_by, got %v", err)
 	}
@@ -125,7 +113,7 @@ func TestV2ChargingServiceRejectsInvalidGroupBy(t *testing.T) {
 
 func TestV2ChargingServiceRejectsInvalidCarID(t *testing.T) {
 	service := NewV2ChargingService(&fakeV2ChargingRepository{exists: true})
-	_, _, _, err := service.BuildCharging(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildCharging(context.Background(), "bad", V2TimeRange{})
 	if err == nil {
 		t.Fatal("expected invalid car id error")
 	}

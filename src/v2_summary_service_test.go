@@ -63,7 +63,7 @@ func TestV2SummaryServiceBuildSummaryWithComparison(t *testing.T) {
 		PreviousEnd:   &start,
 	}
 
-	response, quality, err := service.BuildSummary(context.Background(), "1", timeRange)
+	response, err := service.BuildSummary(context.Background(), "1", timeRange)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -73,9 +73,6 @@ func TestV2SummaryServiceBuildSummaryWithComparison(t *testing.T) {
 	comparison, ok := response.Comparison["driving.distance_km"]
 	if !ok || comparison.Delta == nil || *comparison.Delta != 40 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
-	}
-	if quality.SampleCount != 4 {
-		t.Fatalf("unexpected sample count: %d", quality.SampleCount)
 	}
 }
 
@@ -90,7 +87,7 @@ func TestV2SummaryServiceNoDataReturnsEmptySummary(t *testing.T) {
 		End:      time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
 	}
 
-	response, _, err := service.BuildSummary(context.Background(), "1", timeRange)
+	response, err := service.BuildSummary(context.Background(), "1", timeRange)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -101,7 +98,7 @@ func TestV2SummaryServiceNoDataReturnsEmptySummary(t *testing.T) {
 
 func TestV2SummaryServiceRejectsInvalidCarID(t *testing.T) {
 	service := NewV2SummaryService(&fakeV2SummaryRepository{exists: true})
-	_, _, err := service.BuildSummary(context.Background(), "not-an-int", V2TimeRange{})
+	_, err := service.BuildSummary(context.Background(), "not-an-int", V2TimeRange{})
 	if err == nil {
 		t.Fatal("expected invalid car id error")
 	}
@@ -109,7 +106,7 @@ func TestV2SummaryServiceRejectsInvalidCarID(t *testing.T) {
 
 func TestV2SummaryServiceReturnsCarNotFound(t *testing.T) {
 	service := NewV2SummaryService(&fakeV2SummaryRepository{exists: false})
-	_, _, err := service.BuildSummary(context.Background(), "42", V2TimeRange{})
+	_, err := service.BuildSummary(context.Background(), "42", V2TimeRange{})
 	if !errors.Is(err, errV2CarNotFound) {
 		t.Fatalf("expected car not found, got %v", err)
 	}

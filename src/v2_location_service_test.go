@@ -29,15 +29,12 @@ func TestV2LocationServiceBuildLocations(t *testing.T) {
 		stats: V2LocationStats{DriveStartRows: 2, DriveEndRows: 1, ChargingRows: 1, ParkingRows: 3},
 	})
 
-	response, quality, carID, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "")
+	response, carID, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if carID != 1 || response.Sort != "parking_duration_desc" || len(response.Items) != 1 {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
-	}
-	if quality.SampleCount != 7 || len(quality.Warnings) == 0 {
-		t.Fatalf("unexpected quality: %#v", quality)
 	}
 }
 
@@ -48,7 +45,7 @@ func TestV2LocationServiceUnknownLocation(t *testing.T) {
 		stats:  V2LocationStats{DriveEndRows: 1},
 	})
 
-	response, _, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "drive_end_count_desc")
+	response, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "drive_end_count_desc")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +56,7 @@ func TestV2LocationServiceUnknownLocation(t *testing.T) {
 
 func TestV2LocationServiceRejectsInvalidSort(t *testing.T) {
 	service := NewV2LocationService(&fakeV2LocationRepository{exists: true})
-	_, _, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "bad")
+	_, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "bad")
 	if !errors.Is(err, errV2InvalidLocationSort) {
 		t.Fatalf("expected invalid sort, got %v", err)
 	}
@@ -67,12 +64,12 @@ func TestV2LocationServiceRejectsInvalidSort(t *testing.T) {
 
 func TestV2LocationServiceNoData(t *testing.T) {
 	service := NewV2LocationService(&fakeV2LocationRepository{exists: true})
-	response, quality, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "")
+	response, _, err := service.BuildLocations(context.Background(), "1", V2TimeRange{}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(response.Items) != 0 || !quality.Complete || len(quality.Warnings) != 0 {
-		t.Fatalf("unexpected no-data response: response=%#v quality=%#v", response, quality)
+	if len(response.Items) != 0 {
+		t.Fatalf("expected empty items: %#v", response)
 	}
 }
 

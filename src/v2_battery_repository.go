@@ -104,7 +104,7 @@ func (r PostgresV2BatteryRepository) Summary(ctx context.Context, carID int64, t
 func (r PostgresV2BatteryRepository) Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2BatteryTimeseriesItem, V2BatteryStats, error) {
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			GREATEST(date_trunc('%s', drives.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			AVG(drives.start_rated_range_km / sp.battery_level * 100)
 				FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS estimated_rated_range_at_100,
 			AVG(drives.start_rated_range_km / sp.battery_level * 100)

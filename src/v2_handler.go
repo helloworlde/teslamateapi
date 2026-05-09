@@ -11,68 +11,68 @@ import (
 )
 
 type V2SummaryBuilder interface {
-	BuildSummary(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2SummaryResponse, V2DataQuality, error)
+	BuildSummary(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2SummaryResponse, error)
 }
 
 type V2DrivingBuilder interface {
-	BuildDriving(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2DrivingResponse, V2DataQuality, int64, error)
-	BuildTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2DrivingTimeseriesResponse, V2DataQuality, int64, error)
-	BuildDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2DrivingDistributionResponse, V2DataQuality, int64, error)
-	BuildRanking(ctx context.Context, carIDParam string, timeRange V2TimeRange, rankingType string, limit int) (V2DrivingRankingResponse, V2DataQuality, int64, error)
+	BuildDriving(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2DrivingResponse, int64, error)
+	BuildTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2DrivingTimeseriesResponse, int64, error)
+	BuildDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2DrivingDistributionResponse, int64, error)
+	BuildRanking(ctx context.Context, carIDParam string, timeRange V2TimeRange, rankingType string, limit int) (V2DrivingRankingResponse, int64, error)
 }
 
 type V2ChargingBuilder interface {
-	BuildCharging(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingResponse, V2DataQuality, int64, error)
-	BuildChargingTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2ChargingTimeseriesResponse, V2DataQuality, int64, error)
-	BuildChargingLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingLocationsResponse, V2DataQuality, int64, error)
-	BuildChargingTypes(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingTypesResponse, V2DataQuality, int64, error)
-	BuildChargingCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2ChargingCostResponse, V2DataQuality, int64, error)
+	BuildCharging(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingResponse, int64, error)
+	BuildChargingTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2ChargingTimeseriesResponse, int64, error)
+	BuildChargingLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingLocationsResponse, int64, error)
+	BuildChargingTypes(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ChargingTypesResponse, int64, error)
+	BuildChargingCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2ChargingCostResponse, int64, error)
 }
 
 type V2ParkingBuilder interface {
-	BuildParking(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingResponse, V2DataQuality, int64, error)
-	BuildParkingLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingLocationsResponse, V2DataQuality, int64, error)
-	BuildParkingStates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingStatesResponse, V2DataQuality, int64, error)
+	BuildParking(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingResponse, int64, error)
+	BuildParkingLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingLocationsResponse, int64, error)
+	BuildParkingStates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2ParkingStatesResponse, int64, error)
 }
 
 type V2BatteryBuilder interface {
-	BuildBattery(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryResponse, V2DataQuality, int64, error)
-	BuildBatteryTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2BatteryTimeseriesResponse, V2DataQuality, int64, error)
-	BuildBatteryDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryDistributionResponse, V2DataQuality, int64, error)
+	BuildBattery(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryResponse, int64, error)
+	BuildBatteryTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2BatteryTimeseriesResponse, int64, error)
+	BuildBatteryDistribution(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryDistributionResponse, int64, error)
 }
 
 type V2EfficiencyBuilder interface {
-	BuildEfficiency(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2EfficiencyResponse, V2DataQuality, int64, error)
-	BuildEfficiencyFactors(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2EfficiencyFactorsResponse, V2DataQuality, int64, error)
+	BuildEfficiency(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2EfficiencyResponse, int64, error)
+	BuildEfficiencyFactors(ctx context.Context, carIDParam string, timeRange V2TimeRange, dimension string) (V2EfficiencyFactorsResponse, int64, error)
 }
 
 type V2CostBuilder interface {
-	BuildCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2CostResponse, V2DataQuality, int64, error)
+	BuildCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2CostResponse, int64, error)
 }
 
 type V2LocationBuilder interface {
-	BuildLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange, sort string) (V2LocationAnalyticsResponse, V2DataQuality, int64, error)
+	BuildLocations(ctx context.Context, carIDParam string, timeRange V2TimeRange, sort string) (V2LocationAnalyticsResponse, int64, error)
 }
 
 type V2UpdateBuilder interface {
-	BuildUpdates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2UpdateAnalyticsResponse, V2DataQuality, int64, error)
+	BuildUpdates(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2UpdateAnalyticsResponse, int64, error)
 }
 
 type V2LifecycleBuilder interface {
-	BuildLifecycle(ctx context.Context, carIDParam string, asOf time.Time) (V2LifecycleResponse, V2DataQuality, error)
-	BuildTimeline(ctx context.Context, carIDParam string, eventTypes []string, limit int, before, after *time.Time) (V2TimelineResponse, V2DataQuality, error)
+	BuildLifecycle(ctx context.Context, carIDParam string, asOf time.Time) (V2LifecycleResponse, error)
+	BuildTimeline(ctx context.Context, carIDParam string, eventTypes []string, limit int, before, after *time.Time) (V2TimelineResponse, error)
 }
 
 type V2CalendarBuilder interface {
-	BuildCalendar(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2CalendarResponse, V2DataQuality, int64, error)
+	BuildCalendar(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2CalendarResponse, int64, error)
 }
 
 type V2ReportBuilder interface {
-	BuildReport(ctx context.Context, carIDParam string, timeRange V2TimeRange, include []string) (V2ReportResponse, V2DataQuality, error)
+	BuildReport(ctx context.Context, carIDParam string, timeRange V2TimeRange, include []string) (V2ReportResponse, error)
 }
 
 type V2InsightBuilder interface {
-	BuildInsights(ctx context.Context, carIDParam string, timeRange V2TimeRange, category string, minSeverity string) (V2InsightResponse, V2DataQuality, error)
+	BuildInsights(ctx context.Context, carIDParam string, timeRange V2TimeRange, category string, minSeverity string) (V2InsightResponse, error)
 }
 
 type V2Handlers struct {
@@ -258,7 +258,7 @@ func (h V2Handlers) Info(c *gin.Context) {
 // @Description Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.
 // @Tags V2 Summary
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -281,7 +281,7 @@ func (h V2Handlers) Summary(c *gin.Context) {
 		return
 	}
 
-	response, quality, err := h.summaryBuilder.BuildSummary(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, err := h.summaryBuilder.BuildSummary(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		switch {
 		case errors.Is(err, errV2CarNotFound):
@@ -297,7 +297,7 @@ func (h V2Handlers) Summary(c *gin.Context) {
 	}
 
 	carID, _ := strconv.ParseInt(c.Param("CarID"), 10, 64)
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // Driving godoc
@@ -306,7 +306,7 @@ func (h V2Handlers) Summary(c *gin.Context) {
 // @Description Returns objective driving statistics and optional previous-period comparison for one car.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -327,12 +327,12 @@ func (h V2Handlers) Driving(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 driving service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.drivingBuilder.BuildDriving(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.drivingBuilder.BuildDriving(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2DrivingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // DrivingTimeseries godoc
@@ -341,7 +341,7 @@ func (h V2Handlers) Driving(c *gin.Context) {
 // @Description Returns driving metrics grouped by day, week, month, or year for charting.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -358,12 +358,12 @@ func (h V2Handlers) DrivingTimeseries(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.drivingBuilder.BuildTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	response, carID, err := h.drivingBuilder.BuildTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
 	if err != nil {
 		handleV2DrivingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // DrivingDistribution godoc
@@ -372,7 +372,7 @@ func (h V2Handlers) DrivingTimeseries(c *gin.Context) {
 // @Description Returns drive-count, distance, and duration distribution for a selected factual dimension.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -389,12 +389,12 @@ func (h V2Handlers) DrivingDistribution(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.drivingBuilder.BuildDistribution(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("dimension"))
+	response, carID, err := h.drivingBuilder.BuildDistribution(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("dimension"))
 	if err != nil {
 		handleV2DrivingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // DrivingRanking godoc
@@ -403,7 +403,7 @@ func (h V2Handlers) DrivingDistribution(c *gin.Context) {
 // @Description Returns objective top drives or top driving days by selected ranking type.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -421,12 +421,12 @@ func (h V2Handlers) DrivingRanking(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.drivingBuilder.BuildRanking(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("type"), v2LimitFromQuery(c.Query("limit")))
+	response, carID, err := h.drivingBuilder.BuildRanking(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("type"), v2LimitFromQuery(c.Query("limit")))
 	if err != nil {
 		handleV2DrivingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2DrivingError(c *gin.Context, err error, timeRange V2TimeRange) {
@@ -454,7 +454,7 @@ func handleV2DrivingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective charging statistics and optional previous-period comparison for one car.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -475,12 +475,12 @@ func (h V2Handlers) Charging(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 charging service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.chargingBuilder.BuildCharging(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.chargingBuilder.BuildCharging(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ChargingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ChargingTimeseries godoc
@@ -489,7 +489,7 @@ func (h V2Handlers) Charging(c *gin.Context) {
 // @Description Returns charging metrics grouped by day, week, month, or year for charting.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -506,12 +506,12 @@ func (h V2Handlers) ChargingTimeseries(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.chargingBuilder.BuildChargingTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	response, carID, err := h.chargingBuilder.BuildChargingTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
 	if err != nil {
 		handleV2ChargingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ChargingLocations godoc
@@ -520,7 +520,7 @@ func (h V2Handlers) ChargingTimeseries(c *gin.Context) {
 // @Description Returns objective charging metrics grouped by geofence or address.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -536,12 +536,12 @@ func (h V2Handlers) ChargingLocations(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.chargingBuilder.BuildChargingLocations(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.chargingBuilder.BuildChargingLocations(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ChargingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ChargingTypes godoc
@@ -550,7 +550,7 @@ func (h V2Handlers) ChargingLocations(c *gin.Context) {
 // @Description Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -566,12 +566,12 @@ func (h V2Handlers) ChargingTypes(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.chargingBuilder.BuildChargingTypes(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.chargingBuilder.BuildChargingTypes(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ChargingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ChargingCost godoc
@@ -580,7 +580,7 @@ func (h V2Handlers) ChargingTypes(c *gin.Context) {
 // @Description Returns objective charging cost, energy, and distance-normalized cost metrics.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -597,12 +597,12 @@ func (h V2Handlers) ChargingCost(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.chargingBuilder.BuildChargingCost(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	response, carID, err := h.chargingBuilder.BuildChargingCost(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
 	if err != nil {
 		handleV2ChargingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
@@ -626,7 +626,7 @@ func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -647,12 +647,12 @@ func (h V2Handlers) Parking(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 parking service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.parkingBuilder.BuildParking(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.parkingBuilder.BuildParking(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ParkingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ParkingLocations godoc
@@ -661,7 +661,7 @@ func (h V2Handlers) Parking(c *gin.Context) {
 // @Description Returns inferred parking sessions and parked duration grouped by geofence or address.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -677,12 +677,12 @@ func (h V2Handlers) ParkingLocations(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.parkingBuilder.BuildParkingLocations(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.parkingBuilder.BuildParkingLocations(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ParkingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // ParkingStates godoc
@@ -691,7 +691,7 @@ func (h V2Handlers) ParkingLocations(c *gin.Context) {
 // @Description Returns online, asleep, offline, and unknown state durations, shares, and transition counts.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -707,12 +707,12 @@ func (h V2Handlers) ParkingStates(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.parkingBuilder.BuildParkingStates(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.parkingBuilder.BuildParkingStates(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2ParkingError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
@@ -734,7 +734,7 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -755,12 +755,12 @@ func (h V2Handlers) Battery(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 battery service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.batteryBuilder.BuildBattery(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.batteryBuilder.BuildBattery(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2BatteryError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // BatteryTimeseries godoc
@@ -769,7 +769,7 @@ func (h V2Handlers) Battery(c *gin.Context) {
 // @Description Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -786,12 +786,12 @@ func (h V2Handlers) BatteryTimeseries(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.batteryBuilder.BuildBatteryTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	response, carID, err := h.batteryBuilder.BuildBatteryTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
 	if err != nil {
 		handleV2BatteryError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // BatteryDistribution godoc
@@ -800,7 +800,7 @@ func (h V2Handlers) BatteryTimeseries(c *gin.Context) {
 // @Description Returns battery_level sample counts grouped into 10 percent buckets from 0-10 through 90-100.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -816,12 +816,12 @@ func (h V2Handlers) BatteryDistribution(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.batteryBuilder.BuildBatteryDistribution(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.batteryBuilder.BuildBatteryDistribution(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2BatteryError(c, err, timeRange)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
@@ -845,7 +845,7 @@ func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective drive efficiency metrics, including estimated energy consumption, average/best/worst consumption, average temperature, and average speed.
 // @Tags V2 Efficiency Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -865,12 +865,12 @@ func (h V2Handlers) Efficiency(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 efficiency service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.efficiencyBuilder.BuildEfficiency(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.efficiencyBuilder.BuildEfficiency(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2EfficiencyError(c, err)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // EfficiencyFactors godoc
@@ -879,7 +879,7 @@ func (h V2Handlers) Efficiency(c *gin.Context) {
 // @Description Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.
 // @Tags V2 Efficiency Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -896,12 +896,12 @@ func (h V2Handlers) EfficiencyFactors(c *gin.Context) {
 		v2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
 	}
-	response, quality, carID, err := h.efficiencyBuilder.BuildEfficiencyFactors(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("dimension"))
+	response, carID, err := h.efficiencyBuilder.BuildEfficiencyFactors(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("dimension"))
 	if err != nil {
 		handleV2EfficiencyError(c, err)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2EfficiencyError(c *gin.Context, err error) {
@@ -923,7 +923,7 @@ func handleV2EfficiencyError(c *gin.Context, err error) {
 // @Description Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.
 // @Tags V2 Cost Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -944,12 +944,12 @@ func (h V2Handlers) Cost(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 cost service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.costBuilder.BuildCost(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
+	response, carID, err := h.costBuilder.BuildCost(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
 	if err != nil {
 		handleV2CostError(c, err)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2CostError(c *gin.Context, err error) {
@@ -971,7 +971,7 @@ func handleV2CostError(c *gin.Context, err error) {
 // @Description Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.
 // @Tags V2 Location Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -992,12 +992,12 @@ func (h V2Handlers) Locations(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 location service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.locationBuilder.BuildLocations(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("sort"))
+	response, carID, err := h.locationBuilder.BuildLocations(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("sort"))
 	if err != nil {
 		handleV2LocationError(c, err)
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2LocationError(c *gin.Context, err error) {
@@ -1019,7 +1019,7 @@ func handleV2LocationError(c *gin.Context, err error) {
 // @Description Returns OTA update history statistics for a car in the selected period.
 // @Tags V2 Update Analytics
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -1039,12 +1039,12 @@ func (h V2Handlers) Updates(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 update service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.updateBuilder.BuildUpdates(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.updateBuilder.BuildUpdates(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 update analytics.")
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // Lifecycle godoc
@@ -1053,7 +1053,7 @@ func (h V2Handlers) Updates(c *gin.Context) {
 // @Description Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.
 // @Tags V2 Lifecycle
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param as_of query string false "Cutoff datetime in RFC3339 format. Defaults to now."
 // @Success 200 {object} V2LifecycleAPIResponse
 // @Failure 400 {object} APIErrorResponse
@@ -1074,7 +1074,7 @@ func (h V2Handlers) Lifecycle(c *gin.Context) {
 		}
 		asOf = parsed.UTC()
 	}
-	response, _, err := h.lifecycleBuilder.BuildLifecycle(c.Request.Context(), c.Param("CarID"), asOf)
+	response, err := h.lifecycleBuilder.BuildLifecycle(c.Request.Context(), c.Param("CarID"), asOf)
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 lifecycle analytics.")
 		return
@@ -1095,7 +1095,7 @@ func (h V2Handlers) Lifecycle(c *gin.Context) {
 // @Description Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.
 // @Tags V2 Lifecycle
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param type query string false "Comma-separated event types: drive,charging,update"
 // @Param limit query int false "Max results per page" default(50)
 // @Param before query string false "Return events before this RFC3339 timestamp (cursor, DESC order)"
@@ -1131,7 +1131,7 @@ func (h V2Handlers) Timeline(c *gin.Context) {
 		after = &t
 	}
 
-	response, _, err := h.lifecycleBuilder.BuildTimeline(c.Request.Context(), c.Param("CarID"), eventTypes, limit, before, after)
+	response, err := h.lifecycleBuilder.BuildTimeline(c.Request.Context(), c.Param("CarID"), eventTypes, limit, before, after)
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 timeline.")
 		return
@@ -1152,7 +1152,7 @@ func (h V2Handlers) Timeline(c *gin.Context) {
 // @Description Returns per-day aggregated statistics for calendar/heatmap views. All dates in the requested range are returned, with zeros for days without data.
 // @Tags V2 Calendar
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start date (YYYY-MM-DD or RFC3339)"
 // @Param end query string false "End date (YYYY-MM-DD or RFC3339)"
@@ -1172,12 +1172,12 @@ func (h V2Handlers) Calendar(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 calendar service is not configured.", nil)
 		return
 	}
-	response, quality, carID, err := h.calendarBuilder.BuildCalendar(c.Request.Context(), c.Param("CarID"), timeRange)
+	response, carID, err := h.calendarBuilder.BuildCalendar(c.Request.Context(), c.Param("CarID"), timeRange)
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 calendar.")
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // Reports godoc
@@ -1186,7 +1186,7 @@ func (h V2Handlers) Calendar(c *gin.Context) {
 // @Description Returns a structured period report combining multiple analytics modules. Only sections with data are included.
 // @Tags V2 Reports
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -1208,13 +1208,13 @@ func (h V2Handlers) Reports(c *gin.Context) {
 		return
 	}
 	include := parseIncludeList(c.Query("include"))
-	response, quality, err := h.reportBuilder.BuildReport(c.Request.Context(), c.Param("CarID"), timeRange, include)
+	response, err := h.reportBuilder.BuildReport(c.Request.Context(), c.Param("CarID"), timeRange, include)
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 report.")
 		return
 	}
 	carID, _ := strconv.ParseInt(c.Param("CarID"), 10, 64)
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 // Insights godoc
@@ -1223,7 +1223,7 @@ func (h V2Handlers) Reports(c *gin.Context) {
 // @Description Returns factual, evidence-backed insights based on period comparison. No subjective evaluations.
 // @Tags V2 Insights
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "Car ID" default(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -1245,13 +1245,13 @@ func (h V2Handlers) Insights(c *gin.Context) {
 		v2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 insight service is not configured.", nil)
 		return
 	}
-	response, quality, err := h.insightBuilder.BuildInsights(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("category"), c.Query("min_severity"))
+	response, err := h.insightBuilder.BuildInsights(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("category"), c.Query("min_severity"))
 	if err != nil {
 		handleV2GenericError(c, err, "Unable to build V2 insights.")
 		return
 	}
 	carID, _ := strconv.ParseInt(c.Param("CarID"), 10, 64)
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange, &quality))
+	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
 }
 
 func handleV2GenericError(c *gin.Context, err error, msg string) {

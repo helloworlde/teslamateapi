@@ -55,7 +55,7 @@ func TestV2CalendarServiceBuildCalendar(t *testing.T) {
 	})
 
 	loc, _ := time.LoadLocation("UTC")
-	response, quality, carID, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
+	response, carID, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
 		Timezone: "UTC",
 		Start:    time.Date(2024, 1, 1, 0, 0, 0, 0, loc),
 		End:      time.Date(2024, 1, 3, 0, 0, 0, 0, loc),
@@ -89,14 +89,11 @@ func TestV2CalendarServiceBuildCalendar(t *testing.T) {
 	if day2.ActivityLevel.Driving != 3 { // 101-200km
 		t.Fatalf("expected driving activity 3, got %d", day2.ActivityLevel.Driving)
 	}
-	if quality.SampleCount != 5 { // 2+1+1+1 = 5
-		t.Fatalf("expected sample_count 5, got %d", quality.SampleCount)
-	}
 }
 
 func TestV2CalendarServiceCarNotFound(t *testing.T) {
 	service := NewV2CalendarService(&fakeV2CalendarRepository{exists: false})
-	_, _, _, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
+	_, _, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
 		Start: time.Now(),
 		End:   time.Now().Add(24 * time.Hour),
 	})
@@ -107,7 +104,7 @@ func TestV2CalendarServiceCarNotFound(t *testing.T) {
 
 func TestV2CalendarServiceInvalidCarID(t *testing.T) {
 	service := NewV2CalendarService(&fakeV2CalendarRepository{exists: true})
-	_, _, _, err := service.BuildCalendar(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildCalendar(context.Background(), "bad", V2TimeRange{})
 	if err == nil || err.Error() != "invalid car id" {
 		t.Fatalf("expected invalid car id error, got %v", err)
 	}
@@ -149,7 +146,7 @@ func TestV2CalendarServiceEmptyRange(t *testing.T) {
 	loc, _ := time.LoadLocation("UTC")
 	t1 := time.Date(2024, 1, 1, 0, 0, 0, 0, loc)
 	// Same start and end means 0 days
-	response, _, _, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
+	response, _, err := service.BuildCalendar(context.Background(), "1", V2TimeRange{
 		Timezone: "UTC",
 		Start:    t1,
 		End:      t1,

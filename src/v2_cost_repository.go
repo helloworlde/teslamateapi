@@ -77,7 +77,7 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 func (r PostgresV2CostRepository) costByPeriod(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2CostPeriodItem, error) {
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+			GREATEST(date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			SUM(charging_processes.cost) AS charging_cost,
 			SUM(charging_processes.charge_energy_used) AS energy_used_kwh
 		FROM charging_processes

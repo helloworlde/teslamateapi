@@ -47,7 +47,7 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 			AvgMonthlyDistanceKM: &monthly,
 		},
 	})
-	response, quality, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
+	response, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -57,14 +57,11 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 	if response.DistanceKM != 5000 {
 		t.Fatalf("expected distance_km 5000, got %f", response.DistanceKM)
 	}
-	if quality.SampleCount != 155 { // 100 + 50 + 5
-		t.Fatalf("expected sample_count 155, got %d", quality.SampleCount)
-	}
 }
 
 func TestV2LifecycleServiceCarNotFound(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: false})
-	_, _, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
+	_, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
 	if !errors.Is(err, errV2CarNotFound) {
 		t.Fatalf("expected car not found, got %v", err)
 	}
@@ -72,7 +69,7 @@ func TestV2LifecycleServiceCarNotFound(t *testing.T) {
 
 func TestV2LifecycleServiceInvalidCarID(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
-	_, _, err := service.BuildLifecycle(context.Background(), "bad", time.Time{})
+	_, err := service.BuildLifecycle(context.Background(), "bad", time.Time{})
 	if err == nil || err.Error() != "invalid car id" {
 		t.Fatalf("expected invalid car id, got %v", err)
 	}
@@ -87,7 +84,7 @@ func TestV2LifecycleServiceBuildTimeline(t *testing.T) {
 		},
 		hasMore: false,
 	})
-	response, quality, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
+	response, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -97,9 +94,6 @@ func TestV2LifecycleServiceBuildTimeline(t *testing.T) {
 	if response.Total != 2 {
 		t.Fatalf("expected total 2, got %d", response.Total)
 	}
-	if quality.SampleCount != 2 {
-		t.Fatalf("expected sample_count 2, got %d", quality.SampleCount)
-	}
 }
 
 func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
@@ -107,7 +101,7 @@ func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
 		exists: true,
 		events: nil,
 	})
-	response, _, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
+	response, err := service.BuildTimeline(context.Background(), "1", nil, 50, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -118,7 +112,7 @@ func TestV2LifecycleServiceTimelineEmpty(t *testing.T) {
 
 func TestV2LifecycleServiceTimelineDefaultLimit(t *testing.T) {
 	service := NewV2LifecycleService(&fakeV2LifecycleRepository{exists: true})
-	response, _, err := service.BuildTimeline(context.Background(), "1", nil, 0, nil, nil)
+	response, err := service.BuildTimeline(context.Background(), "1", nil, 0, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

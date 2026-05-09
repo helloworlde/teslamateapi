@@ -48,7 +48,7 @@ func TestV2ParkingServiceBuildParkingWithComparison(t *testing.T) {
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
 	previousStart := start.Add(-end.Sub(start))
 
-	response, quality, carID, err := service.BuildParking(context.Background(), "1", V2TimeRange{
+	response, carID, err := service.BuildParking(context.Background(), "1", V2TimeRange{
 		Period:        "custom",
 		Timezone:      "UTC",
 		Compare:       "previous_period",
@@ -67,22 +67,13 @@ func TestV2ParkingServiceBuildParkingWithComparison(t *testing.T) {
 	if comparison.Delta == nil || *comparison.Delta != 200 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}
-	if quality.SampleCount != 6 {
-		t.Fatalf("unexpected sample count: %#v", quality)
-	}
 }
 
 func TestV2ParkingServiceNoStatesWarns(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{exists: true})
-	_, quality, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{Compare: "none"})
+	_, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{Compare: "none"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if quality.Complete {
-		t.Fatalf("expected incomplete quality: %#v", quality)
-	}
-	if len(quality.MissingFields) == 0 {
-		t.Fatalf("expected missing fields: %#v", quality)
 	}
 }
 
@@ -92,12 +83,9 @@ func TestV2ParkingServiceLocationsAddsInferenceWarning(t *testing.T) {
 		locations: []V2ParkingLocationItem{{LocationName: "Home", ParkingSessionCount: 1, ParkedDurationMin: 60}},
 		stats:     V2ParkingStats{SessionRows: 1},
 	})
-	response, quality, _, err := service.BuildParkingLocations(context.Background(), "1", V2TimeRange{})
+	_, _, err := service.BuildParkingLocations(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(response.Items) != 1 || quality.Complete {
-		t.Fatalf("unexpected response quality: response=%#v quality=%#v", response, quality)
 	}
 }
 
@@ -114,7 +102,7 @@ func TestV2ParkingServiceStatesPercent(t *testing.T) {
 		},
 		stats: V2ParkingStats{StateRows: 2},
 	})
-	response, _, _, err := service.BuildParkingStates(context.Background(), "1", V2TimeRange{})
+	response, _, err := service.BuildParkingStates(context.Background(), "1", V2TimeRange{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -125,7 +113,7 @@ func TestV2ParkingServiceStatesPercent(t *testing.T) {
 
 func TestV2ParkingServiceRejectsInvalidCarID(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{exists: true})
-	_, _, _, err := service.BuildParking(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildParking(context.Background(), "bad", V2TimeRange{})
 	if err == nil {
 		t.Fatal("expected invalid car id error")
 	}

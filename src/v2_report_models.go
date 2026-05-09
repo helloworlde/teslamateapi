@@ -1,10 +1,9 @@
 package main
 
 type V2ReportSection struct {
-	Type        string                 `json:"type"`
-	Title       string                 `json:"title"`
-	Metrics     map[string]interface{} `json:"metrics"`
-	DataQuality V2DataQuality          `json:"data_quality"`
+	Type    string                 `json:"type"`
+	Title   string                 `json:"title"`
+	Metrics map[string]interface{} `json:"metrics"`
 }
 
 type V2ReportResponse struct {
