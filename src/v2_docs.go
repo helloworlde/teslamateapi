@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -16,7 +17,11 @@ const scalarLocalScriptPath = "/api/docs/assets/scalar-api-reference.js"
 //go:embed docs_assets/*
 var docsAssetFS embed.FS
 
+//go:embed generated/swagger.json
+var embeddedSwaggerJSON []byte
+
 func RegisterDocsRoutes(api *gin.RouterGroup) {
+	spec := swaggerSpecForDocs()
 	api.GET("/docs", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/api/docs/scalar")
 	})
@@ -27,11 +32,22 @@ func RegisterDocsRoutes(api *gin.RouterGroup) {
 	api.GET("/docs/assets/*filepath", ServeDocsAsset)
 	api.GET("/docs/scalar", scalargin.Handler(&scalar.Options{
 		CDN:         scalarLocalScriptPath,
-		SpecContent: map[string]interface{}(buildOpenAPISpec()),
+		SpecContent: spec,
 		CustomOptions: scalar.CustomOptions{
 			PageTitle: "TeslaMateApi Reference",
 		},
 	}))
+}
+
+func swaggerSpecForDocs() map[string]interface{} {
+	var spec map[string]interface{}
+	if err := json.Unmarshal(embeddedSwaggerJSON, &spec); err != nil {
+		panic("invalid embedded generated/swagger.json: " + err.Error())
+	}
+	if info, ok := spec["info"].(map[string]interface{}); ok {
+		info["version"] = apiVersion
+	}
+	return spec
 }
 
 func ServeDocsAsset(c *gin.Context) {
@@ -64,367 +80,5 @@ func docsAssetContentType(path string) string {
 }
 
 func V2OpenAPISpec(c *gin.Context) {
-	c.JSON(http.StatusOK, buildOpenAPISpec())
-}
-
-func buildOpenAPISpec() gin.H {
-	errorSchema := gin.H{
-		"type": "object",
-		"properties": gin.H{
-			"error": gin.H{
-				"type": "object",
-				"properties": gin.H{
-					"code":    gin.H{"type": "string"},
-					"message": gin.H{"type": "string"},
-					"details": gin.H{},
-				},
-				"required": []string{"code", "message"},
-			},
-		},
-		"required": []string{"error"},
-	}
-
-	return gin.H{
-		"openapi": "3.0.3",
-		"info": gin.H{
-			"title":       "TeslaMateApi",
-			"description": "REST API for TeslaMate data, including V1 basic resources and V2 objective analytics.",
-			"version":     apiVersion,
-		},
-		"servers": []gin.H{{"url": "/api"}},
-		"tags": []gin.H{
-			{"name": "V1", "description": "Existing V1 TeslaMate resource endpoints."},
-			{"name": "V2 Summary", "description": "V2 analytics base and summary endpoints."},
-			{"name": "V2 Driving Analytics", "description": "V2 objective driving statistics, trends, distributions, and rankings."},
-			{"name": "V2 Charging Analytics", "description": "V2 objective charging statistics, trends, locations, types, and costs."},
-			{"name": "V2 Parking Analytics", "description": "V2 objective parking duration, state, location, and estimated drain analytics."},
-			{"name": "V2 Battery Analytics", "description": "V2 objective battery range samples, estimated full-range trends, and battery level distributions."},
-			{"name": "V2 Efficiency Analytics", "description": "V2 objective efficiency statistics and factual factor groupings."},
-			{"name": "V2 Cost Analytics", "description": "V2 objective charging-cost statistics with explicit included and excluded cost scopes."},
-			{"name": "V2 Location Analytics", "description": "V2 objective usage metrics grouped by geofence or address."},
-		},
-		"paths": gin.H{
-			"/v1/":                                gin.H{"get": simpleOperation("V1", "V1 API root", "Returns the V1 API root status.")},
-			"/v1/cars":                            gin.H{"get": simpleOperation("V1", "List cars", "Returns cars from TeslaMate.")},
-			"/v1/cars/{CarID}":                    gin.H{"get": simpleCarOperation("V1", "Get car", "Returns one TeslaMate car.")},
-			"/v1/cars/{CarID}/battery-health":     gin.H{"get": simpleCarOperation("V1", "Get battery health", "Returns V1 battery health data.")},
-			"/v1/cars/{CarID}/charges":            gin.H{"get": simpleCarOperation("V1", "List charges", "Returns V1 charging sessions.")},
-			"/v1/cars/{CarID}/charges/current":    gin.H{"get": simpleCarOperation("V1", "Get current charge", "Returns the active V1 charging session.")},
-			"/v1/cars/{CarID}/charges/{ChargeID}": gin.H{"get": operationWithParams("V1", "Get charge", "Returns one V1 charging session.", []gin.H{carIDParam(), pathParam("ChargeID", "integer")})},
-			"/v1/cars/{CarID}/command":            gin.H{"get": simpleCarOperation("V1", "List commands", "Returns enabled command information.")},
-			"/v1/cars/{CarID}/command/{Command}":  gin.H{"post": operationWithParams("V1", "Run command", "Runs a V1 Tesla command when command support is enabled.", []gin.H{carIDParam(), pathParam("Command", "string")})},
-			"/v1/cars/{CarID}/drives":             gin.H{"get": simpleCarOperation("V1", "List drives", "Returns V1 drives.")},
-			"/v1/cars/{CarID}/drives/{DriveID}":   gin.H{"get": operationWithParams("V1", "Get drive", "Returns one V1 drive.", []gin.H{carIDParam(), pathParam("DriveID", "integer")})},
-			"/v1/cars/{CarID}/logging":            gin.H{"get": simpleCarOperation("V1", "Get logging commands", "Returns V1 logging command information.")},
-			"/v1/cars/{CarID}/logging/{Command}":  gin.H{"put": operationWithParams("V1", "Run logging command", "Runs a V1 logging command.", []gin.H{carIDParam(), pathParam("Command", "string")})},
-			"/v1/cars/{CarID}/status":             gin.H{"get": simpleCarOperation("V1", "Get car status", "Returns V1 MQTT status.")},
-			"/v1/cars/{CarID}/updates":            gin.H{"get": simpleCarOperation("V1", "List updates", "Returns V1 update history.")},
-			"/v1/cars/{CarID}/wake_up":            gin.H{"post": simpleCarOperation("V1", "Wake car", "Runs the V1 wake_up command.")},
-			"/v1/globalsettings":                  gin.H{"get": simpleOperation("V1", "Get global settings", "Returns TeslaMate settings.")},
-			"/v2": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Summary"},
-					"summary":     "V2 API capability information",
-					"description": "Returns the V2 analytics API version, scope, and advertised feature groups.",
-					"responses":   okJSONResponse("V2 API information"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/summary": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Summary"},
-					"summary":     "V2 period summary analytics",
-					"description": "Returns objective driving, charging, parking, battery, update, and charging-cost metrics for one car in a selected period.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses": gin.H{
-						"200": gin.H{"description": "V2 summary response", "content": jsonContent(gin.H{"type": "object"})},
-						"400": gin.H{"description": "Invalid request", "content": jsonContent(errorSchema)},
-						"404": gin.H{"description": "Car not found", "content": jsonContent(errorSchema)},
-						"500": gin.H{"description": "Internal error", "content": jsonContent(errorSchema)},
-					},
-				},
-			},
-			"/v2/cars/{CarID}/analytics/driving": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Driving Analytics"},
-					"summary":     "V2 driving analytics summary",
-					"description": "Returns objective driving statistics and optional previous-period comparison for one car.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 driving analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/driving/timeseries": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Driving Analytics"},
-					"summary":     "V2 driving analytics timeseries",
-					"description": "Returns driving metrics grouped by day, week, month, or year for charting.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
-					),
-					"responses": analyticsResponses("V2 driving timeseries response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/driving/distribution": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Driving Analytics"},
-					"summary":     "V2 driving analytics distribution",
-					"description": "Returns drive-count, distance, and duration distribution for a selected factual dimension.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("dimension", "string", []string{"hour_of_day", "day_of_week", "distance_bucket", "duration_bucket", "speed_bucket", "consumption_bucket", "temperature_bucket"}),
-					),
-					"responses": analyticsResponses("V2 driving distribution response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/driving/ranking": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Driving Analytics"},
-					"summary":     "V2 driving analytics ranking",
-					"description": "Returns objective top drives or top driving days by selected ranking type.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("type", "string", []string{"longest_distance", "longest_duration", "highest_speed", "lowest_consumption", "highest_consumption", "highest_distance_day"}),
-						queryParam("limit", "integer", nil),
-					),
-					"responses": analyticsResponses("V2 driving ranking response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/charging": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Charging Analytics"},
-					"summary":     "V2 charging analytics summary",
-					"description": "Returns objective charging statistics and optional previous-period comparison for one car.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 charging analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/charging/timeseries": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Charging Analytics"},
-					"summary":     "V2 charging analytics timeseries",
-					"description": "Returns charging metrics grouped by day, week, month, or year for charting.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
-					),
-					"responses": analyticsResponses("V2 charging timeseries response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/charging/locations": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Charging Analytics"},
-					"summary":     "V2 charging analytics by location",
-					"description": "Returns objective charging metrics grouped by geofence or address.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 charging locations response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/charging/types": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Charging Analytics"},
-					"summary":     "V2 charging analytics by charger type",
-					"description": "Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 charging types response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/charging/cost": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Charging Analytics"},
-					"summary":     "V2 charging cost analytics",
-					"description": "Returns objective charging cost, energy, and distance-normalized cost metrics.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
-					),
-					"responses": analyticsResponses("V2 charging cost response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/parking": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Parking Analytics"},
-					"summary":     "V2 parking analytics summary",
-					"description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 parking analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/parking/locations": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Parking Analytics"},
-					"summary":     "V2 parking analytics by location",
-					"description": "Returns inferred parking sessions and parked duration grouped by geofence or address.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 parking locations response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/parking/states": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Parking Analytics"},
-					"summary":     "V2 parking state analytics",
-					"description": "Returns online, asleep, offline, and unknown state durations, shares, and transition counts.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 parking states response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/battery": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Battery Analytics"},
-					"summary":     "V2 battery analytics summary",
-					"description": "Returns latest battery samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 battery analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/battery/timeseries": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Battery Analytics"},
-					"summary":     "V2 battery analytics timeseries",
-					"description": "Returns estimated full rated and ideal range grouped by day, week, month, or year.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
-					),
-					"responses": analyticsResponses("V2 battery timeseries response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/battery/distribution": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Battery Analytics"},
-					"summary":     "V2 battery level distribution",
-					"description": "Returns battery_level sample counts grouped into 10 percent buckets.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 battery distribution response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/efficiency": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Efficiency Analytics"},
-					"summary":     "V2 efficiency analytics summary",
-					"description": "Returns objective drive efficiency metrics, including estimated energy consumption, consumption range, average temperature, and average speed.",
-					"parameters":  append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-					"responses":   analyticsResponses("V2 efficiency analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/efficiency/factors": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Efficiency Analytics"},
-					"summary":     "V2 efficiency factor analytics",
-					"description": "Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("dimension", "string", []string{"temperature", "speed", "distance", "elevation", "location", "hour_of_day", "day_of_week"}),
-					),
-					"responses": analyticsResponses("V2 efficiency factors response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/cost": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Cost Analytics"},
-					"summary":     "V2 cost analytics",
-					"description": "Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("group_by", "string", []string{"day", "week", "month", "year"}),
-					),
-					"responses": analyticsResponses("V2 cost analytics response"),
-				},
-			},
-			"/v2/cars/{CarID}/analytics/locations": gin.H{
-				"get": gin.H{
-					"tags":        []string{"V2 Location Analytics"},
-					"summary":     "V2 location analytics",
-					"description": "Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.",
-					"parameters": append(append([]gin.H{carIDParam()}, analyticsQueryParams()...),
-						queryParam("sort", "string", []string{"drive_start_count_desc", "drive_end_count_desc", "charging_session_count_desc", "parking_duration_desc", "charging_cost_desc"}),
-					),
-					"responses": analyticsResponses("V2 location analytics response"),
-				},
-			},
-		},
-	}
-}
-
-func simpleOperation(tag string, summary string, description string) gin.H {
-	return operationWithParams(tag, summary, description, nil)
-}
-
-func simpleCarOperation(tag string, summary string, description string) gin.H {
-	return operationWithParams(tag, summary, description, []gin.H{carIDParam()})
-}
-
-func operationWithParams(tag string, summary string, description string, params []gin.H) gin.H {
-	operation := gin.H{
-		"tags":        []string{tag},
-		"summary":     summary,
-		"description": description,
-		"responses":   okJSONResponse("Successful response"),
-	}
-	if len(params) > 0 {
-		operation["parameters"] = params
-	}
-	return operation
-}
-
-func okJSONResponse(description string) gin.H {
-	return gin.H{"200": gin.H{"description": description, "content": jsonContent(gin.H{"type": "object"})}}
-}
-
-func analyticsResponses(description string) gin.H {
-	return gin.H{
-		"200": gin.H{"description": description, "content": jsonContent(gin.H{"type": "object"})},
-		"400": gin.H{"description": "Invalid request", "content": jsonContent(apiErrorSchema())},
-		"404": gin.H{"description": "Car not found", "content": jsonContent(apiErrorSchema())},
-		"500": gin.H{"description": "Internal error", "content": jsonContent(apiErrorSchema())},
-	}
-}
-
-func apiErrorSchema() gin.H {
-	return gin.H{
-		"type": "object",
-		"properties": gin.H{
-			"error": gin.H{
-				"type": "object",
-				"properties": gin.H{
-					"code":    gin.H{"type": "string"},
-					"message": gin.H{"type": "string"},
-					"details": gin.H{},
-				},
-				"required": []string{"code", "message"},
-			},
-		},
-		"required": []string{"error"},
-	}
-}
-
-func jsonContent(schema gin.H) gin.H {
-	return gin.H{"application/json": gin.H{"schema": schema}}
-}
-
-func carIDParam() gin.H {
-	return pathParam("CarID", "integer")
-}
-
-func pathParam(name string, schemaType string) gin.H {
-	return gin.H{
-		"name":     name,
-		"in":       "path",
-		"required": true,
-		"schema":   gin.H{"type": schemaType},
-	}
-}
-
-func analyticsQueryParams() []gin.H {
-	return []gin.H{
-		queryParam("period", "string", []string{"day", "week", "month", "quarter", "year", "custom", "lifetime"}),
-		queryParam("start", "string", nil),
-		queryParam("end", "string", nil),
-		queryParam("timezone", "string", nil),
-		queryParam("compare", "string", []string{"none", "previous_period", "previous_year", "lifetime_average"}),
-	}
-}
-
-func queryParam(name string, schemaType string, enum []string) gin.H {
-	schema := gin.H{"type": schemaType}
-	if len(enum) > 0 {
-		schema["enum"] = enum
-	}
-	return gin.H{
-		"name":     name,
-		"in":       "query",
-		"required": false,
-		"schema":   schema,
-	}
+	c.JSON(http.StatusOK, swaggerSpecForDocs())
 }
