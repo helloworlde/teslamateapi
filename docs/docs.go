@@ -54,6 +54,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -146,6 +147,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -226,6 +228,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -318,6 +321,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -410,6 +414,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -502,6 +507,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -582,6 +588,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -674,6 +681,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -754,6 +762,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -846,6 +855,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -938,6 +948,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1033,6 +1044,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1133,6 +1145,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1225,6 +1238,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1305,6 +1319,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1389,7 +1404,7 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/lifecycle": {
             "get": {
-                "description": "Returns cumulative lifetime statistics for a car since the first recorded data point.",
+                "description": "Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.",
                 "produces": [
                     "application/json"
                 ],
@@ -1400,42 +1415,16 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
                         "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
+                        "description": "Cutoff datetime in RFC3339 format. Defaults to now.",
+                        "name": "as_of",
                         "in": "query"
                     }
                 ],
@@ -1480,6 +1469,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1573,6 +1563,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1665,6 +1656,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1745,6 +1737,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1825,6 +1818,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1917,6 +1911,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -1997,6 +1992,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2077,6 +2073,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2173,6 +2170,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
@@ -2248,7 +2246,7 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/timeline": {
             "get": {
-                "description": "Returns a unified chronological timeline of drive, charging, update, and state events.",
+                "description": "Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.",
                 "produces": [
                     "application/json"
                 ],
@@ -2259,43 +2257,11 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Car ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -2306,18 +2272,20 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "default": 50,
-                        "description": "Max results",
+                        "description": "Max results per page",
                         "name": "limit",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
                         "type": "string",
-                        "description": "Sort order",
-                        "name": "order",
+                        "description": "Return events before this RFC3339 timestamp (cursor, DESC order)",
+                        "name": "before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Return events after this RFC3339 timestamp (cursor, ASC order)",
+                        "name": "after",
                         "in": "query"
                     }
                 ],
@@ -2817,6 +2785,21 @@ const docTemplate = `{
         "main.V2ChargingSummary": {
             "type": "object",
             "properties": {
+                "avg_cost": {
+                    "type": "number"
+                },
+                "avg_duration_min": {
+                    "type": "number"
+                },
+                "avg_energy_added_kwh": {
+                    "type": "number"
+                },
+                "avg_power_kw": {
+                    "type": "number"
+                },
+                "charge_efficiency_percent": {
+                    "type": "number"
+                },
                 "cost": {
                     "type": "number"
                 },
@@ -2827,6 +2810,18 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "energy_used_kwh": {
+                    "type": "number"
+                },
+                "largest_session_kwh": {
+                    "type": "number"
+                },
+                "longest_session_duration_min": {
+                    "type": "number"
+                },
+                "max_cost": {
+                    "type": "number"
+                },
+                "max_power_kw": {
                     "type": "number"
                 },
                 "session_count": {
@@ -3060,29 +3055,6 @@ const docTemplate = `{
                 }
             }
         },
-        "main.V2DataQuality": {
-            "type": "object",
-            "properties": {
-                "complete": {
-                    "type": "boolean"
-                },
-                "missing_fields": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "sample_count": {
-                    "type": "integer"
-                },
-                "warnings": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "main.V2DrivingAPIResponse": {
             "type": "object",
             "properties": {
@@ -3266,6 +3238,18 @@ const docTemplate = `{
                 "avg_consumption_wh_per_km": {
                     "type": "number"
                 },
+                "avg_duration_min": {
+                    "type": "number"
+                },
+                "avg_speed_kmh": {
+                    "type": "number"
+                },
+                "avg_trip_distance_km": {
+                    "type": "number"
+                },
+                "best_efficiency_wh_per_km": {
+                    "type": "number"
+                },
                 "distance_km": {
                     "type": "number"
                 },
@@ -3275,7 +3259,22 @@ const docTemplate = `{
                 "duration_min": {
                     "type": "number"
                 },
+                "longest_drive_duration_min": {
+                    "type": "number"
+                },
                 "max_speed_kmh": {
+                    "type": "number"
+                },
+                "net_energy_kwh": {
+                    "type": "number"
+                },
+                "peak_drive_power_kw": {
+                    "type": "number"
+                },
+                "peak_regen_power_kw": {
+                    "type": "number"
+                },
+                "worst_efficiency_wh_per_km": {
                     "type": "number"
                 }
             }
@@ -3536,6 +3535,9 @@ const docTemplate = `{
         "main.V2LifecycleResponse": {
             "type": "object",
             "properties": {
+                "as_of": {
+                    "type": "string"
+                },
                 "avg_consumption_wh_per_km": {
                     "type": "number"
                 },
@@ -3651,9 +3653,6 @@ const docTemplate = `{
                 },
                 "compare": {
                     "type": "string"
-                },
-                "data_quality": {
-                    "$ref": "#/definitions/main.V2DataQuality"
                 },
                 "end": {
                     "type": "string"
@@ -3897,9 +3896,6 @@ const docTemplate = `{
         "main.V2ReportSection": {
             "type": "object",
             "properties": {
-                "data_quality": {
-                    "$ref": "#/definitions/main.V2DataQuality"
-                },
                 "metrics": {
                     "type": "object",
                     "additionalProperties": true
@@ -3932,6 +3928,9 @@ const docTemplate = `{
                 },
                 "updates": {
                     "$ref": "#/definitions/main.V2UpdateSummary"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/main.V2VehicleSummary"
                 }
             }
         },
@@ -4003,6 +4002,12 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/main.V2TimelineEvent"
                     }
+                },
+                "has_more": {
+                    "type": "boolean"
+                },
+                "next_cursor": {
+                    "type": "string"
                 },
                 "total": {
                     "type": "integer"
@@ -4082,10 +4087,52 @@ const docTemplate = `{
         "main.V2UpdateVersion": {
             "type": "object",
             "properties": {
+                "avg_consumption_kwh_per_100km": {
+                    "type": "number"
+                },
+                "battery_energy_kwh": {
+                    "type": "number"
+                },
+                "charge_cost": {
+                    "type": "number"
+                },
+                "charge_efficiency_percent": {
+                    "type": "number"
+                },
+                "charging_duration_min": {
+                    "type": "number"
+                },
+                "charging_session_count": {
+                    "type": "integer"
+                },
                 "completed_at": {
                     "type": "string"
                 },
+                "days_since_prior": {
+                    "type": "integer"
+                },
+                "drive_efficiency_wh_per_km": {
+                    "type": "number"
+                },
+                "driving_distance_km": {
+                    "type": "number"
+                },
+                "driving_duration_min": {
+                    "type": "number"
+                },
+                "driving_trip_count": {
+                    "type": "integer"
+                },
                 "duration_min": {
+                    "type": "number"
+                },
+                "inactive_duration_min": {
+                    "type": "number"
+                },
+                "interval_min": {
+                    "type": "number"
+                },
+                "net_drive_energy_kwh": {
                     "type": "number"
                 },
                 "started_at": {
@@ -4093,6 +4140,47 @@ const docTemplate = `{
                 },
                 "version": {
                     "type": "string"
+                },
+                "wall_energy_kwh": {
+                    "type": "number"
+                },
+                "window_end": {
+                    "type": "string"
+                },
+                "window_start": {
+                    "type": "string"
+                }
+            }
+        },
+        "main.V2VehicleSummary": {
+            "type": "object",
+            "properties": {
+                "charge_efficiency_percent": {
+                    "type": "number"
+                },
+                "odometer_coverage_percent": {
+                    "type": "number"
+                },
+                "odometer_km": {
+                    "type": "number"
+                },
+                "rated_efficiency_kwh_per_100km": {
+                    "type": "number"
+                },
+                "tracked_charges": {
+                    "type": "integer"
+                },
+                "tracked_consumption_kwh_per_100km": {
+                    "type": "number"
+                },
+                "tracked_distance_km": {
+                    "type": "number"
+                },
+                "tracked_drives": {
+                    "type": "integer"
+                },
+                "tracked_wall_kwh_per_100km": {
+                    "type": "number"
                 }
             }
         }

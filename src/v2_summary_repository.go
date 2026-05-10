@@ -356,7 +356,7 @@ func (r PostgresV2SummaryRepository) loadVehicleSummary(ctx context.Context, car
 	var odometer sql.NullFloat64
 	var ratedEfficiency sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
-		SELECT MAX(d.end_km) AS odometer_km, c.efficiency AS rated_efficiency
+		SELECT MAX(d.end_km) AS odometer_km, MAX(c.efficiency) AS rated_efficiency
 		FROM drives d
 		LEFT JOIN cars c ON c.id = d.car_id
 		WHERE d.car_id = $1 AND d.end_date IS NOT NULL`,
