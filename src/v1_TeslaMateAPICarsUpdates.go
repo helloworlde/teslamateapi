@@ -5,7 +5,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsUpdatesV1 func
+// TeslaMateAPICarsUpdatesV1 godoc
+//
+// @Summary List firmware updates for one car
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/updates [get]
 func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
 	// define error messages

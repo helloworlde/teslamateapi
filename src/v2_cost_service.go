@@ -7,12 +7,14 @@ type V2CostRepository interface {
 	Cost(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) (V2CostResponse, V2CostStats, error)
 }
 
+// @name V2CostStats
 type V2CostStats struct {
 	SessionRows    int64
 	CostRows       int64
 	EnergyUsedRows int64
 }
 
+// @name V2CostService
 type V2CostService struct {
 	repository V2CostRepository
 }

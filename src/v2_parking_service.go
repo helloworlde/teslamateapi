@@ -9,12 +9,14 @@ type V2ParkingRepository interface {
 	StateBreakdown(ctx context.Context, carID int64, timeRange V2TimeRange) (V2ParkingStatesResponse, V2ParkingStats, error)
 }
 
+// @name V2ParkingStats
 type V2ParkingStats struct {
 	StateRows    int64
 	SessionRows  int64
 	PositionRows int64
 }
 
+// @name V2ParkingService
 type V2ParkingService struct {
 	repository V2ParkingRepository
 }

@@ -21,11 +21,12 @@ help:
 	@echo "  fmt / vet        格式化、静态检查"
 	@echo "  clean-docs      删除 swag 生成的三个文件（不删 $(DOCS_OUT) 下 .md 等）"
 	@echo "  check            fmt + vet + test + build"
-	@echo "说明: 线上 Scalar 使用 src/v2_docs.go 内嵌的 OpenAPI 3，与 swag 产物独立。"
+	@echo "说明: Scalar 使用 src/v2_docs.go 嵌入的 generated/swagger.json（已去掉 definitions 的 main. 前缀）。"
 
 docs swagger:
 	$(GO) run $(SWAG_PKG) init -g $(SWAG_GENERAL) -d $(SWAG_DIR) -o $(DOCS_OUT)
 	rm -f $(DOCS_OUT)/docs.go
+	python3 scripts/normalize_swagger_main_prefix.py $(DOCS_OUT)
 
 build:
 	@mkdir -p $(BIN_DIR)

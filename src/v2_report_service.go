@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// @name V2ReportService
 type V2ReportService struct {
 	summaryBuilder    V2SummaryBuilder
 	drivingBuilder    V2DrivingBuilder

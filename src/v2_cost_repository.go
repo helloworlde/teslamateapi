@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// @name PostgresV2CostRepository
 type PostgresV2CostRepository struct {
 	db *sql.DB
 }

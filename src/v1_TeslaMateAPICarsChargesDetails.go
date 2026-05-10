@@ -7,7 +7,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsChargesDetailsV1 func
+// TeslaMateAPICarsChargesDetailsV1 godoc
+//
+// @Summary Get one charging session by ID
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param ChargeID path int true "Charge ID"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/charges/{ChargeID} [get]
 func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 
 	// define error messages

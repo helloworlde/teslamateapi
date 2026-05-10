@@ -1,5 +1,6 @@
 package main
 
+// @name V2Insight
 type V2Insight struct {
 	ID             string                 `json:"id"`
 	Category       string                 `json:"category"`
@@ -12,12 +13,14 @@ type V2Insight struct {
 	Evidence       map[string]interface{} `json:"evidence"`
 }
 
+// @name V2InsightResponse
 type V2InsightResponse struct {
 	Insights []V2Insight `json:"insights"`
 	Total    int         `json:"total"`
 }
 
 // V2InsightAPIResponse is the swagger wrapper for insights
+// @name V2InsightAPIResponse
 type V2InsightAPIResponse struct {
 	Data V2InsightResponse `json:"data"`
 	Meta V2Meta            `json:"meta"`

@@ -11,11 +11,13 @@ type V2BatteryRepository interface {
 	Distribution(ctx context.Context, carID int64, timeRange V2TimeRange) ([]V2BatteryDistributionItem, V2BatteryStats, error)
 }
 
+// @name V2BatteryStats
 type V2BatteryStats struct {
 	SampleRows         int64
 	InvalidBatteryRows int64
 }
 
+// @name V2BatteryService
 type V2BatteryService struct {
 	repository V2BatteryRepository
 }

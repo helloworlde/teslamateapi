@@ -12,7 +12,15 @@ const (
 	maxChargeInactivityThresholdMinutes = 15
 )
 
-// TeslaMateAPICarsChargesCurrentV1 func
+// TeslaMateAPICarsChargesCurrentV1 godoc
+//
+// @Summary Get active charging session if any
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/charges/current [get]
 func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 
 	// define error messages

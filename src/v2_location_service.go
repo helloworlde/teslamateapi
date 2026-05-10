@@ -12,6 +12,7 @@ type V2LocationRepository interface {
 	Locations(ctx context.Context, carID int64, timeRange V2TimeRange, sort string) ([]V2LocationAnalyticsItem, V2LocationStats, error)
 }
 
+// @name V2LocationStats
 type V2LocationStats struct {
 	DriveStartRows int64
 	DriveEndRows   int64
@@ -19,6 +20,7 @@ type V2LocationStats struct {
 	ParkingRows    int64
 }
 
+// @name V2LocationService
 type V2LocationService struct {
 	repository V2LocationRepository
 }

@@ -14,6 +14,7 @@ type timeBound struct {
 	Time string
 }
 
+// @name V2SummaryStats
 type V2SummaryStats struct {
 	DriveRows    int64
 	ChargeRows   int64
@@ -23,6 +24,7 @@ type V2SummaryStats struct {
 	CostRows     int64
 }
 
+// @name PostgresV2SummaryRepository
 type PostgresV2SummaryRepository struct {
 	db *sql.DB
 }
@@ -249,7 +251,7 @@ func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, ca
 	}
 	if summary.Charging.EnergyUsedKWh > 0 {
 		eff := summary.Charging.EnergyAddedKWh / summary.Charging.EnergyUsedKWh * 100
-		summary.Charging.ChargeEfficiencyPercent = &eff
+		summary.Charging.ChargingEfficiencyPercent = &eff
 	}
 	if avgCost.Valid {
 		summary.Charging.AvgCost = &avgCost.Float64
@@ -387,8 +389,8 @@ func (r PostgresV2SummaryRepository) loadVehicleSummary(ctx context.Context, car
 		wall := summary.Charging.EnergyUsedKWh / summary.Driving.DistanceKM * 100
 		summary.Vehicle.TrackedWallKWhPer100KM = &wall
 	}
-	if summary.Charging.ChargeEfficiencyPercent != nil {
-		summary.Vehicle.ChargeEfficiencyPercent = summary.Charging.ChargeEfficiencyPercent
+	if summary.Charging.ChargingEfficiencyPercent != nil {
+		summary.Vehicle.ChargingEfficiencyPercent = summary.Charging.ChargingEfficiencyPercent
 	}
 	return nil
 }

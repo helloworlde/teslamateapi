@@ -7,7 +7,14 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPIGlobalsettingsV1 func
+// TeslaMateAPIGlobalsettingsV1 godoc
+//
+// @Summary Get TeslaMate global settings
+// @Tags V1
+// @Produce json
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/globalsettings [get]
 func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 
 	// define error messages

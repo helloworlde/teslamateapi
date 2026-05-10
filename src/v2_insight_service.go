@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// @name V2InsightService
 type V2InsightService struct {
 	drivingBuilder  V2DrivingBuilder
 	chargingBuilder V2ChargingBuilder

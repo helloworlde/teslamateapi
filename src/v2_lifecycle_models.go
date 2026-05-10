@@ -1,5 +1,6 @@
 package main
 
+// @name V2LifecycleResponse
 type V2LifecycleResponse struct {
 	AsOf                  *string  `json:"as_of,omitempty"`
 	FirstRecordedAt       *string  `json:"first_recorded_at,omitempty"`
@@ -18,6 +19,7 @@ type V2LifecycleResponse struct {
 	CostPer100KM          *float64 `json:"cost_per_100km,omitempty"`
 }
 
+// @name V2TimelineEvent
 type V2TimelineEvent struct {
 	Type      string                 `json:"type"`
 	ID        int64                  `json:"id"`
@@ -27,6 +29,7 @@ type V2TimelineEvent struct {
 	Metrics   map[string]interface{} `json:"metrics,omitempty"`
 }
 
+// @name V2TimelineResponse
 type V2TimelineResponse struct {
 	Events     []V2TimelineEvent `json:"events"`
 	Total      int64             `json:"total"`
@@ -35,12 +38,14 @@ type V2TimelineResponse struct {
 }
 
 // V2LifecycleAPIResponse is the swagger wrapper for lifecycle analytics
+// @name V2LifecycleAPIResponse
 type V2LifecycleAPIResponse struct {
 	Data V2LifecycleResponse `json:"data"`
 	Meta V2Meta              `json:"meta"`
 }
 
 // V2TimelineAPIResponse is the swagger wrapper for timeline analytics
+// @name V2TimelineAPIResponse
 type V2TimelineAPIResponse struct {
 	Data V2TimelineResponse `json:"data"`
 	Meta V2Meta             `json:"meta"`

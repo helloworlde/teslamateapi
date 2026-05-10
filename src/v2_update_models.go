@@ -1,5 +1,6 @@
 package main
 
+// @name V2UpdateAnalyticsResponse
 type V2UpdateAnalyticsResponse struct {
 	UpdateCount          int64             `json:"update_count"`
 	LatestVersion        *string           `json:"latest_version,omitempty"`
@@ -8,6 +9,7 @@ type V2UpdateAnalyticsResponse struct {
 	Versions             []V2UpdateVersion `json:"versions"`
 }
 
+// @name V2UpdateVersion
 type V2UpdateVersion struct {
 	Version     string   `json:"version"`
 	StartedAt   string   `json:"started_at"`
@@ -26,17 +28,18 @@ type V2UpdateVersion struct {
 	DriveEfficiencyWhPerKM    *float64 `json:"drive_efficiency_wh_per_km,omitempty"`
 	AvgConsumptionKWhPer100KM *float64 `json:"avg_consumption_kwh_per_100km,omitempty"`
 
-	ChargingSessionCount    *int64   `json:"charging_session_count,omitempty"`
-	ChargingDurationMin     *float64 `json:"charging_duration_min,omitempty"`
-	BatteryEnergyKWh        *float64 `json:"battery_energy_kwh,omitempty"`
-	WallEnergyKWh           *float64 `json:"wall_energy_kwh,omitempty"`
-	ChargeEfficiencyPercent *float64 `json:"charge_efficiency_percent,omitempty"`
-	ChargeCost              *float64 `json:"charge_cost,omitempty"`
+	ChargingSessionCount      *int64   `json:"charging_session_count,omitempty"`
+	ChargingDurationMin       *float64 `json:"charging_duration_min,omitempty"`
+	BatteryEnergyKWh          *float64 `json:"battery_energy_kwh,omitempty"`
+	WallEnergyKWh             *float64 `json:"wall_energy_kwh,omitempty"`
+	ChargingEfficiencyPercent *float64 `json:"charging_efficiency_percent,omitempty"`
+	ChargeCost                *float64 `json:"charge_cost,omitempty"`
 
 	InactiveDurationMin *float64 `json:"inactive_duration_min,omitempty"`
 }
 
 // V2UpdateAnalyticsAPIResponse is the swagger wrapper for update analytics
+// @name V2UpdateAnalyticsAPIResponse
 type V2UpdateAnalyticsAPIResponse struct {
 	Data V2UpdateAnalyticsResponse `json:"data"`
 	Meta V2Meta                    `json:"meta"`

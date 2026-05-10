@@ -11,6 +11,7 @@ import (
 )
 
 // NullInt64 is an alias for sql.NullInt64 data type
+// @name NullInt64
 type NullInt64 struct {
 	sql.NullInt64
 }
@@ -24,6 +25,7 @@ func (ni *NullInt64) MarshalJSON() ([]byte, error) {
 }
 
 // NullBool is an alias for sql.NullBool data type
+// @name NullBool
 type NullBool struct {
 	sql.NullBool
 }
@@ -37,6 +39,7 @@ func (nb *NullBool) MarshalJSON() ([]byte, error) {
 }
 
 // NullFloat64 is an alias for sql.NullFloat64 data type
+// @name NullFloat64
 type NullFloat64 struct {
 	sql.NullFloat64
 }

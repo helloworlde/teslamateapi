@@ -47,12 +47,14 @@ type V2DrivingRepository interface {
 	Ranking(ctx context.Context, carID int64, timeRange V2TimeRange, rankingType string, limit int) ([]V2DrivingRankingItem, V2DrivingStats, error)
 }
 
+// @name V2DrivingStats
 type V2DrivingStats struct {
 	DriveRows          int64
 	EnergyEstimateRows int64
 	TemperatureRows    int64
 }
 
+// @name V2DrivingService
 type V2DrivingService struct {
 	repository V2DrivingRepository
 }
@@ -155,7 +157,7 @@ func (s V2DrivingService) BuildRanking(ctx context.Context, carIDParam string, t
 	if err != nil {
 		return V2DrivingRankingResponse{}, 0, err
 	}
-	return V2DrivingRankingResponse{Type: rankingType, Items: items}, carID, nil
+	return V2DrivingRankingResponse{RankingType: rankingType, Items: items}, carID, nil
 }
 
 func parseV2CarID(carIDParam string) (int64, error) {

@@ -1,54 +1,66 @@
 package main
 
+// @name V2ChargingAPIResponse
 type V2ChargingAPIResponse struct {
 	Data V2ChargingResponse `json:"data"`
 	Meta V2Meta             `json:"meta"`
 }
 
+// @name V2ChargingResponse
 type V2ChargingResponse struct {
-	Summary    V2ChargingAnalyticsSummary   `json:"summary"`
+	Summary V2ChargingAnalyticsSummary `json:"summary"`
+	// Comparison keys: summary metric field names (e.g. energy_added_kwh, session_count).
 	Comparison map[string]V2ComparisonValue `json:"comparison,omitempty"`
 }
 
+// @name V2ChargingTimeseriesAPIResponse
 type V2ChargingTimeseriesAPIResponse struct {
 	Data V2ChargingTimeseriesResponse `json:"data"`
 	Meta V2Meta                       `json:"meta"`
 }
 
+// @name V2ChargingTimeseriesResponse
 type V2ChargingTimeseriesResponse struct {
 	GroupBy string                     `json:"group_by"`
 	Items   []V2ChargingTimeseriesItem `json:"items"`
 }
 
+// @name V2ChargingLocationsAPIResponse
 type V2ChargingLocationsAPIResponse struct {
 	Data V2ChargingLocationsResponse `json:"data"`
 	Meta V2Meta                      `json:"meta"`
 }
 
+// @name V2ChargingLocationsResponse
 type V2ChargingLocationsResponse struct {
 	Items []V2ChargingLocationItem `json:"items"`
 }
 
+// @name V2ChargingTypesAPIResponse
 type V2ChargingTypesAPIResponse struct {
 	Data V2ChargingTypesResponse `json:"data"`
 	Meta V2Meta                  `json:"meta"`
 }
 
+// @name V2ChargingTypesResponse
 type V2ChargingTypesResponse struct {
 	Items []V2ChargingTypeItem `json:"items"`
 }
 
+// @name V2ChargingCostAPIResponse
 type V2ChargingCostAPIResponse struct {
 	Data V2ChargingCostResponse `json:"data"`
 	Meta V2Meta                 `json:"meta"`
 }
 
+// @name V2ChargingCostResponse
 type V2ChargingCostResponse struct {
 	Summary        V2ChargingCostSummary        `json:"summary"`
 	CostByPeriod   []V2ChargingCostPeriodItem   `json:"cost_by_period,omitempty"`
 	CostByLocation []V2ChargingCostLocationItem `json:"cost_by_location,omitempty"`
 }
 
+// @name V2ChargingAnalyticsSummary
 type V2ChargingAnalyticsSummary struct {
 	SessionCount              int64    `json:"session_count"`
 	EnergyAddedKWh            float64  `json:"energy_added_kwh"`
@@ -68,6 +80,7 @@ type V2ChargingAnalyticsSummary struct {
 	DCEnergyKWh               float64  `json:"dc_energy_kwh"`
 }
 
+// @name V2ChargingTimeseriesItem
 type V2ChargingTimeseriesItem struct {
 	PeriodStart    string   `json:"period_start"`
 	SessionCount   int64    `json:"session_count"`
@@ -78,6 +91,7 @@ type V2ChargingTimeseriesItem struct {
 	AvgPowerKW     *float64 `json:"avg_power_kw,omitempty"`
 }
 
+// @name V2ChargingLocationItem
 type V2ChargingLocationItem struct {
 	LocationName              string   `json:"location_name"`
 	GeofenceID                *int64   `json:"geofence_id,omitempty"`
@@ -89,6 +103,7 @@ type V2ChargingLocationItem struct {
 	ChargingEfficiencyPercent *float64 `json:"charging_efficiency_percent,omitempty"`
 }
 
+// @name V2ChargingTypeItem
 type V2ChargingTypeItem struct {
 	ChargingType   string   `json:"charging_type"`
 	SessionCount   int64    `json:"session_count"`
@@ -97,6 +112,7 @@ type V2ChargingTypeItem struct {
 	Cost           *float64 `json:"cost,omitempty"`
 }
 
+// @name V2ChargingCostSummary
 type V2ChargingCostSummary struct {
 	ChargingCost  *float64 `json:"charging_cost,omitempty"`
 	EnergyUsedKWh *float64 `json:"energy_used_kwh,omitempty"`
@@ -106,12 +122,14 @@ type V2ChargingCostSummary struct {
 	CostPer100KM  *float64 `json:"cost_per_100km,omitempty"`
 }
 
+// @name V2ChargingCostPeriodItem
 type V2ChargingCostPeriodItem struct {
 	PeriodStart   string   `json:"period_start"`
 	ChargingCost  *float64 `json:"charging_cost,omitempty"`
 	EnergyUsedKWh *float64 `json:"energy_used_kwh,omitempty"`
 }
 
+// @name V2ChargingCostLocationItem
 type V2ChargingCostLocationItem struct {
 	LocationName  string   `json:"location_name"`
 	ChargingCost  *float64 `json:"charging_cost,omitempty"`

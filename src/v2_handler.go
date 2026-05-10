@@ -75,6 +75,7 @@ type V2InsightBuilder interface {
 	BuildInsights(ctx context.Context, carIDParam string, timeRange V2TimeRange, category string, minSeverity string) (V2InsightResponse, error)
 }
 
+// @name V2Handlers
 type V2Handlers struct {
 	summaryBuilder    V2SummaryBuilder
 	drivingBuilder    V2DrivingBuilder
@@ -258,7 +259,7 @@ func (h V2Handlers) Info(c *gin.Context) {
 // @Description Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.
 // @Tags V2 Summary
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -306,7 +307,7 @@ func (h V2Handlers) Summary(c *gin.Context) {
 // @Description Returns objective driving statistics and optional previous-period comparison for one car.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -341,7 +342,7 @@ func (h V2Handlers) Driving(c *gin.Context) {
 // @Description Returns driving metrics grouped by day, week, month, or year for charting.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -372,7 +373,7 @@ func (h V2Handlers) DrivingTimeseries(c *gin.Context) {
 // @Description Returns drive-count, distance, and duration distribution for a selected factual dimension.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -403,7 +404,7 @@ func (h V2Handlers) DrivingDistribution(c *gin.Context) {
 // @Description Returns objective top drives or top driving days by selected ranking type.
 // @Tags V2 Driving Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -454,7 +455,7 @@ func handleV2DrivingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective charging statistics and optional previous-period comparison for one car.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -489,7 +490,7 @@ func (h V2Handlers) Charging(c *gin.Context) {
 // @Description Returns charging metrics grouped by day, week, month, or year for charting.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -520,7 +521,7 @@ func (h V2Handlers) ChargingTimeseries(c *gin.Context) {
 // @Description Returns objective charging metrics grouped by geofence or address.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -550,7 +551,7 @@ func (h V2Handlers) ChargingLocations(c *gin.Context) {
 // @Description Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -580,7 +581,7 @@ func (h V2Handlers) ChargingTypes(c *gin.Context) {
 // @Description Returns objective charging cost, energy, and distance-normalized cost metrics.
 // @Tags V2 Charging Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -626,7 +627,7 @@ func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -661,7 +662,7 @@ func (h V2Handlers) Parking(c *gin.Context) {
 // @Description Returns inferred parking sessions and parked duration grouped by geofence or address.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -691,7 +692,7 @@ func (h V2Handlers) ParkingLocations(c *gin.Context) {
 // @Description Returns online, asleep, offline, and unknown state durations, shares, and transition counts.
 // @Tags V2 Parking Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -734,7 +735,7 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -769,7 +770,7 @@ func (h V2Handlers) Battery(c *gin.Context) {
 // @Description Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -800,7 +801,7 @@ func (h V2Handlers) BatteryTimeseries(c *gin.Context) {
 // @Description Returns battery_level sample counts grouped into 10 percent buckets from 0-10 through 90-100.
 // @Tags V2 Battery Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -845,7 +846,7 @@ func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
 // @Description Returns objective drive efficiency metrics, including estimated energy consumption, average/best/worst consumption, average temperature, and average speed.
 // @Tags V2 Efficiency Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -879,7 +880,7 @@ func (h V2Handlers) Efficiency(c *gin.Context) {
 // @Description Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.
 // @Tags V2 Efficiency Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -923,7 +924,7 @@ func handleV2EfficiencyError(c *gin.Context, err error) {
 // @Description Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.
 // @Tags V2 Cost Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -971,7 +972,7 @@ func handleV2CostError(c *gin.Context, err error) {
 // @Description Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.
 // @Tags V2 Location Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -1019,11 +1020,12 @@ func handleV2LocationError(c *gin.Context, err error) {
 // @Description Returns OTA update history statistics for a car in the selected period.
 // @Tags V2 Update Analytics
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
 // @Param timezone query string false "IANA timezone"
+// @Param compare query string false "Comparison mode (accepted for meta consistency; response has no comparison block)" Enums(none, previous_period, previous_year, lifetime_average)
 // @Success 200 {object} V2UpdateAnalyticsAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -1053,7 +1055,7 @@ func (h V2Handlers) Updates(c *gin.Context) {
 // @Description Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.
 // @Tags V2 Lifecycle
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param as_of query string false "Cutoff datetime in RFC3339 format. Defaults to now."
 // @Success 200 {object} V2LifecycleAPIResponse
 // @Failure 400 {object} APIErrorResponse
@@ -1095,7 +1097,7 @@ func (h V2Handlers) Lifecycle(c *gin.Context) {
 // @Description Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.
 // @Tags V2 Lifecycle
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param type query string false "Comma-separated event types: drive,charging,update"
 // @Param limit query int false "Max results per page" default(50)
 // @Param before query string false "Return events before this RFC3339 timestamp (cursor, DESC order)"
@@ -1152,7 +1154,7 @@ func (h V2Handlers) Timeline(c *gin.Context) {
 // @Description Returns per-day aggregated statistics for calendar/heatmap views. All dates in the requested range are returned, with zeros for days without data.
 // @Tags V2 Calendar
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start date (YYYY-MM-DD or RFC3339)"
 // @Param end query string false "End date (YYYY-MM-DD or RFC3339)"
@@ -1186,7 +1188,7 @@ func (h V2Handlers) Calendar(c *gin.Context) {
 // @Description Returns a structured period report combining multiple analytics modules. Only sections with data are included.
 // @Tags V2 Reports
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"
@@ -1223,7 +1225,7 @@ func (h V2Handlers) Reports(c *gin.Context) {
 // @Description Returns factual, evidence-backed insights based on period comparison. No subjective evaluations.
 // @Tags V2 Insights
 // @Produce json
-// @Param CarID path int true "Car ID" default(1)
+// @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom, lifetime)
 // @Param start query string false "Start datetime in RFC3339 format"
 // @Param end query string false "End datetime in RFC3339 format"

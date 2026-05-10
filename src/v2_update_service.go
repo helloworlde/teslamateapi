@@ -9,6 +9,7 @@ type V2UpdateRepository interface {
 	Updates(ctx context.Context, carID int64, start, end timeBound) (V2UpdateAnalyticsResponse, int64, error)
 }
 
+// @name V2UpdateService
 type V2UpdateService struct {
 	repository V2UpdateRepository
 }

@@ -1,24 +1,29 @@
 package main
 
+// @name V2EfficiencyAPIResponse
 type V2EfficiencyAPIResponse struct {
 	Data V2EfficiencyResponse `json:"data"`
 	Meta V2Meta               `json:"meta"`
 }
 
+// @name V2EfficiencyResponse
 type V2EfficiencyResponse struct {
 	Summary V2EfficiencySummary `json:"summary"`
 }
 
+// @name V2EfficiencyFactorsAPIResponse
 type V2EfficiencyFactorsAPIResponse struct {
 	Data V2EfficiencyFactorsResponse `json:"data"`
 	Meta V2Meta                      `json:"meta"`
 }
 
+// @name V2EfficiencyFactorsResponse
 type V2EfficiencyFactorsResponse struct {
 	Dimension string                   `json:"dimension"`
 	Items     []V2EfficiencyFactorItem `json:"items"`
 }
 
+// @name V2EfficiencySummary
 type V2EfficiencySummary struct {
 	DriveCount                    int64    `json:"drive_count"`
 	DistanceKM                    float64  `json:"distance_km"`
@@ -31,6 +36,7 @@ type V2EfficiencySummary struct {
 	EstimatedRegeneratedEnergyKWh *float64 `json:"estimated_regenerated_energy_kwh,omitempty"`
 }
 
+// @name V2EfficiencyFactorItem
 type V2EfficiencyFactorItem struct {
 	Bucket                     string   `json:"bucket"`
 	DriveCount                 int64    `json:"drive_count"`

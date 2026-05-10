@@ -12,7 +12,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsCommandV1 func
+// TeslaMateAPICarsCommandV1 godoc
+//
+// @Summary Tesla vehicle commands (when ENABLE_COMMANDS is true)
+// @Description GET returns enabled_commands. POST proxies to Tesla Owner API; response body follows Tesla API JSON. Also registered as POST /v1/cars/{CarID}/wake_up.
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param Command path string false "Remote command path segment (POST only)"
+// @Success 200 {object} V1EnabledCommandsResponse "GET returns this shape. POST proxies Tesla API — response body is dynamic JSON (same HTTP 200)."
+// @Failure 200 {object} V1ErrorEnvelope
+// @Failure 401 {object} V1ErrorEnvelope
+// @Failure 403 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/command [get]
+// @Router /v1/cars/{CarID}/commands [get]
+// @Router /v1/cars/{CarID}/command/{Command} [post]
+// @Router /v1/cars/{CarID}/wake_up [post]
 func TeslaMateAPICarsCommandV1(c *gin.Context) {
 
 	// creating required vars

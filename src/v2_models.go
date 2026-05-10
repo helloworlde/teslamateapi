@@ -25,6 +25,7 @@ var (
 	}
 )
 
+// @name V2AnalyticsQuery
 type V2AnalyticsQuery struct {
 	Period   string `form:"period" json:"period" example:"month"`
 	Start    string `form:"start" json:"start" example:"2026-05-01T00:00:00+08:00"`
@@ -36,6 +37,7 @@ type V2AnalyticsQuery struct {
 	Include  string `form:"include" json:"include,omitempty" example:"summary,comparison,timeseries"`
 }
 
+// @name V2TimeRange
 type V2TimeRange struct {
 	Period        string
 	Timezone      string
@@ -46,6 +48,7 @@ type V2TimeRange struct {
 	PreviousEnd   *time.Time
 }
 
+// @name V2Unit
 type V2Unit struct {
 	Distance    string `json:"distance" example:"km"`
 	Energy      string `json:"energy" example:"kWh"`
@@ -54,32 +57,37 @@ type V2Unit struct {
 	Currency    string `json:"currency" example:"CNY"`
 }
 
+// @name V2Meta
 type V2Meta struct {
-	CarID       int64  `json:"car_id,omitempty"`
-	Period      string `json:"period,omitempty"`
-	Timezone    string `json:"timezone,omitempty"`
-	Start       string `json:"start,omitempty"`
-	End         string `json:"end,omitempty"`
-	Compare     string `json:"compare,omitempty"`
+	CarID       int64  `json:"car_id,omitempty" example:"1"`
+	Period      string `json:"period,omitempty" enums:"day,week,month,quarter,year,custom,lifetime"`
+	Timezone    string `json:"timezone,omitempty" example:"Asia/Shanghai"`
+	Start       string `json:"start,omitempty" format:"date-time"`
+	End         string `json:"end,omitempty" format:"date-time"`
+	Compare     string `json:"compare,omitempty" enums:"none,previous_period,previous_year,lifetime_average"`
 	Unit        V2Unit `json:"unit"`
-	GeneratedAt string `json:"generated_at"`
+	GeneratedAt string `json:"generated_at" format:"date-time"`
 }
 
+// @name V2APIResponse
 type V2APIResponse struct {
 	Data interface{} `json:"data"`
 	Meta V2Meta      `json:"meta"`
 }
 
+// @name APIErrorResponse
 type APIErrorResponse struct {
 	Error APIErrorBody `json:"error"`
 }
 
+// @name APIErrorBody
 type APIErrorBody struct {
 	Code    string      `json:"code"`
 	Message string      `json:"message"`
-	Details interface{} `json:"details,omitempty"`
+	Details interface{} `json:"details,omitempty" swaggertype:"object"`
 }
 
+// @name V2ComparisonValue
 type V2ComparisonValue struct {
 	Current      *float64 `json:"current,omitempty"`
 	Previous     *float64 `json:"previous,omitempty"`
@@ -87,27 +95,33 @@ type V2ComparisonValue struct {
 	DeltaPercent *float64 `json:"delta_percent,omitempty"`
 }
 
+// @name V2InfoResponse
 type V2InfoResponse struct {
 	Version  string   `json:"version" example:"v2"`
 	Scope    string   `json:"scope" example:"analytics"`
 	Features []string `json:"features"`
 }
 
+// @name V2InfoAPIResponse
 type V2InfoAPIResponse struct {
 	Data V2InfoResponse `json:"data"`
 	Meta V2Meta         `json:"meta"`
 }
 
+// @name V2SummaryAPIResponse
 type V2SummaryAPIResponse struct {
 	Data V2SummaryResponse `json:"data"`
 	Meta V2Meta            `json:"meta"`
 }
 
+// @name V2SummaryResponse
 type V2SummaryResponse struct {
-	Summary    V2Summary                    `json:"summary"`
+	Summary V2Summary `json:"summary"`
+	// Comparison keys: driving/charging/parking/battery/updates/vehicle/cost field paths; values are current vs previous period.
 	Comparison map[string]V2ComparisonValue `json:"comparison,omitempty"`
 }
 
+// @name V2Summary
 type V2Summary struct {
 	Driving  V2DrivingSummary  `json:"driving"`
 	Charging V2ChargingSummary `json:"charging"`
@@ -118,6 +132,7 @@ type V2Summary struct {
 	Cost     V2CostSummary     `json:"cost"`
 }
 
+// @name V2DrivingSummary
 type V2DrivingSummary struct {
 	DriveCount              int64    `json:"drive_count"`
 	DistanceKM              float64  `json:"distance_km"`
@@ -135,6 +150,7 @@ type V2DrivingSummary struct {
 	WorstEfficiencyWhPerKM  *float64 `json:"worst_efficiency_wh_per_km,omitempty"`
 }
 
+// @name V2ChargingSummary
 type V2ChargingSummary struct {
 	SessionCount              int64    `json:"session_count"`
 	EnergyAddedKWh            float64  `json:"energy_added_kwh"`
@@ -146,24 +162,26 @@ type V2ChargingSummary struct {
 	LargestSessionKWh         *float64 `json:"largest_session_kwh,omitempty"`
 	AvgPowerKW                *float64 `json:"avg_power_kw,omitempty"`
 	MaxPowerKW                *float64 `json:"max_power_kw,omitempty"`
-	ChargeEfficiencyPercent   *float64 `json:"charge_efficiency_percent,omitempty"`
+	ChargingEfficiencyPercent *float64 `json:"charging_efficiency_percent,omitempty"`
 	Cost                      float64  `json:"cost"`
 	AvgCost                   *float64 `json:"avg_cost,omitempty"`
 	MaxCost                   *float64 `json:"max_cost,omitempty"`
 }
 
+// @name V2VehicleSummary
 type V2VehicleSummary struct {
 	OdometerKM                    *float64 `json:"odometer_km,omitempty"`
 	RatedEfficiencyKWhPer100KM    *float64 `json:"rated_efficiency_kwh_per_100km,omitempty"`
 	TrackedConsumptionKWhPer100KM *float64 `json:"tracked_consumption_kwh_per_100km,omitempty"`
 	TrackedWallKWhPer100KM        *float64 `json:"tracked_wall_kwh_per_100km,omitempty"`
-	ChargeEfficiencyPercent       *float64 `json:"charge_efficiency_percent,omitempty"`
+	ChargingEfficiencyPercent     *float64 `json:"charging_efficiency_percent,omitempty"`
 	OdometerCoveragePercent       *float64 `json:"odometer_coverage_percent,omitempty"`
 	TrackedDistanceKM             float64  `json:"tracked_distance_km"`
 	TrackedDrives                 int64    `json:"tracked_drives"`
 	TrackedCharges                int64    `json:"tracked_charges"`
 }
 
+// @name V2ParkingSummary
 type V2ParkingSummary struct {
 	ParkedDurationMin   float64 `json:"parked_duration_min"`
 	AsleepDurationMin   float64 `json:"asleep_duration_min"`
@@ -172,17 +190,20 @@ type V2ParkingSummary struct {
 	VampireDrainPercent float64 `json:"vampire_drain_percent"`
 }
 
+// @name V2BatterySummary
 type V2BatterySummary struct {
 	LatestBatteryLevelPercent *int64   `json:"latest_battery_level_percent,omitempty"`
 	LatestRatedRangeKM        *float64 `json:"latest_rated_range_km,omitempty"`
 	LatestIdealRangeKM        *float64 `json:"latest_ideal_range_km,omitempty"`
 }
 
+// @name V2UpdateSummary
 type V2UpdateSummary struct {
 	UpdateCount   int64   `json:"update_count"`
 	LatestVersion *string `json:"latest_version,omitempty"`
 }
 
+// @name V2CostSummary
 type V2CostSummary struct {
 	ChargingCost float64  `json:"charging_cost"`
 	CostPerKM    *float64 `json:"cost_per_km,omitempty"`

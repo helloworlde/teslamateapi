@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// @name PostgresV2CalendarRepository
 type PostgresV2CalendarRepository struct {
 	db *sql.DB
 }

@@ -7,7 +7,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsDrivesV1 func
+// TeslaMateAPICarsDrivesV1 godoc
+//
+// @Summary List drives for one car
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param page query int false "Result page"
+// @Param show query int false "Page size"
+// @Param startDate query string false "Filter start date"
+// @Param endDate query string false "Filter end date"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/drives [get]
 func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	// define error messages

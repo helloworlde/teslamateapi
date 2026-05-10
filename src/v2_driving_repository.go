@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// @name PostgresV2DrivingRepository
 type PostgresV2DrivingRepository struct {
 	db *sql.DB
 }

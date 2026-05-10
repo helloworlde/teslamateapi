@@ -23,6 +23,7 @@ type V2EfficiencyRepository interface {
 	Factors(ctx context.Context, carID int64, timeRange V2TimeRange, dimension string) ([]V2EfficiencyFactorItem, V2EfficiencyStats, error)
 }
 
+// @name V2EfficiencyStats
 type V2EfficiencyStats struct {
 	DriveRows          int64
 	EnergyEstimateRows int64
@@ -30,6 +31,7 @@ type V2EfficiencyStats struct {
 	ElevationRows      int64
 }
 
+// @name V2EfficiencyService
 type V2EfficiencyService struct {
 	repository V2EfficiencyRepository
 }

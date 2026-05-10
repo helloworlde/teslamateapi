@@ -12,6 +12,7 @@ type V2CalendarRepository interface {
 	DailyUpdates(ctx context.Context, carID int64, start, end timeBound, location *time.Location) (map[string]int64, error)
 }
 
+// @name V2CalendarService
 type V2CalendarService struct {
 	repository V2CalendarRepository
 }

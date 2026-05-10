@@ -5,7 +5,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsBatteryHealthV1 func
+// TeslaMateAPICarsBatteryHealthV1 godoc
+//
+// @Summary Get battery health for one car
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/battery-health [get]
 func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	var CarsBatteryHealthError1 = "Unable to load battery health data."
 	CarID := convertStringToInteger(c.Param("CarID"))

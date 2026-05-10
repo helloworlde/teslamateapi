@@ -12,6 +12,7 @@ type V2LifecycleRepository interface {
 	Timeline(ctx context.Context, carID int64, eventTypes []string, limit int, before, after *time.Time) ([]V2TimelineEvent, bool, *time.Time, error)
 }
 
+// @name V2LifecycleService
 type V2LifecycleService struct {
 	repository V2LifecycleRepository
 }

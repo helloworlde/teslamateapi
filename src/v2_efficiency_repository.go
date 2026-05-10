@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// @name PostgresV2EfficiencyRepository
 type PostgresV2EfficiencyRepository struct {
 	db *sql.DB
 }

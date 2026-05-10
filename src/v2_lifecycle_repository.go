@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// @name PostgresV2LifecycleRepository
 type PostgresV2LifecycleRepository struct {
 	db *sql.DB
 }

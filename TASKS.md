@@ -73,9 +73,8 @@ find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -w
 
 ```bash
 TZ=Asia/Shanghai \
-ENCRYPTION_KEY=teslamate \
 DATABASE_USER=teslamate \
-DATABASE_PASS=pass \
+DATABASE_PASS=Ihaveapen1! \
 DATABASE_NAME=teslamate \
 DATABASE_HOST=192.168.2.7 \
 DATABASE_PORT=5433 \

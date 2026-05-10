@@ -5,6 +5,7 @@ import (
 	"database/sql"
 )
 
+// @name PostgresV2ParkingRepository
 type PostgresV2ParkingRepository struct {
 	db *sql.DB
 }

@@ -13,6 +13,7 @@ var (
 	errV2CompareUnsupported = errors.New("compare mode is not implemented")
 )
 
+// @name V2SummaryService
 type V2SummaryService struct {
 	repository V2SummaryRepository
 }

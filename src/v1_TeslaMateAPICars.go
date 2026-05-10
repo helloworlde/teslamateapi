@@ -5,7 +5,17 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsV1 func
+// TeslaMateAPICarsV1 godoc
+//
+// @Summary List TeslaMate cars or get one car
+// @Description Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.
+// @Tags V1
+// @Produce json
+// @Param CarID path int false "Car ID (omit for list)"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars [get]
+// @Router /v1/cars/{CarID} [get]
 func TeslaMateAPICarsV1(c *gin.Context) {
 
 	// define error messages

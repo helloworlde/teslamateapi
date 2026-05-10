@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// @name PostgresV2LocationRepository
 type PostgresV2LocationRepository struct {
 	db *sql.DB
 }

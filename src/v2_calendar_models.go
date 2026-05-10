@@ -1,5 +1,6 @@
 package main
 
+// @name V2CalendarDay
 type V2CalendarDay struct {
 	Date                 string          `json:"date"`
 	DriveCount           int64           `json:"drive_count"`
@@ -14,17 +15,20 @@ type V2CalendarDay struct {
 	ActivityLevel        V2ActivityLevel `json:"activity_level"`
 }
 
+// @name V2ActivityLevel
 type V2ActivityLevel struct {
 	Driving      int `json:"driving"`
 	Charging     int `json:"charging"`
 	ParkingDrain int `json:"parking_drain"`
 }
 
+// @name V2CalendarResponse
 type V2CalendarResponse struct {
 	Days []V2CalendarDay `json:"days"`
 }
 
 // V2CalendarAPIResponse is the swagger wrapper for calendar analytics
+// @name V2CalendarAPIResponse
 type V2CalendarAPIResponse struct {
 	Data V2CalendarResponse `json:"data"`
 	Meta V2Meta             `json:"meta"`

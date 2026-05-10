@@ -13,6 +13,7 @@ type V2ChargingRepository interface {
 	Cost(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) (V2ChargingCostResponse, V2ChargingStats, error)
 }
 
+// @name V2ChargingStats
 type V2ChargingStats struct {
 	SessionRows    int64
 	EnergyUsedRows int64
@@ -20,6 +21,7 @@ type V2ChargingStats struct {
 	PowerRows      int64
 }
 
+// @name V2ChargingService
 type V2ChargingService struct {
 	repository V2ChargingRepository
 }

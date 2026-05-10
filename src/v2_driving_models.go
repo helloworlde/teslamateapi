@@ -1,45 +1,55 @@
 package main
 
+// @name V2DrivingAPIResponse
 type V2DrivingAPIResponse struct {
 	Data V2DrivingResponse `json:"data"`
 	Meta V2Meta            `json:"meta"`
 }
 
+// @name V2DrivingResponse
 type V2DrivingResponse struct {
-	Summary    V2DrivingAnalyticsSummary    `json:"summary"`
+	Summary V2DrivingAnalyticsSummary `json:"summary"`
+	// Comparison keys: summary metric field names (e.g. distance_km, drive_count).
 	Comparison map[string]V2ComparisonValue `json:"comparison,omitempty"`
 }
 
+// @name V2DrivingTimeseriesAPIResponse
 type V2DrivingTimeseriesAPIResponse struct {
 	Data V2DrivingTimeseriesResponse `json:"data"`
 	Meta V2Meta                      `json:"meta"`
 }
 
+// @name V2DrivingTimeseriesResponse
 type V2DrivingTimeseriesResponse struct {
 	GroupBy string                    `json:"group_by"`
 	Items   []V2DrivingTimeseriesItem `json:"items"`
 }
 
+// @name V2DrivingDistributionAPIResponse
 type V2DrivingDistributionAPIResponse struct {
 	Data V2DrivingDistributionResponse `json:"data"`
 	Meta V2Meta                        `json:"meta"`
 }
 
+// @name V2DrivingDistributionResponse
 type V2DrivingDistributionResponse struct {
 	Dimension string                      `json:"dimension"`
 	Items     []V2DrivingDistributionItem `json:"items"`
 }
 
+// @name V2DrivingRankingAPIResponse
 type V2DrivingRankingAPIResponse struct {
 	Data V2DrivingRankingResponse `json:"data"`
 	Meta V2Meta                   `json:"meta"`
 }
 
+// @name V2DrivingRankingResponse
 type V2DrivingRankingResponse struct {
-	Type  string                 `json:"type"`
-	Items []V2DrivingRankingItem `json:"items"`
+	RankingType string                 `json:"ranking_type"`
+	Items       []V2DrivingRankingItem `json:"items"`
 }
 
+// @name V2DrivingAnalyticsSummary
 type V2DrivingAnalyticsSummary struct {
 	DriveCount                    int64    `json:"drive_count"`
 	DistanceKM                    float64  `json:"distance_km"`
@@ -58,6 +68,7 @@ type V2DrivingAnalyticsSummary struct {
 	TotalDescentM                 float64  `json:"total_descent_m"`
 }
 
+// @name V2DrivingTimeseriesItem
 type V2DrivingTimeseriesItem struct {
 	PeriodStart                string   `json:"period_start"`
 	DriveCount                 int64    `json:"drive_count"`
@@ -68,6 +79,7 @@ type V2DrivingTimeseriesItem struct {
 	AvgConsumptionWhPerKM      *float64 `json:"avg_consumption_wh_per_km,omitempty"`
 }
 
+// @name V2DrivingDistributionItem
 type V2DrivingDistributionItem struct {
 	Bucket      string  `json:"bucket"`
 	DriveCount  int64   `json:"drive_count"`
@@ -75,6 +87,7 @@ type V2DrivingDistributionItem struct {
 	DurationMin float64 `json:"duration_min"`
 }
 
+// @name V2DrivingRankingItem
 type V2DrivingRankingItem struct {
 	Rank        int      `json:"rank"`
 	DriveID     *int64   `json:"drive_id,omitempty"`

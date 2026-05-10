@@ -12,7 +12,18 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsLoggingV1 func
+// TeslaMateAPICarsLoggingV1 godoc
+//
+// @Summary TeslaMate logging commands (when ENABLE_COMMANDS is true)
+// @Description GET returns enabled_commands list; PUT forwards to TeslaMate logging API.
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param Command path string false "Logging command (PUT)"
+// @Success 200 {object} V1EnabledCommandsResponse "GET returns this; PUT response shape varies (proxied to TeslaMate)"
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/logging [get]
+// @Router /v1/cars/{CarID}/logging/{Command} [put]
 func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 
 	// creating required vars

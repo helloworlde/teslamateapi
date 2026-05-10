@@ -1,15 +1,18 @@
 package main
 
+// @name V2LocationAnalyticsAPIResponse
 type V2LocationAnalyticsAPIResponse struct {
 	Data V2LocationAnalyticsResponse `json:"data"`
 	Meta V2Meta                      `json:"meta"`
 }
 
+// @name V2LocationAnalyticsResponse
 type V2LocationAnalyticsResponse struct {
 	Sort  string                    `json:"sort"`
 	Items []V2LocationAnalyticsItem `json:"items"`
 }
 
+// @name V2LocationAnalyticsItem
 type V2LocationAnalyticsItem struct {
 	LocationName         string   `json:"location_name"`
 	GeofenceID           *int64   `json:"geofence_id,omitempty"`

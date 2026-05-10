@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// @name PostgresV2UpdateRepository
 type PostgresV2UpdateRepository struct {
 	db *sql.DB
 }
@@ -207,7 +208,7 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 		}
 		if wallEnergy.Valid && wallEnergy.Float64 > 0 && batteryEnergy.Valid {
 			eff := batteryEnergy.Float64 / wallEnergy.Float64 * 100
-			v.ChargeEfficiencyPercent = &eff
+			v.ChargingEfficiencyPercent = &eff
 		}
 		if chargeCost.Valid {
 			v.ChargeCost = &chargeCost.Float64

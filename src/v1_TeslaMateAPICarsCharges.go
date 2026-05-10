@@ -7,7 +7,19 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TeslaMateAPICarsChargesV1 func
+// TeslaMateAPICarsChargesV1 godoc
+//
+// @Summary List charging sessions for one car
+// @Tags V1
+// @Produce json
+// @Param CarID path int true "Car ID"
+// @Param page query int false "Result page (default 1)"
+// @Param show query int false "Page size (default 100)"
+// @Param startDate query string false "Filter start date"
+// @Param endDate query string false "Filter end date"
+// @Success 200 {object} V1JSONEnvelope
+// @Failure 200 {object} V1ErrorEnvelope
+// @Router /v1/cars/{CarID}/charges [get]
 func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	// define error messages
