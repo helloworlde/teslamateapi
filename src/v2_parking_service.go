@@ -102,4 +102,3 @@ func buildV2ParkingComparison(current V2ParkingAnalyticsSummary, previous V2Park
 		"offline_duration_min":  compareFloat(current.OfflineDurationMin, previous.OfflineDurationMin),
 	}
 }
-

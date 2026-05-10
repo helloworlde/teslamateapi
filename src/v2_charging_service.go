@@ -144,4 +144,3 @@ func buildV2ChargingComparison(current V2ChargingAnalyticsSummary, previous V2Ch
 		"duration_min":     compareFloat(current.DurationMin, previous.DurationMin),
 	}
 }
-

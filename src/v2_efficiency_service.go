@@ -84,4 +84,3 @@ func (s V2EfficiencyService) ensureCarExists(ctx context.Context, carID int64) e
 	}
 	return nil
 }
-

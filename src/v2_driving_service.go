@@ -198,7 +198,6 @@ func buildV2DrivingComparison(current V2DrivingAnalyticsSummary, previous V2Driv
 	}
 }
 
-
 func v2LimitFromQuery(value string) int {
 	if value == "" {
 		return 10

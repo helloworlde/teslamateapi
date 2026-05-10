@@ -522,9 +522,9 @@ func TestV2LocationsRejectsInvalidSort(t *testing.T) {
 	}
 }
 
-func TestBuildOpenAPISpecIncludesV2Summary(t *testing.T) {
-	spec := buildOpenAPISpec()
-	paths, ok := spec["paths"].(gin.H)
+func TestSwaggerSpecFromAnnotationsIncludesV2Analytics(t *testing.T) {
+	spec := swaggerSpecForDocs()
+	paths, ok := spec["paths"].(map[string]interface{})
 	if !ok {
 		t.Fatal("paths missing from spec")
 	}

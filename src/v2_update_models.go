@@ -19,11 +19,11 @@ type V2UpdateVersion struct {
 	WindowEnd      *string  `json:"window_end,omitempty"`
 	IntervalMin    *float64 `json:"interval_min,omitempty"`
 
-	DrivingTripCount     *int64   `json:"driving_trip_count,omitempty"`
-	DrivingDurationMin   *float64 `json:"driving_duration_min,omitempty"`
-	DrivingDistanceKM    *float64 `json:"driving_distance_km,omitempty"`
-	NetDriveEnergyKWh    *float64 `json:"net_drive_energy_kwh,omitempty"`
-	DriveEfficiencyWhPerKM  *float64 `json:"drive_efficiency_wh_per_km,omitempty"`
+	DrivingTripCount          *int64   `json:"driving_trip_count,omitempty"`
+	DrivingDurationMin        *float64 `json:"driving_duration_min,omitempty"`
+	DrivingDistanceKM         *float64 `json:"driving_distance_km,omitempty"`
+	NetDriveEnergyKWh         *float64 `json:"net_drive_energy_kwh,omitempty"`
+	DriveEfficiencyWhPerKM    *float64 `json:"drive_efficiency_wh_per_km,omitempty"`
 	AvgConsumptionKWhPer100KM *float64 `json:"avg_consumption_kwh_per_100km,omitempty"`
 
 	ChargingSessionCount    *int64   `json:"charging_session_count,omitempty"`

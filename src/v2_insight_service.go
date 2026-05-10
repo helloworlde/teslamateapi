@@ -73,7 +73,6 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 			return V2InsightResponse{}, err
 		}
 
-
 		// Driving distance insight
 		if (category == "" || category == "driving") &&
 			currentDriving.Summary.DriveCount >= 5 && previousDriving.Summary.DriveCount >= 5 &&
@@ -119,7 +118,6 @@ func (s V2InsightService) BuildInsights(ctx context.Context, carIDParam string, 
 		if err != nil {
 			return V2InsightResponse{}, err
 		}
-
 
 		// Charging cost insight
 		if (category == "" || category == "cost") &&

@@ -61,7 +61,6 @@ func asTimeBound(t time.Time) timeBound {
 	return timeBound{Time: t.Format(time.RFC3339)}
 }
 
-
 func buildV2SummaryComparison(current V2Summary, previous V2Summary) map[string]V2ComparisonValue {
 	return map[string]V2ComparisonValue{
 		"driving.drive_count":       compareFloat(float64(current.Driving.DriveCount), float64(previous.Driving.DriveCount)),

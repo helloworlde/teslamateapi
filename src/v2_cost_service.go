@@ -55,4 +55,3 @@ func (s V2CostService) ensureCarExists(ctx context.Context, carID int64) error {
 	}
 	return nil
 }
-

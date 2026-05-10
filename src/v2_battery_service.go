@@ -114,4 +114,3 @@ func buildV2BatteryComparison(current V2BatteryAnalyticsSummary, previous V2Batt
 	}
 	return comparison
 }
-
