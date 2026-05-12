@@ -2,40 +2,60 @@ package main
 
 // @name V2UpdateAnalyticsResponse
 type V2UpdateAnalyticsResponse struct {
-	UpdateCount          int64             `json:"update_count"`
-	LatestVersion        *string           `json:"latest_version,omitempty"`
-	LatestUpdatedAt      *string           `json:"latest_updated_at,omitempty"`
-	AvgUpdateDurationMin *float64          `json:"avg_update_duration_min,omitempty"`
-	Versions             []V2UpdateVersion `json:"versions"`
+	UpdateCount     int64             `json:"update_count"`
+	LatestVersion   *string           `json:"latest_version,omitempty"`
+	LatestUpdatedAt *string           `json:"latest_updated_at,omitempty"`
+	AvgUpdateDuration *float64        `json:"avg_update_duration,omitempty"`
+	Versions        []V2UpdateVersion `json:"versions"`
 }
 
 // @name V2UpdateVersion
 type V2UpdateVersion struct {
-	Version     string   `json:"version"`
-	StartedAt   string   `json:"started_at"`
-	CompletedAt *string  `json:"completed_at,omitempty"`
-	DurationMin *float64 `json:"duration_min,omitempty"`
+	Event   V2UpdateEvent          `json:"event"`
+	Window  *V2UpdateWindow        `json:"window,omitempty"`
+	Metrics *V2UpdateWindowMetrics `json:"metrics,omitempty"`
+}
 
+// @name V2UpdateEvent
+type V2UpdateEvent struct {
+	Version        string   `json:"version"`
+	StartedAt      string   `json:"started_at"`
+	CompletedAt    *string  `json:"completed_at,omitempty"`
+	Duration       *float64 `json:"duration,omitempty"`
 	DaysSincePrior *int64   `json:"days_since_prior,omitempty"`
-	WindowStart    *string  `json:"window_start,omitempty"`
-	WindowEnd      *string  `json:"window_end,omitempty"`
-	IntervalMin    *float64 `json:"interval_min,omitempty"`
+}
 
-	DrivingTripCount          *int64   `json:"driving_trip_count,omitempty"`
-	DrivingDurationMin        *float64 `json:"driving_duration_min,omitempty"`
-	DrivingDistanceKM         *float64 `json:"driving_distance_km,omitempty"`
-	NetDriveEnergyKWh         *float64 `json:"net_drive_energy_kwh,omitempty"`
-	DriveEfficiencyWhPerKM    *float64 `json:"drive_efficiency_wh_per_km,omitempty"`
-	AvgConsumptionKWhPer100KM *float64 `json:"avg_consumption_kwh_per_100km,omitempty"`
+// @name V2UpdateWindow
+type V2UpdateWindow struct {
+	Start    string   `json:"start"`
+	End      string   `json:"end"`
+	Interval *float64 `json:"interval,omitempty"`
+}
 
-	ChargingSessionCount      *int64   `json:"charging_session_count,omitempty"`
-	ChargingDurationMin       *float64 `json:"charging_duration_min,omitempty"`
-	BatteryEnergyKWh          *float64 `json:"battery_energy_kwh,omitempty"`
-	WallEnergyKWh             *float64 `json:"wall_energy_kwh,omitempty"`
-	ChargingEfficiencyPercent *float64 `json:"charging_efficiency_percent,omitempty"`
-	ChargeCost                *float64 `json:"charge_cost,omitempty"`
+// @name V2UpdateWindowMetrics
+type V2UpdateWindowMetrics struct {
+	Driving          V2UpdateDrivingMetrics  `json:"driving"`
+	Charging         V2UpdateChargingMetrics `json:"charging"`
+	InactiveDuration *float64                `json:"inactive_duration,omitempty"`
+}
 
-	InactiveDurationMin *float64 `json:"inactive_duration_min,omitempty"`
+// @name V2UpdateDrivingMetrics
+type V2UpdateDrivingMetrics struct {
+	TripCount      int64    `json:"trip_count"`
+	Duration       float64  `json:"duration"`
+	Distance       float64  `json:"distance"`
+	NetEnergy      *float64 `json:"net_energy,omitempty"`
+	AvgConsumption *float64 `json:"avg_consumption,omitempty"`
+}
+
+// @name V2UpdateChargingMetrics
+type V2UpdateChargingMetrics struct {
+	SessionCount  int64    `json:"session_count"`
+	Duration      float64  `json:"duration"`
+	BatteryEnergy *float64 `json:"battery_energy,omitempty"`
+	WallEnergy    *float64 `json:"wall_energy,omitempty"`
+	Efficiency    *float64 `json:"efficiency,omitempty"`
+	Cost          *float64 `json:"cost,omitempty"`
 }
 
 // V2UpdateAnalyticsAPIResponse is the swagger wrapper for update analytics

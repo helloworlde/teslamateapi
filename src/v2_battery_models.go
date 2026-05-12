@@ -8,7 +8,7 @@ type V2BatteryAPIResponse struct {
 
 // @name V2BatteryResponse
 type V2BatteryResponse struct {
-	Summary V2BatteryAnalyticsSummary `json:"summary"`
+	Summary V2BatterySummary `json:"summary"`
 }
 
 // @name V2BatteryTimeseriesAPIResponse
@@ -23,25 +23,9 @@ type V2BatteryTimeseriesResponse struct {
 	Items   []V2BatteryTimeseriesItem `json:"items"`
 }
 
-// @name V2BatteryAnalyticsSummary
-type V2BatteryAnalyticsSummary struct {
-	LatestBatteryLevelPercent         *int64   `json:"latest_battery_level_percent,omitempty"`
-	LatestRatedRangeKM                *float64 `json:"latest_rated_range_km,omitempty"`
-	LatestIdealRangeKM                *float64 `json:"latest_ideal_range_km,omitempty"`
-	EstimatedRatedRangeAt100PercentKM *float64 `json:"estimated_rated_range_at_100_percent_km,omitempty"`
-	EstimatedIdealRangeAt100PercentKM *float64 `json:"estimated_ideal_range_at_100_percent_km,omitempty"`
-	BaselineRatedRangeAt100PercentKM  *float64 `json:"baseline_rated_range_at_100_percent_km,omitempty"`
-	BaselineIdealRangeAt100PercentKM  *float64 `json:"baseline_ideal_range_at_100_percent_km,omitempty"`
-	EstimatedRangeDegradationPercent  *float64 `json:"estimated_range_degradation_percent,omitempty"`
-	SampleCount                       int64    `json:"sample_count"`
-}
-
 // @name V2BatteryTimeseriesItem
 type V2BatteryTimeseriesItem struct {
-	PeriodStart                       string   `json:"period_start"`
-	EstimatedRatedRangeAt100PercentKM *float64 `json:"estimated_rated_range_at_100_percent_km,omitempty"`
-	EstimatedIdealRangeAt100PercentKM *float64 `json:"estimated_ideal_range_at_100_percent_km,omitempty"`
-	AvgBatteryLevelPercent            *float64 `json:"avg_battery_level_percent,omitempty"`
-	SampleCount                       int64    `json:"sample_count"`
+	PeriodStart       string          `json:"period_start"`
+	RangeAtFullCharge *V2BatteryRange `json:"range_at_full_charge,omitempty"`
+	AvgLevel          *float64        `json:"avg_level,omitempty"`
 }
-

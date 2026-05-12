@@ -30,7 +30,7 @@ type V2AnalyticsQuery struct {
 	Timezone string `form:"timezone" json:"timezone" example:"Asia/Shanghai"`
 	Compare  string `form:"compare" json:"compare" example:"previous_period"`
 	GroupBy  string `form:"group_by" json:"group_by,omitempty" example:"day"`
-	Metrics  string `form:"metrics" json:"metrics,omitempty" example:"distance_km,duration_min"`
+	Metrics  string `form:"metrics" json:"metrics,omitempty" example:"distance,duration"`
 	Include  string `form:"include" json:"include,omitempty" example:"summary,comparison,timeseries"`
 }
 
@@ -50,6 +50,10 @@ type V2Unit struct {
 	Distance    string `json:"distance" example:"km"`
 	Energy      string `json:"energy" example:"kWh"`
 	Power       string `json:"power" example:"kW"`
+	Speed       string `json:"speed" example:"km/h"`
+	Duration    string `json:"duration" example:"seconds"`
+	Elevation   string `json:"elevation" example:"m"`
+	Consumption string `json:"consumption" example:"Wh/km"`
 	Temperature string `json:"temperature" example:"C"`
 	Currency    string `json:"currency" example:"CNY"`
 }
@@ -138,69 +142,99 @@ type V2Summary struct {
 	Cost     V2CostSummary     `json:"cost"`
 }
 
+// V2DrivingSummary is the canonical driving aggregate; consumed by both
+// /analytics/summary and /analytics/driving.
+//
 // @name V2DrivingSummary
 type V2DrivingSummary struct {
 	DriveCount              int64    `json:"drive_count"`
-	DistanceKM              float64  `json:"distance_km"`
-	DurationMin             float64  `json:"duration_min"`
-	AvgTripDistanceKM       *float64 `json:"avg_trip_distance_km,omitempty"`
-	AvgDurationMin          *float64 `json:"avg_duration_min,omitempty"`
-	AvgSpeedKMH             *float64 `json:"avg_speed_kmh,omitempty"`
-	LongestDriveDurationMin *float64 `json:"longest_drive_duration_min,omitempty"`
-	MaxSpeedKMH             float64  `json:"max_speed_kmh"`
-	PeakDrivePowerKW        *float64 `json:"peak_drive_power_kw,omitempty"`
-	PeakRegenPowerKW        *float64 `json:"peak_regen_power_kw,omitempty"`
-	NetEnergyKWh            *float64 `json:"net_energy_kwh,omitempty"`
-	AvgConsumptionWhPerKM   float64  `json:"avg_consumption_wh_per_km"`
-	BestEfficiencyWhPerKM   *float64 `json:"best_efficiency_wh_per_km,omitempty"`
-	WorstEfficiencyWhPerKM  *float64 `json:"worst_efficiency_wh_per_km,omitempty"`
+	Distance                float64  `json:"distance"`
+	Duration                float64  `json:"duration"`
+	AvgDistance             *float64 `json:"avg_distance,omitempty"`
+	AvgDuration             *float64 `json:"avg_duration,omitempty"`
+	LongestDriveDuration    *float64 `json:"longest_drive_duration,omitempty"`
+	MaxSpeed                *float64 `json:"max_speed,omitempty"`
+	AvgSpeed                *float64 `json:"avg_speed,omitempty"`
+	PeakDrivePower          *float64 `json:"peak_drive_power,omitempty"`
+	PeakRegenPower          *float64 `json:"peak_regen_power,omitempty"`
+	EstimatedEnergyConsumed *float64 `json:"estimated_energy_consumed,omitempty"`
+	EstimatedEnergyRegen    *float64 `json:"estimated_energy_regen,omitempty"`
+	NetEnergy               *float64 `json:"net_energy,omitempty"`
+	AvgConsumption          *float64 `json:"avg_consumption,omitempty"`
+	BestConsumption         *float64 `json:"best_consumption,omitempty"`
+	WorstConsumption        *float64 `json:"worst_consumption,omitempty"`
+	RangeLoss               float64  `json:"range_loss"`
+	BatteryLevelUsed        *float64 `json:"battery_level_used,omitempty"`
+	AvgOutsideTemp          *float64 `json:"avg_outside_temp,omitempty"`
 }
 
+// V2ChargingSummary is the canonical charging aggregate; consumed by both
+// /analytics/summary and /analytics/charging.
+//
 // @name V2ChargingSummary
 type V2ChargingSummary struct {
-	SessionCount              int64    `json:"session_count"`
-	EnergyAddedKWh            float64  `json:"energy_added_kwh"`
-	EnergyUsedKWh             float64  `json:"energy_used_kwh"`
-	DurationMin               float64  `json:"duration_min"`
-	AvgDurationMin            *float64 `json:"avg_duration_min,omitempty"`
-	LongestSessionDurationMin *float64 `json:"longest_session_duration_min,omitempty"`
-	AvgEnergyAddedKWh         *float64 `json:"avg_energy_added_kwh,omitempty"`
-	LargestSessionKWh         *float64 `json:"largest_session_kwh,omitempty"`
-	AvgPowerKW                *float64 `json:"avg_power_kw,omitempty"`
-	MaxPowerKW                *float64 `json:"max_power_kw,omitempty"`
-	ChargingEfficiencyPercent *float64 `json:"charging_efficiency_percent,omitempty"`
-	Cost                      float64  `json:"cost"`
-	AvgCost                   *float64 `json:"avg_cost,omitempty"`
-	MaxCost                   *float64 `json:"max_cost,omitempty"`
+	SessionCount           int64    `json:"session_count"`
+	EnergyAdded            float64  `json:"energy_added"`
+	EnergyUsed             float64  `json:"energy_used"`
+	Duration               float64  `json:"duration"`
+	AvgDuration            *float64 `json:"avg_duration,omitempty"`
+	LongestSessionDuration *float64 `json:"longest_session_duration,omitempty"`
+	AvgEnergyAdded         *float64 `json:"avg_energy_added,omitempty"`
+	LargestSession         *float64 `json:"largest_session,omitempty"`
+	AvgPower               *float64 `json:"avg_power,omitempty"`
+	MaxPower               *float64 `json:"max_power,omitempty"`
+	ChargingEfficiency     *float64 `json:"charging_efficiency,omitempty"`
+	Cost                   float64  `json:"cost"`
+	AvgCost                *float64 `json:"avg_cost,omitempty"`
+	MaxCost                *float64 `json:"max_cost,omitempty"`
+	AvgCostPerEnergy       *float64 `json:"avg_cost_per_energy,omitempty"`
+	StartBatteryAvg        *float64 `json:"start_battery_avg,omitempty"`
+	EndBatteryAvg          *float64 `json:"end_battery_avg,omitempty"`
+	ACSessionCount         int64    `json:"ac_session_count"`
+	DCSessionCount         int64    `json:"dc_session_count"`
+	ACEnergy               float64  `json:"ac_energy"`
+	DCEnergy               float64  `json:"dc_energy"`
 }
 
 // @name V2VehicleSummary
 type V2VehicleSummary struct {
-	OdometerKM                    *float64 `json:"odometer_km,omitempty"`
-	RatedEfficiencyKWhPer100KM    *float64 `json:"rated_efficiency_kwh_per_100km,omitempty"`
-	TrackedConsumptionKWhPer100KM *float64 `json:"tracked_consumption_kwh_per_100km,omitempty"`
-	TrackedWallKWhPer100KM        *float64 `json:"tracked_wall_kwh_per_100km,omitempty"`
-	ChargingEfficiencyPercent     *float64 `json:"charging_efficiency_percent,omitempty"`
-	OdometerCoveragePercent       *float64 `json:"odometer_coverage_percent,omitempty"`
-	TrackedDistanceKM             float64  `json:"tracked_distance_km"`
-	TrackedDrives                 int64    `json:"tracked_drives"`
-	TrackedCharges                int64    `json:"tracked_charges"`
+	Odometer        *float64 `json:"odometer,omitempty"`
+	TrackedDistance float64  `json:"tracked_distance"`
+	TrackedDrives   int64    `json:"tracked_drives"`
+	TrackedCharges  int64    `json:"tracked_charges"`
 }
 
+// V2ParkingSummary is the canonical parking aggregate; consumed by both
+// /analytics/summary and /analytics/parking.
+//
 // @name V2ParkingSummary
 type V2ParkingSummary struct {
-	ParkedDurationMin   float64 `json:"parked_duration_min"`
-	AsleepDurationMin   float64 `json:"asleep_duration_min"`
-	OnlineDurationMin   float64 `json:"online_duration_min"`
-	OfflineDurationMin  float64 `json:"offline_duration_min"`
-	VampireDrainPercent float64 `json:"vampire_drain_percent"`
+	ParkingSessionCount    int64    `json:"parking_session_count"`
+	ParkedDuration         float64  `json:"parked_duration"`
+	AvgParkedDuration      *float64 `json:"avg_parked_duration,omitempty"`
+	AsleepDuration         float64  `json:"asleep_duration"`
+	OnlineDuration         float64  `json:"online_duration"`
+	OfflineDuration        float64  `json:"offline_duration"`
+	VampireDrainPercent    *float64 `json:"vampire_drain_percent,omitempty"`
+	EstimatedVampireDrain  *float64 `json:"estimated_vampire_drain,omitempty"`
+	AvgDrainPercentPerDay  *float64 `json:"avg_drain_percent_per_day,omitempty"`
+	StateTransitionCount   int64    `json:"state_transition_count"`
 }
 
 // @name V2BatterySummary
 type V2BatterySummary struct {
-	LatestBatteryLevelPercent *int64   `json:"latest_battery_level_percent,omitempty"`
-	LatestRatedRangeKM        *float64 `json:"latest_rated_range_km,omitempty"`
-	LatestIdealRangeKM        *float64 `json:"latest_ideal_range_km,omitempty"`
+	LatestLevel               *int64          `json:"latest_level,omitempty"`
+	LatestRatedRange          *float64        `json:"latest_rated_range,omitempty"`
+	LatestIdealRange          *float64        `json:"latest_ideal_range,omitempty"`
+	RangeAtFullCharge         *V2BatteryRange `json:"range_at_full_charge,omitempty"`
+	BaselineRangeAtFullCharge *V2BatteryRange `json:"baseline_range_at_full_charge,omitempty"`
+	EstimatedRangeDegradation *float64        `json:"estimated_range_degradation,omitempty"`
+}
+
+// @name V2BatteryRange
+type V2BatteryRange struct {
+	Rated *float64 `json:"rated,omitempty"`
+	Ideal *float64 `json:"ideal,omitempty"`
 }
 
 // @name V2UpdateSummary
@@ -211,7 +245,6 @@ type V2UpdateSummary struct {
 
 // @name V2CostSummary
 type V2CostSummary struct {
-	ChargingCost float64  `json:"charging_cost"`
-	CostPerKM    *float64 `json:"cost_per_km,omitempty"`
-	CostPer100KM *float64 `json:"cost_per_100km,omitempty"`
+	ChargingCost    float64  `json:"charging_cost"`
+	CostPerDistance *float64 `json:"cost_per_distance,omitempty"`
 }

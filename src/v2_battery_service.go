@@ -6,7 +6,7 @@ const v2MinimumBatteryRangeSamples int64 = 5
 
 type V2BatteryRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
-	Summary(ctx context.Context, carID int64, timeRange V2TimeRange) (V2BatteryAnalyticsSummary, V2BatteryStats, error)
+	Summary(ctx context.Context, carID int64, timeRange V2TimeRange) (V2BatterySummary, V2BatteryStats, error)
 	Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2BatteryTimeseriesItem, V2BatteryStats, error)
 }
 

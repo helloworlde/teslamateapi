@@ -9,7 +9,7 @@ import (
 
 type fakeV2DrivingRepository struct {
 	exists     bool
-	summary    V2DrivingAnalyticsSummary
+	summary    V2DrivingSummary
 	stats      V2DrivingStats
 	timeseries []V2DrivingTimeseriesItem
 }
@@ -18,7 +18,7 @@ func (r *fakeV2DrivingRepository) CarExists(context.Context, int64) (bool, error
 	return r.exists, nil
 }
 
-func (r *fakeV2DrivingRepository) Summary(context.Context, int64, timeBound, timeBound) (V2DrivingAnalyticsSummary, V2DrivingStats, error) {
+func (r *fakeV2DrivingRepository) Summary(context.Context, int64, timeBound, timeBound) (V2DrivingSummary, V2DrivingStats, error) {
 	return r.summary, r.stats, nil
 }
 
@@ -29,7 +29,7 @@ func (r *fakeV2DrivingRepository) Timeseries(context.Context, int64, V2TimeRange
 func TestV2DrivingServiceBuildDrivingReturnsSummary(t *testing.T) {
 	repository := &fakeV2DrivingRepository{
 		exists:  true,
-		summary: V2DrivingAnalyticsSummary{DriveCount: 2, DistanceKM: 100, DurationMin: 60},
+		summary: V2DrivingSummary{DriveCount: 2, Distance: 100, Duration: 3600},
 		stats:   V2DrivingStats{DriveRows: 2, EnergyEstimateRows: 2, TemperatureRows: 1},
 	}
 	service := NewV2DrivingService(repository)
@@ -46,7 +46,7 @@ func TestV2DrivingServiceBuildDrivingReturnsSummary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if carID != 1 || response.Summary.DistanceKM != 100 {
+	if carID != 1 || response.Summary.Distance != 100 {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
 }

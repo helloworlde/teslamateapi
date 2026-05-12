@@ -9,7 +9,7 @@ import (
 
 type fakeV2BatteryRepository struct {
 	exists     bool
-	summary    V2BatteryAnalyticsSummary
+	summary    V2BatterySummary
 	stats      V2BatteryStats
 	timeseries []V2BatteryTimeseriesItem
 }
@@ -18,7 +18,7 @@ func (r *fakeV2BatteryRepository) CarExists(context.Context, int64) (bool, error
 	return r.exists, nil
 }
 
-func (r *fakeV2BatteryRepository) Summary(context.Context, int64, V2TimeRange) (V2BatteryAnalyticsSummary, V2BatteryStats, error) {
+func (r *fakeV2BatteryRepository) Summary(context.Context, int64, V2TimeRange) (V2BatterySummary, V2BatteryStats, error) {
 	return r.summary, r.stats, nil
 }
 
@@ -31,10 +31,9 @@ func TestV2BatteryServiceBuildBatteryReturnsSummary(t *testing.T) {
 	currentDegradation := 3.0
 	repository := &fakeV2BatteryRepository{
 		exists: true,
-		summary: V2BatteryAnalyticsSummary{
-			EstimatedRatedRangeAt100PercentKM: &currentRated,
-			EstimatedRangeDegradationPercent:  &currentDegradation,
-			SampleCount:                       8,
+		summary: V2BatterySummary{
+			RangeAtFullCharge:         &V2BatteryRange{Rated: &currentRated},
+			EstimatedRangeDegradation: &currentDegradation,
 		},
 		stats: V2BatteryStats{SampleRows: 8},
 	}
@@ -52,7 +51,7 @@ func TestV2BatteryServiceBuildBatteryReturnsSummary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if carID != 1 || response.Summary.EstimatedRatedRangeAt100PercentKM == nil {
+	if carID != 1 || response.Summary.RangeAtFullCharge == nil || response.Summary.RangeAtFullCharge.Rated == nil {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
 }
@@ -60,7 +59,7 @@ func TestV2BatteryServiceBuildBatteryReturnsSummary(t *testing.T) {
 func TestV2BatteryServiceInsufficientSamplesOmitDegradation(t *testing.T) {
 	repository := &fakeV2BatteryRepository{
 		exists:  true,
-		summary: V2BatteryAnalyticsSummary{SampleCount: 2},
+		summary: V2BatterySummary{},
 		stats:   V2BatteryStats{SampleRows: 2},
 	}
 	service := NewV2BatteryService(repository)
@@ -69,7 +68,7 @@ func TestV2BatteryServiceInsufficientSamplesOmitDegradation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.Summary.EstimatedRangeDegradationPercent != nil {
+	if response.Summary.EstimatedRangeDegradation != nil {
 		t.Fatalf("expected nil degradation: %#v", response.Summary)
 	}
 }
@@ -77,7 +76,7 @@ func TestV2BatteryServiceInsufficientSamplesOmitDegradation(t *testing.T) {
 func TestV2BatteryServiceInvalidBatteryLevelWarns(t *testing.T) {
 	service := NewV2BatteryService(&fakeV2BatteryRepository{
 		exists:  true,
-		summary: V2BatteryAnalyticsSummary{SampleCount: 1},
+		summary: V2BatterySummary{},
 		stats:   V2BatteryStats{SampleRows: 1, InvalidBatteryRows: 1},
 	})
 

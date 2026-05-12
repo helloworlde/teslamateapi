@@ -9,7 +9,7 @@ var errV2InvalidParkingBreakdown = errors.New("invalid parking breakdown")
 
 type V2ParkingRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
-	Summary(ctx context.Context, carID int64, timeRange V2TimeRange) (V2ParkingAnalyticsSummary, V2ParkingStats, error)
+	Summary(ctx context.Context, carID int64, timeRange V2TimeRange) (V2ParkingSummary, V2ParkingStats, error)
 	Locations(ctx context.Context, carID int64, timeRange V2TimeRange) ([]V2ParkingLocationItem, V2ParkingStats, error)
 	StateBreakdown(ctx context.Context, carID int64, timeRange V2TimeRange) (V2ParkingStatesResponse, V2ParkingStats, error)
 }
@@ -71,10 +71,6 @@ func (s V2ParkingService) BuildParking(ctx context.Context, carIDParam string, t
 				return V2ParkingResponse{}, 0, err
 			}
 			breakdown.States = states.Items
-			total := states.TotalDurationMin
-			transitions := states.StateTransitionCount
-			breakdown.TotalDurationMin = &total
-			breakdown.StateTransitionCount = &transitions
 		}
 		response.Breakdown = breakdown
 	}

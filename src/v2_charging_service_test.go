@@ -9,7 +9,7 @@ import (
 
 type fakeV2ChargingRepository struct {
 	exists     bool
-	summary    V2ChargingAnalyticsSummary
+	summary    V2ChargingSummary
 	stats      V2ChargingStats
 	timeseries []V2ChargingTimeseriesItem
 	locations  []V2ChargingLocationItem
@@ -20,7 +20,7 @@ func (r *fakeV2ChargingRepository) CarExists(context.Context, int64) (bool, erro
 	return r.exists, nil
 }
 
-func (r *fakeV2ChargingRepository) Summary(context.Context, int64, timeBound, timeBound) (V2ChargingAnalyticsSummary, V2ChargingStats, error) {
+func (r *fakeV2ChargingRepository) Summary(context.Context, int64, timeBound, timeBound) (V2ChargingSummary, V2ChargingStats, error) {
 	return r.summary, r.stats, nil
 }
 
@@ -39,7 +39,7 @@ func (r *fakeV2ChargingRepository) Types(context.Context, int64, V2TimeRange) ([
 func TestV2ChargingServiceBuildChargingReturnsSummary(t *testing.T) {
 	repository := &fakeV2ChargingRepository{
 		exists:  true,
-		summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 80, DurationMin: 120},
+		summary: V2ChargingSummary{SessionCount: 2, EnergyAdded: 80, Duration: 7200},
 		stats:   V2ChargingStats{SessionRows: 2, EnergyUsedRows: 2, CostRows: 2, PowerRows: 2},
 	}
 	service := NewV2ChargingService(repository)
@@ -56,7 +56,7 @@ func TestV2ChargingServiceBuildChargingReturnsSummary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if carID != 1 || response.Summary.EnergyAddedKWh != 80 {
+	if carID != 1 || response.Summary.EnergyAdded != 80 {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
 }
@@ -75,7 +75,7 @@ func TestV2ChargingServiceNoDataReturnsEmpty(t *testing.T) {
 func TestV2ChargingServiceMissingCostAndEnergyUsedWarns(t *testing.T) {
 	service := NewV2ChargingService(&fakeV2ChargingRepository{
 		exists:  true,
-		summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 40},
+		summary: V2ChargingSummary{SessionCount: 2, EnergyAdded: 40},
 		stats:   V2ChargingStats{SessionRows: 2, EnergyUsedRows: 1, CostRows: 0},
 	})
 	_, _, err := service.BuildCharging(context.Background(), "1", V2TimeRange{Compare: "none"}, V2ChargingBuildOptions{})
@@ -103,7 +103,7 @@ func TestV2ChargingServiceRejectsInvalidBreakdown(t *testing.T) {
 func TestV2ChargingServiceIncludeTimeseriesAndBreakdown(t *testing.T) {
 	repository := &fakeV2ChargingRepository{
 		exists:     true,
-		summary:    V2ChargingAnalyticsSummary{SessionCount: 1},
+		summary:    V2ChargingSummary{SessionCount: 1},
 		timeseries: []V2ChargingTimeseriesItem{{PeriodStart: "2026-05-01T00:00:00Z", SessionCount: 1}},
 		locations:  []V2ChargingLocationItem{{LocationName: "Home", SessionCount: 1}},
 	}

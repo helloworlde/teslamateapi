@@ -41,9 +41,6 @@ func (s V2CostService) BuildCost(ctx context.Context, carIDParam string, timeRan
 	if err != nil {
 		return V2CostResponse{}, 0, err
 	}
-	if len(response.DataScope.Included) == 0 {
-		response.DataScope = defaultV2CostDataScope()
-	}
 	return response, carID, nil
 }
 

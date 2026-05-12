@@ -27,17 +27,17 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 	var response V2LifecycleResponse
 
 	var firstDate, lastDate sql.NullTime
-	var distanceKM sql.NullFloat64
+	var distance sql.NullFloat64
 	var driveCount sql.NullInt64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			MIN(d.start_date) as first_date,
 			MAX(d.end_date) as last_date,
 			COUNT(*) as drive_count,
-			COALESCE(SUM(d.distance), 0) as distance_km
+			COALESCE(SUM(d.distance), 0) as distance
 		FROM drives d WHERE d.car_id = $1 AND d.end_date IS NOT NULL AND d.end_date <= $2`,
 		carID, asOf,
-	).Scan(&firstDate, &lastDate, &driveCount, &distanceKM)
+	).Scan(&firstDate, &lastDate, &driveCount, &distance)
 	if err != nil {
 		return response, err
 	}
@@ -45,8 +45,8 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 	if driveCount.Valid {
 		response.DriveCount = driveCount.Int64
 	}
-	if distanceKM.Valid {
-		response.DistanceKM = distanceKM.Float64
+	if distance.Valid {
+		response.Distance = distance.Float64
 	}
 	if firstDate.Valid {
 		s := firstDate.Time.Format(time.RFC3339)
@@ -60,11 +60,11 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 	if firstDate.Valid && lastDate.Valid {
 		days := int64(lastDate.Time.Sub(firstDate.Time).Hours()/24) + 1
 		response.RecordedDays = days
-		if days > 0 && response.DistanceKM > 0 {
-			daily := response.DistanceKM / float64(days)
+		if days > 0 && response.Distance > 0 {
+			daily := response.Distance / float64(days)
 			monthly := daily * 30.44
-			response.AvgDailyDistanceKM = &daily
-			response.AvgMonthlyDistanceKM = &monthly
+			response.AvgDailyDistance = &daily
+			response.AvgMonthlyDistance = &monthly
 		}
 	}
 
@@ -74,8 +74,8 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 	err = r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) as session_count,
-			COALESCE(SUM(charge_energy_added), 0) as energy_added_kwh,
-			COALESCE(SUM(GREATEST(COALESCE(charge_energy_used, 0), COALESCE(charge_energy_added, 0))), 0) as energy_used_kwh,
+			COALESCE(SUM(charge_energy_added), 0) as energy_added,
+			COALESCE(SUM(GREATEST(COALESCE(charge_energy_used, 0), COALESCE(charge_energy_added, 0))), 0) as energy_used,
 			COALESCE(SUM(cost), 0) as cost
 		FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL AND end_date <= $2`,
 		carID, asOf,
@@ -87,18 +87,18 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 		response.ChargingSessionCount = sessionCount.Int64
 	}
 	if energyAdded.Valid {
-		response.EnergyAddedKWh = energyAdded.Float64
+		response.EnergyAdded = energyAdded.Float64
 	}
 	if energyUsed.Valid {
-		response.EnergyUsedKWh = energyUsed.Float64
+		response.EnergyUsed = energyUsed.Float64
 	}
 	if cost.Valid {
 		response.ChargingCost = cost.Float64
 	}
 
-	if response.DistanceKM > 0 && response.ChargingCost > 0 {
-		costPer100 := response.ChargingCost / response.DistanceKM * 100
-		response.CostPer100KM = &costPer100
+	if response.Distance > 0 && response.ChargingCost > 0 {
+		costPer100 := response.ChargingCost / response.Distance * 100
+		response.CostPerDistance = &costPer100
 	}
 
 	// Avg consumption from drives
@@ -114,7 +114,7 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / distance * 1000
 				ELSE NULL
 			END
-		) AS avg_consumption_wh_per_km
+		) AS avg_consumption
 		FROM drives
 		LEFT JOIN cars ON cars.id = drives.car_id
 		WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL AND drives.end_date <= $2`,
@@ -124,7 +124,7 @@ func (r PostgresV2LifecycleRepository) Lifecycle(ctx context.Context, carID int6
 		return response, err
 	}
 	if avgConsumption.Valid {
-		response.AvgConsumptionWhPerKM = &avgConsumption.Float64
+		response.AvgConsumption = &avgConsumption.Float64
 	}
 
 	// Updates

@@ -23,19 +23,17 @@ func (r *fakeV2CostRepository) Cost(context.Context, int64, V2TimeRange, string)
 func TestV2CostServiceBuildCost(t *testing.T) {
 	cost := 45.0
 	energy := 30.0
-	costPerKWh := 1.5
-	costPerKM := 0.3
+	costPerEnergy := 1.5
+	costPerDistance := 30.0
 	service := NewV2CostService(&fakeV2CostRepository{
 		exists: true,
 		response: V2CostResponse{
-			DataScope: defaultV2CostDataScope(),
 			Summary: V2CostSummaryDetails{
-				ChargingCost:  &cost,
-				EnergyUsedKWh: &energy,
-				DistanceKM:    150,
-				CostPerKWh:    &costPerKWh,
-				CostPerKM:     &costPerKM,
-				CostPer100KM:  float64Ptr(30),
+				ChargingCost:    &cost,
+				EnergyUsed:      &energy,
+				Distance:        150,
+				CostPerEnergy:   &costPerEnergy,
+				CostPerDistance: &costPerDistance,
 			},
 		},
 		stats: V2CostStats{SessionRows: 2, CostRows: 2, EnergyUsedRows: 2},
@@ -45,7 +43,7 @@ func TestV2CostServiceBuildCost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if carID != 1 || response.Summary.ChargingCost == nil || len(response.DataScope.Excluded) == 0 {
+	if carID != 1 || response.Summary.ChargingCost == nil {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
 }
@@ -67,7 +65,7 @@ func TestV2CostServiceDistanceZeroOmitsDistanceCosts(t *testing.T) {
 	service := NewV2CostService(&fakeV2CostRepository{
 		exists: true,
 		response: V2CostResponse{
-			Summary: V2CostSummaryDetails{ChargingCost: &cost, DistanceKM: 0},
+			Summary: V2CostSummaryDetails{ChargingCost: &cost, Distance: 0},
 		},
 		stats: V2CostStats{SessionRows: 1, CostRows: 1, EnergyUsedRows: 1},
 	})
@@ -76,18 +74,18 @@ func TestV2CostServiceDistanceZeroOmitsDistanceCosts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.Summary.CostPerKM != nil || response.Summary.CostPer100KM != nil {
+	if response.Summary.CostPerDistance != nil {
 		t.Fatalf("expected distance costs omitted: %#v", response.Summary)
 	}
 }
 
-func TestV2CostServiceEnergyUsedZeroOmitsCostPerKWh(t *testing.T) {
+func TestV2CostServiceEnergyUsedZeroOmitsCostPerEnergy(t *testing.T) {
 	cost := 10.0
 	energy := 0.0
 	service := NewV2CostService(&fakeV2CostRepository{
 		exists: true,
 		response: V2CostResponse{
-			Summary: V2CostSummaryDetails{ChargingCost: &cost, EnergyUsedKWh: &energy, DistanceKM: 10},
+			Summary: V2CostSummaryDetails{ChargingCost: &cost, EnergyUsed: &energy, Distance: 10},
 		},
 		stats: V2CostStats{SessionRows: 1, CostRows: 1, EnergyUsedRows: 1},
 	})
@@ -96,8 +94,8 @@ func TestV2CostServiceEnergyUsedZeroOmitsCostPerKWh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.Summary.CostPerKWh != nil {
-		t.Fatalf("expected cost_per_kwh omitted: %#v", response.Summary)
+	if response.Summary.CostPerEnergy != nil {
+		t.Fatalf("expected cost_per_energy omitted: %#v", response.Summary)
 	}
 }
 

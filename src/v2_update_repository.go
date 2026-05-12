@@ -32,7 +32,7 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 			COUNT(*) AS update_count,
 			MAX(version) FILTER (WHERE version IS NOT NULL) AS latest_version,
 			MAX(start_date) AS latest_updated_at,
-			AVG(EXTRACT(EPOCH FROM (end_date - start_date)) / 60) FILTER (WHERE end_date IS NOT NULL) AS avg_update_duration_min
+			AVG(EXTRACT(EPOCH FROM (end_date - start_date))) FILTER (WHERE end_date IS NOT NULL) AS avg_update_duration
 		FROM updates
 		WHERE car_id = $1 AND start_date >= $2 AND start_date < $3`,
 		carID, start.Time, end.Time,
@@ -50,7 +50,7 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 		response.LatestUpdatedAt = &s
 	}
 	if avgDuration.Valid {
-		response.AvgUpdateDurationMin = &avgDuration.Float64
+		response.AvgUpdateDuration = &avgDuration.Float64
 	}
 
 	rows, err := r.db.QueryContext(ctx, `
@@ -70,19 +70,19 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 		)
 		SELECT
 			vw.version, vw.start_date, vw.end_date,
-			EXTRACT(EPOCH FROM (vw.end_date - vw.start_date)) / 60 AS update_duration_min,
+			EXTRACT(EPOCH FROM (vw.end_date - vw.start_date)) AS update_duration,
 			ROUND(vw.days_since_prior)::bigint AS days_since_prior,
 			vw.window_start, vw.window_end,
-			EXTRACT(EPOCH FROM (vw.window_end - vw.window_start)) / 60 AS interval_min,
-			ds.trip_count, ds.driving_duration_min, ds.distance_km, ds.net_drive_energy_kwh,
-			cs.session_count, cs.charging_duration_min, cs.battery_energy_kwh, cs.wall_energy_kwh, cs.charge_cost,
-			ist.inactive_min
+			EXTRACT(EPOCH FROM (vw.window_end - vw.window_start)) AS interval_seconds,
+			ds.trip_count, ds.driving_duration, ds.distance, ds.net_drive_energy,
+			cs.session_count, cs.charging_duration, cs.battery_energy, cs.wall_energy, cs.charge_cost,
+			ist.inactive_duration
 		FROM version_windows vw
 		LEFT JOIN LATERAL (
 			SELECT
 				COUNT(*) AS trip_count,
-				COALESCE(SUM(d.duration_min), 0) AS driving_duration_min,
-				COALESCE(SUM(d.distance), 0) AS distance_km,
+				COALESCE(SUM(d.duration_min) * 60, 0) AS driving_duration,
+				COALESCE(SUM(d.distance), 0) AS distance,
 				SUM(
 					CASE
 						WHEN d.distance > 0
@@ -92,7 +92,7 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 							AND (d.start_rated_range_km - d.end_rated_range_km) > 0
 						THEN (d.start_rated_range_km - d.end_rated_range_km) * cars.efficiency
 					END
-				) AS net_drive_energy_kwh
+				) AS net_drive_energy
 			FROM drives d
 			LEFT JOIN cars ON cars.id = d.car_id
 			WHERE d.car_id = $1 AND d.end_date IS NOT NULL
@@ -101,9 +101,9 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 		LEFT JOIN LATERAL (
 			SELECT
 				COUNT(*) AS session_count,
-				COALESCE(SUM(cp.duration_min), 0) AS charging_duration_min,
-				COALESCE(SUM(cp.charge_energy_added), 0) AS battery_energy_kwh,
-				COALESCE(SUM(GREATEST(COALESCE(cp.charge_energy_used, 0), COALESCE(cp.charge_energy_added, 0))), 0) AS wall_energy_kwh,
+				COALESCE(SUM(cp.duration_min) * 60, 0) AS charging_duration,
+				COALESCE(SUM(cp.charge_energy_added), 0) AS battery_energy,
+				COALESCE(SUM(GREATEST(COALESCE(cp.charge_energy_used, 0), COALESCE(cp.charge_energy_added, 0))), 0) AS wall_energy,
 				SUM(cp.cost) AS charge_cost
 			FROM charging_processes cp
 			WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL
@@ -115,8 +115,8 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 					EXTRACT(EPOCH FROM (
 						LEAST(COALESCE(s.end_date, vw.window_end), vw.window_end) -
 						GREATEST(s.start_date, vw.window_start)
-					)) / 60
-				) FILTER (WHERE s.state IN ('asleep', 'offline')), 0) AS inactive_min
+					))
+				) FILTER (WHERE s.state IN ('asleep', 'offline')), 0) AS inactive_duration
 			FROM states s
 			WHERE s.car_id = $1
 				AND s.start_date < vw.window_end
@@ -131,90 +131,96 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 	defer rows.Close()
 
 	for rows.Next() {
-		var v V2UpdateVersion
 		var versionStr sql.NullString
 		var endDate, windowStart, windowEnd sql.NullTime
-		var updateDuration, intervalMin sql.NullFloat64
+		var updateDuration, intervalSeconds sql.NullFloat64
 		var daysSinceInt sql.NullInt64
 		var tripCount sql.NullInt64
-		var drivingDuration, distanceKM, netEnergy sql.NullFloat64
+		var drivingDuration, distance, netEnergy sql.NullFloat64
 		var sessionCount sql.NullInt64
-		var chargingDuration, batteryEnergy, wallEnergy, chargeCost, inactiveMin sql.NullFloat64
+		var chargingDuration, batteryEnergy, wallEnergy, chargeCost, inactiveDuration sql.NullFloat64
 		var startDate time.Time
 		if err := rows.Scan(
 			&versionStr, &startDate, &endDate,
 			&updateDuration, &daysSinceInt,
-			&windowStart, &windowEnd, &intervalMin,
-			&tripCount, &drivingDuration, &distanceKM, &netEnergy,
+			&windowStart, &windowEnd, &intervalSeconds,
+			&tripCount, &drivingDuration, &distance, &netEnergy,
 			&sessionCount, &chargingDuration, &batteryEnergy, &wallEnergy, &chargeCost,
-			&inactiveMin,
+			&inactiveDuration,
 		); err != nil {
 			return response, 0, err
 		}
+		var v V2UpdateVersion
 		if versionStr.Valid {
-			v.Version = versionStr.String
+			v.Event.Version = versionStr.String
 		}
-		v.StartedAt = startDate.Format(time.RFC3339)
+		v.Event.StartedAt = startDate.Format(time.RFC3339)
 		if endDate.Valid {
 			s := endDate.Time.Format(time.RFC3339)
-			v.CompletedAt = &s
+			v.Event.CompletedAt = &s
 		}
 		if updateDuration.Valid {
-			v.DurationMin = &updateDuration.Float64
+			v.Event.Duration = &updateDuration.Float64
 		}
 		if daysSinceInt.Valid {
-			v.DaysSincePrior = &daysSinceInt.Int64
+			v.Event.DaysSincePrior = &daysSinceInt.Int64
 		}
-		if windowStart.Valid {
-			s := windowStart.Time.Format(time.RFC3339)
-			v.WindowStart = &s
+		if windowStart.Valid && windowEnd.Valid {
+			window := &V2UpdateWindow{
+				Start: windowStart.Time.Format(time.RFC3339),
+				End:   windowEnd.Time.Format(time.RFC3339),
+			}
+			if intervalSeconds.Valid {
+				window.Interval = &intervalSeconds.Float64
+			}
+			v.Window = window
 		}
-		if windowEnd.Valid {
-			s := windowEnd.Time.Format(time.RFC3339)
-			v.WindowEnd = &s
-		}
-		if intervalMin.Valid {
-			v.IntervalMin = &intervalMin.Float64
-		}
+
+		metrics := &V2UpdateWindowMetrics{}
+		hasMetrics := false
 		if tripCount.Valid {
-			v.DrivingTripCount = &tripCount.Int64
+			metrics.Driving.TripCount = tripCount.Int64
+			hasMetrics = true
 		}
 		if drivingDuration.Valid {
-			v.DrivingDurationMin = &drivingDuration.Float64
+			metrics.Driving.Duration = drivingDuration.Float64
 		}
-		if distanceKM.Valid {
-			v.DrivingDistanceKM = &distanceKM.Float64
+		if distance.Valid {
+			metrics.Driving.Distance = distance.Float64
 		}
 		if netEnergy.Valid {
-			v.NetDriveEnergyKWh = &netEnergy.Float64
-			if distanceKM.Valid && distanceKM.Float64 > 0 {
-				eff := netEnergy.Float64 / distanceKM.Float64 * 1000
-				v.DriveEfficiencyWhPerKM = &eff
-				cons := netEnergy.Float64 / distanceKM.Float64 * 100
-				v.AvgConsumptionKWhPer100KM = &cons
+			metrics.Driving.NetEnergy = &netEnergy.Float64
+			if distance.Valid && distance.Float64 > 0 {
+				cons := netEnergy.Float64 / distance.Float64 * 1000
+				metrics.Driving.AvgConsumption = &cons
 			}
 		}
 		if sessionCount.Valid {
-			v.ChargingSessionCount = &sessionCount.Int64
+			metrics.Charging.SessionCount = sessionCount.Int64
+			hasMetrics = true
 		}
 		if chargingDuration.Valid {
-			v.ChargingDurationMin = &chargingDuration.Float64
+			metrics.Charging.Duration = chargingDuration.Float64
 		}
 		if batteryEnergy.Valid {
-			v.BatteryEnergyKWh = &batteryEnergy.Float64
+			metrics.Charging.BatteryEnergy = &batteryEnergy.Float64
 		}
 		if wallEnergy.Valid {
-			v.WallEnergyKWh = &wallEnergy.Float64
+			metrics.Charging.WallEnergy = &wallEnergy.Float64
 		}
 		if wallEnergy.Valid && wallEnergy.Float64 > 0 && batteryEnergy.Valid {
 			eff := batteryEnergy.Float64 / wallEnergy.Float64 * 100
-			v.ChargingEfficiencyPercent = &eff
+			metrics.Charging.Efficiency = &eff
 		}
 		if chargeCost.Valid {
-			v.ChargeCost = &chargeCost.Float64
+			metrics.Charging.Cost = &chargeCost.Float64
 		}
-		if inactiveMin.Valid {
-			v.InactiveDurationMin = &inactiveMin.Float64
+		if inactiveDuration.Valid {
+			metrics.InactiveDuration = &inactiveDuration.Float64
+			hasMetrics = true
+		}
+		if hasMetrics {
+			v.Metrics = metrics
 		}
 		response.Versions = append(response.Versions, v)
 	}

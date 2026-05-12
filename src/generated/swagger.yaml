@@ -37,40 +37,32 @@ definitions:
       meta:
         $ref: '#/definitions/V2Meta'
     type: object
-  V2BatteryAnalyticsSummary:
+  V2BatteryRange:
     properties:
-      baseline_ideal_range_at_100_percent_km:
+      ideal:
         type: number
-      baseline_rated_range_at_100_percent_km:
+      rated:
         type: number
-      estimated_ideal_range_at_100_percent_km:
-        type: number
-      estimated_range_degradation_percent:
-        type: number
-      estimated_rated_range_at_100_percent_km:
-        type: number
-      latest_battery_level_percent:
-        type: integer
-      latest_ideal_range_km:
-        type: number
-      latest_rated_range_km:
-        type: number
-      sample_count:
-        type: integer
     type: object
   V2BatteryResponse:
     properties:
       summary:
-        $ref: '#/definitions/V2BatteryAnalyticsSummary'
+        $ref: '#/definitions/V2BatterySummary'
     type: object
   V2BatterySummary:
     properties:
-      latest_battery_level_percent:
+      baseline_range_at_full_charge:
+        $ref: '#/definitions/V2BatteryRange'
+      estimated_range_degradation:
+        type: number
+      latest_ideal_range:
+        type: number
+      latest_level:
         type: integer
-      latest_ideal_range_km:
+      latest_rated_range:
         type: number
-      latest_rated_range_km:
-        type: number
+      range_at_full_charge:
+        $ref: '#/definitions/V2BatteryRange'
     type: object
   V2BatteryTimeseriesAPIResponse:
     properties:
@@ -81,16 +73,12 @@ definitions:
     type: object
   V2BatteryTimeseriesItem:
     properties:
-      avg_battery_level_percent:
-        type: number
-      estimated_ideal_range_at_100_percent_km:
-        type: number
-      estimated_rated_range_at_100_percent_km:
+      avg_level:
         type: number
       period_start:
         type: string
-      sample_count:
-        type: integer
+      range_at_full_charge:
+        $ref: '#/definitions/V2BatteryRange'
     type: object
   V2BatteryTimeseriesResponse:
     properties:
@@ -146,41 +134,6 @@ definitions:
       meta:
         $ref: '#/definitions/V2Meta'
     type: object
-  V2ChargingAnalyticsSummary:
-    properties:
-      ac_energy_kwh:
-        type: number
-      ac_session_count:
-        type: integer
-      avg_cost_per_kwh:
-        type: number
-      avg_duration_min:
-        type: number
-      avg_power_kw:
-        type: number
-      charging_efficiency_percent:
-        type: number
-      cost:
-        type: number
-      dc_energy_kwh:
-        type: number
-      dc_session_count:
-        type: integer
-      duration_min:
-        type: number
-      end_battery_avg_percent:
-        type: number
-      energy_added_kwh:
-        type: number
-      energy_used_kwh:
-        type: number
-      max_power_kw:
-        type: number
-      session_count:
-        type: integer
-      start_battery_avg_percent:
-        type: number
-    type: object
   V2ChargingBreakdownResponse:
     properties:
       by:
@@ -198,13 +151,13 @@ definitions:
     properties:
       address_id:
         type: integer
-      charging_efficiency_percent:
+      charging_efficiency:
         type: number
       cost:
         type: number
-      energy_added_kwh:
+      energy_added:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       geofence_id:
         type: integer
@@ -218,52 +171,66 @@ definitions:
       breakdown:
         $ref: '#/definitions/V2ChargingBreakdownResponse'
       summary:
-        $ref: '#/definitions/V2ChargingAnalyticsSummary'
+        $ref: '#/definitions/V2ChargingSummary'
       timeseries:
         $ref: '#/definitions/V2ChargingTimeseriesResponse'
     type: object
   V2ChargingSummary:
     properties:
+      ac_energy:
+        type: number
+      ac_session_count:
+        type: integer
       avg_cost:
         type: number
-      avg_duration_min:
+      avg_cost_per_energy:
         type: number
-      avg_energy_added_kwh:
+      avg_duration:
         type: number
-      avg_power_kw:
+      avg_energy_added:
         type: number
-      charging_efficiency_percent:
+      avg_power:
+        type: number
+      charging_efficiency:
         type: number
       cost:
         type: number
-      duration_min:
+      dc_energy:
         type: number
-      energy_added_kwh:
+      dc_session_count:
+        type: integer
+      duration:
         type: number
-      energy_used_kwh:
+      end_battery_avg:
         type: number
-      largest_session_kwh:
+      energy_added:
         type: number
-      longest_session_duration_min:
+      energy_used:
+        type: number
+      largest_session:
+        type: number
+      longest_session_duration:
         type: number
       max_cost:
         type: number
-      max_power_kw:
+      max_power:
         type: number
       session_count:
         type: integer
+      start_battery_avg:
+        type: number
     type: object
   V2ChargingTimeseriesItem:
     properties:
-      avg_power_kw:
+      avg_power:
         type: number
       cost:
         type: number
-      duration_min:
+      duration:
         type: number
-      energy_added_kwh:
+      energy_added:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       period_start:
         type: string
@@ -285,9 +252,9 @@ definitions:
         type: string
       cost:
         type: number
-      energy_added_kwh:
+      energy_added:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       session_count:
         type: integer
@@ -310,22 +277,11 @@ definitions:
       meta:
         $ref: '#/definitions/V2Meta'
     type: object
-  V2CostDataScope:
-    properties:
-      excluded:
-        items:
-          type: string
-        type: array
-      included:
-        items:
-          type: string
-        type: array
-    type: object
   V2CostLocationItem:
     properties:
       charging_cost:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       location_name:
         type: string
@@ -334,7 +290,7 @@ definitions:
     properties:
       charging_cost:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       period_start:
         type: string
@@ -349,8 +305,6 @@ definitions:
         items:
           $ref: '#/definitions/V2CostPeriodItem'
         type: array
-      data_scope:
-        $ref: '#/definitions/V2CostDataScope'
       summary:
         $ref: '#/definitions/V2CostSummaryDetails'
     type: object
@@ -358,24 +312,20 @@ definitions:
     properties:
       charging_cost:
         type: number
-      cost_per_100km:
-        type: number
-      cost_per_km:
+      cost_per_distance:
         type: number
     type: object
   V2CostSummaryDetails:
     properties:
       charging_cost:
         type: number
-      cost_per_100km:
+      cost_per_distance:
         type: number
-      cost_per_km:
+      cost_per_energy:
         type: number
-      cost_per_kwh:
+      distance:
         type: number
-      distance_km:
-        type: number
-      energy_used_kwh:
+      energy_used:
         type: number
     type: object
   V2DrivingAPIResponse:
@@ -385,77 +335,50 @@ definitions:
       meta:
         $ref: '#/definitions/V2Meta'
     type: object
-  V2DrivingAnalyticsSummary:
-    properties:
-      avg_consumption_wh_per_km:
-        type: number
-      avg_distance_km:
-        type: number
-      avg_duration_min:
-        type: number
-      avg_outside_temp_c:
-        type: number
-      avg_speed_kmh:
-        type: number
-      battery_level_used_percent:
-        type: number
-      best_consumption_wh_per_km:
-        type: number
-      distance_km:
-        type: number
-      drive_count:
-        type: integer
-      duration_min:
-        type: number
-      estimated_energy_consumed_kwh:
-        type: number
-      estimated_regenerated_energy_kwh:
-        type: number
-      max_speed_kmh:
-        type: number
-      range_loss_km:
-        type: number
-      total_ascent_m:
-        type: number
-      total_descent_m:
-        type: number
-      worst_consumption_wh_per_km:
-        type: number
-    type: object
   V2DrivingResponse:
     properties:
       summary:
-        $ref: '#/definitions/V2DrivingAnalyticsSummary'
+        $ref: '#/definitions/V2DrivingSummary'
     type: object
   V2DrivingSummary:
     properties:
-      avg_consumption_wh_per_km:
+      avg_consumption:
         type: number
-      avg_duration_min:
+      avg_distance:
         type: number
-      avg_speed_kmh:
+      avg_duration:
         type: number
-      avg_trip_distance_km:
+      avg_outside_temp:
         type: number
-      best_efficiency_wh_per_km:
+      avg_speed:
         type: number
-      distance_km:
+      battery_level_used:
+        type: number
+      best_consumption:
+        type: number
+      distance:
         type: number
       drive_count:
         type: integer
-      duration_min:
+      duration:
         type: number
-      longest_drive_duration_min:
+      estimated_energy_consumed:
         type: number
-      max_speed_kmh:
+      estimated_energy_regen:
         type: number
-      net_energy_kwh:
+      longest_drive_duration:
         type: number
-      peak_drive_power_kw:
+      max_speed:
         type: number
-      peak_regen_power_kw:
+      net_energy:
         type: number
-      worst_efficiency_wh_per_km:
+      peak_drive_power:
+        type: number
+      peak_regen_power:
+        type: number
+      range_loss:
+        type: number
+      worst_consumption:
         type: number
     type: object
   V2DrivingTimeseriesAPIResponse:
@@ -467,17 +390,17 @@ definitions:
     type: object
   V2DrivingTimeseriesItem:
     properties:
-      avg_consumption_wh_per_km:
+      avg_consumption:
         type: number
-      avg_speed_kmh:
+      avg_speed:
         type: number
-      distance_km:
+      distance:
         type: number
       drive_count:
         type: integer
-      duration_min:
+      duration:
         type: number
-      estimated_energy_consumed_kwh:
+      estimated_energy_consumed:
         type: number
       period_start:
         type: string
@@ -502,25 +425,25 @@ definitions:
     properties:
       as_of:
         type: string
-      avg_consumption_wh_per_km:
+      avg_consumption:
         type: number
-      avg_daily_distance_km:
+      avg_daily_distance:
         type: number
-      avg_monthly_distance_km:
+      avg_monthly_distance:
         type: number
       charging_cost:
         type: number
       charging_session_count:
         type: integer
-      cost_per_100km:
+      cost_per_distance:
         type: number
-      distance_km:
+      distance:
         type: number
       drive_count:
         type: integer
-      energy_added_kwh:
+      energy_added:
         type: number
-      energy_used_kwh:
+      energy_used:
         type: number
       first_recorded_at:
         type: string
@@ -573,31 +496,6 @@ definitions:
       meta:
         $ref: '#/definitions/V2Meta'
     type: object
-  V2ParkingAnalyticsSummary:
-    properties:
-      asleep_duration_min:
-        type: number
-      avg_drain_percent_per_day:
-        type: number
-      avg_parked_duration_min:
-        type: number
-      estimated_vampire_drain_kwh:
-        type: number
-      offline_duration_min:
-        type: number
-      online_duration_min:
-        type: number
-      parked_duration_min:
-        type: number
-      parking_session_count:
-        type: integer
-      state_transition_count:
-        type: integer
-      vampire_drain_percent:
-        type: number
-      vampire_drain_range_km:
-        type: number
-    type: object
   V2ParkingBreakdownResponse:
     properties:
       by:
@@ -606,52 +504,36 @@ definitions:
         items:
           $ref: '#/definitions/V2ParkingLocationItem'
         type: array
-      state_transition_count:
-        type: integer
       states:
         items:
           $ref: '#/definitions/V2ParkingStateItem'
         type: array
-      total_duration_min:
-        type: number
     type: object
   V2ParkingLocationItem:
     properties:
       address_id:
         type: integer
-      asleep_duration_min:
-        type: number
-      avg_parked_duration_min:
-        type: number
-      estimated_vampire_drain_kwh:
+      avg_parked_duration:
         type: number
       geofence_id:
         type: integer
       location_name:
         type: string
-      offline_duration_min:
-        type: number
-      online_duration_min:
-        type: number
-      parked_duration_min:
+      parked_duration:
         type: number
       parking_session_count:
         type: integer
-      vampire_drain_percent:
-        type: number
-      vampire_drain_range_km:
-        type: number
     type: object
   V2ParkingResponse:
     properties:
       breakdown:
         $ref: '#/definitions/V2ParkingBreakdownResponse'
       summary:
-        $ref: '#/definitions/V2ParkingAnalyticsSummary'
+        $ref: '#/definitions/V2ParkingSummary'
     type: object
   V2ParkingStateItem:
     properties:
-      duration_min:
+      duration:
         type: number
       percent:
         type: number
@@ -662,14 +544,24 @@ definitions:
     type: object
   V2ParkingSummary:
     properties:
-      asleep_duration_min:
+      asleep_duration:
         type: number
-      offline_duration_min:
+      avg_drain_percent_per_day:
         type: number
-      online_duration_min:
+      avg_parked_duration:
         type: number
-      parked_duration_min:
+      estimated_vampire_drain:
         type: number
+      offline_duration:
+        type: number
+      online_duration:
+        type: number
+      parked_duration:
+        type: number
+      parking_session_count:
+        type: integer
+      state_transition_count:
+        type: integer
       vampire_drain_percent:
         type: number
     type: object
@@ -746,17 +638,29 @@ definitions:
     type: object
   V2Unit:
     properties:
+      consumption:
+        example: Wh/km
+        type: string
       currency:
         example: CNY
         type: string
       distance:
         example: km
         type: string
+      duration:
+        example: seconds
+        type: string
+      elevation:
+        example: m
+        type: string
       energy:
         example: kWh
         type: string
       power:
         example: kW
+        type: string
+      speed:
+        example: km/h
         type: string
       temperature:
         example: C
@@ -771,7 +675,7 @@ definitions:
     type: object
   V2UpdateAnalyticsResponse:
     properties:
-      avg_update_duration_min:
+      avg_update_duration:
         type: number
       latest_updated_at:
         type: string
@@ -784,6 +688,47 @@ definitions:
           $ref: '#/definitions/V2UpdateVersion'
         type: array
     type: object
+  V2UpdateChargingMetrics:
+    properties:
+      battery_energy:
+        type: number
+      cost:
+        type: number
+      duration:
+        type: number
+      efficiency:
+        type: number
+      session_count:
+        type: integer
+      wall_energy:
+        type: number
+    type: object
+  V2UpdateDrivingMetrics:
+    properties:
+      avg_consumption:
+        type: number
+      distance:
+        type: number
+      duration:
+        type: number
+      net_energy:
+        type: number
+      trip_count:
+        type: integer
+    type: object
+  V2UpdateEvent:
+    properties:
+      completed_at:
+        type: string
+      days_since_prior:
+        type: integer
+      duration:
+        type: number
+      started_at:
+        type: string
+      version:
+        type: string
+    type: object
   V2UpdateSummary:
     properties:
       latest_version:
@@ -793,69 +738,41 @@ definitions:
     type: object
   V2UpdateVersion:
     properties:
-      avg_consumption_kwh_per_100km:
-        type: number
-      battery_energy_kwh:
-        type: number
-      charge_cost:
-        type: number
-      charging_duration_min:
-        type: number
-      charging_efficiency_percent:
-        type: number
-      charging_session_count:
-        type: integer
-      completed_at:
+      event:
+        $ref: '#/definitions/V2UpdateEvent'
+      metrics:
+        $ref: '#/definitions/V2UpdateWindowMetrics'
+      window:
+        $ref: '#/definitions/V2UpdateWindow'
+    type: object
+  V2UpdateWindow:
+    properties:
+      end:
         type: string
-      days_since_prior:
-        type: integer
-      drive_efficiency_wh_per_km:
+      interval:
         type: number
-      driving_distance_km:
-        type: number
-      driving_duration_min:
-        type: number
-      driving_trip_count:
-        type: integer
-      duration_min:
-        type: number
-      inactive_duration_min:
-        type: number
-      interval_min:
-        type: number
-      net_drive_energy_kwh:
-        type: number
-      started_at:
+      start:
         type: string
-      version:
-        type: string
-      wall_energy_kwh:
+    type: object
+  V2UpdateWindowMetrics:
+    properties:
+      charging:
+        $ref: '#/definitions/V2UpdateChargingMetrics'
+      driving:
+        $ref: '#/definitions/V2UpdateDrivingMetrics'
+      inactive_duration:
         type: number
-      window_end:
-        type: string
-      window_start:
-        type: string
     type: object
   V2VehicleSummary:
     properties:
-      charging_efficiency_percent:
-        type: number
-      odometer_coverage_percent:
-        type: number
-      odometer_km:
-        type: number
-      rated_efficiency_kwh_per_100km:
+      odometer:
         type: number
       tracked_charges:
         type: integer
-      tracked_consumption_kwh_per_100km:
-        type: number
-      tracked_distance_km:
+      tracked_distance:
         type: number
       tracked_drives:
         type: integer
-      tracked_wall_kwh_per_100km:
-        type: number
     type: object
 info:
   contact: {}

@@ -1627,35 +1627,14 @@
                 }
             }
         },
-        "V2BatteryAnalyticsSummary": {
+        "V2BatteryRange": {
             "type": "object",
             "properties": {
-                "baseline_ideal_range_at_100_percent_km": {
+                "ideal": {
                     "type": "number"
                 },
-                "baseline_rated_range_at_100_percent_km": {
+                "rated": {
                     "type": "number"
-                },
-                "estimated_ideal_range_at_100_percent_km": {
-                    "type": "number"
-                },
-                "estimated_range_degradation_percent": {
-                    "type": "number"
-                },
-                "estimated_rated_range_at_100_percent_km": {
-                    "type": "number"
-                },
-                "latest_battery_level_percent": {
-                    "type": "integer"
-                },
-                "latest_ideal_range_km": {
-                    "type": "number"
-                },
-                "latest_rated_range_km": {
-                    "type": "number"
-                },
-                "sample_count": {
-                    "type": "integer"
                 }
             }
         },
@@ -1663,21 +1642,30 @@
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/V2BatteryAnalyticsSummary"
+                    "$ref": "#/definitions/V2BatterySummary"
                 }
             }
         },
         "V2BatterySummary": {
             "type": "object",
             "properties": {
-                "latest_battery_level_percent": {
+                "baseline_range_at_full_charge": {
+                    "$ref": "#/definitions/V2BatteryRange"
+                },
+                "estimated_range_degradation": {
+                    "type": "number"
+                },
+                "latest_ideal_range": {
+                    "type": "number"
+                },
+                "latest_level": {
                     "type": "integer"
                 },
-                "latest_ideal_range_km": {
+                "latest_rated_range": {
                     "type": "number"
                 },
-                "latest_rated_range_km": {
-                    "type": "number"
+                "range_at_full_charge": {
+                    "$ref": "#/definitions/V2BatteryRange"
                 }
             }
         },
@@ -1695,20 +1683,14 @@
         "V2BatteryTimeseriesItem": {
             "type": "object",
             "properties": {
-                "avg_battery_level_percent": {
-                    "type": "number"
-                },
-                "estimated_ideal_range_at_100_percent_km": {
-                    "type": "number"
-                },
-                "estimated_rated_range_at_100_percent_km": {
+                "avg_level": {
                     "type": "number"
                 },
                 "period_start": {
                     "type": "string"
                 },
-                "sample_count": {
-                    "type": "integer"
+                "range_at_full_charge": {
+                    "$ref": "#/definitions/V2BatteryRange"
                 }
             }
         },
@@ -1794,59 +1776,6 @@
                 }
             }
         },
-        "V2ChargingAnalyticsSummary": {
-            "type": "object",
-            "properties": {
-                "ac_energy_kwh": {
-                    "type": "number"
-                },
-                "ac_session_count": {
-                    "type": "integer"
-                },
-                "avg_cost_per_kwh": {
-                    "type": "number"
-                },
-                "avg_duration_min": {
-                    "type": "number"
-                },
-                "avg_power_kw": {
-                    "type": "number"
-                },
-                "charging_efficiency_percent": {
-                    "type": "number"
-                },
-                "cost": {
-                    "type": "number"
-                },
-                "dc_energy_kwh": {
-                    "type": "number"
-                },
-                "dc_session_count": {
-                    "type": "integer"
-                },
-                "duration_min": {
-                    "type": "number"
-                },
-                "end_battery_avg_percent": {
-                    "type": "number"
-                },
-                "energy_added_kwh": {
-                    "type": "number"
-                },
-                "energy_used_kwh": {
-                    "type": "number"
-                },
-                "max_power_kw": {
-                    "type": "number"
-                },
-                "session_count": {
-                    "type": "integer"
-                },
-                "start_battery_avg_percent": {
-                    "type": "number"
-                }
-            }
-        },
         "V2ChargingBreakdownResponse": {
             "type": "object",
             "properties": {
@@ -1873,16 +1802,16 @@
                 "address_id": {
                     "type": "integer"
                 },
-                "charging_efficiency_percent": {
+                "charging_efficiency": {
                     "type": "number"
                 },
                 "cost": {
                     "type": "number"
                 },
-                "energy_added_kwh": {
+                "energy_added": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "geofence_id": {
@@ -1903,7 +1832,7 @@
                     "$ref": "#/definitions/V2ChargingBreakdownResponse"
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2ChargingAnalyticsSummary"
+                    "$ref": "#/definitions/V2ChargingSummary"
                 },
                 "timeseries": {
                     "$ref": "#/definitions/V2ChargingTimeseriesResponse"
@@ -1913,66 +1842,87 @@
         "V2ChargingSummary": {
             "type": "object",
             "properties": {
+                "ac_energy": {
+                    "type": "number"
+                },
+                "ac_session_count": {
+                    "type": "integer"
+                },
                 "avg_cost": {
                     "type": "number"
                 },
-                "avg_duration_min": {
+                "avg_cost_per_energy": {
                     "type": "number"
                 },
-                "avg_energy_added_kwh": {
+                "avg_duration": {
                     "type": "number"
                 },
-                "avg_power_kw": {
+                "avg_energy_added": {
                     "type": "number"
                 },
-                "charging_efficiency_percent": {
+                "avg_power": {
+                    "type": "number"
+                },
+                "charging_efficiency": {
                     "type": "number"
                 },
                 "cost": {
                     "type": "number"
                 },
-                "duration_min": {
+                "dc_energy": {
                     "type": "number"
                 },
-                "energy_added_kwh": {
+                "dc_session_count": {
+                    "type": "integer"
+                },
+                "duration": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "end_battery_avg": {
                     "type": "number"
                 },
-                "largest_session_kwh": {
+                "energy_added": {
                     "type": "number"
                 },
-                "longest_session_duration_min": {
+                "energy_used": {
+                    "type": "number"
+                },
+                "largest_session": {
+                    "type": "number"
+                },
+                "longest_session_duration": {
                     "type": "number"
                 },
                 "max_cost": {
                     "type": "number"
                 },
-                "max_power_kw": {
+                "max_power": {
                     "type": "number"
                 },
                 "session_count": {
                     "type": "integer"
+                },
+                "start_battery_avg": {
+                    "type": "number"
                 }
             }
         },
         "V2ChargingTimeseriesItem": {
             "type": "object",
             "properties": {
-                "avg_power_kw": {
+                "avg_power": {
                     "type": "number"
                 },
                 "cost": {
                     "type": "number"
                 },
-                "duration_min": {
+                "duration": {
                     "type": "number"
                 },
-                "energy_added_kwh": {
+                "energy_added": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "period_start": {
@@ -2006,10 +1956,10 @@
                 "cost": {
                     "type": "number"
                 },
-                "energy_added_kwh": {
+                "energy_added": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "session_count": {
@@ -2045,30 +1995,13 @@
                 }
             }
         },
-        "V2CostDataScope": {
-            "type": "object",
-            "properties": {
-                "excluded": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "included": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "V2CostLocationItem": {
             "type": "object",
             "properties": {
                 "charging_cost": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "location_name": {
@@ -2082,7 +2015,7 @@
                 "charging_cost": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "period_start": {
@@ -2105,9 +2038,6 @@
                         "$ref": "#/definitions/V2CostPeriodItem"
                     }
                 },
-                "data_scope": {
-                    "$ref": "#/definitions/V2CostDataScope"
-                },
                 "summary": {
                     "$ref": "#/definitions/V2CostSummaryDetails"
                 }
@@ -2119,10 +2049,7 @@
                 "charging_cost": {
                     "type": "number"
                 },
-                "cost_per_100km": {
-                    "type": "number"
-                },
-                "cost_per_km": {
+                "cost_per_distance": {
                     "type": "number"
                 }
             }
@@ -2133,19 +2060,16 @@
                 "charging_cost": {
                     "type": "number"
                 },
-                "cost_per_100km": {
+                "cost_per_distance": {
                     "type": "number"
                 },
-                "cost_per_km": {
+                "cost_per_energy": {
                     "type": "number"
                 },
-                "cost_per_kwh": {
+                "distance": {
                     "type": "number"
                 },
-                "distance_km": {
-                    "type": "number"
-                },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 }
             }
@@ -2161,113 +2085,72 @@
                 }
             }
         },
-        "V2DrivingAnalyticsSummary": {
-            "type": "object",
-            "properties": {
-                "avg_consumption_wh_per_km": {
-                    "type": "number"
-                },
-                "avg_distance_km": {
-                    "type": "number"
-                },
-                "avg_duration_min": {
-                    "type": "number"
-                },
-                "avg_outside_temp_c": {
-                    "type": "number"
-                },
-                "avg_speed_kmh": {
-                    "type": "number"
-                },
-                "battery_level_used_percent": {
-                    "type": "number"
-                },
-                "best_consumption_wh_per_km": {
-                    "type": "number"
-                },
-                "distance_km": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "duration_min": {
-                    "type": "number"
-                },
-                "estimated_energy_consumed_kwh": {
-                    "type": "number"
-                },
-                "estimated_regenerated_energy_kwh": {
-                    "type": "number"
-                },
-                "max_speed_kmh": {
-                    "type": "number"
-                },
-                "range_loss_km": {
-                    "type": "number"
-                },
-                "total_ascent_m": {
-                    "type": "number"
-                },
-                "total_descent_m": {
-                    "type": "number"
-                },
-                "worst_consumption_wh_per_km": {
-                    "type": "number"
-                }
-            }
-        },
         "V2DrivingResponse": {
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/V2DrivingAnalyticsSummary"
+                    "$ref": "#/definitions/V2DrivingSummary"
                 }
             }
         },
         "V2DrivingSummary": {
             "type": "object",
             "properties": {
-                "avg_consumption_wh_per_km": {
+                "avg_consumption": {
                     "type": "number"
                 },
-                "avg_duration_min": {
+                "avg_distance": {
                     "type": "number"
                 },
-                "avg_speed_kmh": {
+                "avg_duration": {
                     "type": "number"
                 },
-                "avg_trip_distance_km": {
+                "avg_outside_temp": {
                     "type": "number"
                 },
-                "best_efficiency_wh_per_km": {
+                "avg_speed": {
                     "type": "number"
                 },
-                "distance_km": {
+                "battery_level_used": {
+                    "type": "number"
+                },
+                "best_consumption": {
+                    "type": "number"
+                },
+                "distance": {
                     "type": "number"
                 },
                 "drive_count": {
                     "type": "integer"
                 },
-                "duration_min": {
+                "duration": {
                     "type": "number"
                 },
-                "longest_drive_duration_min": {
+                "estimated_energy_consumed": {
                     "type": "number"
                 },
-                "max_speed_kmh": {
+                "estimated_energy_regen": {
                     "type": "number"
                 },
-                "net_energy_kwh": {
+                "longest_drive_duration": {
                     "type": "number"
                 },
-                "peak_drive_power_kw": {
+                "max_speed": {
                     "type": "number"
                 },
-                "peak_regen_power_kw": {
+                "net_energy": {
                     "type": "number"
                 },
-                "worst_efficiency_wh_per_km": {
+                "peak_drive_power": {
+                    "type": "number"
+                },
+                "peak_regen_power": {
+                    "type": "number"
+                },
+                "range_loss": {
+                    "type": "number"
+                },
+                "worst_consumption": {
                     "type": "number"
                 }
             }
@@ -2286,22 +2169,22 @@
         "V2DrivingTimeseriesItem": {
             "type": "object",
             "properties": {
-                "avg_consumption_wh_per_km": {
+                "avg_consumption": {
                     "type": "number"
                 },
-                "avg_speed_kmh": {
+                "avg_speed": {
                     "type": "number"
                 },
-                "distance_km": {
+                "distance": {
                     "type": "number"
                 },
                 "drive_count": {
                     "type": "integer"
                 },
-                "duration_min": {
+                "duration": {
                     "type": "number"
                 },
-                "estimated_energy_consumed_kwh": {
+                "estimated_energy_consumed": {
                     "type": "number"
                 },
                 "period_start": {
@@ -2340,13 +2223,13 @@
                 "as_of": {
                     "type": "string"
                 },
-                "avg_consumption_wh_per_km": {
+                "avg_consumption": {
                     "type": "number"
                 },
-                "avg_daily_distance_km": {
+                "avg_daily_distance": {
                     "type": "number"
                 },
-                "avg_monthly_distance_km": {
+                "avg_monthly_distance": {
                     "type": "number"
                 },
                 "charging_cost": {
@@ -2355,19 +2238,19 @@
                 "charging_session_count": {
                     "type": "integer"
                 },
-                "cost_per_100km": {
+                "cost_per_distance": {
                     "type": "number"
                 },
-                "distance_km": {
+                "distance": {
                     "type": "number"
                 },
                 "drive_count": {
                     "type": "integer"
                 },
-                "energy_added_kwh": {
+                "energy_added": {
                     "type": "number"
                 },
-                "energy_used_kwh": {
+                "energy_used": {
                     "type": "number"
                 },
                 "first_recorded_at": {
@@ -2442,44 +2325,6 @@
                 }
             }
         },
-        "V2ParkingAnalyticsSummary": {
-            "type": "object",
-            "properties": {
-                "asleep_duration_min": {
-                    "type": "number"
-                },
-                "avg_drain_percent_per_day": {
-                    "type": "number"
-                },
-                "avg_parked_duration_min": {
-                    "type": "number"
-                },
-                "estimated_vampire_drain_kwh": {
-                    "type": "number"
-                },
-                "offline_duration_min": {
-                    "type": "number"
-                },
-                "online_duration_min": {
-                    "type": "number"
-                },
-                "parked_duration_min": {
-                    "type": "number"
-                },
-                "parking_session_count": {
-                    "type": "integer"
-                },
-                "state_transition_count": {
-                    "type": "integer"
-                },
-                "vampire_drain_percent": {
-                    "type": "number"
-                },
-                "vampire_drain_range_km": {
-                    "type": "number"
-                }
-            }
-        },
         "V2ParkingBreakdownResponse": {
             "type": "object",
             "properties": {
@@ -2492,17 +2337,11 @@
                         "$ref": "#/definitions/V2ParkingLocationItem"
                     }
                 },
-                "state_transition_count": {
-                    "type": "integer"
-                },
                 "states": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ParkingStateItem"
                     }
-                },
-                "total_duration_min": {
-                    "type": "number"
                 }
             }
         },
@@ -2512,13 +2351,7 @@
                 "address_id": {
                     "type": "integer"
                 },
-                "asleep_duration_min": {
-                    "type": "number"
-                },
-                "avg_parked_duration_min": {
-                    "type": "number"
-                },
-                "estimated_vampire_drain_kwh": {
+                "avg_parked_duration": {
                     "type": "number"
                 },
                 "geofence_id": {
@@ -2527,23 +2360,11 @@
                 "location_name": {
                     "type": "string"
                 },
-                "offline_duration_min": {
-                    "type": "number"
-                },
-                "online_duration_min": {
-                    "type": "number"
-                },
-                "parked_duration_min": {
+                "parked_duration": {
                     "type": "number"
                 },
                 "parking_session_count": {
                     "type": "integer"
-                },
-                "vampire_drain_percent": {
-                    "type": "number"
-                },
-                "vampire_drain_range_km": {
-                    "type": "number"
                 }
             }
         },
@@ -2554,14 +2375,14 @@
                     "$ref": "#/definitions/V2ParkingBreakdownResponse"
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2ParkingAnalyticsSummary"
+                    "$ref": "#/definitions/V2ParkingSummary"
                 }
             }
         },
         "V2ParkingStateItem": {
             "type": "object",
             "properties": {
-                "duration_min": {
+                "duration": {
                     "type": "number"
                 },
                 "percent": {
@@ -2578,17 +2399,32 @@
         "V2ParkingSummary": {
             "type": "object",
             "properties": {
-                "asleep_duration_min": {
+                "asleep_duration": {
                     "type": "number"
                 },
-                "offline_duration_min": {
+                "avg_drain_percent_per_day": {
                     "type": "number"
                 },
-                "online_duration_min": {
+                "avg_parked_duration": {
                     "type": "number"
                 },
-                "parked_duration_min": {
+                "estimated_vampire_drain": {
                     "type": "number"
+                },
+                "offline_duration": {
+                    "type": "number"
+                },
+                "online_duration": {
+                    "type": "number"
+                },
+                "parked_duration": {
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "type": "integer"
+                },
+                "state_transition_count": {
+                    "type": "integer"
                 },
                 "vampire_drain_percent": {
                     "type": "number"
@@ -2705,6 +2541,10 @@
         "V2Unit": {
             "type": "object",
             "properties": {
+                "consumption": {
+                    "type": "string",
+                    "example": "Wh/km"
+                },
                 "currency": {
                     "type": "string",
                     "example": "CNY"
@@ -2713,6 +2553,14 @@
                     "type": "string",
                     "example": "km"
                 },
+                "duration": {
+                    "type": "string",
+                    "example": "seconds"
+                },
+                "elevation": {
+                    "type": "string",
+                    "example": "m"
+                },
                 "energy": {
                     "type": "string",
                     "example": "kWh"
@@ -2720,6 +2568,10 @@
                 "power": {
                     "type": "string",
                     "example": "kW"
+                },
+                "speed": {
+                    "type": "string",
+                    "example": "km/h"
                 },
                 "temperature": {
                     "type": "string",
@@ -2741,7 +2593,7 @@
         "V2UpdateAnalyticsResponse": {
             "type": "object",
             "properties": {
-                "avg_update_duration_min": {
+                "avg_update_duration": {
                     "type": "number"
                 },
                 "latest_updated_at": {
@@ -2761,6 +2613,69 @@
                 }
             }
         },
+        "V2UpdateChargingMetrics": {
+            "type": "object",
+            "properties": {
+                "battery_energy": {
+                    "type": "number"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "efficiency": {
+                    "type": "number"
+                },
+                "session_count": {
+                    "type": "integer"
+                },
+                "wall_energy": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2UpdateDrivingMetrics": {
+            "type": "object",
+            "properties": {
+                "avg_consumption": {
+                    "type": "number"
+                },
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "net_energy": {
+                    "type": "number"
+                },
+                "trip_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "V2UpdateEvent": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "days_since_prior": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "V2UpdateSummary": {
             "type": "object",
             "properties": {
@@ -2775,100 +2690,59 @@
         "V2UpdateVersion": {
             "type": "object",
             "properties": {
-                "avg_consumption_kwh_per_100km": {
-                    "type": "number"
+                "event": {
+                    "$ref": "#/definitions/V2UpdateEvent"
                 },
-                "battery_energy_kwh": {
-                    "type": "number"
+                "metrics": {
+                    "$ref": "#/definitions/V2UpdateWindowMetrics"
                 },
-                "charge_cost": {
-                    "type": "number"
-                },
-                "charging_duration_min": {
-                    "type": "number"
-                },
-                "charging_efficiency_percent": {
-                    "type": "number"
-                },
-                "charging_session_count": {
-                    "type": "integer"
-                },
-                "completed_at": {
+                "window": {
+                    "$ref": "#/definitions/V2UpdateWindow"
+                }
+            }
+        },
+        "V2UpdateWindow": {
+            "type": "object",
+            "properties": {
+                "end": {
                     "type": "string"
                 },
-                "days_since_prior": {
-                    "type": "integer"
-                },
-                "drive_efficiency_wh_per_km": {
+                "interval": {
                     "type": "number"
                 },
-                "driving_distance_km": {
-                    "type": "number"
-                },
-                "driving_duration_min": {
-                    "type": "number"
-                },
-                "driving_trip_count": {
-                    "type": "integer"
-                },
-                "duration_min": {
-                    "type": "number"
-                },
-                "inactive_duration_min": {
-                    "type": "number"
-                },
-                "interval_min": {
-                    "type": "number"
-                },
-                "net_drive_energy_kwh": {
-                    "type": "number"
-                },
-                "started_at": {
+                "start": {
                     "type": "string"
+                }
+            }
+        },
+        "V2UpdateWindowMetrics": {
+            "type": "object",
+            "properties": {
+                "charging": {
+                    "$ref": "#/definitions/V2UpdateChargingMetrics"
                 },
-                "version": {
-                    "type": "string"
+                "driving": {
+                    "$ref": "#/definitions/V2UpdateDrivingMetrics"
                 },
-                "wall_energy_kwh": {
+                "inactive_duration": {
                     "type": "number"
-                },
-                "window_end": {
-                    "type": "string"
-                },
-                "window_start": {
-                    "type": "string"
                 }
             }
         },
         "V2VehicleSummary": {
             "type": "object",
             "properties": {
-                "charging_efficiency_percent": {
-                    "type": "number"
-                },
-                "odometer_coverage_percent": {
-                    "type": "number"
-                },
-                "odometer_km": {
-                    "type": "number"
-                },
-                "rated_efficiency_kwh_per_100km": {
+                "odometer": {
                     "type": "number"
                 },
                 "tracked_charges": {
                     "type": "integer"
                 },
-                "tracked_consumption_kwh_per_100km": {
-                    "type": "number"
-                },
-                "tracked_distance_km": {
+                "tracked_distance": {
                     "type": "number"
                 },
                 "tracked_drives": {
                     "type": "integer"
-                },
-                "tracked_wall_kwh_per_100km": {
-                    "type": "number"
                 }
             }
         }
