@@ -26,7 +26,6 @@ help:
 docs swagger:
 	$(GO) run $(SWAG_PKG) init -g $(SWAG_GENERAL) -d $(SWAG_DIR) -o $(DOCS_OUT)
 	rm -f $(DOCS_OUT)/docs.go
-	python3 scripts/normalize_swagger_main_prefix.py $(DOCS_OUT)
 
 build:
 	@mkdir -p $(BIN_DIR)

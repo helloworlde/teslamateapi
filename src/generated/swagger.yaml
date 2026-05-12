@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  APIErrorBody:
+  main.APIErrorBody:
     properties:
       code:
         type: string
@@ -9,35 +9,35 @@ definitions:
       message:
         type: string
     type: object
-  APIErrorResponse:
+  main.APIErrorResponse:
     properties:
       error:
-        $ref: '#/definitions/APIErrorBody'
+        $ref: '#/definitions/main.APIErrorBody'
     type: object
-  V1EnabledCommandsResponse:
+  main.V1EnabledCommandsResponse:
     properties:
       enabled_commands:
         items:
           type: string
         type: array
     type: object
-  V1ErrorEnvelope:
+  main.V1ErrorEnvelope:
     properties:
       error:
         type: string
     type: object
-  V1JSONEnvelope:
+  main.V1JSONEnvelope:
     properties:
       data: {}
     type: object
-  V2BatteryAPIResponse:
+  main.V2BatteryAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2BatteryResponse'
+        $ref: '#/definitions/main.V2BatteryResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2BatteryAnalyticsSummary:
+  main.V2BatteryAnalyticsSummary:
     properties:
       baseline_ideal_range_at_100_percent_km:
         type: number
@@ -58,12 +58,12 @@ definitions:
       sample_count:
         type: integer
     type: object
-  V2BatteryResponse:
+  main.V2BatteryResponse:
     properties:
       summary:
-        $ref: '#/definitions/V2BatteryAnalyticsSummary'
+        $ref: '#/definitions/main.V2BatteryAnalyticsSummary'
     type: object
-  V2BatterySummary:
+  main.V2BatterySummary:
     properties:
       latest_battery_level_percent:
         type: integer
@@ -72,14 +72,14 @@ definitions:
       latest_rated_range_km:
         type: number
     type: object
-  V2BatteryTimeseriesAPIResponse:
+  main.V2BatteryTimeseriesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2BatteryTimeseriesResponse'
+        $ref: '#/definitions/main.V2BatteryTimeseriesResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2BatteryTimeseriesItem:
+  main.V2BatteryTimeseriesItem:
     properties:
       avg_battery_level_percent:
         type: number
@@ -92,23 +92,23 @@ definitions:
       sample_count:
         type: integer
     type: object
-  V2BatteryTimeseriesResponse:
+  main.V2BatteryTimeseriesResponse:
     properties:
       group_by:
         type: string
       items:
         items:
-          $ref: '#/definitions/V2BatteryTimeseriesItem'
+          $ref: '#/definitions/main.V2BatteryTimeseriesItem'
         type: array
     type: object
-  V2CapabilitiesAPIResponse:
+  main.V2CapabilitiesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2CapabilitiesResponse'
+        $ref: '#/definitions/main.V2CapabilitiesResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2CapabilitiesDomain:
+  main.V2CapabilitiesDomain:
     properties:
       name:
         example: driving
@@ -123,7 +123,7 @@ definitions:
       supports_timeseries:
         type: boolean
     type: object
-  V2CapabilitiesResponse:
+  main.V2CapabilitiesResponse:
     properties:
       breakdown_options:
         additionalProperties:
@@ -133,20 +133,20 @@ definitions:
         type: object
       domains:
         items:
-          $ref: '#/definitions/V2CapabilitiesDomain'
+          $ref: '#/definitions/main.V2CapabilitiesDomain'
         type: array
       version:
         example: v2
         type: string
     type: object
-  V2ChargingAPIResponse:
+  main.V2ChargingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2ChargingResponse'
+        $ref: '#/definitions/main.V2ChargingResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2ChargingAnalyticsSummary:
+  main.V2ChargingAnalyticsSummary:
     properties:
       ac_energy_kwh:
         type: number
@@ -181,20 +181,20 @@ definitions:
       start_battery_avg_percent:
         type: number
     type: object
-  V2ChargingBreakdownResponse:
+  main.V2ChargingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
         items:
-          $ref: '#/definitions/V2ChargingLocationItem'
+          $ref: '#/definitions/main.V2ChargingLocationItem'
         type: array
       types:
         items:
-          $ref: '#/definitions/V2ChargingTypeItem'
+          $ref: '#/definitions/main.V2ChargingTypeItem'
         type: array
     type: object
-  V2ChargingLocationItem:
+  main.V2ChargingLocationItem:
     properties:
       address_id:
         type: integer
@@ -213,16 +213,16 @@ definitions:
       session_count:
         type: integer
     type: object
-  V2ChargingResponse:
+  main.V2ChargingResponse:
     properties:
       breakdown:
-        $ref: '#/definitions/V2ChargingBreakdownResponse'
+        $ref: '#/definitions/main.V2ChargingBreakdownResponse'
       summary:
-        $ref: '#/definitions/V2ChargingAnalyticsSummary'
+        $ref: '#/definitions/main.V2ChargingAnalyticsSummary'
       timeseries:
-        $ref: '#/definitions/V2ChargingTimeseriesResponse'
+        $ref: '#/definitions/main.V2ChargingTimeseriesResponse'
     type: object
-  V2ChargingSummary:
+  main.V2ChargingSummary:
     properties:
       avg_cost:
         type: number
@@ -253,7 +253,7 @@ definitions:
       session_count:
         type: integer
     type: object
-  V2ChargingTimeseriesItem:
+  main.V2ChargingTimeseriesItem:
     properties:
       avg_power_kw:
         type: number
@@ -270,16 +270,16 @@ definitions:
       session_count:
         type: integer
     type: object
-  V2ChargingTimeseriesResponse:
+  main.V2ChargingTimeseriesResponse:
     properties:
       group_by:
         type: string
       items:
         items:
-          $ref: '#/definitions/V2ChargingTimeseriesItem'
+          $ref: '#/definitions/main.V2ChargingTimeseriesItem'
         type: array
     type: object
-  V2ChargingTypeItem:
+  main.V2ChargingTypeItem:
     properties:
       charging_type:
         type: string
@@ -292,7 +292,7 @@ definitions:
       session_count:
         type: integer
     type: object
-  V2ComparisonValue:
+  main.V2ComparisonValue:
     properties:
       current:
         type: number
@@ -303,14 +303,14 @@ definitions:
       previous:
         type: number
     type: object
-  V2CostAPIResponse:
+  main.V2CostAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2CostResponse'
+        $ref: '#/definitions/main.V2CostResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2CostDataScope:
+  main.V2CostDataScope:
     properties:
       excluded:
         items:
@@ -321,7 +321,7 @@ definitions:
           type: string
         type: array
     type: object
-  V2CostLocationItem:
+  main.V2CostLocationItem:
     properties:
       charging_cost:
         type: number
@@ -330,7 +330,7 @@ definitions:
       location_name:
         type: string
     type: object
-  V2CostPeriodItem:
+  main.V2CostPeriodItem:
     properties:
       charging_cost:
         type: number
@@ -339,22 +339,22 @@ definitions:
       period_start:
         type: string
     type: object
-  V2CostResponse:
+  main.V2CostResponse:
     properties:
       cost_by_location:
         items:
-          $ref: '#/definitions/V2CostLocationItem'
+          $ref: '#/definitions/main.V2CostLocationItem'
         type: array
       cost_by_period:
         items:
-          $ref: '#/definitions/V2CostPeriodItem'
+          $ref: '#/definitions/main.V2CostPeriodItem'
         type: array
       data_scope:
-        $ref: '#/definitions/V2CostDataScope'
+        $ref: '#/definitions/main.V2CostDataScope'
       summary:
-        $ref: '#/definitions/V2CostSummaryDetails'
+        $ref: '#/definitions/main.V2CostSummaryDetails'
     type: object
-  V2CostSummary:
+  main.V2CostSummary:
     properties:
       charging_cost:
         type: number
@@ -363,7 +363,7 @@ definitions:
       cost_per_km:
         type: number
     type: object
-  V2CostSummaryDetails:
+  main.V2CostSummaryDetails:
     properties:
       charging_cost:
         type: number
@@ -378,14 +378,14 @@ definitions:
       energy_used_kwh:
         type: number
     type: object
-  V2DrivingAPIResponse:
+  main.V2DrivingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2DrivingResponse'
+        $ref: '#/definitions/main.V2DrivingResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2DrivingAnalyticsSummary:
+  main.V2DrivingAnalyticsSummary:
     properties:
       avg_consumption_wh_per_km:
         type: number
@@ -422,12 +422,12 @@ definitions:
       worst_consumption_wh_per_km:
         type: number
     type: object
-  V2DrivingResponse:
+  main.V2DrivingResponse:
     properties:
       summary:
-        $ref: '#/definitions/V2DrivingAnalyticsSummary'
+        $ref: '#/definitions/main.V2DrivingAnalyticsSummary'
     type: object
-  V2DrivingSummary:
+  main.V2DrivingSummary:
     properties:
       avg_consumption_wh_per_km:
         type: number
@@ -458,14 +458,14 @@ definitions:
       worst_efficiency_wh_per_km:
         type: number
     type: object
-  V2DrivingTimeseriesAPIResponse:
+  main.V2DrivingTimeseriesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2DrivingTimeseriesResponse'
+        $ref: '#/definitions/main.V2DrivingTimeseriesResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2DrivingTimeseriesItem:
+  main.V2DrivingTimeseriesItem:
     properties:
       avg_consumption_wh_per_km:
         type: number
@@ -482,23 +482,23 @@ definitions:
       period_start:
         type: string
     type: object
-  V2DrivingTimeseriesResponse:
+  main.V2DrivingTimeseriesResponse:
     properties:
       group_by:
         type: string
       items:
         items:
-          $ref: '#/definitions/V2DrivingTimeseriesItem'
+          $ref: '#/definitions/main.V2DrivingTimeseriesItem'
         type: array
     type: object
-  V2LifecycleAPIResponse:
+  main.V2LifecycleAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2LifecycleResponse'
+        $ref: '#/definitions/main.V2LifecycleResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2LifecycleResponse:
+  main.V2LifecycleResponse:
     properties:
       as_of:
         type: string
@@ -531,7 +531,7 @@ definitions:
       update_count:
         type: integer
     type: object
-  V2Meta:
+  main.V2Meta:
     properties:
       car_id:
         example: 1
@@ -564,16 +564,16 @@ definitions:
         example: Asia/Shanghai
         type: string
       unit:
-        $ref: '#/definitions/V2Unit'
+        $ref: '#/definitions/main.V2Unit'
     type: object
-  V2ParkingAPIResponse:
+  main.V2ParkingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2ParkingResponse'
+        $ref: '#/definitions/main.V2ParkingResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2ParkingAnalyticsSummary:
+  main.V2ParkingAnalyticsSummary:
     properties:
       asleep_duration_min:
         type: number
@@ -598,24 +598,24 @@ definitions:
       vampire_drain_range_km:
         type: number
     type: object
-  V2ParkingBreakdownResponse:
+  main.V2ParkingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
         items:
-          $ref: '#/definitions/V2ParkingLocationItem'
+          $ref: '#/definitions/main.V2ParkingLocationItem'
         type: array
       state_transition_count:
         type: integer
       states:
         items:
-          $ref: '#/definitions/V2ParkingStateItem'
+          $ref: '#/definitions/main.V2ParkingStateItem'
         type: array
       total_duration_min:
         type: number
     type: object
-  V2ParkingLocationItem:
+  main.V2ParkingLocationItem:
     properties:
       address_id:
         type: integer
@@ -642,14 +642,14 @@ definitions:
       vampire_drain_range_km:
         type: number
     type: object
-  V2ParkingResponse:
+  main.V2ParkingResponse:
     properties:
       breakdown:
-        $ref: '#/definitions/V2ParkingBreakdownResponse'
+        $ref: '#/definitions/main.V2ParkingBreakdownResponse'
       summary:
-        $ref: '#/definitions/V2ParkingAnalyticsSummary'
+        $ref: '#/definitions/main.V2ParkingAnalyticsSummary'
     type: object
-  V2ParkingStateItem:
+  main.V2ParkingStateItem:
     properties:
       duration_min:
         type: number
@@ -660,7 +660,7 @@ definitions:
       transition_count:
         type: integer
     type: object
-  V2ParkingSummary:
+  main.V2ParkingSummary:
     properties:
       asleep_duration_min:
         type: number
@@ -673,49 +673,49 @@ definitions:
       vampire_drain_percent:
         type: number
     type: object
-  V2Summary:
+  main.V2Summary:
     properties:
       battery:
-        $ref: '#/definitions/V2BatterySummary'
+        $ref: '#/definitions/main.V2BatterySummary'
       charging:
-        $ref: '#/definitions/V2ChargingSummary'
+        $ref: '#/definitions/main.V2ChargingSummary'
       cost:
-        $ref: '#/definitions/V2CostSummary'
+        $ref: '#/definitions/main.V2CostSummary'
       driving:
-        $ref: '#/definitions/V2DrivingSummary'
+        $ref: '#/definitions/main.V2DrivingSummary'
       parking:
-        $ref: '#/definitions/V2ParkingSummary'
+        $ref: '#/definitions/main.V2ParkingSummary'
       updates:
-        $ref: '#/definitions/V2UpdateSummary'
+        $ref: '#/definitions/main.V2UpdateSummary'
       vehicle:
-        $ref: '#/definitions/V2VehicleSummary'
+        $ref: '#/definitions/main.V2VehicleSummary'
     type: object
-  V2SummaryAPIResponse:
+  main.V2SummaryAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2SummaryResponse'
+        $ref: '#/definitions/main.V2SummaryResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2SummaryResponse:
+  main.V2SummaryResponse:
     properties:
       comparison:
         additionalProperties:
-          $ref: '#/definitions/V2ComparisonValue'
+          $ref: '#/definitions/main.V2ComparisonValue'
         description: 'Comparison keys: driving/charging/parking/battery/updates/vehicle/cost
           field paths; values are current vs previous period.'
         type: object
       summary:
-        $ref: '#/definitions/V2Summary'
+        $ref: '#/definitions/main.V2Summary'
     type: object
-  V2TimelineAPIResponse:
+  main.V2TimelineAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2TimelineResponse'
+        $ref: '#/definitions/main.V2TimelineResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2TimelineEvent:
+  main.V2TimelineEvent:
     properties:
       end_time:
         type: string
@@ -731,11 +731,11 @@ definitions:
       type:
         type: string
     type: object
-  V2TimelineResponse:
+  main.V2TimelineResponse:
     properties:
       events:
         items:
-          $ref: '#/definitions/V2TimelineEvent'
+          $ref: '#/definitions/main.V2TimelineEvent'
         type: array
       has_more:
         type: boolean
@@ -744,7 +744,7 @@ definitions:
       total:
         type: integer
     type: object
-  V2Unit:
+  main.V2Unit:
     properties:
       currency:
         example: CNY
@@ -762,14 +762,14 @@ definitions:
         example: C
         type: string
     type: object
-  V2UpdateAnalyticsAPIResponse:
+  main.V2UpdateAnalyticsAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2UpdateAnalyticsResponse'
+        $ref: '#/definitions/main.V2UpdateAnalyticsResponse'
       meta:
-        $ref: '#/definitions/V2Meta'
+        $ref: '#/definitions/main.V2Meta'
     type: object
-  V2UpdateAnalyticsResponse:
+  main.V2UpdateAnalyticsResponse:
     properties:
       avg_update_duration_min:
         type: number
@@ -781,17 +781,17 @@ definitions:
         type: integer
       versions:
         items:
-          $ref: '#/definitions/V2UpdateVersion'
+          $ref: '#/definitions/main.V2UpdateVersion'
         type: array
     type: object
-  V2UpdateSummary:
+  main.V2UpdateSummary:
     properties:
       latest_version:
         type: string
       update_count:
         type: integer
     type: object
-  V2UpdateVersion:
+  main.V2UpdateVersion:
     properties:
       avg_consumption_kwh_per_100km:
         type: number
@@ -836,7 +836,7 @@ definitions:
       window_start:
         type: string
     type: object
-  V2VehicleSummary:
+  main.V2VehicleSummary:
     properties:
       charging_efficiency_percent:
         type: number
@@ -874,7 +874,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: List TeslaMate cars or get one car
       tags:
       - V1
@@ -893,7 +893,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: List TeslaMate cars or get one car
       tags:
       - V1
@@ -911,7 +911,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Get battery health for one car
       tags:
       - V1
@@ -945,7 +945,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: List charging sessions for one car
       tags:
       - V1
@@ -968,7 +968,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Get one charging session by ID
       tags:
       - V1
@@ -986,7 +986,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Get active charging session if any
       tags:
       - V1
@@ -1006,15 +1006,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1038,15 +1038,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1066,15 +1066,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1108,7 +1108,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: List drives for one car
       tags:
       - V1
@@ -1131,7 +1131,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Get one drive by ID
       tags:
       - V1
@@ -1151,7 +1151,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: TeslaMate logging commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1175,7 +1175,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: TeslaMate logging commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1194,11 +1194,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "501":
           description: Not Implemented
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: MQTT-backed live vehicle status
       tags:
       - V1
@@ -1216,7 +1216,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: List firmware updates for one car
       tags:
       - V1
@@ -1236,15 +1236,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
@@ -1256,14 +1256,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
+            $ref: '#/definitions/main.V1ErrorEnvelope'
       summary: Get TeslaMate global settings
       tags:
       - V1
   /v2/capabilities:
     get:
       description: Returns the V2 analytics API version, the per-domain feature flags
-        (compare/timeseries/breakdown), and the allowed breakdown values per do
+        (compare/timeseries/breakdown), and the allowed breakdown values per domain.
         Clients use this to decide which query parameters to send instead of probing
         each endpoint.
       produces:
@@ -1272,11 +1272,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2CapabilitiesAPIResponse'
+            $ref: '#/definitions/main.V2CapabilitiesAPIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 API capabilities
       tags:
       - V2 Summary
@@ -1321,19 +1321,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2BatteryAPIResponse'
+            $ref: '#/definitions/main.V2BatteryAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 battery analytics summary
       tags:
       - V2 Battery Analytics
@@ -1386,19 +1386,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2BatteryTimeseriesAPIResponse'
+            $ref: '#/definitions/main.V2BatteryTimeseriesAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 battery analytics timeseries
       tags:
       - V2 Battery Analytics
@@ -1462,19 +1462,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2ChargingAPIResponse'
+            $ref: '#/definitions/main.V2ChargingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 charging analytics summary
       tags:
       - V2 Charging Analytics
@@ -1528,19 +1528,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2CostAPIResponse'
+            $ref: '#/definitions/main.V2CostAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 cost analytics
       tags:
       - V2 Cost Analytics
@@ -1583,19 +1583,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2DrivingAPIResponse'
+            $ref: '#/definitions/main.V2DrivingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 driving analytics summary
       tags:
       - V2 Driving Analytics
@@ -1648,19 +1648,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2DrivingTimeseriesAPIResponse'
+            $ref: '#/definitions/main.V2DrivingTimeseriesAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 driving analytics timeseries
       tags:
       - V2 Driving Analytics
@@ -1716,19 +1716,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2ParkingAPIResponse'
+            $ref: '#/definitions/main.V2ParkingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 parking analytics summary
       tags:
       - V2 Parking Analytics
@@ -1779,19 +1779,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2SummaryAPIResponse'
+            $ref: '#/definitions/main.V2SummaryAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 period summary analytics
       tags:
       - V2 Summary
@@ -1816,19 +1816,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2LifecycleAPIResponse'
+            $ref: '#/definitions/main.V2LifecycleAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 lifetime cumulative analytics
       tags:
       - V2 Lifecycle
@@ -1866,19 +1866,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2TimelineAPIResponse'
+            $ref: '#/definitions/main.V2TimelineAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 unified event timeline
       tags:
       - V2 Lifecycle
@@ -1922,19 +1922,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/V2UpdateAnalyticsAPIResponse'
+            $ref: '#/definitions/main.V2UpdateAnalyticsAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/APIErrorResponse'
+            $ref: '#/definitions/main.APIErrorResponse'
       summary: V2 update analytics
       tags:
       - V2 Update Analytics

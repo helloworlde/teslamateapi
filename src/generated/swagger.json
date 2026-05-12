@@ -22,7 +22,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -50,7 +50,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -78,7 +78,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -130,7 +130,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -158,7 +158,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -193,7 +193,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -222,19 +222,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -269,19 +269,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -310,19 +310,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -374,7 +374,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -409,7 +409,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -438,7 +438,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -473,7 +473,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -502,13 +502,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "501": {
                         "description": "Not Implemented",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -536,7 +536,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -565,19 +565,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -596,7 +596,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V1ErrorEnvelope"
+                            "$ref": "#/definitions/main.V1ErrorEnvelope"
                         }
                     }
                 }
@@ -604,7 +604,7 @@
         },
         "/v2/capabilities": {
             "get": {
-                "description": "Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per do Clients use this to decide which query parameters to send instead of probing each endpoint.",
+                "description": "Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per domain. Clients use this to decide which query parameters to send instead of probing each endpoint.",
                 "produces": [
                     "application/json"
                 ],
@@ -616,13 +616,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2CapabilitiesAPIResponse"
+                            "$ref": "#/definitions/main.V2CapabilitiesAPIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -684,25 +684,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2BatteryAPIResponse"
+                            "$ref": "#/definitions/main.V2BatteryAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -776,25 +776,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2BatteryTimeseriesAPIResponse"
+                            "$ref": "#/definitions/main.V2BatteryTimeseriesAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -885,25 +885,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2ChargingAPIResponse"
+                            "$ref": "#/definitions/main.V2ChargingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -977,25 +977,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2CostAPIResponse"
+                            "$ref": "#/definitions/main.V2CostAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1057,25 +1057,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2DrivingAPIResponse"
+                            "$ref": "#/definitions/main.V2DrivingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1149,25 +1149,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2DrivingTimeseriesAPIResponse"
+                            "$ref": "#/definitions/main.V2DrivingTimeseriesAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1246,25 +1246,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2ParkingAPIResponse"
+                            "$ref": "#/definitions/main.V2ParkingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1336,25 +1336,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2SummaryAPIResponse"
+                            "$ref": "#/definitions/main.V2SummaryAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1390,25 +1390,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2LifecycleAPIResponse"
+                            "$ref": "#/definitions/main.V2LifecycleAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1463,25 +1463,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2TimelineAPIResponse"
+                            "$ref": "#/definitions/main.V2TimelineAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1543,25 +1543,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2UpdateAnalyticsAPIResponse"
+                            "$ref": "#/definitions/main.V2UpdateAnalyticsAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
+                            "$ref": "#/definitions/main.APIErrorResponse"
                         }
                     }
                 }
@@ -1569,7 +1569,7 @@
         }
     },
     "definitions": {
-        "APIErrorBody": {
+        "main.APIErrorBody": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1583,15 +1583,15 @@
                 }
             }
         },
-        "APIErrorResponse": {
+        "main.APIErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
-                    "$ref": "#/definitions/APIErrorBody"
+                    "$ref": "#/definitions/main.APIErrorBody"
                 }
             }
         },
-        "V1EnabledCommandsResponse": {
+        "main.V1EnabledCommandsResponse": {
             "type": "object",
             "properties": {
                 "enabled_commands": {
@@ -1602,7 +1602,7 @@
                 }
             }
         },
-        "V1ErrorEnvelope": {
+        "main.V1ErrorEnvelope": {
             "type": "object",
             "properties": {
                 "error": {
@@ -1610,24 +1610,24 @@
                 }
             }
         },
-        "V1JSONEnvelope": {
+        "main.V1JSONEnvelope": {
             "type": "object",
             "properties": {
                 "data": {}
             }
         },
-        "V2BatteryAPIResponse": {
+        "main.V2BatteryAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2BatteryResponse"
+                    "$ref": "#/definitions/main.V2BatteryResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2BatteryAnalyticsSummary": {
+        "main.V2BatteryAnalyticsSummary": {
             "type": "object",
             "properties": {
                 "baseline_ideal_range_at_100_percent_km": {
@@ -1659,15 +1659,15 @@
                 }
             }
         },
-        "V2BatteryResponse": {
+        "main.V2BatteryResponse": {
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/V2BatteryAnalyticsSummary"
+                    "$ref": "#/definitions/main.V2BatteryAnalyticsSummary"
                 }
             }
         },
-        "V2BatterySummary": {
+        "main.V2BatterySummary": {
             "type": "object",
             "properties": {
                 "latest_battery_level_percent": {
@@ -1681,18 +1681,18 @@
                 }
             }
         },
-        "V2BatteryTimeseriesAPIResponse": {
+        "main.V2BatteryTimeseriesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2BatteryTimeseriesResponse"
+                    "$ref": "#/definitions/main.V2BatteryTimeseriesResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2BatteryTimeseriesItem": {
+        "main.V2BatteryTimeseriesItem": {
             "type": "object",
             "properties": {
                 "avg_battery_level_percent": {
@@ -1712,7 +1712,7 @@
                 }
             }
         },
-        "V2BatteryTimeseriesResponse": {
+        "main.V2BatteryTimeseriesResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -1721,23 +1721,23 @@
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2BatteryTimeseriesItem"
+                        "$ref": "#/definitions/main.V2BatteryTimeseriesItem"
                     }
                 }
             }
         },
-        "V2CapabilitiesAPIResponse": {
+        "main.V2CapabilitiesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CapabilitiesResponse"
+                    "$ref": "#/definitions/main.V2CapabilitiesResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2CapabilitiesDomain": {
+        "main.V2CapabilitiesDomain": {
             "type": "object",
             "properties": {
                 "name": {
@@ -1759,7 +1759,7 @@
                 }
             }
         },
-        "V2CapabilitiesResponse": {
+        "main.V2CapabilitiesResponse": {
             "type": "object",
             "properties": {
                 "breakdown_options": {
@@ -1774,7 +1774,7 @@
                 "domains": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2CapabilitiesDomain"
+                        "$ref": "#/definitions/main.V2CapabilitiesDomain"
                     }
                 },
                 "version": {
@@ -1783,18 +1783,18 @@
                 }
             }
         },
-        "V2ChargingAPIResponse": {
+        "main.V2ChargingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2ChargingResponse"
+                    "$ref": "#/definitions/main.V2ChargingResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2ChargingAnalyticsSummary": {
+        "main.V2ChargingAnalyticsSummary": {
             "type": "object",
             "properties": {
                 "ac_energy_kwh": {
@@ -1847,7 +1847,7 @@
                 }
             }
         },
-        "V2ChargingBreakdownResponse": {
+        "main.V2ChargingBreakdownResponse": {
             "type": "object",
             "properties": {
                 "by": {
@@ -1856,18 +1856,18 @@
                 "locations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ChargingLocationItem"
+                        "$ref": "#/definitions/main.V2ChargingLocationItem"
                     }
                 },
                 "types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ChargingTypeItem"
+                        "$ref": "#/definitions/main.V2ChargingTypeItem"
                     }
                 }
             }
         },
-        "V2ChargingLocationItem": {
+        "main.V2ChargingLocationItem": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -1896,21 +1896,21 @@
                 }
             }
         },
-        "V2ChargingResponse": {
+        "main.V2ChargingResponse": {
             "type": "object",
             "properties": {
                 "breakdown": {
-                    "$ref": "#/definitions/V2ChargingBreakdownResponse"
+                    "$ref": "#/definitions/main.V2ChargingBreakdownResponse"
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2ChargingAnalyticsSummary"
+                    "$ref": "#/definitions/main.V2ChargingAnalyticsSummary"
                 },
                 "timeseries": {
-                    "$ref": "#/definitions/V2ChargingTimeseriesResponse"
+                    "$ref": "#/definitions/main.V2ChargingTimeseriesResponse"
                 }
             }
         },
-        "V2ChargingSummary": {
+        "main.V2ChargingSummary": {
             "type": "object",
             "properties": {
                 "avg_cost": {
@@ -1957,7 +1957,7 @@
                 }
             }
         },
-        "V2ChargingTimeseriesItem": {
+        "main.V2ChargingTimeseriesItem": {
             "type": "object",
             "properties": {
                 "avg_power_kw": {
@@ -1983,7 +1983,7 @@
                 }
             }
         },
-        "V2ChargingTimeseriesResponse": {
+        "main.V2ChargingTimeseriesResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -1992,12 +1992,12 @@
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ChargingTimeseriesItem"
+                        "$ref": "#/definitions/main.V2ChargingTimeseriesItem"
                     }
                 }
             }
         },
-        "V2ChargingTypeItem": {
+        "main.V2ChargingTypeItem": {
             "type": "object",
             "properties": {
                 "charging_type": {
@@ -2017,7 +2017,7 @@
                 }
             }
         },
-        "V2ComparisonValue": {
+        "main.V2ComparisonValue": {
             "type": "object",
             "properties": {
                 "current": {
@@ -2034,18 +2034,18 @@
                 }
             }
         },
-        "V2CostAPIResponse": {
+        "main.V2CostAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CostResponse"
+                    "$ref": "#/definitions/main.V2CostResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2CostDataScope": {
+        "main.V2CostDataScope": {
             "type": "object",
             "properties": {
                 "excluded": {
@@ -2062,7 +2062,7 @@
                 }
             }
         },
-        "V2CostLocationItem": {
+        "main.V2CostLocationItem": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -2076,7 +2076,7 @@
                 }
             }
         },
-        "V2CostPeriodItem": {
+        "main.V2CostPeriodItem": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -2090,30 +2090,30 @@
                 }
             }
         },
-        "V2CostResponse": {
+        "main.V2CostResponse": {
             "type": "object",
             "properties": {
                 "cost_by_location": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2CostLocationItem"
+                        "$ref": "#/definitions/main.V2CostLocationItem"
                     }
                 },
                 "cost_by_period": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2CostPeriodItem"
+                        "$ref": "#/definitions/main.V2CostPeriodItem"
                     }
                 },
                 "data_scope": {
-                    "$ref": "#/definitions/V2CostDataScope"
+                    "$ref": "#/definitions/main.V2CostDataScope"
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2CostSummaryDetails"
+                    "$ref": "#/definitions/main.V2CostSummaryDetails"
                 }
             }
         },
-        "V2CostSummary": {
+        "main.V2CostSummary": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -2127,7 +2127,7 @@
                 }
             }
         },
-        "V2CostSummaryDetails": {
+        "main.V2CostSummaryDetails": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -2150,18 +2150,18 @@
                 }
             }
         },
-        "V2DrivingAPIResponse": {
+        "main.V2DrivingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2DrivingResponse"
+                    "$ref": "#/definitions/main.V2DrivingResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2DrivingAnalyticsSummary": {
+        "main.V2DrivingAnalyticsSummary": {
             "type": "object",
             "properties": {
                 "avg_consumption_wh_per_km": {
@@ -2217,15 +2217,15 @@
                 }
             }
         },
-        "V2DrivingResponse": {
+        "main.V2DrivingResponse": {
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/V2DrivingAnalyticsSummary"
+                    "$ref": "#/definitions/main.V2DrivingAnalyticsSummary"
                 }
             }
         },
-        "V2DrivingSummary": {
+        "main.V2DrivingSummary": {
             "type": "object",
             "properties": {
                 "avg_consumption_wh_per_km": {
@@ -2272,18 +2272,18 @@
                 }
             }
         },
-        "V2DrivingTimeseriesAPIResponse": {
+        "main.V2DrivingTimeseriesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2DrivingTimeseriesResponse"
+                    "$ref": "#/definitions/main.V2DrivingTimeseriesResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2DrivingTimeseriesItem": {
+        "main.V2DrivingTimeseriesItem": {
             "type": "object",
             "properties": {
                 "avg_consumption_wh_per_km": {
@@ -2309,7 +2309,7 @@
                 }
             }
         },
-        "V2DrivingTimeseriesResponse": {
+        "main.V2DrivingTimeseriesResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -2318,23 +2318,23 @@
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2DrivingTimeseriesItem"
+                        "$ref": "#/definitions/main.V2DrivingTimeseriesItem"
                     }
                 }
             }
         },
-        "V2LifecycleAPIResponse": {
+        "main.V2LifecycleAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2LifecycleResponse"
+                    "$ref": "#/definitions/main.V2LifecycleResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2LifecycleResponse": {
+        "main.V2LifecycleResponse": {
             "type": "object",
             "properties": {
                 "as_of": {
@@ -2384,7 +2384,7 @@
                 }
             }
         },
-        "V2Meta": {
+        "main.V2Meta": {
             "type": "object",
             "properties": {
                 "car_id": {
@@ -2427,22 +2427,22 @@
                     "example": "Asia/Shanghai"
                 },
                 "unit": {
-                    "$ref": "#/definitions/V2Unit"
+                    "$ref": "#/definitions/main.V2Unit"
                 }
             }
         },
-        "V2ParkingAPIResponse": {
+        "main.V2ParkingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2ParkingResponse"
+                    "$ref": "#/definitions/main.V2ParkingResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2ParkingAnalyticsSummary": {
+        "main.V2ParkingAnalyticsSummary": {
             "type": "object",
             "properties": {
                 "asleep_duration_min": {
@@ -2480,7 +2480,7 @@
                 }
             }
         },
-        "V2ParkingBreakdownResponse": {
+        "main.V2ParkingBreakdownResponse": {
             "type": "object",
             "properties": {
                 "by": {
@@ -2489,7 +2489,7 @@
                 "locations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ParkingLocationItem"
+                        "$ref": "#/definitions/main.V2ParkingLocationItem"
                     }
                 },
                 "state_transition_count": {
@@ -2498,7 +2498,7 @@
                 "states": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ParkingStateItem"
+                        "$ref": "#/definitions/main.V2ParkingStateItem"
                     }
                 },
                 "total_duration_min": {
@@ -2506,7 +2506,7 @@
                 }
             }
         },
-        "V2ParkingLocationItem": {
+        "main.V2ParkingLocationItem": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -2547,18 +2547,18 @@
                 }
             }
         },
-        "V2ParkingResponse": {
+        "main.V2ParkingResponse": {
             "type": "object",
             "properties": {
                 "breakdown": {
-                    "$ref": "#/definitions/V2ParkingBreakdownResponse"
+                    "$ref": "#/definitions/main.V2ParkingBreakdownResponse"
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2ParkingAnalyticsSummary"
+                    "$ref": "#/definitions/main.V2ParkingAnalyticsSummary"
                 }
             }
         },
-        "V2ParkingStateItem": {
+        "main.V2ParkingStateItem": {
             "type": "object",
             "properties": {
                 "duration_min": {
@@ -2575,7 +2575,7 @@
                 }
             }
         },
-        "V2ParkingSummary": {
+        "main.V2ParkingSummary": {
             "type": "object",
             "properties": {
                 "asleep_duration_min": {
@@ -2595,70 +2595,70 @@
                 }
             }
         },
-        "V2Summary": {
+        "main.V2Summary": {
             "type": "object",
             "properties": {
                 "battery": {
-                    "$ref": "#/definitions/V2BatterySummary"
+                    "$ref": "#/definitions/main.V2BatterySummary"
                 },
                 "charging": {
-                    "$ref": "#/definitions/V2ChargingSummary"
+                    "$ref": "#/definitions/main.V2ChargingSummary"
                 },
                 "cost": {
-                    "$ref": "#/definitions/V2CostSummary"
+                    "$ref": "#/definitions/main.V2CostSummary"
                 },
                 "driving": {
-                    "$ref": "#/definitions/V2DrivingSummary"
+                    "$ref": "#/definitions/main.V2DrivingSummary"
                 },
                 "parking": {
-                    "$ref": "#/definitions/V2ParkingSummary"
+                    "$ref": "#/definitions/main.V2ParkingSummary"
                 },
                 "updates": {
-                    "$ref": "#/definitions/V2UpdateSummary"
+                    "$ref": "#/definitions/main.V2UpdateSummary"
                 },
                 "vehicle": {
-                    "$ref": "#/definitions/V2VehicleSummary"
+                    "$ref": "#/definitions/main.V2VehicleSummary"
                 }
             }
         },
-        "V2SummaryAPIResponse": {
+        "main.V2SummaryAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2SummaryResponse"
+                    "$ref": "#/definitions/main.V2SummaryResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2SummaryResponse": {
+        "main.V2SummaryResponse": {
             "type": "object",
             "properties": {
                 "comparison": {
                     "description": "Comparison keys: driving/charging/parking/battery/updates/vehicle/cost field paths; values are current vs previous period.",
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/V2ComparisonValue"
+                        "$ref": "#/definitions/main.V2ComparisonValue"
                     }
                 },
                 "summary": {
-                    "$ref": "#/definitions/V2Summary"
+                    "$ref": "#/definitions/main.V2Summary"
                 }
             }
         },
-        "V2TimelineAPIResponse": {
+        "main.V2TimelineAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2TimelineResponse"
+                    "$ref": "#/definitions/main.V2TimelineResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2TimelineEvent": {
+        "main.V2TimelineEvent": {
             "type": "object",
             "properties": {
                 "end_time": {
@@ -2682,13 +2682,13 @@
                 }
             }
         },
-        "V2TimelineResponse": {
+        "main.V2TimelineResponse": {
             "type": "object",
             "properties": {
                 "events": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2TimelineEvent"
+                        "$ref": "#/definitions/main.V2TimelineEvent"
                     }
                 },
                 "has_more": {
@@ -2702,7 +2702,7 @@
                 }
             }
         },
-        "V2Unit": {
+        "main.V2Unit": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -2727,18 +2727,18 @@
                 }
             }
         },
-        "V2UpdateAnalyticsAPIResponse": {
+        "main.V2UpdateAnalyticsAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2UpdateAnalyticsResponse"
+                    "$ref": "#/definitions/main.V2UpdateAnalyticsResponse"
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "$ref": "#/definitions/main.V2Meta"
                 }
             }
         },
-        "V2UpdateAnalyticsResponse": {
+        "main.V2UpdateAnalyticsResponse": {
             "type": "object",
             "properties": {
                 "avg_update_duration_min": {
@@ -2756,12 +2756,12 @@
                 "versions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2UpdateVersion"
+                        "$ref": "#/definitions/main.V2UpdateVersion"
                     }
                 }
             }
         },
-        "V2UpdateSummary": {
+        "main.V2UpdateSummary": {
             "type": "object",
             "properties": {
                 "latest_version": {
@@ -2772,7 +2772,7 @@
                 }
             }
         },
-        "V2UpdateVersion": {
+        "main.V2UpdateVersion": {
             "type": "object",
             "properties": {
                 "avg_consumption_kwh_per_100km": {
@@ -2840,7 +2840,7 @@
                 }
             }
         },
-        "V2VehicleSummary": {
+        "main.V2VehicleSummary": {
             "type": "object",
             "properties": {
                 "charging_efficiency_percent": {
