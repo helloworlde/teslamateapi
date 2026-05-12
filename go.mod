@@ -3,9 +3,11 @@ module github.com/tobiasehlert/teslamateapi
 go 1.26.0
 
 require (
+	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/lib/pq v1.11.2
 	github.com/swaggo/swag v1.16.6
+	github.com/thanhpk/randstr v1.0.6
 	github.com/watchakorn-18k/scalar-go v1.0.0
 )
 

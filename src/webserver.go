@@ -72,6 +72,16 @@ func main() {
 	initDBconnection()
 	defer db.Close()
 
+	// Connect to the MQTT broker
+	statusCache, err := startMQTT()
+	if getEnvAsBool("DISABLE_MQTT", false) {
+		log.Printf("[info] TeslaMateApi MQTT connection not established.")
+	} else {
+		if err != nil {
+			log.Fatalf("[error] TeslaMateApi MQTT connection failed: %s", err)
+		}
+	}
+
 	// kicking off Gin in value r
 	r := gin.Default()
 
@@ -131,6 +141,9 @@ func main() {
 			v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 			v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
 
+			// v1 /api/v1/cars/:CarID/status endpoints
+			v1.GET("/cars/:CarID/status", statusCache.TeslaMateAPICarsStatusV1)
+
 			// v1 /api/v1/cars/:CarID/updates endpoints
 			v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
 
@@ -157,6 +170,7 @@ func main() {
 	r.GET("/cars/:CarID/charges/:ChargeID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives/:DriveID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
+	r.GET("/cars/:CarID/status", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/updates", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/globalsettings", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 
@@ -166,8 +180,10 @@ func main() {
 		Handler: r,
 	}
 
-	// readyz: ready as soon as the DB connection is up
-	isReady.Store(true)
+	// setting readyz endpoint to true (if not using MQTT)
+	if getEnvAsBool("DISABLE_MQTT", false) {
+		isReady.Store(true)
+	}
 
 	// graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -405,9 +421,9 @@ func slopeAdjustedConsumption(distance, ascent, descent, baseConsumption float64
 		return baseConsumption
 	}
 	const (
-		gravity        = 9.81
-		carMassKg      = 2100.0
-		regenEff       = 0.85
+		gravity   = 9.81
+		carMassKg = 2100.0
+		regenEff  = 0.85
 	)
 	delta := (ascent - descent) * gravity * carMassKg / (3600.0 * distance * 1000.0) * 1000.0 / regenEff
 	return baseConsumption + delta
