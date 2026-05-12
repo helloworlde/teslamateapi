@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -60,24 +61,38 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 		StartRange float64 `json:"start_range"` // float64
 		EndRange   float64 `json:"end_range"`   // float64
 	}
+	// Geofence struct - child of Charges (added)
+	type Geofence struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
 	// Charges struct - child of Data
 	type Charges struct {
-		ChargeID          int            `json:"charge_id"`           // int
-		StartDate         string         `json:"start_date"`          // string
-		EndDate           string         `json:"end_date"`            // string
-		Address           string         `json:"address"`             // string
-		ChargeEnergyAdded float64        `json:"charge_energy_added"` // float64
-		ChargeEnergyUsed  float64        `json:"charge_energy_used"`  // float64
-		Cost              float64        `json:"cost"`                // float64
-		DurationMin       int            `json:"duration_min"`        // int
-		DurationStr       string         `json:"duration_str"`        // string
-		BatteryDetails    BatteryDetails `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64        `json:"outside_temp_avg"`    // float64
-		Odometer          float64        `json:"odometer"`            // float64
-		Latitude          float64        `json:"latitude"`            // float64
-		Longitude         float64        `json:"longitude"`           // float64
+		ChargeID                int            `json:"charge_id"`                            // int
+		StartDate               string         `json:"start_date"`                           // string
+		EndDate                 string         `json:"end_date"`                             // string
+		Address                 string         `json:"address"`                              // string
+		ChargeEnergyAdded       float64        `json:"charge_energy_added"`                  // float64
+		ChargeEnergyUsed        float64        `json:"charge_energy_used"`                   // float64
+		Cost                    float64        `json:"cost"`                                 // float64
+		DurationMin             int            `json:"duration_min"`                         // int
+		DurationStr             string         `json:"duration_str"`                         // string
+		BatteryDetails          BatteryDetails `json:"battery_details"`                      // BatteryDetails
+		RangeIdeal              PreferredRange `json:"range_ideal"`                          // PreferredRange
+		RangeRated              PreferredRange `json:"range_rated"`                          // PreferredRange
+		OutsideTempAvg          float64        `json:"outside_temp_avg"`                     // float64
+		Odometer                float64        `json:"odometer"`                             // float64
+		Latitude                float64        `json:"latitude"`                             // float64
+		Longitude               float64        `json:"longitude"`                            // float64
+		Geofence                *Geofence      `json:"geofence,omitempty"`                   // struct (added)
+		Connection              string         `json:"connection,omitempty"`                 // "ac" | "dc" (added)
+		FastChargerBrand        NullString     `json:"fast_charger_brand,omitempty"`         // text (added)
+		FastChargerType         NullString     `json:"fast_charger_type,omitempty"`          // text (added)
+		ChargerPilotCurrentMax  NullInt64      `json:"charger_pilot_current_max,omitempty"`  // int (added)
+		CostPerKwh              NullFloat64    `json:"cost_per_kwh,omitempty"`               // float (added)
+		ChargingEfficiency      NullFloat64    `json:"charging_efficiency,omitempty"`        // float (added)
+		EnergyPerHour           NullFloat64    `json:"energy_per_hour,omitempty"`            // float (added)
+		IsComplete              bool           `json:"is_complete"`                          // bool (added)
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -134,7 +149,17 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			position.longitude,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
-			cars.name
+			cars.name,
+			geofence.id AS geofence_id,
+			geofence.name AS geofence_name,
+			(SELECT CASE WHEN MAX(charger_phases) IS NULL THEN 'dc' ELSE 'ac' END FROM charges WHERE charging_process_id = charging_processes.id) AS connection,
+			(SELECT MAX(fast_charger_brand) FROM charges WHERE charging_process_id = charging_processes.id AND fast_charger_brand IS NOT NULL AND fast_charger_brand <> '<invalid>') AS fast_charger_brand,
+			(SELECT MAX(fast_charger_type) FROM charges WHERE charging_process_id = charging_processes.id AND fast_charger_type IS NOT NULL AND fast_charger_type <> '<invalid>') AS fast_charger_type,
+			(SELECT MAX(charger_pilot_current) FROM charges WHERE charging_process_id = charging_processes.id) AS charger_pilot_current_max,
+			CASE WHEN COALESCE(charge_energy_added, 0) > 0 AND COALESCE(cost, 0) > 0 THEN cost / charge_energy_added ELSE NULL END AS cost_per_kwh,
+			CASE WHEN COALESCE(GREATEST(charge_energy_used, charge_energy_added), 0) > 0 THEN charge_energy_added / GREATEST(charge_energy_used, charge_energy_added) ELSE NULL END AS charging_efficiency,
+			CASE WHEN duration_min > 0 THEN charge_energy_added / (duration_min / 60.0) ELSE NULL END AS energy_per_hour,
+			(charging_processes.end_date IS NOT NULL) AS is_complete
 		FROM charging_processes
 		LEFT JOIN cars ON car_id = cars.id
 		LEFT JOIN addresses address ON address_id = address.id
@@ -181,6 +206,11 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 		// creating charge object based on struct
 		charge := Charges{}
+		var (
+			geofenceID   sql.NullInt64
+			geofenceName sql.NullString
+			connection   sql.NullString
+		)
 
 		// scanning row and putting values into the charge
 		err = rows.Scan(
@@ -206,7 +236,23 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 			&UnitsLength,
 			&UnitsTemperature,
 			&CarName,
+			&geofenceID,
+			&geofenceName,
+			&connection,
+			&charge.FastChargerBrand,
+			&charge.FastChargerType,
+			&charge.ChargerPilotCurrentMax,
+			&charge.CostPerKwh,
+			&charge.ChargingEfficiency,
+			&charge.EnergyPerHour,
+			&charge.IsComplete,
 		)
+		if geofenceID.Valid && geofenceName.Valid {
+			charge.Geofence = &Geofence{ID: int(geofenceID.Int64), Name: geofenceName.String}
+		}
+		if connection.Valid {
+			charge.Connection = connection.String
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {

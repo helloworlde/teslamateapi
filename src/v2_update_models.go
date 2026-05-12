@@ -2,11 +2,12 @@ package main
 
 // @name V2UpdateAnalyticsResponse
 type V2UpdateAnalyticsResponse struct {
-	UpdateCount     int64             `json:"update_count"`
-	LatestVersion   *string           `json:"latest_version,omitempty"`
-	LatestUpdatedAt *string           `json:"latest_updated_at,omitempty"`
-	AvgUpdateDuration *float64        `json:"avg_update_duration,omitempty"`
-	Versions        []V2UpdateVersion `json:"versions"`
+	UpdateCount             int64             `json:"update_count"`
+	LatestVersion           *string           `json:"latest_version,omitempty"`
+	LatestUpdatedAt         *string           `json:"latest_updated_at,omitempty"`
+	AvgUpdateDuration       *float64          `json:"avg_update_duration,omitempty"`
+	MedianDaysBetweenUpdates *float64         `json:"median_days_between_updates,omitempty"` // (added)
+	Versions                []V2UpdateVersion `json:"versions"`
 }
 
 // @name V2UpdateVersion

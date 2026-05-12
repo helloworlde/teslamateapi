@@ -85,21 +85,31 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		FastChargerInfo      FastChargerInfo `json:"fast_charger_info"`           // struct
 		OutsideTemp          float64         `json:"outside_temp"`                // float64
 	}
+	// Geofence struct - child of Charge (added)
+	type Geofence struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
 	// Charge struct - child of Data
 	type Charge struct {
-		ChargeID          int             `json:"charge_id"`           // int
-		StartDate         string          `json:"start_date"`          // string
-		IsCharging        bool            `json:"is_charging"`         // bool
-		Address           string          `json:"address"`             // string
-		ChargeEnergyAdded float64         `json:"charge_energy_added"` // float64
-		Cost              float64         `json:"cost"`                // float64
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RatedRange        PreferredRange  `json:"rated_range"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		Odometer          float64         `json:"odometer"`            // float64
-		ChargeDetails     []ChargeDetails `json:"charge_details"`      // struct
+		ChargeID            int             `json:"charge_id"`                       // int
+		StartDate           string          `json:"start_date"`                      // string
+		IsCharging          bool            `json:"is_charging"`                     // bool
+		Address             string          `json:"address"`                         // string
+		ChargeEnergyAdded   float64         `json:"charge_energy_added"`             // float64
+		Cost                float64         `json:"cost"`                            // float64
+		DurationMin         int             `json:"duration_min"`                    // int
+		DurationStr         string          `json:"duration_str"`                    // string
+		BatteryDetails      BatteryDetails  `json:"battery_details"`                 // BatteryDetails
+		RatedRange          PreferredRange  `json:"rated_range"`                     // PreferredRange
+		OutsideTempAvg      float64         `json:"outside_temp_avg"`                // float64
+		Odometer            float64         `json:"odometer"`                        // float64
+		ChargeDetails       []ChargeDetails `json:"charge_details"`                  // struct
+		Geofence            *Geofence       `json:"geofence,omitempty"`              // (added)
+		Connection          string          `json:"connection,omitempty"`            // (added)
+		ChargerPilotCurrent int             `json:"charger_pilot_current,omitempty"` // (added)
+		ChargerPhases       int             `json:"charger_phases,omitempty"`        // (added)
+		ChargerVoltage      int             `json:"charger_voltage,omitempty"`       // (added)
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -156,7 +166,10 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
 			cars.name,
-			end_date IS NULL AS is_charging
+			end_date IS NULL AS is_charging,
+			geofence.id AS geofence_id,
+			geofence.name AS geofence_name,
+			(SELECT CASE WHEN MAX(charger_phases) IS NULL THEN 'dc' ELSE 'ac' END FROM charges WHERE charging_process_id = charging_processes.id) AS connection
 		FROM charging_processes
 		LEFT JOIN cars ON car_id = cars.id
 		LEFT JOIN addresses address ON address_id = address.id
@@ -169,6 +182,11 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 	row := db.QueryRow(query, CarID)
 
 	// Scanning row and putting values into the temp vars to handle NULLs
+	var (
+		geofenceID   sql.NullInt64
+		geofenceName sql.NullString
+		connection   sql.NullString
+	)
 	err := row.Scan(
 		&charge.ChargeID,
 		&charge.StartDate,
@@ -187,7 +205,16 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		&UnitsTemperature,
 		&CarName,
 		&isCharging,
+		&geofenceID,
+		&geofenceName,
+		&connection,
 	)
+	if geofenceID.Valid && geofenceName.Valid {
+		charge.Geofence = &Geofence{ID: int(geofenceID.Int64), Name: geofenceName.String}
+	}
+	if connection.Valid {
+		charge.Connection = connection.String
+	}
 
 	switch err {
 	case sql.ErrNoRows:
@@ -431,6 +458,14 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 
 	// Set the ChargeDetails in the charge
 	charge.ChargeDetails = ChargeDetailsData
+
+	// populate live charger snapshot from the latest detail (DESC ordered)
+	if len(ChargeDetailsData) > 0 {
+		latest := ChargeDetailsData[0]
+		charge.ChargerPilotCurrent = latest.ChargerDetails.ChargerPilotCurrent
+		charge.ChargerPhases = latest.ChargerDetails.ChargerPhases
+		charge.ChargerVoltage = latest.ChargerDetails.ChargerVoltage
+	}
 
 	if charge.RatedRange.StartRange == 0 && len(ChargeDetailsData) > 0 {
 		charge.RatedRange.StartRange = ChargeDetailsData[len(ChargeDetailsData)-1].BatteryInfo.RatedBatteryRange
