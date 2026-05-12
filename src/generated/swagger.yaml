@@ -120,6 +120,31 @@ definitions:
         example: v2
         type: string
     type: object
+  V2CapacityByMileageAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2CapacityByMileageResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2CapacityByMileageItem:
+    properties:
+      bucket:
+        type: string
+      capacity_kwh_p50:
+        type: number
+      odometer_avg:
+        type: number
+      sample_count:
+        type: integer
+    type: object
+  V2CapacityByMileageResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/V2CapacityByMileageItem'
+        type: array
+    type: object
   V2ChargingAPIResponse:
     properties:
       data:
@@ -139,6 +164,37 @@ definitions:
         items:
           $ref: '#/definitions/V2ChargingTypeItem'
         type: array
+    type: object
+  V2ChargingCurveAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2ChargingCurveResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2ChargingCurveResponse:
+    properties:
+      min_sessions:
+        type: integer
+      samples:
+        items:
+          $ref: '#/definitions/V2ChargingCurveSample'
+        type: array
+    type: object
+  V2ChargingCurveSample:
+    properties:
+      avg_voltage:
+        type: number
+      battery_level:
+        type: integer
+      median_power:
+        type: number
+      p25_power:
+        type: number
+      p75_power:
+        type: number
+      session_count:
+        type: integer
     type: object
   V2ChargingLocationItem:
     properties:
@@ -407,6 +463,248 @@ definitions:
           $ref: '#/definitions/V2DrivingTimeseriesItem'
         type: array
     type: object
+  V2EfficiencyAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2EfficiencyResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2EfficiencyBuckets:
+    properties:
+      speed_10kmh:
+        items:
+          $ref: '#/definitions/V2EfficiencySpeedBucket'
+        type: array
+      temperature_5c:
+        items:
+          $ref: '#/definitions/V2EfficiencyTempBucket'
+        type: array
+    type: object
+  V2EfficiencyResponse:
+    properties:
+      buckets:
+        $ref: '#/definitions/V2EfficiencyBuckets'
+      summary:
+        $ref: '#/definitions/V2EfficiencySummary'
+      timeseries:
+        $ref: '#/definitions/V2EfficiencyTimeseries'
+    type: object
+  V2EfficiencySpeedBucket:
+    properties:
+      bucket:
+        type: number
+      consumption:
+        type: number
+      distance:
+        type: number
+      drive_count:
+        type: integer
+    type: object
+  V2EfficiencySummary:
+    properties:
+      avg_outside_temp:
+        type: number
+      consumption_overhead:
+        type: number
+      drive_distance:
+        type: number
+      drive_duration:
+        type: number
+      energy_consumed_drives:
+        type: number
+      energy_consumed_idle:
+        type: number
+      gross_consumption:
+        type: number
+      net_consumption:
+        type: number
+    type: object
+  V2EfficiencyTempBucket:
+    properties:
+      avg_speed:
+        type: number
+      bucket:
+        type: number
+      consumption:
+        type: number
+      distance:
+        type: number
+      drive_count:
+        type: integer
+    type: object
+  V2EfficiencyTimeseries:
+    properties:
+      group_by:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/V2EfficiencyTimeseriesItem'
+        type: array
+    type: object
+  V2EfficiencyTimeseriesItem:
+    properties:
+      consumption_overhead:
+        type: number
+      distance:
+        type: number
+      gross_consumption:
+        type: number
+      net_consumption:
+        type: number
+      period_start:
+        type: string
+    type: object
+  V2EnvironmentalAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2EnvironmentalResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2EnvironmentalResponse:
+    properties:
+      summary:
+        $ref: '#/definitions/V2EnvironmentalSummary'
+      timeseries:
+        $ref: '#/definitions/V2EnvironmentalTimeseries'
+    type: object
+  V2EnvironmentalSummary:
+    properties:
+      battery_heater_minutes:
+        type: number
+      climate_on_minutes:
+        type: number
+      defroster_minutes:
+        type: number
+      elevation_gain_total:
+        type: number
+      elevation_loss_total:
+        type: number
+      elevation_max:
+        type: number
+      elevation_min:
+        type: number
+      inside_temp_avg:
+        type: number
+      outside_temp_avg:
+        type: number
+      outside_temp_max:
+        type: number
+      outside_temp_min:
+        type: number
+    type: object
+  V2EnvironmentalTimeseries:
+    properties:
+      group_by:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/V2EnvironmentalTimeseriesItem'
+        type: array
+    type: object
+  V2EnvironmentalTimeseriesItem:
+    properties:
+      climate_on_ratio:
+        type: number
+      elevation_avg:
+        type: number
+      inside_temp_avg:
+        type: number
+      outside_temp_avg:
+        type: number
+      period_start:
+        type: string
+    type: object
+  V2Geofence:
+    properties:
+      billing_type:
+        type: string
+      cost_per_unit:
+        type: number
+      id:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      radius:
+        type: number
+      session_fee:
+        type: number
+    type: object
+  V2GeofencesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2GeofencesResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2GeofencesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/V2Geofence'
+        type: array
+    type: object
+  V2IdleGeofence:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  V2IdlePeriodItem:
+    properties:
+      avg_power_w:
+        type: number
+      duration:
+        type: number
+      end_battery_level:
+        type: integer
+      end_date:
+        type: string
+      energy_drained:
+        type: number
+      geofence:
+        $ref: '#/definitions/V2IdleGeofence'
+      has_reduced_range:
+        type: boolean
+      id:
+        type: string
+      range_loss:
+        type: number
+      range_loss_per_hour:
+        type: number
+      soc_diff:
+        type: integer
+      standby_ratio:
+        type: number
+      start_battery_level:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  V2IdlePeriodsAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2IdlePeriodsResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2IdlePeriodsResponse:
+    properties:
+      has_more:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/V2IdlePeriodItem'
+        type: array
+      next_cursor:
+        type: string
+    type: object
   V2LifecycleAPIResponse:
     properties:
       data:
@@ -481,6 +779,31 @@ definitions:
         type: string
       unit:
         $ref: '#/definitions/V2Unit'
+    type: object
+  V2OdometerSeriesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2OdometerSeriesResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2OdometerSeriesItem:
+    properties:
+      date:
+        type: string
+      odometer:
+        type: number
+    type: object
+  V2OdometerSeriesResponse:
+    properties:
+      has_more:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/V2OdometerSeriesItem'
+        type: array
+      next_cursor:
+        type: string
     type: object
   V2ParkingAPIResponse:
     properties:
@@ -558,6 +881,37 @@ definitions:
       vampire_drain_percent:
         type: number
     type: object
+  V2PlaceBucket:
+    properties:
+      last_visited:
+        type: string
+      name:
+        type: string
+      visit_count:
+        type: integer
+    type: object
+  V2PlacesAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2PlacesResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2PlacesResponse:
+    properties:
+      cities:
+        items:
+          $ref: '#/definitions/V2PlaceBucket'
+        type: array
+      countries:
+        items:
+          $ref: '#/definitions/V2PlaceBucket'
+        type: array
+      states:
+        items:
+          $ref: '#/definitions/V2PlaceBucket'
+        type: array
+    type: object
   V2Summary:
     properties:
       battery:
@@ -581,6 +935,47 @@ definitions:
         $ref: '#/definitions/V2SummaryResponse'
       meta:
         $ref: '#/definitions/V2Meta'
+    type: object
+  V2SummaryByPeriodAPIResponse:
+    properties:
+      data:
+        $ref: '#/definitions/V2SummaryByPeriodResponse'
+      meta:
+        $ref: '#/definitions/V2Meta'
+    type: object
+  V2SummaryByPeriodItem:
+    properties:
+      avg_consumption:
+        type: number
+      charging_cost:
+        type: number
+      charging_sessions:
+        type: integer
+      data_complete:
+        type: boolean
+      distance:
+        type: number
+      drive_count:
+        type: integer
+      drive_duration:
+        type: number
+      energy_added:
+        type: number
+      energy_used:
+        type: number
+      net_energy:
+        type: number
+      period_start:
+        type: string
+    type: object
+  V2SummaryByPeriodResponse:
+    properties:
+      group_by:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/V2SummaryByPeriodItem'
+        type: array
     type: object
   V2SummaryResponse:
     properties:
@@ -674,6 +1069,9 @@ definitions:
         type: string
       latest_version:
         type: string
+      median_days_between_updates:
+        description: (added)
+        type: number
       update_count:
         type: integer
       versions:
@@ -947,6 +1345,18 @@ paths:
         name: DriveID
         required: true
         type: integer
+      - description: 'Drive details downsampling: full, every_5s (default), every_30s'
+        enum:
+        - full
+        - every_5s
+        - every_30s
+        in: query
+        name: sample
+        type: string
+      - description: Set to false to skip drive_details (route) in the response
+        in: query
+        name: include_route
+        type: boolean
       produces:
       - application/json
       responses:
@@ -955,6 +1365,30 @@ paths:
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
       summary: Get one drive by ID
+      tags:
+      - V1
+  /v1/cars/{CarID}/tire-pressure:
+    get:
+      description: Latest TPMS reading + window min/max + per-day history. Pressure
+        unit follows settings.unit_of_pressure (bar default; psi via barToPsi).
+      parameters:
+      - description: Car ID
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: History window length in days (default 30, max 365)
+        in: query
+        name: window_days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V1ErrorEnvelope'
+      summary: Get tire pressure for one car
       tags:
       - V1
   /v1/cars/{CarID}/updates:
@@ -990,7 +1424,7 @@ paths:
   /v2/capabilities:
     get:
       description: Returns the V2 analytics API version, the per-domain feature flags
-        (compare/timeseries/breakdown), and the allowed breakdown values per do
+        (compare/timeseries/breakdown), and the allowed breakdown values per domain.
         Clients use this to decide which query parameters to send instead of probing
         each endpoint.
       produces:
@@ -1205,6 +1639,66 @@ paths:
       summary: V2 charging analytics summary
       tags:
       - V2 Charging Analytics
+  /v2/cars/{CarID}/analytics/charging/curve:
+    get:
+      description: 'Returns aggregated DC charging curve samples (per battery level:
+        session count, median / p25 / p75 power) for one car.'
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Minimum sessions per battery level (default 5)
+        in: query
+        name: min_sessions
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2ChargingCurveAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 DC charging curve (aggregate)
+      tags:
+      - V2 Charging Analytics
   /v2/cars/{CarID}/analytics/cost:
     get:
       description: Returns objective charging-cost analytics. Current data scope includes
@@ -1391,6 +1885,144 @@ paths:
       summary: V2 driving analytics timeseries
       tags:
       - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/efficiency:
+    get:
+      description: Returns net + gross consumption, consumption overhead, plus optional
+        temperature / speed buckets for one car.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: 'Comma-separated extras: buckets'
+        example: '"buckets"'
+        in: query
+        name: include
+        type: string
+      - description: Bucket grouping (used when include=buckets)
+        enum:
+        - temperature_5c
+        - speed_10kmh
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2EfficiencyAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 efficiency analytics
+      tags:
+      - V2 Driving Analytics
+  /v2/cars/{CarID}/analytics/environmental:
+    get:
+      description: Returns aggregated outside/inside temperature, HVAC active minutes,
+        and elevation statistics for one car.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: 'Comma-separated extras: timeseries'
+        example: '"timeseries"'
+        in: query
+        name: include
+        type: string
+      - description: Timeseries grouping (used when include=timeseries)
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2EnvironmentalAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 environmental analytics
+      tags:
+      - V2 Environmental Analytics
   /v2/cars/{CarID}/analytics/parking:
     get:
       description: Returns objective parked duration, state duration, inferred parking
@@ -1522,6 +2154,62 @@ paths:
       summary: V2 period summary analytics
       tags:
       - V2 Summary
+  /v2/cars/{CarID}/battery/capacity_by_mileage:
+    get:
+      description: Returns half-month bucketed median capacity (kWh) vs odometer for
+        one car.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2CapacityByMileageAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 battery capacity by mileage
+      tags:
+      - V2 Battery Analytics
   /v2/cars/{CarID}/lifecycle:
     get:
       description: Returns cumulative lifetime statistics for a car from the first
@@ -1559,6 +2247,244 @@ paths:
       summary: V2 lifetime cumulative analytics
       tags:
       - V2 Lifecycle
+  /v2/cars/{CarID}/lifecycle/odometer_series:
+    get:
+      description: Returns one odometer reading per day in the requested window for
+        one car.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Page size (default 500, max 1000)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor returned by a previous response
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2OdometerSeriesAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 cumulative odometer series
+      tags:
+      - V2 Lifecycle
+  /v2/cars/{CarID}/lifecycle/places:
+    get:
+      description: Returns the top-N most visited cities, states and countries for
+        one car, with last-visited timestamps.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Top N per dimension (default 20, max 100)
+        in: query
+        name: top_n
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2PlacesAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 lifecycle places (city / state / country breakdown)
+      tags:
+      - V2 Lifecycle
+  /v2/cars/{CarID}/parking/idle_periods:
+    get:
+      description: Returns per-gap idle periods (vampire drain candidates) with SoC
+        diff, range loss, drained energy and standby ratio for one car.
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Minimum gap length in hours (default 1)
+        in: query
+        name: min_duration_hours
+        type: number
+      - description: Filter by resolved geofence id
+        in: query
+        name: geofence_id
+        type: integer
+      - description: Page size (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      - description: Pagination cursor returned by a previous response
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2IdlePeriodsAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 parking idle periods
+      tags:
+      - V2 Parking Analytics
+  /v2/cars/{CarID}/summary/by_period:
+    get:
+      description: Returns drive + charging + cost metrics flattened per period (one
+        row per period).
+      parameters:
+      - description: Car ID
+        example: 1
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Aggregation period
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        - custom
+        in: query
+        name: period
+        type: string
+      - description: Start datetime in RFC3339 format
+        in: query
+        name: start
+        type: string
+      - description: End datetime in RFC3339 format
+        in: query
+        name: end
+        type: string
+      - description: IANA timezone
+        in: query
+        name: timezone
+        type: string
+      - description: Period grouping
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2SummaryByPeriodAPIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 flat per-period summary
+      tags:
+      - V2 Summary
   /v2/cars/{CarID}/timeline:
     get:
       description: Returns a cursor-paginated unified chronological timeline of drive,
@@ -1665,4 +2591,22 @@ paths:
       summary: V2 update analytics
       tags:
       - V2 Update Analytics
+  /v2/geofences:
+    get:
+      description: Returns all geofences with their location, radius, billing type,
+        cost per unit, and per-session fee.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/V2GeofencesAPIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrorResponse'
+      summary: V2 list of geofences with billing rules
+      tags:
+      - V2 Lifecycle
 swagger: "2.0"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -88,27 +89,45 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		EndRange   float64 `json:"end_range"`   // float64
 		RangeDiff  float64 `json:"range_diff"`  // float64
 	}
+	// Geofence struct - child of Drives (added)
+	type Geofence struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	// Position struct - child of Drives (added)
+	type Position struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
 	// Drives struct - child of Data
 	type Drives struct {
-		DriveID           int             `json:"drive_id"`            // int
-		StartDate         string          `json:"start_date"`          // string
-		EndDate           string          `json:"end_date"`            // string
-		StartAddress      string          `json:"start_address"`       // string
-		EndAddress        string          `json:"end_address"`         // string
-		OdometerDetails   OdometerDetails `json:"odometer_details"`    // OdometerDetails
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		SpeedMax          int             `json:"speed_max"`           // int
-		SpeedAvg          float64         `json:"speed_avg"`           // float64
-		PowerMax          int             `json:"power_max"`           // int
-		PowerMin          int             `json:"power_min"`           // int
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange  `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange  `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		InsideTempAvg     float64         `json:"inside_temp_avg"`     // float64
-		EnergyConsumedNet *float64        `json:"energy_consumed_net"` // Energy consumed (net) in kWh
-		ConsumptionNet    *float64        `json:"consumption_net"`     // Ø Consumption (net) per distance unit
+		DriveID                  int             `json:"drive_id"`                              // int
+		StartDate                string          `json:"start_date"`                            // string
+		EndDate                  string          `json:"end_date"`                              // string
+		StartAddress             string          `json:"start_address"`                         // string
+		EndAddress               string          `json:"end_address"`                           // string
+		OdometerDetails          OdometerDetails `json:"odometer_details"`                      // OdometerDetails
+		DurationMin              int             `json:"duration_min"`                          // int
+		DurationStr              string          `json:"duration_str"`                          // string
+		SpeedMax                 int             `json:"speed_max"`                             // int
+		SpeedAvg                 float64         `json:"speed_avg"`                             // float64
+		PowerMax                 int             `json:"power_max"`                             // int
+		PowerMin                 int             `json:"power_min"`                             // int
+		BatteryDetails           BatteryDetails  `json:"battery_details"`                       // BatteryDetails
+		RangeIdeal               PreferredRange  `json:"range_ideal"`                           // PreferredRange
+		RangeRated               PreferredRange  `json:"range_rated"`                           // PreferredRange
+		OutsideTempAvg           float64         `json:"outside_temp_avg"`                      // float64
+		InsideTempAvg            float64         `json:"inside_temp_avg"`                       // float64
+		EnergyConsumedNet        *float64        `json:"energy_consumed_net"`                   // Energy consumed (net) in kWh
+		ConsumptionNet           *float64        `json:"consumption_net"`                       // Ø Consumption (net) per distance unit
+		Ascent                   *float64        `json:"ascent,omitempty"`                      // (added) meters
+		Descent                  *float64        `json:"descent,omitempty"`                     // (added) meters
+		ConsumptionSlopeAdjusted *float64        `json:"consumption_slope_adjusted,omitempty"`  // (added) Wh/km adjusted for elevation
+		StartGeofence            *Geofence       `json:"start_geofence,omitempty"`              // (added)
+		EndGeofence              *Geofence       `json:"end_geofence,omitempty"`                // (added)
+		StartPosition            *Position       `json:"start_position,omitempty"`              // (added)
+		EndPosition              *Position       `json:"end_position,omitempty"`                // (added)
+		IsComplete               bool            `json:"is_complete"`                           // (added)
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -177,11 +196,22 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency 
 				ELSE NULL 
 			END as energy_consumed_net,
-			CASE 
+			CASE
 				WHEN (duration_min > 1 AND distance > 1 AND ( start_position.usable_battery_level IS NULL OR end_position.usable_battery_level IS NULL OR ( end_position.battery_level - end_position.usable_battery_level ) = 0 )) AND NULLIF(distance, 0) IS NOT NULL
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000
-				ELSE NULL 
+				ELSE NULL
 			END as consumption_net,
+			drives.ascent,
+			drives.descent,
+			start_geofence.id AS start_geofence_id,
+			start_geofence.name AS start_geofence_name,
+			end_geofence.id AS end_geofence_id,
+			end_geofence.name AS end_geofence_name,
+			start_position.latitude AS start_lat,
+			start_position.longitude AS start_lng,
+			end_position.latitude AS end_lat,
+			end_position.longitude AS end_lng,
+			(end_date IS NOT NULL) AS is_complete,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
 			cars.name
@@ -269,6 +299,14 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		// creating drive object based on struct
 		drive := Drives{}
 
+		var (
+			ascent, descent                                            sql.NullFloat64
+			startGeofenceID, endGeofenceID                             sql.NullInt64
+			startGeofenceName, endGeofenceName                         sql.NullString
+			startLat, startLng, endLat, endLng                         sql.NullFloat64
+			isComplete                                                 sql.NullBool
+		)
+
 		// scanning row and putting values into the drive
 		err = rows.Scan(
 			&drive.DriveID,
@@ -301,10 +339,50 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			&drive.InsideTempAvg,
 			&drive.EnergyConsumedNet,
 			&drive.ConsumptionNet,
+			&ascent,
+			&descent,
+			&startGeofenceID,
+			&startGeofenceName,
+			&endGeofenceID,
+			&endGeofenceName,
+			&startLat,
+			&startLng,
+			&endLat,
+			&endLng,
+			&isComplete,
 			&UnitsLength,
 			&UnitsTemperature,
 			&CarName,
 		)
+
+		if ascent.Valid {
+			v := ascent.Float64
+			drive.Ascent = &v
+		}
+		if descent.Valid {
+			v := descent.Float64
+			drive.Descent = &v
+		}
+		if startGeofenceID.Valid && startGeofenceName.Valid {
+			drive.StartGeofence = &Geofence{ID: int(startGeofenceID.Int64), Name: startGeofenceName.String}
+		}
+		if endGeofenceID.Valid && endGeofenceName.Valid {
+			drive.EndGeofence = &Geofence{ID: int(endGeofenceID.Int64), Name: endGeofenceName.String}
+		}
+		if startLat.Valid && startLng.Valid {
+			drive.StartPosition = &Position{Latitude: startLat.Float64, Longitude: startLng.Float64}
+		}
+		if endLat.Valid && endLng.Valid {
+			drive.EndPosition = &Position{Latitude: endLat.Float64, Longitude: endLng.Float64}
+		}
+		if isComplete.Valid {
+			drive.IsComplete = isComplete.Bool
+		}
+		// slope-adjusted consumption (Wh/km), in km units regardless of UnitsLength.
+		if drive.ConsumptionNet != nil && drive.OdometerDetails.OdometerDistance > 0 && drive.Ascent != nil && drive.Descent != nil {
+			adj := slopeAdjustedConsumption(drive.OdometerDetails.OdometerDistance, *drive.Ascent, *drive.Descent, *drive.ConsumptionNet)
+			drive.ConsumptionSlopeAdjusted = &adj
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {
@@ -321,6 +399,9 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			drive.RangeRated.RangeDiff = kilometersToMiles(drive.RangeRated.RangeDiff)
 			if drive.ConsumptionNet != nil {
 				*drive.ConsumptionNet = kilometersToMiles(*drive.ConsumptionNet)
+			}
+			if drive.ConsumptionSlopeAdjusted != nil {
+				*drive.ConsumptionSlopeAdjusted = kilometersToMiles(*drive.ConsumptionSlopeAdjusted)
 			}
 		}
 		// converting values based of settings UnitsTemperature

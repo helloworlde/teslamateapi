@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -33,10 +35,14 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	}
 	// Updates struct - child of Data
 	type Updates struct {
-		UpdateID  int    `json:"update_id"`  // smallint
-		StartDate string `json:"start_date"` // string
-		EndDate   string `json:"end_date"`   // string
-		Version   string `json:"version"`    // string
+		UpdateID           int      `json:"update_id"`                    // smallint
+		StartDate          string   `json:"start_date"`                   // string
+		EndDate            string   `json:"end_date"`                     // string
+		Version            string   `json:"version"`                      // string
+		ShortVersion       *string  `json:"short_version,omitempty"`      // (added) split_part(version, ' ', 1)
+		DurationMin        *float64 `json:"duration_min,omitempty"`       // (added) EXTRACT(EPOCH FROM end-start)/60
+		DaysSincePrior     *float64 `json:"days_since_prior,omitempty"`   // (added) days between this and previous start_date
+		ActiveDurationDays *float64 `json:"active_duration_days,omitempty"` // (added) days this version was active until next/now
 	}
 	// Data struct - child of JSONData
 	type Data struct {
@@ -64,15 +70,35 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
 	// getting data from database
 	query := `
+		WITH ordered AS (
+			SELECT
+				updates.id,
+				cars.name,
+				start_date,
+				end_date,
+				version,
+				LAG(start_date)  OVER (ORDER BY start_date ASC) AS prev_start_date,
+				LEAD(start_date) OVER (ORDER BY start_date ASC) AS next_start_date
+			FROM updates
+			LEFT JOIN cars ON car_id = cars.id
+			WHERE car_id = $1 AND end_date IS NOT NULL AND version IS NOT NULL
+		)
 		SELECT
-			updates.id,
-			cars.name,
+			id,
+			name,
 			start_date,
 			end_date,
-			version
-		FROM updates
-		LEFT JOIN cars ON car_id = cars.id
-		WHERE car_id = $1 AND end_date IS NOT NULL AND version IS NOT NULL
+			version,
+			split_part(version, ' ', 1) AS short_version,
+			EXTRACT(EPOCH FROM (end_date - start_date)) / 60.0 AS duration_min,
+			CASE WHEN prev_start_date IS NOT NULL
+				THEN EXTRACT(EPOCH FROM (start_date - prev_start_date)) / 86400.0
+				ELSE NULL END AS days_since_prior,
+			CASE WHEN next_start_date IS NOT NULL
+				THEN EXTRACT(EPOCH FROM (next_start_date - start_date)) / 86400.0
+				ELSE EXTRACT(EPOCH FROM (NOW() - start_date)) / 86400.0
+			END AS active_duration_days
+		FROM ordered
 		ORDER BY start_date DESC
 		LIMIT $2 OFFSET $3;`
 	rows, err := db.Query(query, CarID, ResultShow, ResultPage)
@@ -92,6 +118,12 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
 		// creating update object based on struct
 		update := Updates{}
+		var (
+			shortVersion       sql.NullString
+			durationMin        sql.NullFloat64
+			daysSincePrior     sql.NullFloat64
+			activeDurationDays sql.NullFloat64
+		)
 
 		// scanning row and putting values into the update
 		err = rows.Scan(
@@ -100,6 +132,10 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 			&update.StartDate,
 			&update.EndDate,
 			&update.Version,
+			&shortVersion,
+			&durationMin,
+			&daysSincePrior,
+			&activeDurationDays,
 		)
 
 		// checking for errors after scanning
@@ -108,6 +144,22 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 			return
 		}
 
+		if shortVersion.Valid && shortVersion.String != "" {
+			s := shortVersion.String
+			update.ShortVersion = &s
+		}
+		if durationMin.Valid {
+			v := durationMin.Float64
+			update.DurationMin = &v
+		}
+		if daysSincePrior.Valid {
+			v := daysSincePrior.Float64
+			update.DaysSincePrior = &v
+		}
+		if activeDurationDays.Valid {
+			v := activeDurationDays.Float64
+			update.ActiveDurationDays = &v
+		}
 		// adjusting to timezone differences from UTC to be userspecific
 		update.StartDate = getTimeInTimeZone(update.StartDate)
 		update.EndDate = getTimeInTimeZone(update.EndDate)

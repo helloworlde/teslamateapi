@@ -45,17 +45,48 @@ type V2LifecycleBuilder interface {
 	BuildTimeline(ctx context.Context, carIDParam string, eventTypes []string, limit int, before, after *time.Time) (V2TimelineResponse, error)
 }
 
+// V2ChargingCurveBuilder builds aggregated DC curve responses.
+type V2ChargingCurveBuilder interface {
+	BuildCurve(ctx context.Context, carIDParam string, timeRange V2TimeRange, minSessions int) (V2ChargingCurveResponse, int64, error)
+}
+
+// V2EfficiencyBuilder builds efficiency analytics responses.
+type V2EfficiencyBuilder interface {
+	BuildEfficiency(ctx context.Context, carIDParam string, timeRange V2TimeRange, opts V2EfficiencyBuildOptions) (V2EfficiencyResponse, int64, error)
+}
+
+// V2IdlePeriodsBuilder builds parking idle period responses.
+type V2IdlePeriodsBuilder interface {
+	BuildIdlePeriods(ctx context.Context, carIDParam string, timeRange V2TimeRange, opts V2IdlePeriodsBuildOptions) (V2IdlePeriodsResponse, int64, error)
+}
+
+// V2CapacityByMileageBuilder builds half-month capacity bucket responses.
+type V2CapacityByMileageBuilder interface {
+	BuildCapacityByMileage(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2CapacityByMileageResponse, int64, error)
+}
+
+// (V2EnvironmentalBuilder is declared alongside the environmental service.)
+
 // @name V2Handlers
 type V2Handlers struct {
-	summaryBuilder    V2SummaryBuilder
-	drivingBuilder    V2DrivingBuilder
-	chargingBuilder   V2ChargingBuilder
-	parkingBuilder    V2ParkingBuilder
-	batteryBuilder    V2BatteryBuilder
-	costBuilder       V2CostBuilder
-	updateBuilder     V2UpdateBuilder
-	lifecycleBuilder  V2LifecycleBuilder
-	now               func() time.Time
+	summaryBuilder       V2SummaryBuilder
+	drivingBuilder       V2DrivingBuilder
+	chargingBuilder      V2ChargingBuilder
+	chargingCurveBuilder     V2ChargingCurveBuilder
+	efficiencyBuilder        V2EfficiencyBuilder
+	idlePeriodsBuilder       V2IdlePeriodsBuilder
+	capacityByMileageBuilder V2CapacityByMileageBuilder
+	environmentalBuilder     V2EnvironmentalBuilder
+	odometerSeriesBuilder    V2OdometerSeriesBuilder
+	summaryByPeriodBuilder   V2SummaryByPeriodBuilder
+	placesBuilder            V2PlacesBuilder
+	geofencesBuilder         V2GeofencesBuilder
+	parkingBuilder       V2ParkingBuilder
+	batteryBuilder       V2BatteryBuilder
+	costBuilder          V2CostBuilder
+	updateBuilder        V2UpdateBuilder
+	lifecycleBuilder     V2LifecycleBuilder
+	now                  func() time.Time
 }
 
 func NewV2Handlers(summaryBuilder V2SummaryBuilder, drivingBuilder V2DrivingBuilder, chargingBuilder ...V2ChargingBuilder) V2Handlers {
@@ -97,6 +128,17 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	handlers.costBuilder = NewV2CostService(costRepository)
 	handlers.updateBuilder = NewV2UpdateService(updateRepository)
 	handlers.lifecycleBuilder = NewV2LifecycleService(lifecycleRepository)
+	if db != nil {
+		handlers.chargingCurveBuilder = NewV2ChargingCurveService(NewPostgresV2ChargingCurveRepository(db))
+		handlers.efficiencyBuilder = NewV2EfficiencyService(NewPostgresV2EfficiencyRepository(db))
+		handlers.idlePeriodsBuilder = NewV2IdlePeriodsService(NewPostgresV2IdlePeriodsRepository(db))
+		handlers.capacityByMileageBuilder = NewV2CapacityByMileageService(NewPostgresV2CapacityByMileageRepository(db))
+		handlers.environmentalBuilder = NewV2EnvironmentalService(NewPostgresV2EnvironmentalRepository(db))
+		handlers.odometerSeriesBuilder = NewV2OdometerSeriesService(db)
+		handlers.summaryByPeriodBuilder = NewV2SummaryByPeriodService(db)
+		handlers.placesBuilder = NewV2PlacesService(db)
+		handlers.geofencesBuilder = NewV2GeofencesService(db)
+	}
 
 	v2 := api.Group("/v2")
 	{
@@ -107,9 +149,18 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		v2Cars.GET("/analytics/driving", handlers.Driving)
 		v2Cars.GET("/analytics/driving/timeseries", handlers.DrivingTimeseries)
 		v2Cars.GET("/analytics/charging", handlers.Charging)
+		v2Cars.GET("/analytics/charging/curve", handlers.ChargingCurve)
+		v2Cars.GET("/analytics/efficiency", handlers.Efficiency)
 		v2Cars.GET("/analytics/parking", handlers.Parking)
+		v2Cars.GET("/parking/idle_periods", handlers.IdlePeriods)
 		v2Cars.GET("/analytics/battery", handlers.Battery)
 		v2Cars.GET("/analytics/battery/timeseries", handlers.BatteryTimeseries)
+		v2Cars.GET("/battery/capacity_by_mileage", handlers.CapacityByMileage)
+		v2Cars.GET("/analytics/environmental", handlers.Environmental)
+		v2Cars.GET("/lifecycle/odometer_series", handlers.OdometerSeries)
+		v2Cars.GET("/lifecycle/places", handlers.Places)
+		v2Cars.GET("/summary/by_period", handlers.SummaryByPeriod)
+		v2.GET("/geofences", handlers.Geofences)
 		v2Cars.GET("/analytics/cost", handlers.Cost)
 		v2Cars.GET("/updates", handlers.Updates)
 		v2Cars.GET("/lifecycle", handlers.Lifecycle)

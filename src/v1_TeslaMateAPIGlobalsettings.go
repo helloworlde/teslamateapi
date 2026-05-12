@@ -28,13 +28,15 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 	}
 	// TeslaMateUnits struct - child of GlobalSettings
 	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
+		UnitsLength      string `json:"unit_of_length"`                // string
+		UnitsTemperature string `json:"unit_of_temperature"`           // string
+		UnitsPressure    string `json:"unit_of_pressure,omitempty"`    // string (added)
 	}
 	// TeslaMateGUI struct - child of GlobalSettings
 	type TeslaMateGUI struct {
-		PreferredRange string `json:"preferred_range"` // string
-		Language       string `json:"language"`        // string
+		PreferredRange string `json:"preferred_range"`      // string
+		Language       string `json:"language"`             // string
+		ThemeMode      string `json:"theme_mode,omitempty"` // string (added)
 	}
 	// TeslaMateURLs struct - child of GlobalSettings
 	type TeslaMateURLs struct {
@@ -69,8 +71,10 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 			updated_at,
 			unit_of_length,
 			unit_of_temperature,
+			COALESCE(unit_of_pressure, '') as unit_of_pressure,
 			preferred_range,
 			language,
+			COALESCE(theme_mode, '') as theme_mode,
 			base_url,
 			grafana_url
 		FROM settings
@@ -84,8 +88,10 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 		&globalSetting.AccountInfo.UpdatedAt,
 		&globalSetting.TeslaMateUnits.UnitsLength,
 		&globalSetting.TeslaMateUnits.UnitsTemperature,
+		&globalSetting.TeslaMateUnits.UnitsPressure,
 		&globalSetting.TeslaMateGUI.PreferredRange,
 		&globalSetting.TeslaMateGUI.Language,
+		&globalSetting.TeslaMateGUI.ThemeMode,
 		&globalSetting.TeslaMateURLs.BaseURL,
 		&globalSetting.TeslaMateURLs.GrafanaURL,
 	)

@@ -119,6 +119,9 @@ func main() {
 			// v1 /api/v1/cars/:CarID/battery-health endpoints
 			v1.GET("/cars/:CarID/battery-health", TeslaMateAPICarsBatteryHealthV1)
 
+			// v1 /api/v1/cars/:CarID/tire-pressure endpoints
+			v1.GET("/cars/:CarID/tire-pressure", TeslaMateAPICarsTirePressureV1)
+
 			// v1 /api/v1/cars/:CarID/charges endpoints
 			v1.GET("/cars/:CarID/charges", TeslaMateAPICarsChargesV1)
 			v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
@@ -392,6 +395,22 @@ func celsiusToFahrenheit(c float64) float64 {
 func celsiusToFahrenheitNilSupport(c NullFloat64) NullFloat64 {
 	c.Float64 = (c.Float64*9/5 + 32)
 	return (c)
+}
+
+// slopeAdjustedConsumption returns the elevation-adjusted average consumption (Wh/km).
+// Mirrors Grafana drives.json: consumption + (ascent − descent) × g × m / (3600 × distance × 1000) × 1000 / regen.
+// distance is kilometers, ascent/descent in meters, baseConsumption in Wh/km. Returns Wh/km.
+func slopeAdjustedConsumption(distance, ascent, descent, baseConsumption float64) float64 {
+	if distance <= 0 {
+		return baseConsumption
+	}
+	const (
+		gravity        = 9.81
+		carMassKg      = 2100.0
+		regenEff       = 0.85
+	)
+	delta := (ascent - descent) * gravity * carMassKg / (3600.0 * distance * 1000.0) * 1000.0 / regenEff
+	return baseConsumption + delta
 }
 
 // checkArrayContainsString func - check if string is inside stringarray

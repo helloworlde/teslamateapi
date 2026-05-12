@@ -31,12 +31,13 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	// creating structs for /cars
 	// CarDetails struct - child of Cars
 	type CarDetails struct {
-		EID         int64       `json:"eid"`          // bigint
-		VID         int64       `json:"vid"`          // bigint
-		Vin         string      `json:"vin"`          // text
-		Model       NullString  `json:"model"`        // character varying(255)
-		TrimBadging NullString  `json:"trim_badging"` // text
-		Efficiency  NullFloat64 `json:"efficiency"`   // double precision
+		EID           int64       `json:"eid"`                      // bigint
+		VID           int64       `json:"vid"`                      // bigint
+		Vin           string      `json:"vin"`                      // text
+		Model         NullString  `json:"model"`                    // character varying(255)
+		TrimBadging   NullString  `json:"trim_badging"`             // text
+		Efficiency    NullFloat64 `json:"efficiency"`               // double precision
+		MarketingName NullString  `json:"marketing_name,omitempty"` // text (added)
 	}
 	// CarExterior struct - child of Cars
 	type CarExterior struct {
@@ -46,11 +47,14 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	}
 	// CarSettings struct - child of Cars
 	type CarSettings struct {
-		SuspendMin          int  `json:"suspend_min"`            // int
-		SuspendAfterIdleMin int  `json:"suspend_after_idle_min"` // int
-		ReqNotUnlocked      bool `json:"req_not_unlocked"`       // bool
-		FreeSupercharging   bool `json:"free_supercharging"`     // bool
-		UseStreamingAPI     bool `json:"use_streaming_api"`      // bool
+		SuspendMin          int  `json:"suspend_min"`                  // int
+		SuspendAfterIdleMin int  `json:"suspend_after_idle_min"`       // int
+		ReqNotUnlocked      bool `json:"req_not_unlocked"`             // bool
+		FreeSupercharging   bool `json:"free_supercharging"`           // bool
+		UseStreamingAPI     bool `json:"use_streaming_api"`            // bool
+		LfpBattery          bool `json:"lfp_battery,omitempty"`        // bool (added)
+		SleepModeEnabled    bool `json:"sleep_mode_enabled,omitempty"` // bool (added)
+		Enabled             bool `json:"enabled,omitempty"`            // bool (added)
 	}
 	// TeslaMateDetails struct - child of Cars
 	type TeslaMateDetails struct {
@@ -63,15 +67,22 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		TotalDrives  int `json:"total_drives"`  // int
 		TotalUpdates int `json:"total_updates"` // int
 	}
+	// CarLifecycle struct - child of Cars (added)
+	type CarLifecycle struct {
+		DisplayPriority int        `json:"display_priority"`            // smallint
+		FirstRecordedAt NullString `json:"first_recorded_at,omitempty"` // earliest of drives/charging/states/updates
+		LastRecordedAt  NullString `json:"last_recorded_at,omitempty"`  // latest of drives/charging/states/updates
+	}
 	// Cars struct - child of Data
 	type Cars struct {
-		CarID            int              `json:"car_id"`            // smallint
-		Name             NullString       `json:"name"`              // text (nullable)
-		CarDetails       CarDetails       `json:"car_details"`       // struct
-		CarExterior      CarExterior      `json:"car_exterior"`      // struct
-		CarSettings      CarSettings      `json:"car_settings"`      // struct
-		TeslaMateDetails TeslaMateDetails `json:"teslamate_details"` // struct
-		TeslaMateStats   TeslaMateStats   `json:"teslamate_stats"`   // struct
+		CarID            int              `json:"car_id"`                  // smallint
+		Name             NullString       `json:"name"`                    // text (nullable)
+		CarDetails       CarDetails       `json:"car_details"`             // struct
+		CarExterior      CarExterior      `json:"car_exterior"`            // struct
+		CarSettings      CarSettings      `json:"car_settings"`            // struct
+		TeslaMateDetails TeslaMateDetails `json:"teslamate_details"`       // struct
+		TeslaMateStats   TeslaMateStats   `json:"teslamate_stats"`         // struct
+		CarLifecycle     CarLifecycle     `json:"car_lifecycle,omitempty"` // struct (added)
 	}
 	// Information struct - child of JSONData
 	type Data struct {
@@ -93,8 +104,8 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			vid,
 			model,
 			efficiency,
-			inserted_at,
-			updated_at,
+			cars.inserted_at,
+			cars.updated_at,
 			vin,
 			name,
 			trim_badging,
@@ -106,9 +117,30 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			req_not_unlocked,
 			free_supercharging,
 			use_streaming_api,
+			COALESCE(car_settings.lfp_battery, false) as lfp_battery,
+			COALESCE(car_settings.sleep_mode_enabled, true) as sleep_mode_enabled,
+			COALESCE(car_settings.enabled, true) as enabled,
+			COALESCE(cars.marketing_name, '') as marketing_name,
+			COALESCE(cars.display_priority, 1) as display_priority,
 			(SELECT COUNT(*) FROM charging_processes WHERE car_id=cars.id) as total_charges,
 			(SELECT COUNT(*) FROM drives WHERE car_id=cars.id) as total_drives,
-			(SELECT COUNT(*) FROM updates WHERE car_id=cars.id) as total_charges
+			(SELECT COUNT(*) FROM updates WHERE car_id=cars.id) as total_updates,
+			(
+				SELECT MIN(s) FROM (
+					SELECT MIN(start_date) FROM drives WHERE car_id=cars.id
+					UNION ALL SELECT MIN(start_date) FROM charging_processes WHERE car_id=cars.id
+					UNION ALL SELECT MIN(start_date) FROM states WHERE car_id=cars.id
+					UNION ALL SELECT MIN(start_date) FROM updates WHERE car_id=cars.id
+				) AS u(s)
+			) as first_recorded_at,
+			(
+				SELECT MAX(s) FROM (
+					SELECT MAX(COALESCE(end_date, start_date)) FROM drives WHERE car_id=cars.id
+					UNION ALL SELECT MAX(COALESCE(end_date, start_date)) FROM charging_processes WHERE car_id=cars.id
+					UNION ALL SELECT MAX(COALESCE(end_date, start_date)) FROM states WHERE car_id=cars.id
+					UNION ALL SELECT MAX(COALESCE(end_date, start_date)) FROM updates WHERE car_id=cars.id
+				) AS u(s)
+			) as last_recorded_at
 		FROM cars
 		LEFT JOIN car_settings ON cars.id = car_settings.id
 		ORDER BY id;`
@@ -149,9 +181,16 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			&car.CarSettings.ReqNotUnlocked,
 			&car.CarSettings.FreeSupercharging,
 			&car.CarSettings.UseStreamingAPI,
+			&car.CarSettings.LfpBattery,
+			&car.CarSettings.SleepModeEnabled,
+			&car.CarSettings.Enabled,
+			&car.CarDetails.MarketingName,
+			&car.CarLifecycle.DisplayPriority,
 			&car.TeslaMateStats.TotalCharges,
 			&car.TeslaMateStats.TotalDrives,
 			&car.TeslaMateStats.TotalUpdates,
+			&car.CarLifecycle.FirstRecordedAt,
+			&car.CarLifecycle.LastRecordedAt,
 		)
 
 		// checking for errors after scanning

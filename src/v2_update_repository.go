@@ -26,17 +26,26 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 	var latestVersion sql.NullString
 	var latestUpdatedAt sql.NullTime
 	var avgDuration sql.NullFloat64
+	var medianDays sql.NullFloat64
 
 	err := r.db.QueryRowContext(ctx, `
+		WITH gaps AS (
+			SELECT EXTRACT(EPOCH FROM (
+				start_date - LAG(start_date) OVER (ORDER BY start_date)
+			)) / 86400.0 AS days_between
+			FROM updates
+			WHERE car_id = $1 AND start_date >= $2 AND start_date < $3
+		)
 		SELECT
-			COUNT(*) AS update_count,
-			MAX(version) FILTER (WHERE version IS NOT NULL) AS latest_version,
-			MAX(start_date) AS latest_updated_at,
-			AVG(EXTRACT(EPOCH FROM (end_date - start_date))) FILTER (WHERE end_date IS NOT NULL) AS avg_update_duration
-		FROM updates
-		WHERE car_id = $1 AND start_date >= $2 AND start_date < $3`,
+			(SELECT COUNT(*) FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3) AS update_count,
+			(SELECT MAX(version) FILTER (WHERE version IS NOT NULL) FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3) AS latest_version,
+			(SELECT MAX(start_date) FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3) AS latest_updated_at,
+			(SELECT AVG(EXTRACT(EPOCH FROM (end_date - start_date))) FILTER (WHERE end_date IS NOT NULL)
+			   FROM updates WHERE car_id = $1 AND start_date >= $2 AND start_date < $3) AS avg_update_duration,
+			(SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_between) FROM gaps WHERE days_between IS NOT NULL) AS median_days_between_updates
+		`,
 		carID, start.Time, end.Time,
-	).Scan(&response.UpdateCount, &latestVersion, &latestUpdatedAt, &avgDuration)
+	).Scan(&response.UpdateCount, &latestVersion, &latestUpdatedAt, &avgDuration, &medianDays)
 	if err != nil {
 		return response, 0, err
 	}
@@ -51,6 +60,9 @@ func (r PostgresV2UpdateRepository) Updates(ctx context.Context, carID int64, st
 	}
 	if avgDuration.Valid {
 		response.AvgUpdateDuration = &avgDuration.Float64
+	}
+	if medianDays.Valid {
+		response.MedianDaysBetweenUpdates = &medianDays.Float64
 	}
 
 	rows, err := r.db.QueryContext(ctx, `

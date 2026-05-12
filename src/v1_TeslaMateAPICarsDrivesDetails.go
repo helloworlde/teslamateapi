@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -14,6 +15,8 @@ import (
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Param DriveID path int true "Drive ID"
+// @Param sample query string false "Drive details downsampling: full, every_5s (default), every_30s" Enums(full, every_5s, every_30s)
+// @Param include_route query bool false "Set to false to skip drive_details (route) in the response"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/drives/{DriveID} [get]
@@ -78,41 +81,63 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 	}
 	// DriveDetails struct - child of Drive
 	type DriveDetails struct {
-		DetailID           int         `json:"detail_id"`            // integer
-		Date               string      `json:"date"`                 // timestamp without time zone
-		Latitude           float64     `json:"latitude"`             // numeric(8,6)
-		Longitude          float64     `json:"longitude"`            // numeric(9,6)
-		Speed              int         `json:"speed"`                // smallint
-		Power              int         `json:"power"`                // smallint
-		Odometer           float64     `json:"odometer"`             // double precision
-		BatteryLevel       int         `json:"battery_level"`        // smallint
-		UsableBatteryLevel NullInt64   `json:"usable_battery_level"` // smallint
-		Elevation          NullInt64   `json:"elevation"`            // smallint
-		ClimateInfo        ClimateInfo `json:"climate_info"`         // struct
-		BatteryInfo        BatteryInfo `json:"battery_info"`         // struct
+		DetailID           int          `json:"detail_id"`               // integer
+		Date               string       `json:"date"`                    // timestamp without time zone
+		Latitude           float64      `json:"latitude"`                // numeric(8,6)
+		Longitude          float64      `json:"longitude"`               // numeric(9,6)
+		Speed              int          `json:"speed"`                   // smallint
+		Power              int          `json:"power"`                   // smallint
+		Odometer           float64      `json:"odometer"`                // double precision
+		BatteryLevel       int          `json:"battery_level"`           // smallint
+		UsableBatteryLevel NullInt64    `json:"usable_battery_level"`    // smallint
+		Elevation          NullInt64    `json:"elevation"`               // smallint
+		ClimateInfo        ClimateInfo  `json:"climate_info"`            // struct
+		BatteryInfo        BatteryInfo  `json:"battery_info"`            // struct
+		TpmsPressureFL     *float64     `json:"tpms_pressure_fl,omitempty"` // (added)
+		TpmsPressureFR     *float64     `json:"tpms_pressure_fr,omitempty"` // (added)
+		TpmsPressureRL     *float64     `json:"tpms_pressure_rl,omitempty"` // (added)
+		TpmsPressureRR     *float64     `json:"tpms_pressure_rr,omitempty"` // (added)
+	}
+	// Geofence struct - child of Drive (added)
+	type Geofence struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	// Position struct - child of Drive (added)
+	type Position struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
 	}
 	// Drive struct - child of Data
 	type Drive struct {
-		DriveID           int             `json:"drive_id"`            // int
-		StartDate         string          `json:"start_date"`          // string
-		EndDate           string          `json:"end_date"`            // string
-		StartAddress      string          `json:"start_address"`       // string
-		EndAddress        string          `json:"end_address"`         // string
-		OdometerDetails   OdometerDetails `json:"odometer_details"`    // OdometerDetails
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		SpeedMax          int             `json:"speed_max"`           // int
-		SpeedAvg          float64         `json:"speed_avg"`           // float64
-		PowerMax          int             `json:"power_max"`           // int
-		PowerMin          int             `json:"power_min"`           // int
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange  `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange  `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		InsideTempAvg     float64         `json:"inside_temp_avg"`     // float64
-		EnergyConsumedNet *float64        `json:"energy_consumed_net"` // Energy consumed (net) in kWh
-		ConsumptionNet    *float64        `json:"consumption_net"`     // Ø Consumption (net) per distance unit
-		DriveDetails      []DriveDetails  `json:"drive_details"`       // struct
+		DriveID                  int             `json:"drive_id"`                              // int
+		StartDate                string          `json:"start_date"`                            // string
+		EndDate                  string          `json:"end_date"`                              // string
+		StartAddress             string          `json:"start_address"`                         // string
+		EndAddress               string          `json:"end_address"`                           // string
+		OdometerDetails          OdometerDetails `json:"odometer_details"`                      // OdometerDetails
+		DurationMin              int             `json:"duration_min"`                          // int
+		DurationStr              string          `json:"duration_str"`                          // string
+		SpeedMax                 int             `json:"speed_max"`                             // int
+		SpeedAvg                 float64         `json:"speed_avg"`                             // float64
+		PowerMax                 int             `json:"power_max"`                             // int
+		PowerMin                 int             `json:"power_min"`                             // int
+		BatteryDetails           BatteryDetails  `json:"battery_details"`                       // BatteryDetails
+		RangeIdeal               PreferredRange  `json:"range_ideal"`                           // PreferredRange
+		RangeRated               PreferredRange  `json:"range_rated"`                           // PreferredRange
+		OutsideTempAvg           float64         `json:"outside_temp_avg"`                      // float64
+		InsideTempAvg            float64         `json:"inside_temp_avg"`                       // float64
+		EnergyConsumedNet        *float64        `json:"energy_consumed_net"`                   // Energy consumed (net) in kWh
+		ConsumptionNet           *float64        `json:"consumption_net"`                       // Ø Consumption (net) per distance unit
+		Ascent                   *float64        `json:"ascent,omitempty"`                      // (added)
+		Descent                  *float64        `json:"descent,omitempty"`                     // (added)
+		ConsumptionSlopeAdjusted *float64        `json:"consumption_slope_adjusted,omitempty"`  // (added)
+		StartGeofence            *Geofence       `json:"start_geofence,omitempty"`              // (added)
+		EndGeofence              *Geofence       `json:"end_geofence,omitempty"`                // (added)
+		StartPosition            *Position       `json:"start_position,omitempty"`              // (added)
+		EndPosition              *Position       `json:"end_position,omitempty"`                // (added)
+		IsComplete               bool            `json:"is_complete"`                           // (added)
+		DriveDetails             []DriveDetails  `json:"drive_details"`                         // struct
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -132,10 +157,10 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 
 	// creating required vars
 	var (
-		CarName                       NullString
-		drive                         Drive
-		DriveDetailsData              []DriveDetails
-		UnitsLength, UnitsTemperature string
+		CarName                                      NullString
+		drive                                        Drive
+		DriveDetailsData                             []DriveDetails
+		UnitsLength, UnitsTemperature, UnitsPressure string
 	)
 
 	// getting data from database
@@ -174,13 +199,25 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency 
 				ELSE NULL 
 			END as energy_consumed_net,
-			CASE 
+			CASE
 				WHEN (duration_min > 1 AND distance > 1 AND ( start_position.usable_battery_level IS NULL OR end_position.usable_battery_level IS NULL OR ( end_position.battery_level - end_position.usable_battery_level ) = 0 )) AND NULLIF(distance, 0) IS NOT NULL
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000
-				ELSE NULL 
+				ELSE NULL
 			END as consumption_net,
+			drives.ascent,
+			drives.descent,
+			start_geofence.id AS start_geofence_id,
+			start_geofence.name AS start_geofence_name,
+			end_geofence.id AS end_geofence_id,
+			end_geofence.name AS end_geofence_name,
+			start_position.latitude AS start_lat,
+			start_position.longitude AS start_lng,
+			end_position.latitude AS end_lat,
+			end_position.longitude AS end_lng,
+			(end_date IS NOT NULL) AS is_complete,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
+			(SELECT COALESCE(unit_of_pressure, '') FROM settings LIMIT 1) as unit_of_pressure,
 			cars.name
 		FROM drives
 		LEFT JOIN cars ON car_id = cars.id
@@ -192,6 +229,14 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
 		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`
 	row := db.QueryRow(query, CarID, DriveID)
+
+	var (
+		ascent, descent                    sql.NullFloat64
+		startGeofenceID, endGeofenceID     sql.NullInt64
+		startGeofenceName, endGeofenceName sql.NullString
+		startLat, startLng, endLat, endLng sql.NullFloat64
+		isComplete                         sql.NullBool
+	)
 
 	// scanning row and putting values into the drive
 	err := row.Scan(
@@ -225,10 +270,49 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		&drive.InsideTempAvg,
 		&drive.EnergyConsumedNet,
 		&drive.ConsumptionNet,
+		&ascent,
+		&descent,
+		&startGeofenceID,
+		&startGeofenceName,
+		&endGeofenceID,
+		&endGeofenceName,
+		&startLat,
+		&startLng,
+		&endLat,
+		&endLng,
+		&isComplete,
 		&UnitsLength,
 		&UnitsTemperature,
+		&UnitsPressure,
 		&CarName,
 	)
+	if ascent.Valid {
+		v := ascent.Float64
+		drive.Ascent = &v
+	}
+	if descent.Valid {
+		v := descent.Float64
+		drive.Descent = &v
+	}
+	if startGeofenceID.Valid && startGeofenceName.Valid {
+		drive.StartGeofence = &Geofence{ID: int(startGeofenceID.Int64), Name: startGeofenceName.String}
+	}
+	if endGeofenceID.Valid && endGeofenceName.Valid {
+		drive.EndGeofence = &Geofence{ID: int(endGeofenceID.Int64), Name: endGeofenceName.String}
+	}
+	if startLat.Valid && startLng.Valid {
+		drive.StartPosition = &Position{Latitude: startLat.Float64, Longitude: startLng.Float64}
+	}
+	if endLat.Valid && endLng.Valid {
+		drive.EndPosition = &Position{Latitude: endLat.Float64, Longitude: endLng.Float64}
+	}
+	if isComplete.Valid {
+		drive.IsComplete = isComplete.Bool
+	}
+	if drive.ConsumptionNet != nil && drive.OdometerDetails.OdometerDistance > 0 && drive.Ascent != nil && drive.Descent != nil {
+		adj := slopeAdjustedConsumption(drive.OdometerDetails.OdometerDistance, *drive.Ascent, *drive.Descent, *drive.ConsumptionNet)
+		drive.ConsumptionSlopeAdjusted = &adj
+	}
 
 	switch err {
 	case sql.ErrNoRows:
@@ -258,6 +342,9 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		if drive.ConsumptionNet != nil {
 			*drive.ConsumptionNet = kilometersToMiles(*drive.ConsumptionNet)
 		}
+		if drive.ConsumptionSlopeAdjusted != nil {
+			*drive.ConsumptionSlopeAdjusted = kilometersToMiles(*drive.ConsumptionSlopeAdjusted)
+		}
 	}
 	// converting values based of settings UnitsTemperature
 	if UnitsTemperature == "F" {
@@ -268,37 +355,120 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 	drive.StartDate = getTimeInTimeZone(drive.StartDate)
 	drive.EndDate = getTimeInTimeZone(drive.EndDate)
 
+	// optional ?include_route=false skips the heavy positions query.
+	includeRoute := true
+	if v := c.Query("include_route"); v == "false" || v == "0" {
+		includeRoute = false
+	}
+	if !includeRoute {
+		// build response with empty drive_details and return early
+		jsonData := JSONData{
+			Data{
+				Car: Car{
+					CarID:   CarID,
+					CarName: CarName,
+				},
+				Drive: drive,
+				TeslaMateUnits: TeslaMateUnits{
+					UnitsLength:      UnitsLength,
+					UnitsTemperature: UnitsTemperature,
+				},
+			},
+		}
+		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsDrivesDetailsV1", jsonData)
+		return
+	}
+
+	// optional ?sample=full|every_5s|every_30s — default every_5s downsamples to one row per 5s bucket.
+	sampleMode := c.DefaultQuery("sample", "every_5s")
+	bucketSeconds := 5
+	switch sampleMode {
+	case "full":
+		bucketSeconds = 0
+	case "every_30s":
+		bucketSeconds = 30
+	case "every_5s", "":
+		bucketSeconds = 5
+	default:
+		bucketSeconds = 5
+	}
+
 	// getting detailed drive data from database
-	query = `
+	var detailQuery string
+	if bucketSeconds > 0 {
+		// Use DISTINCT ON to keep the earliest position per N-second bucket.
+		detailQuery = fmt.Sprintf(`
+		 			SELECT * FROM (
+		 				SELECT DISTINCT ON (date_trunc('minute', date) + (FLOOR(EXTRACT(SECOND FROM date) / %d) * %d) * INTERVAL '1 second')
+		 					id AS detail_id,
+		 					date,
+		 					latitude,
+		 					longitude,
+		 					COALESCE(speed, 0) AS speed,
+		 					power,
+		 					odometer,
+		 					battery_level,
+		 					usable_battery_level,
+		 					elevation,
+		 					inside_temp,
+		 					outside_temp,
+		 					is_climate_on,
+		 					fan_status,
+		 					driver_temp_setting,
+		 					passenger_temp_setting,
+		 					is_rear_defroster_on,
+		 					is_front_defroster_on,
+		 					est_battery_range_km,
+		 					ideal_battery_range_km,
+		 					rated_battery_range_km,
+		 					battery_heater,
+		 					battery_heater_on,
+		 					battery_heater_no_power,
+		 					tpms_pressure_fl,
+		 					tpms_pressure_fr,
+		 					tpms_pressure_rl,
+		 					tpms_pressure_rr
+		 				FROM positions
+		 				WHERE drive_id = $1
+		 				ORDER BY date_trunc('minute', date) + (FLOOR(EXTRACT(SECOND FROM date) / %d) * %d) * INTERVAL '1 second', id ASC
+		 			) bucketed
+		 			ORDER BY detail_id ASC;`, bucketSeconds, bucketSeconds, bucketSeconds, bucketSeconds)
+	} else {
+		detailQuery = `
 		 			SELECT
-						id AS detail_id,
-						date,
-						latitude,
-						longitude,
-						COALESCE(speed, 0) AS speed,
-						power,
-						odometer,
-						battery_level,
-						usable_battery_level,
-						elevation,
-						inside_temp,
-						outside_temp,
-						is_climate_on,
-						fan_status,
-						driver_temp_setting,
-						passenger_temp_setting,
-						is_rear_defroster_on,
-						is_front_defroster_on,
-						est_battery_range_km,
-						ideal_battery_range_km,
-						rated_battery_range_km,
-						battery_heater,
-						battery_heater_on,
-						battery_heater_no_power
+		 				id AS detail_id,
+		 				date,
+		 				latitude,
+		 				longitude,
+		 				COALESCE(speed, 0) AS speed,
+		 				power,
+		 				odometer,
+		 				battery_level,
+		 				usable_battery_level,
+		 				elevation,
+		 				inside_temp,
+		 				outside_temp,
+		 				is_climate_on,
+		 				fan_status,
+		 				driver_temp_setting,
+		 				passenger_temp_setting,
+		 				is_rear_defroster_on,
+		 				is_front_defroster_on,
+		 				est_battery_range_km,
+		 				ideal_battery_range_km,
+		 				rated_battery_range_km,
+		 				battery_heater,
+		 				battery_heater_on,
+		 				battery_heater_no_power,
+		 				tpms_pressure_fl,
+		 				tpms_pressure_fr,
+		 				tpms_pressure_rl,
+		 				tpms_pressure_rr
 		 			FROM positions
 		 			WHERE drive_id = $1
 		 			ORDER BY id ASC;`
-	rows, err := db.Query(query, DriveID)
+	}
+	rows, err := db.Query(detailQuery, DriveID)
 
 	// checking for errors in query
 	if err != nil {
@@ -314,6 +484,8 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 
 		// creating drivedetails object based on struct
 		drivedetails := DriveDetails{}
+
+		var tpmsFL, tpmsFR, tpmsRL, tpmsRR sql.NullFloat64
 
 		// scanning row and putting values into the drive
 		err = rows.Scan(
@@ -341,7 +513,26 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 			&drivedetails.BatteryInfo.BatteryHeater,
 			&drivedetails.BatteryInfo.BatteryHeaterOn,
 			&drivedetails.BatteryInfo.BatteryHeaterNoPower,
+			&tpmsFL,
+			&tpmsFR,
+			&tpmsRL,
+			&tpmsRR,
 		)
+		// TPMS values stored in bar; convert to psi if settings.unit_of_pressure = 'psi'.
+		convertPressure := func(v sql.NullFloat64) *float64 {
+			if !v.Valid {
+				return nil
+			}
+			val := v.Float64
+			if UnitsPressure == "psi" {
+				val = barToPsi(val)
+			}
+			return &val
+		}
+		drivedetails.TpmsPressureFL = convertPressure(tpmsFL)
+		drivedetails.TpmsPressureFR = convertPressure(tpmsFR)
+		drivedetails.TpmsPressureRL = convertPressure(tpmsRL)
+		drivedetails.TpmsPressureRR = convertPressure(tpmsRR)
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {

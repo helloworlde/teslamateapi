@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -24,14 +26,25 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		CarID   int        `json:"car_id"`   // smallint
 		CarName NullString `json:"car_name"` // text (nullable)
 	}
+	// EstimatedCapacityAtFullCharge struct - child of BatteryHealth (added)
+	type EstimatedCapacityAtFullCharge struct {
+		Rated float64 `json:"rated"`
+		Ideal float64 `json:"ideal"`
+	}
 	// BatteryHealth struct - child of Data
 	type BatteryHealth struct {
-		MaxRange                float64 `json:"max_range"`                 // float64
-		CurrentRange            float64 `json:"current_range"`             // float64
-		MaxCapacity             float64 `json:"max_capacity"`              // float64
-		CurrentCapacity         float64 `json:"current_capacity"`          // float64
-		RatedEfficiency         float64 `json:"rated_efficiency"`          // float64
-		BatteryHealthPercentage float64 `json:"battery_health_percentage"` // float64
+		MaxRange                      float64                       `json:"max_range"`                                  // float64
+		CurrentRange                  float64                       `json:"current_range"`                              // float64
+		MaxCapacity                   float64                       `json:"max_capacity"`                               // float64
+		CurrentCapacity               float64                       `json:"current_capacity"`                           // float64
+		RatedEfficiency               float64                       `json:"rated_efficiency"`                           // float64
+		BatteryHealthPercentage       float64                       `json:"battery_health_percentage"`                  // float64
+		Cycles                        *float64                      `json:"cycles,omitempty"`                           // (added)
+		DataLost                      *float64                      `json:"data_lost,omitempty"`                        // (added)
+		LfpBattery                    *bool                         `json:"lfp_battery,omitempty"`                      // (added)
+		EstimatedCapacityAtFullCharge EstimatedCapacityAtFullCharge `json:"estimated_capacity_at_full_charge"`          // (added)
+		DerivedEfficiency             *float64                      `json:"derived_efficiency,omitempty"`               // (added)
+		SamplesUsed                   *int64                        `json:"samples_used,omitempty"`                     // (added)
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -302,10 +315,73 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.BatteryHealthPercentage = (CurrentCapacity / MaxCapacity) * 100
 	}
 
+	// Estimated capacity at full charge (rated/ideal): max_range × efficiency / 100.
+	// efficiency here is in percent (Wh/km × 100), so divide by 100 to get kWh.
+	if Efficiency > 0 {
+		batteryHealth.EstimatedCapacityAtFullCharge.Rated = MaxRangeRated * Efficiency / 100.0 / 100.0
+		batteryHealth.EstimatedCapacityAtFullCharge.Ideal = MaxRangeIdeal * Efficiency / 100.0 / 100.0
+	}
+
+	// Augment with cycles / data_lost / lfp_battery / derived_efficiency / samples_used.
+	var (
+		totalChargeEnergy sql.NullFloat64
+		distanceSum       sql.NullFloat64
+		odoMax            sql.NullFloat64
+		odoMin            sql.NullFloat64
+		lfpFlag           sql.NullBool
+		samplesUsed       sql.NullInt64
+	)
+	auxErr := db.QueryRow(`
+		SELECT
+			(SELECT COALESCE(SUM(charge_energy_added), 0) FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL),
+			(SELECT COALESCE(SUM(distance), 0) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL),
+			(SELECT MAX(end_km) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL),
+			(SELECT MIN(start_km) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL),
+			(SELECT lfp_battery FROM car_settings WHERE id = $1),
+			(
+				SELECT COUNT(*) FROM charging_processes
+				WHERE car_id = $1 AND end_date IS NOT NULL
+				  AND duration_min > 10
+				  AND end_battery_level <= 95
+				  AND start_rated_range_km IS NOT NULL
+				  AND end_rated_range_km IS NOT NULL
+				  AND charge_energy_added > 0
+			)
+	`, CarID).Scan(&totalChargeEnergy, &distanceSum, &odoMax, &odoMin, &lfpFlag, &samplesUsed)
+	if auxErr == nil {
+		if MaxCapacity > 0 && totalChargeEnergy.Valid {
+			cycles := totalChargeEnergy.Float64 / MaxCapacity
+			batteryHealth.Cycles = &cycles
+		}
+		if odoMax.Valid && odoMin.Valid && distanceSum.Valid {
+			lost := (odoMax.Float64 - odoMin.Float64) - distanceSum.Float64
+			if lost < 0 {
+				lost = 0
+			}
+			batteryHealth.DataLost = &lost
+		}
+		if lfpFlag.Valid {
+			b := lfpFlag.Bool
+			batteryHealth.LfpBattery = &b
+		}
+		if samplesUsed.Valid {
+			n := samplesUsed.Int64
+			batteryHealth.SamplesUsed = &n
+		}
+		if Efficiency > 0 {
+			eff := Efficiency
+			batteryHealth.DerivedEfficiency = &eff
+		}
+	}
+
 	// converting values based on settings UnitsLength
 	if UnitsLength == "mi" {
 		batteryHealth.MaxRange = kilometersToMiles(batteryHealth.MaxRange)
 		batteryHealth.CurrentRange = kilometersToMiles(batteryHealth.CurrentRange)
+		if batteryHealth.DataLost != nil {
+			conv := kilometersToMiles(*batteryHealth.DataLost)
+			batteryHealth.DataLost = &conv
+		}
 	}
 
 	jsonData := JSONData{
