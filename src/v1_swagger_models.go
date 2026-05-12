@@ -11,9 +11,3 @@ type V1JSONEnvelope struct {
 type V1ErrorEnvelope struct {
 	Error string `json:"error"`
 }
-
-// V1EnabledCommandsResponse is returned by GET command/logging when ENABLE_COMMANDS is true.
-// @name V1EnabledCommandsResponse
-type V1EnabledCommandsResponse struct {
-	EnabledCommands []string `json:"enabled_commands"`
-}

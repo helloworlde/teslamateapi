@@ -14,13 +14,6 @@ definitions:
       error:
         $ref: '#/definitions/APIErrorBody'
     type: object
-  V1EnabledCommandsResponse:
-    properties:
-      enabled_commands:
-        items:
-          type: string
-        type: array
-    type: object
   V1ErrorEnvelope:
     properties:
       error:
@@ -907,94 +900,6 @@ paths:
       summary: Get active charging session if any
       tags:
       - V1
-  /v1/cars/{CarID}/command:
-    get:
-      description: GET returns enabled_commands. POST proxies to Tesla Owner API;
-        response body follows Tesla API JSON. Also registered as POST /v1/cars/{CarID}/wake_up.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
-      tags:
-      - V1
-  /v1/cars/{CarID}/command/{Command}:
-    post:
-      description: GET returns enabled_commands. POST proxies to Tesla Owner API;
-        response body follows Tesla API JSON. Also registered as POST /v1/cars/{CarID}/wake_up.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Remote command path segment (POST only)
-        in: path
-        name: Command
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
-      tags:
-      - V1
-  /v1/cars/{CarID}/commands:
-    get:
-      description: GET returns enabled_commands. POST proxies to Tesla Owner API;
-        response body follows Tesla API JSON. Also registered as POST /v1/cars/{CarID}/wake_up.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
-      tags:
-      - V1
   /v1/cars/{CarID}/drives:
     get:
       parameters:
@@ -1052,73 +957,6 @@ paths:
       summary: Get one drive by ID
       tags:
       - V1
-  /v1/cars/{CarID}/logging:
-    get:
-      description: GET returns enabled_commands list; PUT forwards to TeslaMate logging
-        API.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: TeslaMate logging commands (when ENABLE_COMMANDS is true)
-      tags:
-      - V1
-  /v1/cars/{CarID}/logging/{Command}:
-    put:
-      description: GET returns enabled_commands list; PUT forwards to TeslaMate logging
-        API.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: Logging command (PUT)
-        in: path
-        name: Command
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: TeslaMate logging commands (when ENABLE_COMMANDS is true)
-      tags:
-      - V1
-  /v1/cars/{CarID}/status:
-    get:
-      description: Requires MQTT; returns cached telemetry when available.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "501":
-          description: Not Implemented
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: MQTT-backed live vehicle status
-      tags:
-      - V1
   /v1/cars/{CarID}/updates:
     get:
       parameters:
@@ -1135,34 +973,6 @@ paths:
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
       summary: List firmware updates for one car
-      tags:
-      - V1
-  /v1/cars/{CarID}/wake_up:
-    post:
-      description: GET returns enabled_commands. POST proxies to Tesla Owner API;
-        response body follows Tesla API JSON. Also registered as POST /v1/cars/{CarID}/wake_up.
-      parameters:
-      - description: Car ID
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Tesla vehicle commands (when ENABLE_COMMANDS is true)
       tags:
       - V1
   /v1/globalsettings:
