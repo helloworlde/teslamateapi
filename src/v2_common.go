@@ -238,3 +238,14 @@ func compareFloat(current float64, previous float64) V2ComparisonValue {
 	}
 	return comparison
 }
+
+func compareFloatPtr(current *float64, previous *float64) V2ComparisonValue {
+	c, p := 0.0, 0.0
+	if current != nil {
+		c = *current
+	}
+	if previous != nil {
+		p = *previous
+	}
+	return compareFloat(c, p)
+}

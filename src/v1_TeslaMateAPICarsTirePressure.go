@@ -94,7 +94,7 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		SELECT
 			cars.name,
 			(SELECT unit_of_length FROM settings LIMIT 1) AS unit_of_length,
-			(SELECT COALESCE(unit_of_pressure, '') FROM settings LIMIT 1) AS unit_of_pressure
+			(SELECT COALESCE(unit_of_pressure, 'bar') FROM settings LIMIT 1) AS unit_of_pressure
 		FROM cars WHERE id = $1
 	`, CarID).Scan(&CarName, &UnitsLength, &UnitsPressure)
 	if err != nil {

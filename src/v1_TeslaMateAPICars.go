@@ -53,7 +53,6 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		FreeSupercharging   bool `json:"free_supercharging"`           // bool
 		UseStreamingAPI     bool `json:"use_streaming_api"`            // bool
 		LfpBattery          bool `json:"lfp_battery,omitempty"`        // bool (added)
-		SleepModeEnabled    bool `json:"sleep_mode_enabled,omitempty"` // bool (added)
 		Enabled             bool `json:"enabled,omitempty"`            // bool (added)
 	}
 	// TeslaMateDetails struct - child of Cars
@@ -118,7 +117,6 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			free_supercharging,
 			use_streaming_api,
 			COALESCE(car_settings.lfp_battery, false) as lfp_battery,
-			COALESCE(car_settings.sleep_mode_enabled, true) as sleep_mode_enabled,
 			COALESCE(car_settings.enabled, true) as enabled,
 			COALESCE(cars.marketing_name, '') as marketing_name,
 			COALESCE(cars.display_priority, 1) as display_priority,
@@ -182,7 +180,6 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			&car.CarSettings.FreeSupercharging,
 			&car.CarSettings.UseStreamingAPI,
 			&car.CarSettings.LfpBattery,
-			&car.CarSettings.SleepModeEnabled,
 			&car.CarSettings.Enabled,
 			&car.CarDetails.MarketingName,
 			&car.CarLifecycle.DisplayPriority,

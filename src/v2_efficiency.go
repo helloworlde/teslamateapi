@@ -142,7 +142,7 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 			     THEN (SUM(GREATEST((d.start_rated_range_km - d.end_rated_range_km), 0) * (SELECT efficiency FROM car_eff)) * 1000) / SUM(d.distance)
 			END AS net_consumption,
 			CASE WHEN SUM(d.distance) > 0
-			     THEN ((SUM(GREATEST((d.start_rated_range_km - d.end_rated_range_km), 0) * (SELECT efficiency FROM car_eff))
+			     THEN (SUM(GREATEST((d.start_rated_range_km - d.end_rated_range_km), 0) * (SELECT efficiency FROM car_eff))
 			          + SUM(GREATEST((COALESCE(d.prev_end_rated_range_km, d.start_rated_range_km) - d.start_rated_range_km), 0) * (SELECT efficiency FROM car_eff))) * 1000 / SUM(d.distance)
 			END AS gross_consumption,
 			AVG(d.outside_temp_avg) AS avg_outside_temp

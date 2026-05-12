@@ -63,7 +63,10 @@ func buildV2SummaryComparison(current V2Summary, previous V2Summary) map[string]
 		"charging.session_count":    compareFloat(float64(current.Charging.SessionCount), float64(previous.Charging.SessionCount)),
 		"charging.energy_added":     compareFloat(current.Charging.EnergyAdded, previous.Charging.EnergyAdded),
 		"charging.energy_used":      compareFloat(current.Charging.EnergyUsed, previous.Charging.EnergyUsed),
-		"charging.cost":             compareFloat(current.Charging.Cost, previous.Charging.Cost),
-		"cost.charging_cost":        compareFloat(current.Cost.ChargingCost, previous.Cost.ChargingCost),
+		"charging.cost":                  compareFloat(current.Charging.Cost, previous.Charging.Cost),
+		"vehicle.tracked_consumption":    compareFloatPtr(current.Vehicle.TrackedConsumption, previous.Vehicle.TrackedConsumption),
+		"vehicle.tracked_wall":           compareFloatPtr(current.Vehicle.TrackedWall, previous.Vehicle.TrackedWall),
+		"vehicle.charge_efficiency":      compareFloatPtr(current.Vehicle.ChargeEfficiency, previous.Vehicle.ChargeEfficiency),
+		"cost.charging_cost":             compareFloat(current.Cost.ChargingCost, previous.Cost.ChargingCost),
 	}
 }

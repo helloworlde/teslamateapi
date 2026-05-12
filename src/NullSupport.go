@@ -7,7 +7,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"time"
 )
 
 // NullInt64 is an alias for sql.NullInt64 data type
@@ -59,11 +60,16 @@ func (s *NullString) Scan(value interface{}) error {
 		*s = ""
 		return nil
 	}
-	strVal, ok := value.(string)
-	if !ok {
-		return errors.New("value is not a string")
+	switch v := value.(type) {
+	case string:
+		*s = NullString(v)
+	case []byte:
+		*s = NullString(v)
+	case time.Time:
+		*s = NullString(v.Format(time.RFC3339))
+	default:
+		*s = NullString(fmt.Sprintf("%v", v))
 	}
-	*s = NullString(strVal)
 	return nil
 }
 

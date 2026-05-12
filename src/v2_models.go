@@ -198,10 +198,17 @@ type V2ChargingSummary struct {
 
 // @name V2VehicleSummary
 type V2VehicleSummary struct {
-	Odometer        *float64 `json:"odometer,omitempty"`
-	TrackedDistance float64  `json:"tracked_distance"`
-	TrackedDrives   int64    `json:"tracked_drives"`
-	TrackedCharges  int64    `json:"tracked_charges"`
+	Odometer             *float64 `json:"odometer,omitempty"`
+	RatedEfficiency      *float64 `json:"rated_efficiency,omitempty"`
+	TrackedConsumption   *float64 `json:"tracked_consumption,omitempty"`
+	TrackedWall          *float64 `json:"tracked_wall,omitempty"`
+	ChargeEfficiency     *float64 `json:"charge_efficiency,omitempty"`
+	OdometerCoverage     *float64 `json:"odometer_coverage,omitempty"`
+	OdometerTracked      *float64 `json:"odometer_tracked,omitempty"`
+	OdometerTotal        *float64 `json:"odometer_total,omitempty"`
+	TrackedDistance      float64  `json:"tracked_distance"`
+	TrackedDrives        int64    `json:"tracked_drives"`
+	TrackedCharges       int64    `json:"tracked_charges"`
 }
 
 // V2ParkingSummary is the canonical parking aggregate; consumed by both

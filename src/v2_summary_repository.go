@@ -364,13 +364,15 @@ func (r PostgresV2SummaryRepository) loadUpdateSummary(ctx context.Context, carI
 }
 
 func (r PostgresV2SummaryRepository) loadVehicleSummary(ctx context.Context, carID int64, summary *V2Summary) error {
-	var odometer sql.NullFloat64
+	var odometer, efficiency sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
-		SELECT MAX(d.end_km) AS odometer
+		SELECT
+			MAX(d.end_km) AS odometer,
+			(SELECT efficiency FROM cars WHERE id = $1)
 		FROM drives d
 		WHERE d.car_id = $1 AND d.end_date IS NOT NULL`,
 		carID,
-	).Scan(&odometer)
+	).Scan(&odometer, &efficiency)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -381,6 +383,36 @@ func (r PostgresV2SummaryRepository) loadVehicleSummary(ctx context.Context, car
 
 	if odometer.Valid {
 		summary.Vehicle.Odometer = &odometer.Float64
+		odometerTotal := odometer.Float64
+		summary.Vehicle.OdometerTotal = &odometerTotal
+		trackedDist := summary.Driving.Distance
+		summary.Vehicle.OdometerTracked = &trackedDist
+		if odometerTotal > 0 {
+			coverage := trackedDist / odometerTotal * 100
+			summary.Vehicle.OdometerCoverage = &coverage
+		}
 	}
+
+	if efficiency.Valid {
+		ratedEff := efficiency.Float64 * 100
+		summary.Vehicle.RatedEfficiency = &ratedEff
+	}
+
+	if summary.Driving.Distance > 0 {
+		if summary.Charging.EnergyAdded > 0 {
+			trackedConsumption := summary.Charging.EnergyAdded / summary.Driving.Distance * 100
+			summary.Vehicle.TrackedConsumption = &trackedConsumption
+		}
+		if summary.Charging.EnergyUsed > 0 {
+			trackedWall := summary.Charging.EnergyUsed / summary.Driving.Distance * 100
+			summary.Vehicle.TrackedWall = &trackedWall
+		}
+	}
+
+	if summary.Charging.ChargingEfficiency != nil {
+		v := *summary.Charging.ChargingEfficiency
+		summary.Vehicle.ChargeEfficiency = &v
+	}
+
 	return nil
 }

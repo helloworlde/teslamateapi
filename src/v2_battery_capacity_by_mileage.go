@@ -63,9 +63,10 @@ func (r PostgresV2CapacityByMileageRepository) CapacityByMileage(ctx context.Con
 				cp.end_date,
 				c.rated_battery_range_km,
 				c.usable_battery_level,
-				cp.end_km AS odo
+				p.odometer AS odo
 			FROM charging_processes cp
 			JOIN charges c ON c.charging_process_id = cp.id
+			LEFT JOIN positions p ON p.id = cp.position_id
 			WHERE cp.car_id = $1
 			  AND cp.end_date IS NOT NULL
 			  AND cp.end_date >= $2::timestamptz

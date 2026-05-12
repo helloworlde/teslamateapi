@@ -217,7 +217,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 			(end_date IS NOT NULL) AS is_complete,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
-			(SELECT COALESCE(unit_of_pressure, '') FROM settings LIMIT 1) as unit_of_pressure,
+			(SELECT COALESCE(unit_of_pressure, 'bar') FROM settings LIMIT 1) as unit_of_pressure,
 			cars.name
 		FROM drives
 		LEFT JOIN cars ON car_id = cars.id

@@ -71,7 +71,7 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 			updated_at,
 			unit_of_length,
 			unit_of_temperature,
-			COALESCE(unit_of_pressure, '') as unit_of_pressure,
+			COALESCE(unit_of_pressure, 'bar') as unit_of_pressure,
 			preferred_range,
 			language,
 			COALESCE(theme_mode, '') as theme_mode,
