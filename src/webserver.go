@@ -72,29 +72,6 @@ func main() {
 	initDBconnection()
 	defer db.Close()
 
-	// run initAuthToken to validate environment vars
-	initAuthToken()
-	// initialize allowList stored for /command section
-	initCommandAllowList()
-
-	// Connect to the MQTT broker
-	statusCache, err := startMQTT()
-	if getEnvAsBool("DISABLE_MQTT", false) {
-		log.Printf("[info] TeslaMateApi MQTT connection not established.")
-	} else {
-		if err != nil {
-			log.Fatalf("[error] TeslaMateApi MQTT connection failed: %s", err)
-		}
-	}
-
-	if getEnvAsBool("API_TOKEN_DISABLE", false) {
-		log.Println("[warning] validateAuthToken - header authorization bearer token disabled. Authorization: Bearer token will not be required for commands.")
-	}
-
-	if teslaApiHost := getEnv("TESLA_API_HOST", ""); teslaApiHost != "" {
-		log.Printf("[info] TESLA_API_HOST is set: %s", teslaApiHost)
-	}
-
 	// kicking off Gin in value r
 	r := gin.Default()
 
@@ -147,27 +124,12 @@ func main() {
 			v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
 			v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
 
-			// v1 /api/v1/cars/:CarID/command endpoints
-			v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
-			v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandV1)
-			v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
-
 			// v1 /api/v1/cars/:CarID/drives endpoints
 			v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 			v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
 
-			// v1 /api/v1/cars/:CarID/logging endpoints
-			v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
-			v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
-
-			// v1 /api/v1/cars/:CarID/status endpoints
-			v1.GET("/cars/:CarID/status", statusCache.TeslaMateAPICarsStatusV1)
-
 			// v1 /api/v1/cars/:CarID/updates endpoints
 			v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
-
-			// v1 /api/v1/cars/:CarID/wake_up endpoints
-			v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
 
 			// v1 /api/v1/globalsettings endpoints
 			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
@@ -192,7 +154,6 @@ func main() {
 	r.GET("/cars/:CarID/charges/:ChargeID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/drives/:DriveID", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
-	r.GET("/cars/:CarID/status", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/cars/:CarID/updates", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 	r.GET("/globalsettings", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, BasePathV1+c.Request.RequestURI) })
 
@@ -202,10 +163,8 @@ func main() {
 		Handler: r,
 	}
 
-	// setting readyz endpoint to true (if not using MQTT)
-	if getEnvAsBool("DISABLE_MQTT", false) {
-		isReady.Store(true)
-	}
+	// readyz: ready as soon as the DB connection is up
+	isReady.Store(true)
 
 	// graceful shutdown
 	quit := make(chan os.Signal, 1)

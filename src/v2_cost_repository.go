@@ -23,7 +23,7 @@ func (r PostgresV2CostRepository) CarExists(ctx context.Context, carID int64) (b
 }
 
 func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) (V2CostResponse, V2CostStats, error) {
-	response := V2CostResponse{DataScope: defaultV2CostDataScope()}
+	var response V2CostResponse
 	var stats V2CostStats
 	var cost sql.NullFloat64
 	var energyUsed sql.NullFloat64
@@ -31,18 +31,18 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			SUM(cost) AS charging_cost,
-			SUM(charge_energy_used) AS energy_used_kwh,
+			SUM(charge_energy_used) AS energy_used,
 			COUNT(*) AS session_count,
 			COUNT(cost) AS cost_rows,
 			COUNT(charge_energy_used) AS energy_used_rows,
-			COALESCE((SELECT SUM(distance) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3), 0) AS distance_km
+			COALESCE((SELECT SUM(distance) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3), 0) AS distance
 		FROM charging_processes
 		WHERE car_id = $1
 			AND end_date IS NOT NULL
 			AND start_date >= $2
 			AND start_date < $3`,
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time,
-	).Scan(&cost, &energyUsed, &stats.SessionRows, &stats.CostRows, &stats.EnergyUsedRows, &response.Summary.DistanceKM)
+	).Scan(&cost, &energyUsed, &stats.SessionRows, &stats.CostRows, &stats.EnergyUsedRows, &response.Summary.Distance)
 	if err != nil {
 		return response, stats, err
 	}
@@ -51,15 +51,14 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 		response.Summary.ChargingCost = &cost.Float64
 	}
 	if energyUsed.Valid {
-		response.Summary.EnergyUsedKWh = &energyUsed.Float64
+		response.Summary.EnergyUsed = &energyUsed.Float64
 	}
 	if cost.Valid && energyUsed.Valid && energyUsed.Float64 > 0 {
-		response.Summary.CostPerKWh = float64Ptr(cost.Float64 / energyUsed.Float64)
+		response.Summary.CostPerEnergy = float64Ptr(cost.Float64 / energyUsed.Float64)
 	}
-	if cost.Valid && response.Summary.DistanceKM > 0 {
-		costPerKM := cost.Float64 / response.Summary.DistanceKM
-		response.Summary.CostPerKM = &costPerKM
-		response.Summary.CostPer100KM = float64Ptr(costPerKM * 100)
+	if cost.Valid && response.Summary.Distance > 0 {
+		costPer100KM := cost.Float64 / response.Summary.Distance * 100
+		response.Summary.CostPerDistance = &costPer100KM
 	}
 
 	periods, err := r.costByPeriod(ctx, carID, timeRange, groupBy)
@@ -80,7 +79,7 @@ func (r PostgresV2CostRepository) costByPeriod(ctx context.Context, carID int64,
 		SELECT
 			GREATEST(date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			SUM(charging_processes.cost) AS charging_cost,
-			SUM(charging_processes.charge_energy_used) AS energy_used_kwh
+			SUM(charging_processes.charge_energy_used) AS energy_used
 		FROM charging_processes
 		WHERE charging_processes.car_id = $1
 			AND charging_processes.end_date IS NOT NULL
@@ -110,7 +109,7 @@ func (r PostgresV2CostRepository) costByPeriod(ctx context.Context, carID int64,
 			item.ChargingCost = &cost.Float64
 		}
 		if energyUsed.Valid {
-			item.EnergyUsedKWh = &energyUsed.Float64
+			item.EnergyUsed = &energyUsed.Float64
 		}
 		items = append(items, item)
 	}
@@ -122,7 +121,7 @@ func (r PostgresV2CostRepository) costByLocation(ctx context.Context, carID int6
 		SELECT
 			COALESCE(geofences.name, CONCAT_WS(', ', COALESCE(addresses.name, nullif(CONCAT_WS(' ', addresses.road, addresses.house_number), '')), addresses.city), 'unknown') AS location_name,
 			SUM(charging_processes.cost) AS charging_cost,
-			SUM(charging_processes.charge_energy_used) AS energy_used_kwh
+			SUM(charging_processes.charge_energy_used) AS energy_used
 		FROM charging_processes
 		LEFT JOIN geofences ON geofences.id = charging_processes.geofence_id
 		LEFT JOIN addresses ON addresses.id = charging_processes.address_id
@@ -151,16 +150,9 @@ func (r PostgresV2CostRepository) costByLocation(ctx context.Context, carID int6
 			item.ChargingCost = &cost.Float64
 		}
 		if energyUsed.Valid {
-			item.EnergyUsedKWh = &energyUsed.Float64
+			item.EnergyUsed = &energyUsed.Float64
 		}
 		items = append(items, item)
 	}
 	return items, rows.Err()
-}
-
-func defaultV2CostDataScope() V2CostDataScope {
-	return V2CostDataScope{
-		Included: []string{"charging_cost"},
-		Excluded: []string{"insurance", "maintenance", "parking", "depreciation", "tire", "repair"},
-	}
 }

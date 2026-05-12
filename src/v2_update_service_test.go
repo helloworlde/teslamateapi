@@ -26,19 +26,21 @@ func (r *fakeV2UpdateRepository) Updates(context.Context, int64, timeBound, time
 func TestV2UpdateServiceNormalRecords(t *testing.T) {
 	version := "2024.12.1"
 	completedAt := "2024-12-01T10:30:00Z"
-	duration := 45.5
+	duration := 2730.0
 	service := NewV2UpdateService(&fakeV2UpdateRepository{
 		exists: true,
 		response: V2UpdateAnalyticsResponse{
-			UpdateCount:          2,
-			LatestVersion:        &version,
-			AvgUpdateDurationMin: &duration,
+			UpdateCount:       2,
+			LatestVersion:     &version,
+			AvgUpdateDuration: &duration,
 			Versions: []V2UpdateVersion{
 				{
-					Version:     "2024.12.1",
-					StartedAt:   "2024-12-01T10:00:00Z",
-					CompletedAt: &completedAt,
-					DurationMin: &duration,
+					Event: V2UpdateEvent{
+						Version:     "2024.12.1",
+						StartedAt:   "2024-12-01T10:00:00Z",
+						CompletedAt: &completedAt,
+						Duration:    &duration,
+					},
 				},
 			},
 		},

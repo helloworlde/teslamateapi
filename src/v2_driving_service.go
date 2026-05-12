@@ -20,7 +20,7 @@ var v2AllowedDrivingGroupBy = map[string]bool{
 
 type V2DrivingRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
-	Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2DrivingAnalyticsSummary, V2DrivingStats, error)
+	Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2DrivingSummary, V2DrivingStats, error)
 	Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2DrivingTimeseriesItem, V2DrivingStats, error)
 }
 

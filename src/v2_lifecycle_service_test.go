@@ -39,12 +39,12 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 			LastRecordedAt:       &lastAt,
 			RecordedDays:         365,
 			DriveCount:           100,
-			DistanceKM:           5000,
+			Distance:             5000,
 			ChargingSessionCount: 50,
-			EnergyAddedKWh:       1000,
+			EnergyAdded:          1000,
 			UpdateCount:          5,
-			AvgDailyDistanceKM:   &daily,
-			AvgMonthlyDistanceKM: &monthly,
+			AvgDailyDistance:     &daily,
+			AvgMonthlyDistance:   &monthly,
 		},
 	})
 	response, err := service.BuildLifecycle(context.Background(), "1", time.Time{})
@@ -54,8 +54,8 @@ func TestV2LifecycleServiceBuildLifecycle(t *testing.T) {
 	if response.DriveCount != 100 {
 		t.Fatalf("expected drive_count 100, got %d", response.DriveCount)
 	}
-	if response.DistanceKM != 5000 {
-		t.Fatalf("expected distance_km 5000, got %f", response.DistanceKM)
+	if response.Distance != 5000 {
+		t.Fatalf("expected distance 5000, got %f", response.Distance)
 	}
 }
 

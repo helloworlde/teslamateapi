@@ -178,6 +178,10 @@ func defaultV2Unit() V2Unit {
 		Distance:    "km",
 		Energy:      "kWh",
 		Power:       "kW",
+		Speed:       "km/h",
+		Duration:    "seconds",
+		Elevation:   "m",
+		Consumption: "Wh/km",
 		Temperature: "C",
 		Currency:    "CNY",
 	}

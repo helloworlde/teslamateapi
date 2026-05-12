@@ -22,8 +22,8 @@ func (r PostgresV2ChargingRepository) CarExists(ctx context.Context, carID int64
 	return exists, err
 }
 
-func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2ChargingAnalyticsSummary, V2ChargingStats, error) {
-	var summary V2ChargingAnalyticsSummary
+func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2ChargingSummary, V2ChargingStats, error) {
+	var summary V2ChargingSummary
 	var stats V2ChargingStats
 	var energyUsed sql.NullFloat64
 	var cost sql.NullFloat64
@@ -31,24 +31,35 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 	var endBattery sql.NullFloat64
 	var avgPower sql.NullFloat64
 	var maxPower sql.NullFloat64
+	var longestSession sql.NullFloat64
+	var avgEnergyAdded sql.NullFloat64
+	var largestSession sql.NullFloat64
+	var avgCost sql.NullFloat64
+	var maxCost sql.NullFloat64
 
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS session_count,
-			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
-			SUM(charge_energy_used) AS energy_used_kwh,
-			COALESCE(SUM(duration_min), 0) AS duration_min,
+			COALESCE(SUM(charge_energy_added), 0) AS energy_added,
+			COALESCE(SUM(GREATEST(COALESCE(charge_energy_used, 0), COALESCE(charge_energy_added, 0))), 0) AS energy_used,
+			COALESCE(SUM(duration_min) * 60, 0) AS duration_seconds,
+			MAX(duration_min) * 60 AS longest_session_duration,
+			AVG(charge_energy_added) AS avg_energy_added,
+			MAX(charge_energy_added) AS largest_session,
+			SUM(charge_energy_used) AS energy_used_raw,
 			SUM(cost) AS cost,
-			AVG(start_battery_level) AS start_battery_avg_percent,
-			AVG(end_battery_level) AS end_battery_avg_percent,
+			AVG(cost) AS avg_cost,
+			MAX(cost) AS max_cost,
+			AVG(start_battery_level) AS start_battery_avg,
+			AVG(end_battery_level) AS end_battery_avg,
 			COUNT(charge_energy_used) AS energy_used_rows,
 			COUNT(cost) AS cost_rows,
 			COUNT(*) FILTER (WHERE COALESCE(max_charge.charger_power, 0) < 20) AS ac_session_count,
 			COUNT(*) FILTER (WHERE COALESCE(max_charge.charger_power, 0) >= 20) AS dc_session_count,
-			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) < 20), 0) AS ac_energy_kwh,
-			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) >= 20), 0) AS dc_energy_kwh,
-			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power_kw,
-			MAX(NULLIF(max_charge.charger_power, 0)) AS max_power_kw,
+			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) < 20), 0) AS ac_energy,
+			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) >= 20), 0) AS dc_energy,
+			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power,
+			MAX(NULLIF(max_charge.charger_power, 0)) AS max_power,
 			COUNT(NULLIF(max_charge.charger_power, 0)) AS power_rows
 		FROM charging_processes
 		LEFT JOIN LATERAL (
@@ -63,18 +74,24 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 		carID, start.Time, end.Time,
 	).Scan(
 		&summary.SessionCount,
-		&summary.EnergyAddedKWh,
+		&summary.EnergyAdded,
+		&summary.EnergyUsed,
+		&summary.Duration,
+		&longestSession,
+		&avgEnergyAdded,
+		&largestSession,
 		&energyUsed,
-		&summary.DurationMin,
 		&cost,
+		&avgCost,
+		&maxCost,
 		&startBattery,
 		&endBattery,
 		&stats.EnergyUsedRows,
 		&stats.CostRows,
 		&summary.ACSessionCount,
 		&summary.DCSessionCount,
-		&summary.ACEnergyKWh,
-		&summary.DCEnergyKWh,
+		&summary.ACEnergy,
+		&summary.DCEnergy,
 		&avgPower,
 		&maxPower,
 		&stats.PowerRows,
@@ -84,31 +101,43 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 	}
 	stats.SessionRows = summary.SessionCount
 	if summary.SessionCount > 0 {
-		summary.AvgDurationMin = float64Ptr(summary.DurationMin / float64(summary.SessionCount))
+		summary.AvgDuration = float64Ptr(summary.Duration / float64(summary.SessionCount))
 	}
-	if energyUsed.Valid {
-		summary.EnergyUsedKWh = &energyUsed.Float64
-		if energyUsed.Float64 > 0 {
-			summary.ChargingEfficiencyPercent = float64Ptr(summary.EnergyAddedKWh / energyUsed.Float64 * 100)
-		}
+	if longestSession.Valid {
+		summary.LongestSessionDuration = &longestSession.Float64
+	}
+	if avgEnergyAdded.Valid {
+		summary.AvgEnergyAdded = &avgEnergyAdded.Float64
+	}
+	if largestSession.Valid {
+		summary.LargestSession = &largestSession.Float64
+	}
+	if energyUsed.Valid && energyUsed.Float64 > 0 {
+		summary.ChargingEfficiency = float64Ptr(summary.EnergyAdded / energyUsed.Float64 * 100)
 	}
 	if cost.Valid {
-		summary.Cost = &cost.Float64
-		if summary.EnergyAddedKWh > 0 {
-			summary.AvgCostPerKWh = float64Ptr(cost.Float64 / summary.EnergyAddedKWh)
+		summary.Cost = cost.Float64
+		if summary.EnergyAdded > 0 {
+			summary.AvgCostPerEnergy = float64Ptr(cost.Float64 / summary.EnergyAdded)
 		}
 	}
+	if avgCost.Valid {
+		summary.AvgCost = &avgCost.Float64
+	}
+	if maxCost.Valid {
+		summary.MaxCost = &maxCost.Float64
+	}
 	if startBattery.Valid {
-		summary.StartBatteryAvgPercent = &startBattery.Float64
+		summary.StartBatteryAvg = &startBattery.Float64
 	}
 	if endBattery.Valid {
-		summary.EndBatteryAvgPercent = &endBattery.Float64
+		summary.EndBatteryAvg = &endBattery.Float64
 	}
 	if avgPower.Valid {
-		summary.AvgPowerKW = &avgPower.Float64
+		summary.AvgPower = &avgPower.Float64
 	}
 	if maxPower.Valid {
-		summary.MaxPowerKW = &maxPower.Float64
+		summary.MaxPower = &maxPower.Float64
 	}
 	return summary, stats, nil
 }
@@ -118,11 +147,11 @@ func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int6
 		SELECT
 			GREATEST(date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 			COUNT(*) AS session_count,
-			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
-			SUM(charge_energy_used) AS energy_used_kwh,
-			COALESCE(SUM(duration_min), 0) AS duration_min,
+			COALESCE(SUM(charge_energy_added), 0) AS energy_added,
+			SUM(charge_energy_used) AS energy_used,
+			COALESCE(SUM(duration_min) * 60, 0) AS duration_seconds,
 			SUM(cost) AS cost,
-			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power_kw,
+			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power,
 			COUNT(charge_energy_used) AS energy_used_rows,
 			COUNT(cost) AS cost_rows,
 			COUNT(NULLIF(max_charge.charger_power, 0)) AS power_rows
@@ -155,18 +184,18 @@ func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int6
 		var cost sql.NullFloat64
 		var avgPower sql.NullFloat64
 		var energyRows, costRows, powerRows int64
-		if err := rows.Scan(&periodStart, &item.SessionCount, &item.EnergyAddedKWh, &energyUsed, &item.DurationMin, &cost, &avgPower, &energyRows, &costRows, &powerRows); err != nil {
+		if err := rows.Scan(&periodStart, &item.SessionCount, &item.EnergyAdded, &energyUsed, &item.Duration, &cost, &avgPower, &energyRows, &costRows, &powerRows); err != nil {
 			return nil, stats, err
 		}
 		item.PeriodStart = periodStart.In(location).Format(time.RFC3339)
 		if energyUsed.Valid {
-			item.EnergyUsedKWh = &energyUsed.Float64
+			item.EnergyUsed = &energyUsed.Float64
 		}
 		if cost.Valid {
 			item.Cost = &cost.Float64
 		}
 		if avgPower.Valid {
-			item.AvgPowerKW = &avgPower.Float64
+			item.AvgPower = &avgPower.Float64
 		}
 		stats.SessionRows += item.SessionCount
 		stats.EnergyUsedRows += energyRows
@@ -184,8 +213,8 @@ func (r PostgresV2ChargingRepository) Locations(ctx context.Context, carID int64
 			charging_processes.geofence_id,
 			charging_processes.address_id,
 			COUNT(*) AS session_count,
-			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
-			SUM(charge_energy_used) AS energy_used_kwh,
+			COALESCE(SUM(charge_energy_added), 0) AS energy_added,
+			SUM(charge_energy_used) AS energy_used,
 			SUM(cost) AS cost,
 			COUNT(charge_energy_used) AS energy_used_rows,
 			COUNT(cost) AS cost_rows
@@ -197,7 +226,7 @@ func (r PostgresV2ChargingRepository) Locations(ctx context.Context, carID int64
 			AND charging_processes.start_date >= $2
 			AND charging_processes.start_date < $3
 		GROUP BY 1, 2, 3
-		ORDER BY session_count DESC, energy_added_kwh DESC`,
+		ORDER BY session_count DESC, energy_added DESC`,
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time,
 	)
 	if err != nil {
@@ -214,7 +243,7 @@ func (r PostgresV2ChargingRepository) Locations(ctx context.Context, carID int64
 		var energyUsed sql.NullFloat64
 		var cost sql.NullFloat64
 		var energyRows, costRows int64
-		if err := rows.Scan(&item.LocationName, &geofenceID, &addressID, &item.SessionCount, &item.EnergyAddedKWh, &energyUsed, &cost, &energyRows, &costRows); err != nil {
+		if err := rows.Scan(&item.LocationName, &geofenceID, &addressID, &item.SessionCount, &item.EnergyAdded, &energyUsed, &cost, &energyRows, &costRows); err != nil {
 			return nil, stats, err
 		}
 		if geofenceID.Valid {
@@ -224,9 +253,9 @@ func (r PostgresV2ChargingRepository) Locations(ctx context.Context, carID int64
 			item.AddressID = &addressID.Int64
 		}
 		if energyUsed.Valid {
-			item.EnergyUsedKWh = &energyUsed.Float64
+			item.EnergyUsed = &energyUsed.Float64
 			if energyUsed.Float64 > 0 {
-				item.ChargingEfficiencyPercent = float64Ptr(item.EnergyAddedKWh / energyUsed.Float64 * 100)
+				item.ChargingEfficiency = float64Ptr(item.EnergyAdded / energyUsed.Float64 * 100)
 			}
 		}
 		if cost.Valid {
@@ -255,8 +284,8 @@ func (r PostgresV2ChargingRepository) Types(ctx context.Context, carID int64, ti
 				ELSE 'unknown'
 			END AS charging_type,
 			COUNT(*) AS session_count,
-			COALESCE(SUM(charge_energy_added), 0) AS energy_added_kwh,
-			SUM(charge_energy_used) AS energy_used_kwh,
+			COALESCE(SUM(charge_energy_added), 0) AS energy_added,
+			SUM(charge_energy_used) AS energy_used,
 			SUM(cost) AS cost,
 			COUNT(charge_energy_used) AS energy_used_rows,
 			COUNT(cost) AS cost_rows,
@@ -291,11 +320,11 @@ func (r PostgresV2ChargingRepository) Types(ctx context.Context, carID int64, ti
 		var energyUsed sql.NullFloat64
 		var cost sql.NullFloat64
 		var energyRows, costRows, powerRows int64
-		if err := rows.Scan(&item.ChargingType, &item.SessionCount, &item.EnergyAddedKWh, &energyUsed, &cost, &energyRows, &costRows, &powerRows); err != nil {
+		if err := rows.Scan(&item.ChargingType, &item.SessionCount, &item.EnergyAdded, &energyUsed, &cost, &energyRows, &costRows, &powerRows); err != nil {
 			return nil, stats, err
 		}
 		if energyUsed.Valid {
-			item.EnergyUsedKWh = &energyUsed.Float64
+			item.EnergyUsed = &energyUsed.Float64
 		}
 		if cost.Valid {
 			item.Cost = &cost.Float64
@@ -308,4 +337,3 @@ func (r PostgresV2ChargingRepository) Types(ctx context.Context, carID int64, ti
 	}
 	return items, stats, rows.Err()
 }
-

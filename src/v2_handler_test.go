@@ -143,7 +143,7 @@ func TestV2SummaryHandlerSuccess(t *testing.T) {
 	handlers := NewV2Handlers(fakeV2SummaryBuilder{
 		response: V2SummaryResponse{
 			Summary: V2Summary{
-				Driving: V2DrivingSummary{DriveCount: 1, DistanceKM: 12.5},
+				Driving: V2DrivingSummary{DriveCount: 1, Distance: 12.5},
 			},
 		},
 	}, nil)
@@ -170,7 +170,7 @@ func TestV2DrivingHandlerSuccess(t *testing.T) {
 	router := gin.New()
 	handlers := NewV2Handlers(nil, fakeV2DrivingBuilder{
 		drivingResponse: V2DrivingResponse{
-			Summary: V2DrivingAnalyticsSummary{DriveCount: 2, DistanceKM: 42},
+			Summary: V2DrivingSummary{DriveCount: 2, Distance: 42},
 		},
 		carID: 1,
 	})
@@ -197,7 +197,7 @@ func TestV2ChargingHandlerSuccess(t *testing.T) {
 	router := gin.New()
 	handlers := NewV2Handlers(nil, nil, fakeV2ChargingBuilder{
 		chargingResponse: V2ChargingResponse{
-			Summary: V2ChargingAnalyticsSummary{SessionCount: 2, EnergyAddedKWh: 42},
+			Summary: V2ChargingSummary{SessionCount: 2, EnergyAdded: 42},
 		},
 		carID: 1,
 	})
@@ -225,7 +225,7 @@ func TestV2ParkingHandlerSuccess(t *testing.T) {
 	handlers := NewV2Handlers(nil, nil)
 	handlers.parkingBuilder = fakeV2ParkingBuilder{
 		parkingResponse: V2ParkingResponse{
-			Summary: V2ParkingAnalyticsSummary{ParkingSessionCount: 2, ParkedDurationMin: 120},
+			Summary: V2ParkingSummary{ParkingSessionCount: 2, ParkedDuration: 7200},
 		},
 		carID: 1,
 	}
@@ -255,10 +255,9 @@ func TestV2BatteryHandlerSuccess(t *testing.T) {
 	handlers := NewV2Handlers(nil, nil)
 	handlers.batteryBuilder = fakeV2BatteryBuilder{
 		batteryResponse: V2BatteryResponse{
-			Summary: V2BatteryAnalyticsSummary{
-				LatestBatteryLevelPercent:         &latestLevel,
-				EstimatedRatedRangeAt100PercentKM: &estimatedRated,
-				SampleCount:                       8,
+			Summary: V2BatterySummary{
+				LatestLevel:       &latestLevel,
+				RangeAtFullCharge: &V2BatteryRange{Rated: &estimatedRated},
 			},
 		},
 		carID: 1,
@@ -276,7 +275,7 @@ func TestV2BatteryHandlerSuccess(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v", err)
 	}
-	if payload.Data.Summary.LatestBatteryLevelPercent == nil || *payload.Data.Summary.LatestBatteryLevelPercent != 80 || payload.Meta.CarID != 1 {
+	if payload.Data.Summary.LatestLevel == nil || *payload.Data.Summary.LatestLevel != 80 || payload.Meta.CarID != 1 {
 		t.Fatalf("unexpected payload: %#v", payload)
 	}
 }
@@ -285,16 +284,15 @@ func TestV2CostHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	chargingCost := 30.0
-	costPerKWh := 1.5
+	costPerEnergy := 1.5
 	handlers := NewV2Handlers(nil, nil)
 	handlers.costBuilder = fakeV2CostBuilder{
 		costResponse: V2CostResponse{
-			DataScope: defaultV2CostDataScope(),
 			Summary: V2CostSummaryDetails{
 				ChargingCost:  &chargingCost,
-				EnergyUsedKWh: float64Ptr(20),
-				DistanceKM:    100,
-				CostPerKWh:    &costPerKWh,
+				EnergyUsed:    float64Ptr(20),
+				Distance:      100,
+				CostPerEnergy: &costPerEnergy,
 			},
 		},
 		carID: 1,
@@ -312,7 +310,7 @@ func TestV2CostHandlerSuccess(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v", err)
 	}
-	if payload.Data.Summary.ChargingCost == nil || len(payload.Data.DataScope.Excluded) == 0 || payload.Meta.CarID != 1 {
+	if payload.Data.Summary.ChargingCost == nil || payload.Meta.CarID != 1 {
 		t.Fatalf("unexpected payload: %#v", payload)
 	}
 }

@@ -9,7 +9,7 @@ var errV2InvalidChargingBreakdown = errors.New("invalid charging breakdown")
 
 type V2ChargingRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
-	Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2ChargingAnalyticsSummary, V2ChargingStats, error)
+	Summary(ctx context.Context, carID int64, start timeBound, end timeBound) (V2ChargingSummary, V2ChargingStats, error)
 	Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2ChargingTimeseriesItem, V2ChargingStats, error)
 	Locations(ctx context.Context, carID int64, timeRange V2TimeRange) ([]V2ChargingLocationItem, V2ChargingStats, error)
 	Types(ctx context.Context, carID int64, timeRange V2TimeRange) ([]V2ChargingTypeItem, V2ChargingStats, error)

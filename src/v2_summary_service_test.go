@@ -37,13 +37,13 @@ func TestV2SummaryServiceBuildSummaryWithComparison(t *testing.T) {
 		exists: true,
 		summaries: []V2Summary{
 			{
-				Driving:  V2DrivingSummary{DriveCount: 2, DistanceKM: 120, DurationMin: 90},
-				Charging: V2ChargingSummary{SessionCount: 1, EnergyAddedKWh: 30, EnergyUsedKWh: 32, Cost: 60},
+				Driving:  V2DrivingSummary{DriveCount: 2, Distance: 120, Duration: 5400},
+				Charging: V2ChargingSummary{SessionCount: 1, EnergyAdded: 30, EnergyUsed: 32, Cost: 60},
 				Cost:     V2CostSummary{ChargingCost: 60},
 			},
 			{
-				Driving:  V2DrivingSummary{DriveCount: 1, DistanceKM: 80, DurationMin: 50},
-				Charging: V2ChargingSummary{SessionCount: 1, EnergyAddedKWh: 20, EnergyUsedKWh: 22, Cost: 40},
+				Driving:  V2DrivingSummary{DriveCount: 1, Distance: 80, Duration: 3000},
+				Charging: V2ChargingSummary{SessionCount: 1, EnergyAdded: 20, EnergyUsed: 22, Cost: 40},
 				Cost:     V2CostSummary{ChargingCost: 40},
 			},
 		},
@@ -67,10 +67,10 @@ func TestV2SummaryServiceBuildSummaryWithComparison(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.Summary.Driving.DistanceKM != 120 {
-		t.Fatalf("unexpected distance: %v", response.Summary.Driving.DistanceKM)
+	if response.Summary.Driving.Distance != 120 {
+		t.Fatalf("unexpected distance: %v", response.Summary.Driving.Distance)
 	}
-	comparison, ok := response.Comparison["driving.distance_km"]
+	comparison, ok := response.Comparison["driving.distance"]
 	if !ok || comparison.Delta == nil || *comparison.Delta != 40 {
 		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}

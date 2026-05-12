@@ -2,21 +2,21 @@ package main
 
 // @name V2LifecycleResponse
 type V2LifecycleResponse struct {
-	AsOf                  *string  `json:"as_of,omitempty"`
-	FirstRecordedAt       *string  `json:"first_recorded_at,omitempty"`
-	LastRecordedAt        *string  `json:"last_recorded_at,omitempty"`
-	RecordedDays          int64    `json:"recorded_days"`
-	DriveCount            int64    `json:"drive_count"`
-	DistanceKM            float64  `json:"distance_km"`
-	ChargingSessionCount  int64    `json:"charging_session_count"`
-	EnergyAddedKWh        float64  `json:"energy_added_kwh"`
-	EnergyUsedKWh         float64  `json:"energy_used_kwh"`
-	ChargingCost          float64  `json:"charging_cost"`
-	UpdateCount           int64    `json:"update_count"`
-	AvgDailyDistanceKM    *float64 `json:"avg_daily_distance_km,omitempty"`
-	AvgMonthlyDistanceKM  *float64 `json:"avg_monthly_distance_km,omitempty"`
-	AvgConsumptionWhPerKM *float64 `json:"avg_consumption_wh_per_km,omitempty"`
-	CostPer100KM          *float64 `json:"cost_per_100km,omitempty"`
+	AsOf                 *string  `json:"as_of,omitempty"`
+	FirstRecordedAt      *string  `json:"first_recorded_at,omitempty"`
+	LastRecordedAt       *string  `json:"last_recorded_at,omitempty"`
+	RecordedDays         int64    `json:"recorded_days"`
+	DriveCount           int64    `json:"drive_count"`
+	Distance             float64  `json:"distance"`
+	ChargingSessionCount int64    `json:"charging_session_count"`
+	EnergyAdded          float64  `json:"energy_added"`
+	EnergyUsed           float64  `json:"energy_used"`
+	ChargingCost         float64  `json:"charging_cost"`
+	UpdateCount          int64    `json:"update_count"`
+	AvgDailyDistance     *float64 `json:"avg_daily_distance,omitempty"`
+	AvgMonthlyDistance   *float64 `json:"avg_monthly_distance,omitempty"`
+	AvgConsumption       *float64 `json:"avg_consumption,omitempty"`
+	CostPerDistance      *float64 `json:"cost_per_distance,omitempty"`
 }
 
 // @name V2TimelineEvent
