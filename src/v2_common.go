@@ -91,9 +91,6 @@ func resolveV2Range(query V2AnalyticsQuery, location *time.Location, now time.Ti
 	var err error
 
 	switch query.Period {
-	case "lifetime":
-		start = time.Date(1970, time.January, 1, 0, 0, 0, 0, location)
-		end = now
 	case "day":
 		start = beginningOfDay(now)
 		end = start.AddDate(0, 0, 1)
@@ -202,6 +199,22 @@ func v2Error(c *gin.Context, status int, code string, message string, details in
 
 func v2BadRequest(c *gin.Context, message string, details interface{}) {
 	v2Error(c, http.StatusBadRequest, "BAD_REQUEST", message, details)
+}
+
+// parseV2IncludeSet splits the include query parameter into a lower-cased set.
+// Empty input returns an empty set; callers decide which keys are required.
+func parseV2IncludeSet(raw string) map[string]bool {
+	out := map[string]bool{}
+	if raw == "" {
+		return out
+	}
+	for _, part := range strings.Split(raw, ",") {
+		key := strings.ToLower(strings.TrimSpace(part))
+		if key != "" {
+			out[key] = true
+		}
+	}
+	return out
 }
 
 func float64Ptr(value float64) *float64 {

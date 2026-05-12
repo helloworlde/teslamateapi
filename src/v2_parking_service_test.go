@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -9,11 +10,9 @@ import (
 type fakeV2ParkingRepository struct {
 	exists    bool
 	summary   V2ParkingAnalyticsSummary
-	previous  V2ParkingAnalyticsSummary
 	stats     V2ParkingStats
 	locations []V2ParkingLocationItem
 	states    V2ParkingStatesResponse
-	calls     int
 }
 
 func (r *fakeV2ParkingRepository) CarExists(context.Context, int64) (bool, error) {
@@ -21,10 +20,6 @@ func (r *fakeV2ParkingRepository) CarExists(context.Context, int64) (bool, error
 }
 
 func (r *fakeV2ParkingRepository) Summary(context.Context, int64, V2TimeRange) (V2ParkingAnalyticsSummary, V2ParkingStats, error) {
-	r.calls++
-	if r.calls == 2 {
-		return r.previous, r.stats, nil
-	}
 	return r.summary, r.stats, nil
 }
 
@@ -36,60 +31,58 @@ func (r *fakeV2ParkingRepository) StateBreakdown(context.Context, int64, V2TimeR
 	return r.states, r.stats, nil
 }
 
-func TestV2ParkingServiceBuildParkingWithComparison(t *testing.T) {
+func TestV2ParkingServiceBuildParkingReturnsSummary(t *testing.T) {
 	repository := &fakeV2ParkingRepository{
-		exists:   true,
-		summary:  V2ParkingAnalyticsSummary{ParkingSessionCount: 3, ParkedDurationMin: 300, AsleepDurationMin: 120},
-		previous: V2ParkingAnalyticsSummary{ParkingSessionCount: 2, ParkedDurationMin: 100, AsleepDurationMin: 80},
-		stats:    V2ParkingStats{StateRows: 3, SessionRows: 3, PositionRows: 2},
+		exists:  true,
+		summary: V2ParkingAnalyticsSummary{ParkingSessionCount: 3, ParkedDurationMin: 300, AsleepDurationMin: 120},
+		stats:   V2ParkingStats{StateRows: 3, SessionRows: 3, PositionRows: 2},
 	}
 	service := NewV2ParkingService(repository)
 	start := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
-	previousStart := start.Add(-end.Sub(start))
 
 	response, carID, err := service.BuildParking(context.Background(), "1", V2TimeRange{
-		Period:        "custom",
-		Timezone:      "UTC",
-		Compare:       "previous_period",
-		Start:         start,
-		End:           end,
-		PreviousStart: &previousStart,
-		PreviousEnd:   &start,
-	})
+		Period:   "custom",
+		Timezone: "UTC",
+		Compare:  "none",
+		Start:    start,
+		End:      end,
+	}, V2ParkingBuildOptions{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if carID != 1 || response.Summary.ParkedDurationMin != 300 {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
 	}
-	comparison := response.Comparison["parked_duration_min"]
-	if comparison.Delta == nil || *comparison.Delta != 200 {
-		t.Fatalf("unexpected comparison: %#v", response.Comparison)
-	}
 }
 
 func TestV2ParkingServiceNoStatesWarns(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{exists: true})
-	_, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{Compare: "none"})
+	_, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{Compare: "none"}, V2ParkingBuildOptions{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestV2ParkingServiceLocationsAddsInferenceWarning(t *testing.T) {
+func TestV2ParkingServiceIncludeLocationBreakdown(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{
 		exists:    true,
 		locations: []V2ParkingLocationItem{{LocationName: "Home", ParkingSessionCount: 1, ParkedDurationMin: 60}},
 		stats:     V2ParkingStats{SessionRows: 1},
 	})
-	_, _, err := service.BuildParkingLocations(context.Background(), "1", V2TimeRange{})
+	resp, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{}, V2ParkingBuildOptions{
+		IncludeBreakdown: true,
+		BreakdownBy:      "location",
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if resp.Breakdown == nil || resp.Breakdown.By != "location" || len(resp.Breakdown.Locations) != 1 {
+		t.Fatalf("expected location breakdown, got %#v", resp.Breakdown)
+	}
 }
 
-func TestV2ParkingServiceStatesPercent(t *testing.T) {
+func TestV2ParkingServiceIncludeStateBreakdown(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{
 		exists: true,
 		states: V2ParkingStatesResponse{
@@ -102,18 +95,38 @@ func TestV2ParkingServiceStatesPercent(t *testing.T) {
 		},
 		stats: V2ParkingStats{StateRows: 2},
 	})
-	response, _, err := service.BuildParkingStates(context.Background(), "1", V2TimeRange{})
+	resp, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{}, V2ParkingBuildOptions{
+		IncludeBreakdown: true,
+		BreakdownBy:      "state",
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if response.StateTransitionCount != 2 || response.Items[0].Percent != 80 {
-		t.Fatalf("unexpected state response: %#v", response)
+	if resp.Breakdown == nil || resp.Breakdown.By != "state" || len(resp.Breakdown.States) != 2 {
+		t.Fatalf("expected state breakdown, got %#v", resp.Breakdown)
+	}
+	if resp.Breakdown.TotalDurationMin == nil || *resp.Breakdown.TotalDurationMin != 100 {
+		t.Fatalf("expected total duration 100, got %#v", resp.Breakdown.TotalDurationMin)
+	}
+	if resp.Breakdown.StateTransitionCount == nil || *resp.Breakdown.StateTransitionCount != 2 {
+		t.Fatalf("expected transition count 2, got %#v", resp.Breakdown.StateTransitionCount)
+	}
+}
+
+func TestV2ParkingServiceRejectsInvalidBreakdown(t *testing.T) {
+	service := NewV2ParkingService(&fakeV2ParkingRepository{exists: true})
+	_, _, err := service.BuildParking(context.Background(), "1", V2TimeRange{}, V2ParkingBuildOptions{
+		IncludeBreakdown: true,
+		BreakdownBy:      "rainbow",
+	})
+	if !errors.Is(err, errV2InvalidParkingBreakdown) {
+		t.Fatalf("expected invalid breakdown, got %v", err)
 	}
 }
 
 func TestV2ParkingServiceRejectsInvalidCarID(t *testing.T) {
 	service := NewV2ParkingService(&fakeV2ParkingRepository{exists: true})
-	_, _, err := service.BuildParking(context.Background(), "bad", V2TimeRange{})
+	_, _, err := service.BuildParking(context.Background(), "bad", V2TimeRange{}, V2ParkingBuildOptions{})
 	if err == nil {
 		t.Fatal("expected invalid car id error")
 	}

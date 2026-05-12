@@ -9,8 +9,6 @@ type V2BatteryAPIResponse struct {
 // @name V2BatteryResponse
 type V2BatteryResponse struct {
 	Summary V2BatteryAnalyticsSummary `json:"summary"`
-	// Comparison keys: summary metric field names (e.g. latest_rated_range_km).
-	Comparison map[string]V2ComparisonValue `json:"comparison,omitempty"`
 }
 
 // @name V2BatteryTimeseriesAPIResponse
@@ -23,17 +21,6 @@ type V2BatteryTimeseriesAPIResponse struct {
 type V2BatteryTimeseriesResponse struct {
 	GroupBy string                    `json:"group_by"`
 	Items   []V2BatteryTimeseriesItem `json:"items"`
-}
-
-// @name V2BatteryDistributionAPIResponse
-type V2BatteryDistributionAPIResponse struct {
-	Data V2BatteryDistributionResponse `json:"data"`
-	Meta V2Meta                        `json:"meta"`
-}
-
-// @name V2BatteryDistributionResponse
-type V2BatteryDistributionResponse struct {
-	Items []V2BatteryDistributionItem `json:"items"`
 }
 
 // @name V2BatteryAnalyticsSummary
@@ -58,11 +45,3 @@ type V2BatteryTimeseriesItem struct {
 	SampleCount                       int64    `json:"sample_count"`
 }
 
-// @name V2BatteryDistributionItem
-type V2BatteryDistributionItem struct {
-	Bucket                 string  `json:"bucket"`
-	MinBatteryLevelPercent int64   `json:"min_battery_level_percent"`
-	MaxBatteryLevelPercent int64   `json:"max_battery_level_percent"`
-	SampleCount            int64   `json:"sample_count"`
-	Percent                float64 `json:"percent"`
-}

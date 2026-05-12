@@ -8,10 +8,7 @@ import (
 	"time"
 )
 
-var (
-	errV2CarNotFound        = errors.New("car not found")
-	errV2CompareUnsupported = errors.New("compare mode is not implemented")
-)
+var errV2CarNotFound = errors.New("car not found")
 
 // @name V2SummaryService
 type V2SummaryService struct {
@@ -26,10 +23,6 @@ func (s V2SummaryService) BuildSummary(ctx context.Context, carIDParam string, t
 	carID, err := strconv.ParseInt(carIDParam, 10, 64)
 	if err != nil || carID <= 0 {
 		return V2SummaryResponse{}, fmt.Errorf("invalid car id")
-	}
-
-	if timeRange.Compare == "previous_year" || timeRange.Compare == "lifetime_average" {
-		return V2SummaryResponse{}, errV2CompareUnsupported
 	}
 
 	exists, err := s.repository.CarExists(ctx, carID)

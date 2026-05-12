@@ -9,19 +9,16 @@ const (
 
 var (
 	v2AllowedPeriods = map[string]bool{
-		"day":      true,
-		"week":     true,
-		"month":    true,
-		"quarter":  true,
-		"year":     true,
-		"custom":   true,
-		"lifetime": true,
+		"day":     true,
+		"week":    true,
+		"month":   true,
+		"quarter": true,
+		"year":    true,
+		"custom":  true,
 	}
 	v2AllowedCompares = map[string]bool{
-		"none":             true,
-		"previous_period":  true,
-		"previous_year":    true,
-		"lifetime_average": true,
+		"none":            true,
+		"previous_period": true,
 	}
 )
 
@@ -64,7 +61,7 @@ type V2Meta struct {
 	Timezone    string `json:"timezone,omitempty" example:"Asia/Shanghai"`
 	Start       string `json:"start,omitempty" format:"date-time"`
 	End         string `json:"end,omitempty" format:"date-time"`
-	Compare     string `json:"compare,omitempty" enums:"none,previous_period,previous_year,lifetime_average"`
+	Compare     string `json:"compare,omitempty" enums:"none,previous_period"`
 	Unit        V2Unit `json:"unit"`
 	GeneratedAt string `json:"generated_at" format:"date-time"`
 }
@@ -95,17 +92,26 @@ type V2ComparisonValue struct {
 	DeltaPercent *float64 `json:"delta_percent,omitempty"`
 }
 
-// @name V2InfoResponse
-type V2InfoResponse struct {
-	Version  string   `json:"version" example:"v2"`
-	Scope    string   `json:"scope" example:"analytics"`
-	Features []string `json:"features"`
+// @name V2CapabilitiesResponse
+type V2CapabilitiesResponse struct {
+	Version          string                 `json:"version" example:"v2"`
+	Domains          []V2CapabilitiesDomain `json:"domains"`
+	BreakdownOptions map[string][]string    `json:"breakdown_options"`
 }
 
-// @name V2InfoAPIResponse
-type V2InfoAPIResponse struct {
-	Data V2InfoResponse `json:"data"`
-	Meta V2Meta         `json:"meta"`
+// @name V2CapabilitiesDomain
+type V2CapabilitiesDomain struct {
+	Name              string `json:"name" example:"driving"`
+	Path              string `json:"path" example:"/v2/cars/{car_id}/analytics/driving"`
+	SupportsCompare   bool   `json:"supports_compare"`
+	SupportsTimeseries bool  `json:"supports_timeseries"`
+	SupportsBreakdown bool   `json:"supports_breakdown"`
+}
+
+// @name V2CapabilitiesAPIResponse
+type V2CapabilitiesAPIResponse struct {
+	Data V2CapabilitiesResponse `json:"data"`
+	Meta V2Meta                 `json:"meta"`
 }
 
 // @name V2SummaryAPIResponse

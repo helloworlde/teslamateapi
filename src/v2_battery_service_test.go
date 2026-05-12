@@ -8,13 +8,10 @@ import (
 )
 
 type fakeV2BatteryRepository struct {
-	exists       bool
-	summary      V2BatteryAnalyticsSummary
-	previous     V2BatteryAnalyticsSummary
-	stats        V2BatteryStats
-	timeseries   []V2BatteryTimeseriesItem
-	distribution []V2BatteryDistributionItem
-	calls        int
+	exists     bool
+	summary    V2BatteryAnalyticsSummary
+	stats      V2BatteryStats
+	timeseries []V2BatteryTimeseriesItem
 }
 
 func (r *fakeV2BatteryRepository) CarExists(context.Context, int64) (bool, error) {
@@ -22,10 +19,6 @@ func (r *fakeV2BatteryRepository) CarExists(context.Context, int64) (bool, error
 }
 
 func (r *fakeV2BatteryRepository) Summary(context.Context, int64, V2TimeRange) (V2BatteryAnalyticsSummary, V2BatteryStats, error) {
-	r.calls++
-	if r.calls == 2 {
-		return r.previous, r.stats, nil
-	}
 	return r.summary, r.stats, nil
 }
 
@@ -33,13 +26,8 @@ func (r *fakeV2BatteryRepository) Timeseries(context.Context, int64, V2TimeRange
 	return r.timeseries, r.stats, nil
 }
 
-func (r *fakeV2BatteryRepository) Distribution(context.Context, int64, V2TimeRange) ([]V2BatteryDistributionItem, V2BatteryStats, error) {
-	return r.distribution, r.stats, nil
-}
-
-func TestV2BatteryServiceBuildBatteryWithComparison(t *testing.T) {
+func TestV2BatteryServiceBuildBatteryReturnsSummary(t *testing.T) {
 	currentRated := 420.0
-	previousRated := 430.0
 	currentDegradation := 3.0
 	repository := &fakeV2BatteryRepository{
 		exists: true,
@@ -48,35 +36,24 @@ func TestV2BatteryServiceBuildBatteryWithComparison(t *testing.T) {
 			EstimatedRangeDegradationPercent:  &currentDegradation,
 			SampleCount:                       8,
 		},
-		previous: V2BatteryAnalyticsSummary{
-			EstimatedRatedRangeAt100PercentKM: &previousRated,
-			SampleCount:                       6,
-		},
 		stats: V2BatteryStats{SampleRows: 8},
 	}
 	service := NewV2BatteryService(repository)
 	start := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 5, 8, 0, 0, 0, 0, time.UTC)
-	previousStart := start.Add(-end.Sub(start))
 
 	response, carID, err := service.BuildBattery(context.Background(), "1", V2TimeRange{
-		Period:        "custom",
-		Timezone:      "UTC",
-		Compare:       "previous_period",
-		Start:         start,
-		End:           end,
-		PreviousStart: &previousStart,
-		PreviousEnd:   &start,
+		Period:   "custom",
+		Timezone: "UTC",
+		Compare:  "none",
+		Start:    start,
+		End:      end,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if carID != 1 || response.Summary.EstimatedRatedRangeAt100PercentKM == nil {
 		t.Fatalf("unexpected response: carID=%d response=%#v", carID, response)
-	}
-	comparison := response.Comparison["estimated_rated_range_at_100_percent_km"]
-	if comparison.Delta == nil || *comparison.Delta != -10 {
-		t.Fatalf("unexpected comparison: %#v", response.Comparison)
 	}
 }
 
@@ -108,23 +85,6 @@ func TestV2BatteryServiceInvalidBatteryLevelWarns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-}
-
-func TestV2BatteryServiceDistributionBuckets(t *testing.T) {
-	service := NewV2BatteryService(&fakeV2BatteryRepository{
-		exists: true,
-		distribution: []V2BatteryDistributionItem{
-			{Bucket: "0-10", MinBatteryLevelPercent: 0, MaxBatteryLevelPercent: 10, SampleCount: 1, Percent: 25},
-			{Bucket: "90-100", MinBatteryLevelPercent: 90, MaxBatteryLevelPercent: 100, SampleCount: 3, Percent: 75},
-		},
-		stats: V2BatteryStats{SampleRows: 4},
-	})
-
-	response, _, err := service.BuildBatteryDistribution(context.Background(), "1", V2TimeRange{})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_ = response
 }
 
 func TestV2BatteryServiceRejectsInvalidGroupBy(t *testing.T) {

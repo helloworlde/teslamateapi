@@ -602,21 +602,21 @@
                 }
             }
         },
-        "/v2": {
+        "/v2/capabilities": {
             "get": {
-                "description": "Returns the V2 analytics API version, scope, and currently advertised feature groups.",
+                "description": "Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per do Clients use this to decide which query parameters to send instead of probing each endpoint.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "V2 Summary"
                 ],
-                "summary": "V2 API capability information",
+                "summary": "V2 API capabilities",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2InfoAPIResponse"
+                            "$ref": "#/definitions/V2CapabilitiesAPIResponse"
                         }
                     },
                     "500": {
@@ -654,8 +654,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -678,18 +677,6 @@
                         "type": "string",
                         "description": "IANA timezone",
                         "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
-                        ],
-                        "type": "string",
-                        "description": "Comparison mode",
-                        "name": "compare",
                         "in": "query"
                     }
                 ],
@@ -698,87 +685,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/V2BatteryAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/battery/distribution": {
-            "get": {
-                "description": "Returns battery_level sample counts grouped into 10 percent buckets from 0-10 through 90-100.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Battery Analytics"
-                ],
-                "summary": "V2 battery level distribution",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2BatteryDistributionAPIResponse"
                         }
                     },
                     "400": {
@@ -828,8 +734,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -897,7 +802,7 @@
         },
         "/v2/cars/{CarID}/analytics/charging": {
             "get": {
-                "description": "Returns objective charging statistics and optional previous-period comparison for one car.",
+                "description": "Returns objective charging statistics for one car.",
                 "produces": [
                     "application/json"
                 ],
@@ -921,8 +826,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -948,15 +852,32 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "\"timeseries,breakdown\"",
+                        "description": "Comma-separated extras: timeseries,breakdown",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
-                            "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
+                            "day",
+                            "week",
+                            "month",
+                            "year"
                         ],
                         "type": "string",
-                        "description": "Comparison mode",
-                        "name": "compare",
+                        "description": "Timeseries grouping (used when include=timeseries)",
+                        "name": "group_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "location",
+                            "charger_type"
+                        ],
+                        "type": "string",
+                        "description": "Breakdown dimension (used when include=breakdown)",
+                        "name": "breakdown",
                         "in": "query"
                     }
                 ],
@@ -965,354 +886,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/V2ChargingAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/charging/cost": {
-            "get": {
-                "description": "Returns objective charging cost, energy, and distance-normalized cost metrics.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Charging Analytics"
-                ],
-                "summary": "V2 charging cost analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "year"
-                        ],
-                        "type": "string",
-                        "description": "Cost grouping",
-                        "name": "group_by",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ChargingCostAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/charging/locations": {
-            "get": {
-                "description": "Returns objective charging metrics grouped by geofence or address.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Charging Analytics"
-                ],
-                "summary": "V2 charging analytics by location",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ChargingLocationsAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/charging/timeseries": {
-            "get": {
-                "description": "Returns charging metrics grouped by day, week, month, or year for charting.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Charging Analytics"
-                ],
-                "summary": "V2 charging analytics timeseries",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "year"
-                        ],
-                        "type": "string",
-                        "description": "Timeseries grouping",
-                        "name": "group_by",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ChargingTimeseriesAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/charging/types": {
-            "get": {
-                "description": "Returns objective charging metrics grouped by AC, DC, Tesla Supercharger, or unknown type.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Charging Analytics"
-                ],
-                "summary": "V2 charging analytics by charger type",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ChargingTypesAPIResponse"
                         }
                     },
                     "400": {
@@ -1362,8 +935,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -1431,7 +1003,7 @@
         },
         "/v2/cars/{CarID}/analytics/driving": {
             "get": {
-                "description": "Returns objective driving statistics and optional previous-period comparison for one car.",
+                "description": "Returns objective driving statistics for one car.",
                 "produces": [
                     "application/json"
                 ],
@@ -1455,8 +1027,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -1479,18 +1050,6 @@
                         "type": "string",
                         "description": "IANA timezone",
                         "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
-                        ],
-                        "type": "string",
-                        "description": "Comparison mode",
-                        "name": "compare",
                         "in": "query"
                     }
                 ],
@@ -1499,203 +1058,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/V2DrivingAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/driving/distribution": {
-            "get": {
-                "description": "Returns drive-count, distance, and duration distribution for a selected factual dimension.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Driving Analytics"
-                ],
-                "summary": "V2 driving analytics distribution",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "hour_of_day",
-                            "day_of_week",
-                            "distance_bucket",
-                            "duration_bucket",
-                            "speed_bucket",
-                            "consumption_bucket",
-                            "temperature_bucket"
-                        ],
-                        "type": "string",
-                        "description": "Distribution dimension",
-                        "name": "dimension",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2DrivingDistributionAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/driving/ranking": {
-            "get": {
-                "description": "Returns objective top drives or top driving days by selected ranking type.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Driving Analytics"
-                ],
-                "summary": "V2 driving analytics ranking",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "longest_distance",
-                            "longest_duration",
-                            "highest_speed",
-                            "lowest_consumption",
-                            "highest_consumption",
-                            "highest_distance_day"
-                        ],
-                        "type": "string",
-                        "description": "Ranking type",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Result limit from 1 to 100",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2DrivingRankingAPIResponse"
                         }
                     },
                     "400": {
@@ -1745,8 +1107,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -1812,331 +1173,6 @@
                 }
             }
         },
-        "/v2/cars/{CarID}/analytics/efficiency": {
-            "get": {
-                "description": "Returns objective drive efficiency metrics, including estimated energy consumption, average/best/worst consumption, average temperature, and average speed.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Efficiency Analytics"
-                ],
-                "summary": "V2 efficiency analytics summary",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2EfficiencyAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/efficiency/factors": {
-            "get": {
-                "description": "Returns factual efficiency metrics grouped by one selected dimension. Bucketed results do not imply causation.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Efficiency Analytics"
-                ],
-                "summary": "V2 efficiency factor analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "temperature",
-                            "speed",
-                            "distance",
-                            "elevation",
-                            "location",
-                            "hour_of_day",
-                            "day_of_week"
-                        ],
-                        "type": "string",
-                        "description": "Factor dimension",
-                        "name": "dimension",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2EfficiencyFactorsAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/lifecycle": {
-            "get": {
-                "description": "Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Lifecycle"
-                ],
-                "summary": "V2 lifetime cumulative analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cutoff datetime in RFC3339 format. Defaults to now.",
-                        "name": "as_of",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2LifecycleAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/locations": {
-            "get": {
-                "description": "Returns objective usage metrics grouped by geofence or address, including drive starts, drive ends, charging, inferred parking, and estimated vampire drain.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Location Analytics"
-                ],
-                "summary": "V2 location analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "drive_start_count_desc",
-                            "drive_end_count_desc",
-                            "charging_session_count_desc",
-                            "parking_duration_desc",
-                            "charging_cost_desc"
-                        ],
-                        "type": "string",
-                        "description": "Sort mode",
-                        "name": "sort",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2LocationAnalyticsAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/v2/cars/{CarID}/analytics/parking": {
             "get": {
                 "description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
@@ -2163,8 +1199,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -2190,15 +1225,20 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "\"breakdown\"",
+                        "description": "Comma-separated extras: breakdown",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
-                            "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
+                            "location",
+                            "state"
                         ],
                         "type": "string",
-                        "description": "Comparison mode",
-                        "name": "compare",
+                        "description": "Breakdown dimension (used when include=breakdown)",
+                        "name": "breakdown",
                         "in": "query"
                     }
                 ],
@@ -2207,168 +1247,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/V2ParkingAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/parking/locations": {
-            "get": {
-                "description": "Returns inferred parking sessions and parked duration grouped by geofence or address.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Parking Analytics"
-                ],
-                "summary": "V2 parking analytics by location",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ParkingLocationsAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/parking/states": {
-            "get": {
-                "description": "Returns online, asleep, offline, and unknown state durations, shares, and transition counts.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Parking Analytics"
-                ],
-                "summary": "V2 parking state analytics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ParkingStatesAPIResponse"
                         }
                     },
                     "400": {
@@ -2418,8 +1296,7 @@
                             "month",
                             "quarter",
                             "year",
-                            "custom",
-                            "lifetime"
+                            "custom"
                         ],
                         "type": "string",
                         "description": "Aggregation period",
@@ -2447,9 +1324,7 @@
                     {
                         "enum": [
                             "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
+                            "previous_period"
                         ],
                         "type": "string",
                         "description": "Comparison mode",
@@ -2485,16 +1360,16 @@
                 }
             }
         },
-        "/v2/cars/{CarID}/analytics/updates": {
+        "/v2/cars/{CarID}/lifecycle": {
             "get": {
-                "description": "Returns OTA update history statistics for a car in the selected period.",
+                "description": "Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Update Analytics"
+                    "V2 Lifecycle"
                 ],
-                "summary": "V2 update analytics",
+                "summary": "V2 lifetime cumulative analytics",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2505,48 +1380,9 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
                         "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "none",
-                            "previous_period",
-                            "previous_year",
-                            "lifetime_average"
-                        ],
-                        "type": "string",
-                        "description": "Comparison mode (accepted for meta consistency; response has no comparison block)",
-                        "name": "compare",
+                        "description": "Cutoff datetime in RFC3339 format. Defaults to now.",
+                        "name": "as_of",
                         "in": "query"
                     }
                 ],
@@ -2554,272 +1390,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/V2UpdateAnalyticsAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/calendar": {
-            "get": {
-                "description": "Returns per-day aggregated statistics for calendar/heatmap views. All dates in the requested range are returned, with zeros for days without data.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Calendar"
-                ],
-                "summary": "V2 calendar daily aggregation",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start date (YYYY-MM-DD or RFC3339)",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End date (YYYY-MM-DD or RFC3339)",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2CalendarAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/insights": {
-            "get": {
-                "description": "Returns factual, evidence-backed insights based on period comparison. No subjective evaluations.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Insights"
-                ],
-                "summary": "V2 objective insights",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by category: driving,charging,parking,battery,cost,lifecycle",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "info",
-                            "warning"
-                        ],
-                        "type": "string",
-                        "description": "Minimum severity: info,warning",
-                        "name": "min_severity",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2InsightAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/reports": {
-            "get": {
-                "description": "Returns a structured period report combining multiple analytics modules. Only sections with data are included.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "V2 Reports"
-                ],
-                "summary": "V2 period report",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Car ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom",
-                            "lifetime"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation period",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start datetime in RFC3339 format",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End datetime in RFC3339 format",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA timezone",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Comma-separated module list: summary,driving,charging,updates",
-                        "name": "include",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/V2ReportAPIResponse"
+                            "$ref": "#/definitions/V2LifecycleAPIResponse"
                         }
                     },
                     "400": {
@@ -2915,6 +1486,86 @@
                     }
                 }
             }
+        },
+        "/v2/cars/{CarID}/updates": {
+            "get": {
+                "description": "Returns OTA update history statistics for a car in the selected period.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V2 Update Analytics"
+                ],
+                "summary": "V2 update analytics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation period",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start datetime in RFC3339 format",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End datetime in RFC3339 format",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA timezone",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2UpdateAnalyticsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2965,20 +1616,6 @@
                 "data": {}
             }
         },
-        "V2ActivityLevel": {
-            "type": "object",
-            "properties": {
-                "charging": {
-                    "type": "integer"
-                },
-                "driving": {
-                    "type": "integer"
-                },
-                "parking_drain": {
-                    "type": "integer"
-                }
-            }
-        },
         "V2BatteryAPIResponse": {
             "type": "object",
             "properties": {
@@ -3022,58 +1659,9 @@
                 }
             }
         },
-        "V2BatteryDistributionAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2BatteryDistributionResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2BatteryDistributionItem": {
-            "type": "object",
-            "properties": {
-                "bucket": {
-                    "type": "string"
-                },
-                "max_battery_level_percent": {
-                    "type": "integer"
-                },
-                "min_battery_level_percent": {
-                    "type": "integer"
-                },
-                "percent": {
-                    "type": "number"
-                },
-                "sample_count": {
-                    "type": "integer"
-                }
-            }
-        },
-        "V2BatteryDistributionResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2BatteryDistributionItem"
-                    }
-                }
-            }
-        },
         "V2BatteryResponse": {
             "type": "object",
             "properties": {
-                "comparison": {
-                    "description": "Comparison keys: summary metric field names (e.g. latest_rated_range_km).",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/V2ComparisonValue"
-                    }
-                },
                 "summary": {
                     "$ref": "#/definitions/V2BatteryAnalyticsSummary"
                 }
@@ -3138,63 +1726,60 @@
                 }
             }
         },
-        "V2CalendarAPIResponse": {
+        "V2CapabilitiesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CalendarResponse"
+                    "$ref": "#/definitions/V2CapabilitiesResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/V2Meta"
                 }
             }
         },
-        "V2CalendarDay": {
+        "V2CapabilitiesDomain": {
             "type": "object",
             "properties": {
-                "activity_level": {
-                    "$ref": "#/definitions/V2ActivityLevel"
+                "name": {
+                    "type": "string",
+                    "example": "driving"
                 },
-                "charging_cost": {
-                    "type": "number"
+                "path": {
+                    "type": "string",
+                    "example": "/v2/cars/{car_id}/analytics/driving"
                 },
-                "charging_session_count": {
-                    "type": "integer"
+                "supports_breakdown": {
+                    "type": "boolean"
                 },
-                "date": {
-                    "type": "string"
+                "supports_compare": {
+                    "type": "boolean"
                 },
-                "distance_km": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "drive_duration_min": {
-                    "type": "number"
-                },
-                "energy_added_kwh": {
-                    "type": "number"
-                },
-                "parking_duration_min": {
-                    "type": "number"
-                },
-                "update_count": {
-                    "type": "integer"
-                },
-                "vampire_drain_percent": {
-                    "type": "number"
+                "supports_timeseries": {
+                    "type": "boolean"
                 }
             }
         },
-        "V2CalendarResponse": {
+        "V2CapabilitiesResponse": {
             "type": "object",
             "properties": {
-                "days": {
+                "breakdown_options": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "domains": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2CalendarDay"
+                        "$ref": "#/definitions/V2CapabilitiesDomain"
                     }
+                },
+                "version": {
+                    "type": "string",
+                    "example": "v2"
                 }
             }
         },
@@ -3262,85 +1847,23 @@
                 }
             }
         },
-        "V2ChargingCostAPIResponse": {
+        "V2ChargingBreakdownResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ChargingCostResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ChargingCostLocationItem": {
-            "type": "object",
-            "properties": {
-                "charging_cost": {
-                    "type": "number"
-                },
-                "energy_used_kwh": {
-                    "type": "number"
-                },
-                "location_name": {
+                "by": {
                     "type": "string"
-                }
-            }
-        },
-        "V2ChargingCostPeriodItem": {
-            "type": "object",
-            "properties": {
-                "charging_cost": {
-                    "type": "number"
                 },
-                "energy_used_kwh": {
-                    "type": "number"
-                },
-                "period_start": {
-                    "type": "string"
-                }
-            }
-        },
-        "V2ChargingCostResponse": {
-            "type": "object",
-            "properties": {
-                "cost_by_location": {
+                "locations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ChargingCostLocationItem"
+                        "$ref": "#/definitions/V2ChargingLocationItem"
                     }
                 },
-                "cost_by_period": {
+                "types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/V2ChargingCostPeriodItem"
+                        "$ref": "#/definitions/V2ChargingTypeItem"
                     }
-                },
-                "summary": {
-                    "$ref": "#/definitions/V2ChargingCostSummary"
-                }
-            }
-        },
-        "V2ChargingCostSummary": {
-            "type": "object",
-            "properties": {
-                "charging_cost": {
-                    "type": "number"
-                },
-                "cost_per_100km": {
-                    "type": "number"
-                },
-                "cost_per_km": {
-                    "type": "number"
-                },
-                "cost_per_kwh": {
-                    "type": "number"
-                },
-                "distance_km": {
-                    "type": "number"
-                },
-                "energy_used_kwh": {
-                    "type": "number"
                 }
             }
         },
@@ -3373,40 +1896,17 @@
                 }
             }
         },
-        "V2ChargingLocationsAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ChargingLocationsResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ChargingLocationsResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2ChargingLocationItem"
-                    }
-                }
-            }
-        },
         "V2ChargingResponse": {
             "type": "object",
             "properties": {
-                "comparison": {
-                    "description": "Comparison keys: summary metric field names (e.g. energy_added_kwh, session_count).",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/V2ComparisonValue"
-                    }
+                "breakdown": {
+                    "$ref": "#/definitions/V2ChargingBreakdownResponse"
                 },
                 "summary": {
                     "$ref": "#/definitions/V2ChargingAnalyticsSummary"
+                },
+                "timeseries": {
+                    "$ref": "#/definitions/V2ChargingTimeseriesResponse"
                 }
             }
         },
@@ -3454,17 +1954,6 @@
                 },
                 "session_count": {
                     "type": "integer"
-                }
-            }
-        },
-        "V2ChargingTimeseriesAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ChargingTimeseriesResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
                 }
             }
         },
@@ -3525,28 +2014,6 @@
                 },
                 "session_count": {
                     "type": "integer"
-                }
-            }
-        },
-        "V2ChargingTypesAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ChargingTypesResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ChargingTypesResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2ChargingTypeItem"
-                    }
                 }
             }
         },
@@ -3715,6 +2182,9 @@
                 "battery_level_used_percent": {
                     "type": "number"
                 },
+                "best_consumption_wh_per_km": {
+                    "type": "number"
+                },
                 "distance_km": {
                     "type": "number"
                 },
@@ -3741,121 +2211,15 @@
                 },
                 "total_descent_m": {
                     "type": "number"
-                }
-            }
-        },
-        "V2DrivingDistributionAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2DrivingDistributionResponse"
                 },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2DrivingDistributionItem": {
-            "type": "object",
-            "properties": {
-                "bucket": {
-                    "type": "string"
-                },
-                "distance_km": {
+                "worst_consumption_wh_per_km": {
                     "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "duration_min": {
-                    "type": "number"
-                }
-            }
-        },
-        "V2DrivingDistributionResponse": {
-            "type": "object",
-            "properties": {
-                "dimension": {
-                    "type": "string"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2DrivingDistributionItem"
-                    }
-                }
-            }
-        },
-        "V2DrivingRankingAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2DrivingRankingResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2DrivingRankingItem": {
-            "type": "object",
-            "properties": {
-                "distance_km": {
-                    "type": "number"
-                },
-                "drive_id": {
-                    "type": "integer"
-                },
-                "duration_min": {
-                    "type": "number"
-                },
-                "end_time": {
-                    "type": "string"
-                },
-                "max_speed_kmh": {
-                    "type": "number"
-                },
-                "metric_unit": {
-                    "type": "string"
-                },
-                "metric_value": {
-                    "type": "number"
-                },
-                "period_start": {
-                    "type": "string"
-                },
-                "rank": {
-                    "type": "integer"
-                },
-                "start_time": {
-                    "type": "string"
-                }
-            }
-        },
-        "V2DrivingRankingResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2DrivingRankingItem"
-                    }
-                },
-                "ranking_type": {
-                    "type": "string"
                 }
             }
         },
         "V2DrivingResponse": {
             "type": "object",
             "properties": {
-                "comparison": {
-                    "description": "Comparison keys: summary metric field names (e.g. distance_km, drive_count).",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/V2ComparisonValue"
-                    }
-                },
                 "summary": {
                     "$ref": "#/definitions/V2DrivingAnalyticsSummary"
                 }
@@ -3959,197 +2323,6 @@
                 }
             }
         },
-        "V2EfficiencyAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2EfficiencyResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2EfficiencyFactorItem": {
-            "type": "object",
-            "properties": {
-                "avg_consumption_wh_per_km": {
-                    "type": "number"
-                },
-                "avg_speed_kmh": {
-                    "type": "number"
-                },
-                "avg_temperature_c": {
-                    "type": "number"
-                },
-                "bucket": {
-                    "type": "string"
-                },
-                "distance_km": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "estimated_energy_consumed_kwh": {
-                    "type": "number"
-                }
-            }
-        },
-        "V2EfficiencyFactorsAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2EfficiencyFactorsResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2EfficiencyFactorsResponse": {
-            "type": "object",
-            "properties": {
-                "dimension": {
-                    "type": "string"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2EfficiencyFactorItem"
-                    }
-                }
-            }
-        },
-        "V2EfficiencyResponse": {
-            "type": "object",
-            "properties": {
-                "summary": {
-                    "$ref": "#/definitions/V2EfficiencySummary"
-                }
-            }
-        },
-        "V2EfficiencySummary": {
-            "type": "object",
-            "properties": {
-                "avg_consumption_wh_per_km": {
-                    "type": "number"
-                },
-                "avg_speed_kmh": {
-                    "type": "number"
-                },
-                "avg_temperature_c": {
-                    "type": "number"
-                },
-                "best_consumption_wh_per_km": {
-                    "type": "number"
-                },
-                "distance_km": {
-                    "type": "number"
-                },
-                "drive_count": {
-                    "type": "integer"
-                },
-                "estimated_energy_consumed_kwh": {
-                    "type": "number"
-                },
-                "estimated_regenerated_energy_kwh": {
-                    "type": "number"
-                },
-                "worst_consumption_wh_per_km": {
-                    "type": "number"
-                }
-            }
-        },
-        "V2InfoAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2InfoResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2InfoResponse": {
-            "type": "object",
-            "properties": {
-                "features": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "scope": {
-                    "type": "string",
-                    "example": "analytics"
-                },
-                "version": {
-                    "type": "string",
-                    "example": "v2"
-                }
-            }
-        },
-        "V2Insight": {
-            "type": "object",
-            "properties": {
-                "baseline_period": {
-                    "type": "string"
-                },
-                "category": {
-                    "type": "string"
-                },
-                "current_period": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "evidence": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "id": {
-                    "type": "string"
-                },
-                "metrics": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "severity": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "V2InsightAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2InsightResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2InsightResponse": {
-            "type": "object",
-            "properties": {
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2Insight"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
         "V2LifecycleAPIResponse": {
             "type": "object",
             "properties": {
@@ -4211,69 +2384,6 @@
                 }
             }
         },
-        "V2LocationAnalyticsAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2LocationAnalyticsResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2LocationAnalyticsItem": {
-            "type": "object",
-            "properties": {
-                "address_id": {
-                    "type": "integer"
-                },
-                "charging_cost": {
-                    "type": "number"
-                },
-                "charging_session_count": {
-                    "type": "integer"
-                },
-                "drive_end_count": {
-                    "type": "integer"
-                },
-                "drive_start_count": {
-                    "type": "integer"
-                },
-                "energy_added_kwh": {
-                    "type": "number"
-                },
-                "geofence_id": {
-                    "type": "integer"
-                },
-                "location_name": {
-                    "type": "string"
-                },
-                "parking_duration_min": {
-                    "type": "number"
-                },
-                "parking_session_count": {
-                    "type": "integer"
-                },
-                "vampire_drain_percent": {
-                    "type": "number"
-                }
-            }
-        },
-        "V2LocationAnalyticsResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2LocationAnalyticsItem"
-                    }
-                },
-                "sort": {
-                    "type": "string"
-                }
-            }
-        },
         "V2Meta": {
             "type": "object",
             "properties": {
@@ -4285,9 +2395,7 @@
                     "type": "string",
                     "enum": [
                         "none",
-                        "previous_period",
-                        "previous_year",
-                        "lifetime_average"
+                        "previous_period"
                     ]
                 },
                 "end": {
@@ -4372,6 +2480,32 @@
                 }
             }
         },
+        "V2ParkingBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "by": {
+                    "type": "string"
+                },
+                "locations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ParkingLocationItem"
+                    }
+                },
+                "state_transition_count": {
+                    "type": "integer"
+                },
+                "states": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ParkingStateItem"
+                    }
+                },
+                "total_duration_min": {
+                    "type": "number"
+                }
+            }
+        },
         "V2ParkingLocationItem": {
             "type": "object",
             "properties": {
@@ -4413,37 +2547,11 @@
                 }
             }
         },
-        "V2ParkingLocationsAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ParkingLocationsResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ParkingLocationsResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2ParkingLocationItem"
-                    }
-                }
-            }
-        },
         "V2ParkingResponse": {
             "type": "object",
             "properties": {
-                "comparison": {
-                    "description": "Comparison keys: summary metric field names (e.g. parked_duration_min).",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/V2ComparisonValue"
-                    }
+                "breakdown": {
+                    "$ref": "#/definitions/V2ParkingBreakdownResponse"
                 },
                 "summary": {
                     "$ref": "#/definitions/V2ParkingAnalyticsSummary"
@@ -4467,34 +2575,6 @@
                 }
             }
         },
-        "V2ParkingStatesAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ParkingStatesResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ParkingStatesResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2ParkingStateItem"
-                    }
-                },
-                "state_transition_count": {
-                    "type": "integer"
-                },
-                "total_duration_min": {
-                    "type": "number"
-                }
-            }
-        },
         "V2ParkingSummary": {
             "type": "object",
             "properties": {
@@ -4512,49 +2592,6 @@
                 },
                 "vampire_drain_percent": {
                     "type": "number"
-                }
-            }
-        },
-        "V2ReportAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/V2ReportResponse"
-                },
-                "meta": {
-                    "$ref": "#/definitions/V2Meta"
-                }
-            }
-        },
-        "V2ReportResponse": {
-            "type": "object",
-            "properties": {
-                "period": {
-                    "type": "string"
-                },
-                "sections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/V2ReportSection"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "V2ReportSection": {
-            "type": "object",
-            "properties": {
-                "metrics": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },

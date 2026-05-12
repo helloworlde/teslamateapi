@@ -8,29 +8,22 @@ type V2ParkingAPIResponse struct {
 
 // @name V2ParkingResponse
 type V2ParkingResponse struct {
-	Summary V2ParkingAnalyticsSummary `json:"summary"`
-	// Comparison keys: summary metric field names (e.g. parked_duration_min).
-	Comparison map[string]V2ComparisonValue `json:"comparison,omitempty"`
+	Summary   V2ParkingAnalyticsSummary   `json:"summary"`
+	Breakdown *V2ParkingBreakdownResponse `json:"breakdown,omitempty"`
 }
 
-// @name V2ParkingLocationsAPIResponse
-type V2ParkingLocationsAPIResponse struct {
-	Data V2ParkingLocationsResponse `json:"data"`
-	Meta V2Meta                     `json:"meta"`
+// @name V2ParkingBreakdownResponse
+type V2ParkingBreakdownResponse struct {
+	By                   string                  `json:"by"`
+	Locations            []V2ParkingLocationItem `json:"locations,omitempty"`
+	States               []V2ParkingStateItem    `json:"states,omitempty"`
+	TotalDurationMin     *float64                `json:"total_duration_min,omitempty"`
+	StateTransitionCount *int64                  `json:"state_transition_count,omitempty"`
 }
 
-// @name V2ParkingLocationsResponse
-type V2ParkingLocationsResponse struct {
-	Items []V2ParkingLocationItem `json:"items"`
-}
-
-// @name V2ParkingStatesAPIResponse
-type V2ParkingStatesAPIResponse struct {
-	Data V2ParkingStatesResponse `json:"data"`
-	Meta V2Meta                  `json:"meta"`
-}
-
-// @name V2ParkingStatesResponse
+// V2ParkingStatesResponse is the internal shape returned by the parking
+// repository's state breakdown query. It is not directly exposed via swagger
+// after consolidation; values are folded into V2ParkingBreakdownResponse.
 type V2ParkingStatesResponse struct {
 	TotalDurationMin     float64              `json:"total_duration_min"`
 	StateTransitionCount int64                `json:"state_transition_count"`
