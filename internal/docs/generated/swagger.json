@@ -1,0 +1,4608 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "TeslaMate 数据查询与分析 API。提供 V1（原始数据）和 V2（聚合分析）两套接口。",
+        "title": "TeslaMateApi",
+        "contact": {},
+        "version": "2.0"
+    },
+    "basePath": "/api",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "返回服务运行状态与 API 基础路径，用于快速联通性检查。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "服务根路径",
+                "responses": {
+                    "200": {
+                        "description": "服务运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api": {
+            "get": {
+                "description": "返回服务运行状态与 /api 基础路径。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "/api 根路径",
+                "responses": {
+                    "200": {
+                        "description": "服务运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "description": "Kubernetes liveness 探针，进程存活则返回 200。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "存活探针",
+                "responses": {
+                    "200": {
+                        "description": "服务存活",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "简单的 ping/pong 探活接口，用于网络层连通性检测。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Ping 探活",
+                "responses": {
+                    "200": {
+                        "description": "pong",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/readyz": {
+            "get": {
+                "description": "Kubernetes readiness 探针，数据库连接建立后返回 200，否则 503。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "就绪探针",
+                "responses": {
+                    "200": {
+                        "description": "服务就绪",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "尚未就绪",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1": {
+            "get": {
+                "description": "返回 V1 接口运行状态与基础路径。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "/api/v1 根路径",
+                "responses": {
+                    "200": {
+                        "description": "V1 接口运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars": {
+            "get": {
+                "description": "返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆列表或单车详情",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}": {
+            "get": {
+                "description": "返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆列表或单车详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID（不传则返回全部车辆）",
+                        "name": "CarID",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/battery-health": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "获取车辆电池健康度",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/charges": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆充电会话列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "结果页码（默认 1）",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小（默认 100）",
+                        "name": "show",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "筛选起始日期",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "筛选结束日期",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/charges/current": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "当前进行中的充电会话",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/charges/{ChargeID}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "单条充电会话详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "充电会话 ID",
+                        "name": "ChargeID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/drives": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆行程列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "结果页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小",
+                        "name": "show",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "筛选起始日期",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "筛选结束日期",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/drives/{DriveID}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "单条行程详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "行程 ID",
+                        "name": "DriveID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "full",
+                            "every_5s",
+                            "every_30s"
+                        ],
+                        "type": "string",
+                        "description": "行程明细下采样：full、every_5s（默认）、every_30s",
+                        "name": "sample",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "设为 false 可在响应中省略 drive_details（行程轨迹）",
+                        "name": "include_route",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/status": {
+            "get": {
+                "description": "Requires MQTT; returns cached telemetry when available.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "V1"
+                ],
+                "summary": "MQTT-backed live vehicle status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Car ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    },
+                    "501": {
+                        "description": "Not Implemented",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/tire-pressure": {
+            "get": {
+                "description": "最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 BarToPsi 换算）。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆胎压（最近读数 + 窗口）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "历史窗口天数（默认 30，最大 365）",
+                        "name": "window_days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/cars/{CarID}/updates": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "车辆 OTA 更新历史",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/globalsettings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1"
+                ],
+                "summary": "TeslaMate 全局设置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V1ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/capabilities": {
+            "get": {
+                "description": "返回 V2 分析接口版本、各子域能力开关（compare/timeseries/breakdown）、各子域允许的 breakdown 取值。客户端据此决定查询参数，免去逐个接口探测。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 API 能力声明",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2CapabilitiesAPIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/battery": {
+            "get": {
+                "description": "返回该车最近的额定/理想续航采样、估算满电续航、基线续航、估算续航衰减。注意：此为估算，非官方 SOH。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 电池分析汇总",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2BatteryAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/battery/timeseries": {
+            "get": {
+                "description": "返回按天/周/月/年分组的估算满电额定/理想续航，用于趋势图。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 电池分析时序",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "时序聚合粒度",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2BatteryTimeseriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging": {
+            "get": {
+                "description": "返回该车的客观充电统计。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 充电分析汇总",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"timeseries,breakdown\"",
+                        "description": "逗号分隔的扩展项：timeseries、breakdown",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "时序聚合粒度（仅在 include=timeseries 时生效）",
+                        "name": "group_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "location",
+                            "charger_type"
+                        ],
+                        "type": "string",
+                        "description": "分项维度（仅在 include=breakdown 时生效）",
+                        "name": "breakdown",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2ChargingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/charging/curve": {
+            "get": {
+                "description": "返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率中位数 / P25 / P75）。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 直流充电曲线（聚合）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每个电量分桶的最少会话数（默认 5）",
+                        "name": "min_sessions",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2ChargingCurveAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/cost": {
+            "get": {
+                "description": "返回客观的充电费用分析。当前数据范围仅含 charging_cost，不含保险、保养、停车、折旧、轮胎、维修费用。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 费用分析",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "费用聚合粒度",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2CostAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/driving": {
+            "get": {
+                "description": "返回该车的客观行驶统计。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 行驶分析汇总",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2DrivingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/driving/timeseries": {
+            "get": {
+                "description": "返回按天/周/月/年分组的行驶指标，用于图表。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 行驶分析时序",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "时序聚合粒度",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2DrivingTimeseriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/efficiency": {
+            "get": {
+                "description": "返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 能效分析",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"buckets\"",
+                        "description": "逗号分隔的扩展项：buckets",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "temperature_5c",
+                            "speed_10kmh"
+                        ],
+                        "type": "string",
+                        "description": "分桶维度（仅在 include=buckets 时生效）",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2EfficiencyAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/environmental": {
+            "get": {
+                "description": "返回该车的车外/车内温度聚合、HVAC 活动时长、海拔统计。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 环境分析（温度/HVAC/海拔）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"timeseries\"",
+                        "description": "逗号分隔的扩展项，如 timeseries",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "时序聚合粒度（仅在 include=timeseries 时生效）",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2EnvironmentalAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/parking": {
+            "get": {
+                "description": "返回该车的驻车时长、状态时长、推断驻车会话与估算驻车电量损失。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 驻车分析汇总",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"breakdown\"",
+                        "description": "逗号分隔的扩展项：breakdown",
+                        "name": "include",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "location",
+                            "state"
+                        ],
+                        "type": "string",
+                        "description": "分项维度（仅在 include=breakdown 时生效）",
+                        "name": "breakdown",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2ParkingAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/analytics/summary": {
+            "get": {
+                "description": "返回该车在所选周期内的行驶、充电、驻车、电池、OTA、充电费用汇总指标。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 周期汇总分析",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "none",
+                            "previous_period"
+                        ],
+                        "type": "string",
+                        "description": "对比模式",
+                        "name": "compare",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2SummaryAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/battery/capacity_by_mileage": {
+            "get": {
+                "description": "按半月分桶返回该车的中位电池容量 (kWh) 与里程关系。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 电池容量随里程趋势",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2CapacityByMileageAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/lifecycle": {
+            "get": {
+                "description": "返回该车从首次事件至 as_of（默认当前时间）的累计生命周期统计；可通过 as_of 取历史快照。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 累计生命周期统计",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "截止时间（RFC3339），默认当前时间。",
+                        "name": "as_of",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2LifecycleAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/lifecycle/odometer_series": {
+            "get": {
+                "description": "返回该车在所选窗口内每日一条里程读数。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 累计里程序列",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小（默认 500，最大 1000）",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "由上一次响应返回的分页游标",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2OdometerSeriesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/lifecycle/places": {
+            "get": {
+                "description": "返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 生命周期地点分布（城市/州/国家）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每个维度的 Top N（默认 20，最大 100）",
+                        "name": "top_n",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2PlacesAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/parking/idle_periods": {
+            "get": {
+                "description": "返回该车按相邻事件间隔切分的闲置区间（vampire drain 候选），含 SoC 差、续航损失、消耗能量与待机占比。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 驻车闲置区间",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "最小间隔时长（小时，默认 1）",
+                        "name": "min_duration_hours",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "按已解析的围栏 ID 过滤",
+                        "name": "geofence_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页大小（默认 100，最大 500）",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "由上一次响应返回的分页游标",
+                        "name": "cursor",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2IdlePeriodsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/summary/by_period": {
+            "get": {
+                "description": "返回按周期扁平化的行驶 + 充电 + 费用指标（每周期一行）。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 周期扁平汇总",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "year"
+                        ],
+                        "type": "string",
+                        "description": "周期聚合粒度",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2SummaryByPeriodAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/timeline": {
+            "get": {
+                "description": "返回行驶/充电/OTA 事件的统一时间线，支持游标分页。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 统一事件时间线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "逗号分隔的事件类型：drive、charging、update",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "每页最大结果数",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "返回此 RFC3339 时间之前的事件（降序游标）",
+                        "name": "before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "返回此 RFC3339 时间之后的事件（升序游标）",
+                        "name": "after",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2TimelineAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/cars/{CarID}/updates": {
+            "get": {
+                "description": "返回所选周期内该车的 OTA 更新历史统计。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 OTA 更新分析",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "车辆 ID",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "day",
+                            "week",
+                            "month",
+                            "quarter",
+                            "year",
+                            "custom"
+                        ],
+                        "type": "string",
+                        "description": "聚合周期",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始时间（RFC3339）",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "IANA 时区",
+                        "name": "timezone",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2UpdateAnalyticsAPIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/geofences": {
+            "get": {
+                "description": "返回全部围栏：位置、半径、计费类型、单位费用、每次会话固定费用。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "V2 围栏列表（含计费规则）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/V2GeofencesAPIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "APIErrorBody": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "错误码",
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object"
+                },
+                "message": {
+                    "description": "错误描述",
+                    "type": "string"
+                }
+            }
+        },
+        "APIErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "错误体",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/APIErrorBody"
+                        }
+                    ]
+                }
+            }
+        },
+        "V1ErrorEnvelope": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "错误体",
+                    "type": "string"
+                }
+            }
+        },
+        "V1JSONEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {}
+            }
+        },
+        "V2BatteryAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2BatteryRange": {
+            "type": "object",
+            "properties": {
+                "ideal": {
+                    "type": "number"
+                },
+                "rated": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2BatteryResponse": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/V2BatterySummary"
+                }
+            }
+        },
+        "V2BatterySummary": {
+            "type": "object",
+            "properties": {
+                "baseline_range_at_full_charge": {
+                    "$ref": "#/definitions/V2BatteryRange"
+                },
+                "estimated_range_degradation": {
+                    "type": "number"
+                },
+                "latest_ideal_range": {
+                    "description": "最近理想续航 (km)",
+                    "type": "number"
+                },
+                "latest_level": {
+                    "type": "integer"
+                },
+                "latest_rated_range": {
+                    "description": "最近额定续航 (km)",
+                    "type": "number"
+                },
+                "range_at_full_charge": {
+                    "description": "满电续航 (km)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryRange"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2BatteryTimeseriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryTimeseriesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2BatteryTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_level": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                },
+                "range_at_full_charge": {
+                    "description": "满电续航 (km)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryRange"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2BatteryTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2BatteryTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "V2CapabilitiesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CapabilitiesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2CapabilitiesDomain": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "名称",
+                    "type": "string",
+                    "example": "driving"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "/v2/cars/{car_id}/analytics/driving"
+                },
+                "supports_breakdown": {
+                    "type": "boolean"
+                },
+                "supports_compare": {
+                    "type": "boolean"
+                },
+                "supports_timeseries": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "V2CapabilitiesResponse": {
+            "type": "object",
+            "properties": {
+                "breakdown_options": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "domains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2CapabilitiesDomain"
+                    }
+                },
+                "version": {
+                    "description": "版本",
+                    "type": "string",
+                    "example": "v2"
+                }
+            }
+        },
+        "V2CapacityByMileageAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CapacityByMileageResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2CapacityByMileageItem": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "string"
+                },
+                "capacity_kwh_p50": {
+                    "type": "number"
+                },
+                "odometer_avg": {
+                    "type": "number"
+                },
+                "sample_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "V2CapacityByMileageResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2CapacityByMileageItem"
+                    }
+                }
+            }
+        },
+        "V2ChargingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2ChargingBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "by": {
+                    "type": "string"
+                },
+                "locations": {
+                    "description": "地点列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ChargingLocationItem"
+                    }
+                },
+                "types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ChargingTypeItem"
+                    }
+                }
+            }
+        },
+        "V2ChargingCurveAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingCurveResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2ChargingCurveResponse": {
+            "type": "object",
+            "properties": {
+                "min_sessions": {
+                    "type": "integer"
+                },
+                "samples": {
+                    "description": "样本",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ChargingCurveSample"
+                    }
+                }
+            }
+        },
+        "V2ChargingCurveSample": {
+            "type": "object",
+            "properties": {
+                "avg_voltage": {
+                    "type": "number"
+                },
+                "battery_level": {
+                    "description": "电量百分比",
+                    "type": "integer"
+                },
+                "median_power": {
+                    "type": "number"
+                },
+                "p25_power": {
+                    "type": "number"
+                },
+                "p75_power": {
+                    "type": "number"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ChargingLocationItem": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "description": "地址 ID",
+                    "type": "integer"
+                },
+                "charging_efficiency": {
+                    "description": "充电效率",
+                    "type": "number"
+                },
+                "cost": {
+                    "description": "费用",
+                    "type": "number"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "geofence_id": {
+                    "description": "围栏 ID",
+                    "type": "integer"
+                },
+                "location_name": {
+                    "description": "地点名称",
+                    "type": "string"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ChargingResponse": {
+            "type": "object",
+            "properties": {
+                "breakdown": {
+                    "description": "分项维度",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingBreakdownResponse"
+                        }
+                    ]
+                },
+                "summary": {
+                    "$ref": "#/definitions/V2ChargingSummary"
+                },
+                "timeseries": {
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingTimeseriesResponse"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2ChargingSummary": {
+            "type": "object",
+            "properties": {
+                "ac_energy": {
+                    "type": "number"
+                },
+                "ac_session_count": {
+                    "type": "integer"
+                },
+                "avg_cost": {
+                    "type": "number"
+                },
+                "avg_cost_per_energy": {
+                    "type": "number"
+                },
+                "avg_duration": {
+                    "description": "平均时长 (秒)",
+                    "type": "number"
+                },
+                "avg_energy_added": {
+                    "type": "number"
+                },
+                "avg_power": {
+                    "description": "平均功率 (kW)",
+                    "type": "number"
+                },
+                "charging_efficiency": {
+                    "description": "充电效率",
+                    "type": "number"
+                },
+                "cost": {
+                    "description": "费用",
+                    "type": "number"
+                },
+                "dc_energy": {
+                    "type": "number"
+                },
+                "dc_session_count": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "end_battery_avg": {
+                    "type": "number"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "largest_session": {
+                    "type": "number"
+                },
+                "longest_session_duration": {
+                    "type": "number"
+                },
+                "max_cost": {
+                    "type": "number"
+                },
+                "max_power": {
+                    "type": "number"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                },
+                "start_battery_avg": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2ChargingTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_power": {
+                    "description": "平均功率 (kW)",
+                    "type": "number"
+                },
+                "cost": {
+                    "description": "费用",
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ChargingTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ChargingTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "V2ChargingTypeItem": {
+            "type": "object",
+            "properties": {
+                "charging_type": {
+                    "type": "string"
+                },
+                "cost": {
+                    "description": "费用",
+                    "type": "number"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ComparisonValue": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "number"
+                },
+                "delta": {
+                    "type": "number"
+                },
+                "delta_percent": {
+                    "type": "number"
+                },
+                "previous": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2CostAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CostResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2CostLocationItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "location_name": {
+                    "description": "地点名称",
+                    "type": "string"
+                }
+            }
+        },
+        "V2CostPeriodItem": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                }
+            }
+        },
+        "V2CostResponse": {
+            "type": "object",
+            "properties": {
+                "cost_by_location": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2CostLocationItem"
+                    }
+                },
+                "cost_by_period": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2CostPeriodItem"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/V2CostSummaryDetails"
+                }
+            }
+        },
+        "V2CostSummary": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "cost_per_distance": {
+                    "description": "单位里程费用",
+                    "type": "number"
+                }
+            }
+        },
+        "V2CostSummaryDetails": {
+            "type": "object",
+            "properties": {
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "cost_per_distance": {
+                    "description": "单位里程费用",
+                    "type": "number"
+                },
+                "cost_per_energy": {
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2DrivingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2DrivingResponse": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/V2DrivingSummary"
+                }
+            }
+        },
+        "V2DrivingSummary": {
+            "type": "object",
+            "properties": {
+                "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "avg_distance": {
+                    "description": "平均距离 (km)",
+                    "type": "number"
+                },
+                "avg_duration": {
+                    "description": "平均时长 (秒)",
+                    "type": "number"
+                },
+                "avg_outside_temp": {
+                    "type": "number"
+                },
+                "avg_speed": {
+                    "description": "平均速度 (km/h)",
+                    "type": "number"
+                },
+                "battery_level_used": {
+                    "type": "number"
+                },
+                "best_consumption": {
+                    "description": "最佳能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "estimated_energy_consumed": {
+                    "type": "number"
+                },
+                "estimated_energy_regen": {
+                    "type": "number"
+                },
+                "longest_drive_duration": {
+                    "type": "number"
+                },
+                "max_speed": {
+                    "type": "number"
+                },
+                "net_energy": {
+                    "description": "净能量 (kWh)",
+                    "type": "number"
+                },
+                "peak_drive_power": {
+                    "type": "number"
+                },
+                "peak_regen_power": {
+                    "type": "number"
+                },
+                "range_loss": {
+                    "description": "续航损失 (km)",
+                    "type": "number"
+                },
+                "worst_consumption": {
+                    "description": "最差能耗 (Wh/km)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2DrivingTimeseriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingTimeseriesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2DrivingTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "avg_speed": {
+                    "description": "平均速度 (km/h)",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "estimated_energy_consumed": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                }
+            }
+        },
+        "V2DrivingTimeseriesResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2DrivingTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "V2EfficiencyAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EfficiencyResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2EfficiencyBuckets": {
+            "type": "object",
+            "properties": {
+                "speed_10kmh": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2EfficiencySpeedBucket"
+                    }
+                },
+                "temperature_5c": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2EfficiencyTempBucket"
+                    }
+                }
+            }
+        },
+        "V2EfficiencyResponse": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "$ref": "#/definitions/V2EfficiencyBuckets"
+                },
+                "summary": {
+                    "$ref": "#/definitions/V2EfficiencySummary"
+                },
+                "timeseries": {
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EfficiencyTimeseries"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2EfficiencySpeedBucket": {
+            "type": "object",
+            "properties": {
+                "bucket": {
+                    "type": "number"
+                },
+                "consumption": {
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2EfficiencySummary": {
+            "type": "object",
+            "properties": {
+                "avg_outside_temp": {
+                    "type": "number"
+                },
+                "consumption_overhead": {
+                    "description": "能耗开销 (Wh/km)",
+                    "type": "number"
+                },
+                "drive_distance": {
+                    "type": "number"
+                },
+                "drive_duration": {
+                    "type": "number"
+                },
+                "energy_consumed_drives": {
+                    "type": "number"
+                },
+                "energy_consumed_idle": {
+                    "type": "number"
+                },
+                "gross_consumption": {
+                    "description": "毛能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "net_consumption": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2EfficiencyTempBucket": {
+            "type": "object",
+            "properties": {
+                "avg_speed": {
+                    "description": "平均速度 (km/h)",
+                    "type": "number"
+                },
+                "bucket": {
+                    "type": "number"
+                },
+                "consumption": {
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2EfficiencyTimeseries": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2EfficiencyTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "V2EfficiencyTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "consumption_overhead": {
+                    "description": "能耗开销 (Wh/km)",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "gross_consumption": {
+                    "description": "毛能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "net_consumption": {
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                }
+            }
+        },
+        "V2EnvironmentalAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EnvironmentalResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2EnvironmentalResponse": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/V2EnvironmentalSummary"
+                },
+                "timeseries": {
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EnvironmentalTimeseries"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2EnvironmentalSummary": {
+            "type": "object",
+            "properties": {
+                "battery_heater_minutes": {
+                    "description": "电池加热器时长 (分)",
+                    "type": "number"
+                },
+                "climate_on_minutes": {
+                    "description": "空调开启时长 (分)",
+                    "type": "number"
+                },
+                "defroster_minutes": {
+                    "description": "除霜时长 (分)",
+                    "type": "number"
+                },
+                "elevation_gain_total": {
+                    "description": "累计爬升 (米)",
+                    "type": "number"
+                },
+                "elevation_loss_total": {
+                    "description": "累计下降 (米)",
+                    "type": "number"
+                },
+                "elevation_max": {
+                    "description": "最高海拔 (米)",
+                    "type": "number"
+                },
+                "elevation_min": {
+                    "description": "最低海拔 (米)",
+                    "type": "number"
+                },
+                "inside_temp_avg": {
+                    "description": "车内平均温 (°C)",
+                    "type": "number"
+                },
+                "outside_temp_avg": {
+                    "description": "车外平均温 (°C)",
+                    "type": "number"
+                },
+                "outside_temp_max": {
+                    "description": "车外最高温 (°C)",
+                    "type": "number"
+                },
+                "outside_temp_min": {
+                    "description": "车外最低温 (°C)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2EnvironmentalTimeseries": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2EnvironmentalTimeseriesItem"
+                    }
+                }
+            }
+        },
+        "V2EnvironmentalTimeseriesItem": {
+            "type": "object",
+            "properties": {
+                "climate_on_ratio": {
+                    "type": "number"
+                },
+                "elevation_avg": {
+                    "type": "number"
+                },
+                "inside_temp_avg": {
+                    "description": "车内平均温 (°C)",
+                    "type": "number"
+                },
+                "outside_temp_avg": {
+                    "description": "车外平均温 (°C)",
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                }
+            }
+        },
+        "V2Geofence": {
+            "type": "object",
+            "properties": {
+                "billing_type": {
+                    "description": "计费类型",
+                    "type": "string"
+                },
+                "cost_per_unit": {
+                    "description": "单位费用",
+                    "type": "number"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "latitude": {
+                    "description": "纬度",
+                    "type": "number"
+                },
+                "longitude": {
+                    "description": "经度",
+                    "type": "number"
+                },
+                "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "radius": {
+                    "description": "半径 (米)",
+                    "type": "number"
+                },
+                "session_fee": {
+                    "description": "每次会话固定费用",
+                    "type": "number"
+                }
+            }
+        },
+        "V2GeofencesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2GeofencesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2GeofencesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2Geofence"
+                    }
+                }
+            }
+        },
+        "V2IdleGeofence": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "名称",
+                    "type": "string"
+                }
+            }
+        },
+        "V2IdlePeriodItem": {
+            "type": "object",
+            "properties": {
+                "avg_power_w": {
+                    "description": "平均功率 (W)",
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "end_battery_level": {
+                    "description": "结束电量",
+                    "type": "integer"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "energy_drained": {
+                    "description": "消耗能量 (kWh)",
+                    "type": "number"
+                },
+                "geofence": {
+                    "description": "围栏",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2IdleGeofence"
+                        }
+                    ]
+                },
+                "has_reduced_range": {
+                    "description": "是否处于受限续航状态",
+                    "type": "boolean"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "string"
+                },
+                "range_loss": {
+                    "description": "续航损失 (km)",
+                    "type": "number"
+                },
+                "range_loss_per_hour": {
+                    "description": "每小时续航损失 (km/h)",
+                    "type": "number"
+                },
+                "soc_diff": {
+                    "description": "SoC 差值",
+                    "type": "integer"
+                },
+                "standby_ratio": {
+                    "description": "待机占比",
+                    "type": "number"
+                },
+                "start_battery_level": {
+                    "description": "起始电量",
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "V2IdlePeriodsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2IdlePeriodsResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2IdlePeriodsResponse": {
+            "type": "object",
+            "properties": {
+                "has_more": {
+                    "description": "是否还有更多",
+                    "type": "boolean"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2IdlePeriodItem"
+                    }
+                },
+                "next_cursor": {
+                    "description": "下一页游标",
+                    "type": "string"
+                }
+            }
+        },
+        "V2LifecycleAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2LifecycleResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2LifecycleResponse": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "description": "快照时间",
+                    "type": "string"
+                },
+                "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "avg_daily_distance": {
+                    "type": "number"
+                },
+                "avg_monthly_distance": {
+                    "type": "number"
+                },
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "charging_session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                },
+                "cost_per_distance": {
+                    "description": "单位里程费用",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "first_recorded_at": {
+                    "type": "string"
+                },
+                "last_recorded_at": {
+                    "type": "string"
+                },
+                "recorded_days": {
+                    "type": "integer"
+                },
+                "update_count": {
+                    "description": "OTA 更新次数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2Meta": {
+            "type": "object",
+            "properties": {
+                "car_id": {
+                    "description": "车辆 ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "compare": {
+                    "description": "对比模式",
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "previous_period"
+                    ]
+                },
+                "end": {
+                    "description": "结束时间",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "generated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "period": {
+                    "description": "聚合周期",
+                    "type": "string",
+                    "enum": [
+                        "day",
+                        "week",
+                        "month",
+                        "quarter",
+                        "year",
+                        "custom",
+                        "lifetime"
+                    ]
+                },
+                "start": {
+                    "description": "起始时间",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "timezone": {
+                    "description": "时区",
+                    "type": "string",
+                    "example": "Asia/Shanghai"
+                },
+                "unit": {
+                    "description": "单位",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Unit"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2OdometerSeriesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2OdometerSeriesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2OdometerSeriesItem": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "odometer": {
+                    "type": "number"
+                }
+            }
+        },
+        "V2OdometerSeriesResponse": {
+            "type": "object",
+            "properties": {
+                "has_more": {
+                    "description": "是否还有更多",
+                    "type": "boolean"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2OdometerSeriesItem"
+                    }
+                },
+                "next_cursor": {
+                    "description": "下一页游标",
+                    "type": "string"
+                }
+            }
+        },
+        "V2ParkingAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ParkingResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2ParkingBreakdownResponse": {
+            "type": "object",
+            "properties": {
+                "by": {
+                    "type": "string"
+                },
+                "locations": {
+                    "description": "地点列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ParkingLocationItem"
+                    }
+                },
+                "states": {
+                    "description": "州/省分布",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2ParkingStateItem"
+                    }
+                }
+            }
+        },
+        "V2ParkingLocationItem": {
+            "type": "object",
+            "properties": {
+                "address_id": {
+                    "description": "地址 ID",
+                    "type": "integer"
+                },
+                "avg_parked_duration": {
+                    "description": "平均驻车时长 (秒)",
+                    "type": "number"
+                },
+                "geofence_id": {
+                    "description": "围栏 ID",
+                    "type": "integer"
+                },
+                "location_name": {
+                    "description": "地点名称",
+                    "type": "string"
+                },
+                "parked_duration": {
+                    "description": "驻车时长 (秒)",
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "description": "驻车会话数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ParkingResponse": {
+            "type": "object",
+            "properties": {
+                "breakdown": {
+                    "description": "分项维度",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ParkingBreakdownResponse"
+                        }
+                    ]
+                },
+                "summary": {
+                    "$ref": "#/definitions/V2ParkingSummary"
+                }
+            }
+        },
+        "V2ParkingStateItem": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "percent": {
+                    "type": "number"
+                },
+                "state": {
+                    "description": "状态",
+                    "type": "string"
+                },
+                "transition_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "V2ParkingSummary": {
+            "type": "object",
+            "properties": {
+                "asleep_duration": {
+                    "type": "number"
+                },
+                "avg_drain_percent_per_day": {
+                    "type": "number"
+                },
+                "avg_parked_duration": {
+                    "description": "平均驻车时长 (秒)",
+                    "type": "number"
+                },
+                "estimated_vampire_drain": {
+                    "type": "number"
+                },
+                "offline_duration": {
+                    "type": "number"
+                },
+                "online_duration": {
+                    "type": "number"
+                },
+                "parked_duration": {
+                    "description": "驻车时长 (秒)",
+                    "type": "number"
+                },
+                "parking_session_count": {
+                    "description": "驻车会话数",
+                    "type": "integer"
+                },
+                "state_transition_count": {
+                    "description": "状态切换次数",
+                    "type": "integer"
+                },
+                "vampire_drain_percent": {
+                    "description": "吸血式漏电比例 (%)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2PlaceBucket": {
+            "type": "object",
+            "properties": {
+                "last_visited": {
+                    "description": "最后访问时间",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "名称",
+                    "type": "string"
+                },
+                "visit_count": {
+                    "description": "访问次数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2PlacesAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2PlacesResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2PlacesResponse": {
+            "type": "object",
+            "properties": {
+                "cities": {
+                    "description": "城市分布",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2PlaceBucket"
+                    }
+                },
+                "countries": {
+                    "description": "国家分布",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2PlaceBucket"
+                    }
+                },
+                "states": {
+                    "description": "州/省分布",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2PlaceBucket"
+                    }
+                }
+            }
+        },
+        "V2Summary": {
+            "type": "object",
+            "properties": {
+                "battery": {
+                    "description": "电池指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatterySummary"
+                        }
+                    ]
+                },
+                "charging": {
+                    "description": "充电指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingSummary"
+                        }
+                    ]
+                },
+                "cost": {
+                    "description": "费用",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CostSummary"
+                        }
+                    ]
+                },
+                "driving": {
+                    "description": "行驶指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingSummary"
+                        }
+                    ]
+                },
+                "parking": {
+                    "$ref": "#/definitions/V2ParkingSummary"
+                },
+                "updates": {
+                    "$ref": "#/definitions/V2UpdateSummary"
+                },
+                "vehicle": {
+                    "description": "车辆信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2VehicleSummary"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2SummaryAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2SummaryResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2SummaryByPeriodAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2SummaryByPeriodResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2SummaryByPeriodItem": {
+            "type": "object",
+            "properties": {
+                "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "charging_cost": {
+                    "description": "充电费用",
+                    "type": "number"
+                },
+                "charging_sessions": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                },
+                "data_complete": {
+                    "description": "数据是否完整",
+                    "type": "boolean"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "drive_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                },
+                "drive_duration": {
+                    "type": "number"
+                },
+                "energy_added": {
+                    "description": "充入电池能量 (kWh)",
+                    "type": "number"
+                },
+                "energy_used": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                },
+                "net_energy": {
+                    "description": "净能量 (kWh)",
+                    "type": "number"
+                },
+                "period_start": {
+                    "description": "周期起始",
+                    "type": "string"
+                }
+            }
+        },
+        "V2SummaryByPeriodResponse": {
+            "type": "object",
+            "properties": {
+                "group_by": {
+                    "description": "聚合粒度",
+                    "type": "string"
+                },
+                "items": {
+                    "description": "条目列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2SummaryByPeriodItem"
+                    }
+                }
+            }
+        },
+        "V2SummaryResponse": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "description": "Comparison keys: driving/charging/parking/battery/updates/vehicle/cost field paths; values are current vs previous period.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/V2ComparisonValue"
+                    }
+                },
+                "summary": {
+                    "$ref": "#/definitions/V2Summary"
+                }
+            }
+        },
+        "V2TimelineAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2TimelineResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2TimelineEvent": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID",
+                    "type": "integer"
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "类型",
+                    "type": "string"
+                }
+            }
+        },
+        "V2TimelineResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "description": "事件列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2TimelineEvent"
+                    }
+                },
+                "has_more": {
+                    "description": "是否还有更多",
+                    "type": "boolean"
+                },
+                "next_cursor": {
+                    "description": "下一页游标",
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "V2Unit": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "type": "string",
+                    "example": "Wh/km"
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "CNY"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "string",
+                    "example": "km"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "string",
+                    "example": "seconds"
+                },
+                "elevation": {
+                    "type": "string",
+                    "example": "m"
+                },
+                "energy": {
+                    "type": "string",
+                    "example": "kWh"
+                },
+                "power": {
+                    "type": "string",
+                    "example": "kW"
+                },
+                "speed": {
+                    "type": "string",
+                    "example": "km/h"
+                },
+                "temperature": {
+                    "type": "string",
+                    "example": "C"
+                }
+            }
+        },
+        "V2UpdateAnalyticsAPIResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateAnalyticsResponse"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2UpdateAnalyticsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_update_duration": {
+                    "description": "平均更新时长 (秒)",
+                    "type": "number"
+                },
+                "latest_updated_at": {
+                    "description": "最近更新时间",
+                    "type": "string"
+                },
+                "latest_version": {
+                    "description": "最近版本",
+                    "type": "string"
+                },
+                "median_days_between_updates": {
+                    "description": "(added)",
+                    "type": "number"
+                },
+                "update_count": {
+                    "description": "OTA 更新次数",
+                    "type": "integer"
+                },
+                "versions": {
+                    "description": "版本列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/V2UpdateVersion"
+                    }
+                }
+            }
+        },
+        "V2UpdateChargingMetrics": {
+            "type": "object",
+            "properties": {
+                "battery_energy": {
+                    "description": "电池端能量 (kWh)",
+                    "type": "number"
+                },
+                "cost": {
+                    "description": "费用",
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "efficiency": {
+                    "description": "效率",
+                    "type": "number"
+                },
+                "session_count": {
+                    "description": "充电会话数",
+                    "type": "integer"
+                },
+                "wall_energy": {
+                    "description": "墙端用电 (kWh)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2UpdateDrivingMetrics": {
+            "type": "object",
+            "properties": {
+                "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
+                    "type": "number"
+                },
+                "distance": {
+                    "description": "距离 (km)",
+                    "type": "number"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "net_energy": {
+                    "description": "净能量 (kWh)",
+                    "type": "number"
+                },
+                "trip_count": {
+                    "description": "行程数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2UpdateEvent": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "description": "完成时间",
+                    "type": "string"
+                },
+                "days_since_prior": {
+                    "description": "距上次更新天数",
+                    "type": "integer"
+                },
+                "duration": {
+                    "description": "时长 (秒)",
+                    "type": "number"
+                },
+                "started_at": {
+                    "description": "开始时间",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "版本",
+                    "type": "string"
+                }
+            }
+        },
+        "V2UpdateSummary": {
+            "type": "object",
+            "properties": {
+                "latest_version": {
+                    "description": "最近版本",
+                    "type": "string"
+                },
+                "update_count": {
+                    "description": "OTA 更新次数",
+                    "type": "integer"
+                }
+            }
+        },
+        "V2UpdateVersion": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "description": "事件",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateEvent"
+                        }
+                    ]
+                },
+                "metrics": {
+                    "description": "指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateWindowMetrics"
+                        }
+                    ]
+                },
+                "window": {
+                    "description": "观察窗口",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateWindow"
+                        }
+                    ]
+                }
+            }
+        },
+        "V2UpdateWindow": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "description": "结束时间",
+                    "type": "string"
+                },
+                "interval": {
+                    "description": "区间秒数",
+                    "type": "number"
+                },
+                "start": {
+                    "description": "起始时间",
+                    "type": "string"
+                }
+            }
+        },
+        "V2UpdateWindowMetrics": {
+            "type": "object",
+            "properties": {
+                "charging": {
+                    "description": "充电指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateChargingMetrics"
+                        }
+                    ]
+                },
+                "driving": {
+                    "description": "行驶指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateDrivingMetrics"
+                        }
+                    ]
+                },
+                "inactive_duration": {
+                    "description": "不活跃时长 (秒)",
+                    "type": "number"
+                }
+            }
+        },
+        "V2VehicleSummary": {
+            "type": "object",
+            "properties": {
+                "charge_efficiency": {
+                    "type": "number"
+                },
+                "odometer": {
+                    "type": "number"
+                },
+                "odometer_coverage": {
+                    "type": "number"
+                },
+                "odometer_total": {
+                    "type": "number"
+                },
+                "odometer_tracked": {
+                    "type": "number"
+                },
+                "rated_efficiency": {
+                    "type": "number"
+                },
+                "tracked_charges": {
+                    "type": "integer"
+                },
+                "tracked_consumption": {
+                    "type": "number"
+                },
+                "tracked_distance": {
+                    "type": "number"
+                },
+                "tracked_drives": {
+                    "type": "integer"
+                },
+                "tracked_wall": {
+                    "type": "number"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "description": "系统状态、健康检查、API 文档元信息",
+            "name": "system"
+        },
+        {
+            "description": "V1 接口 — TeslaMate 原始数据查询（车辆、充电、行驶、OTA、电池、胎压、全局设置）",
+            "name": "v1"
+        },
+        {
+            "description": "V2 接口 — 聚合分析（充电/行驶/驻车/电池/费用/环境/更新/汇总/生命周期）",
+            "name": "v2"
+        }
+    ]
+}

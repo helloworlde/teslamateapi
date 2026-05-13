@@ -5,18 +5,21 @@ FROM golang:1.26.0 AS builder
 ARG apiVersion=unknown
 
 # create and set workingfolder
-WORKDIR /go/src/
+WORKDIR /go/src/teslamateapi
 
-# copy go mod files and sourcecode
+# copy go mod files and download dependencies first for better layer caching
 COPY go.mod go.sum ./
-COPY src/ .
+RUN go mod download
 
-# download go mods and compile the program
-RUN go mod download && \
-  CGO_ENABLED=0 GOOS=linux go build \
+# copy sources
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+
+# compile the program
+RUN CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
-  -X 'main.apiVersion=${apiVersion}' \
-  " -o app ./...
+  -X 'github.com/tobiasehlert/teslamateapi/internal/config.APIVersion=${apiVersion}' \
+  " -o /out/app ./cmd/teslamateapi
 
 
 # get alpine container
@@ -35,7 +38,7 @@ RUN apk --no-cache add ca-certificates tzdata && \
 USER nonroot:nonroot
 
 # copy binary from builder
-COPY --from=builder --chown=nonroot:nonroot --chmod=555 /go/src/app .
+COPY --from=builder --chown=nonroot:nonroot --chmod=555 /out/app .
 
 # expose port 8080
 EXPOSE 8080
