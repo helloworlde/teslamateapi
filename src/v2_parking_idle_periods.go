@@ -291,7 +291,7 @@ func (s V2IdlePeriodsService) BuildIdlePeriods(ctx context.Context, carIDParam s
 //
 // @Summary V2 parking idle periods
 // @Description Returns per-gap idle periods (vampire drain candidates) with SoC diff, range loss, drained energy and standby ratio for one car.
-// @Tags V2 Parking Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)

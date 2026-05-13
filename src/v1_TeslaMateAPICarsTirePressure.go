@@ -12,7 +12,7 @@ import (
 //
 // @Summary Get tire pressure for one car
 // @Description Latest TPMS reading + window min/max + per-day history. Pressure unit follows settings.unit_of_pressure (bar default; psi via barToPsi).
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Param window_days query int false "History window length in days (default 30, max 365)"

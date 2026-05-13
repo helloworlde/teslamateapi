@@ -40,8 +40,17 @@ var (
 
 // @title TeslaMateApi
 // @version 2.0
-// @description REST API for TeslaMate data, including V1 resources and V2 objective analytics.
+// @description TeslaMate 数据查询与分析 API。提供 V1（原始数据）和 V2（聚合分析）两套接口。
 // @BasePath /api
+//
+// @tag.name system
+// @tag.description 系统状态、健康检查、API 文档元信息
+//
+// @tag.name v1
+// @tag.description V1 接口 — TeslaMate 原始数据查询（车辆、充电、行驶、OTA、电池、胎压、全局设置）
+//
+// @tag.name v2
+// @tag.description V2 接口 — 聚合分析（充电/行驶/驻车/电池/费用/环境/更新/汇总/生命周期）
 // main function
 func main() {
 	// setup of readiness endpoint code
@@ -92,25 +101,19 @@ func main() {
 	_ = r.SetTrustedProxies(nil)
 
 	// root endpoint telling API is running
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
-	})
+	r.GET("/", systemRoot(r))
 
 	// TeslaMateApi /api endpoints
 	api := r.Group("/api")
 	{
 		// TeslaMateApi /api root
-		api.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": api.BasePath()})
-		})
+		api.GET("/", systemAPIRoot(api))
 
 		// TeslaMateApi /api/v1 endpoints
 		v1 := api.Group("/v1")
 		{
 			// TeslaMateApi /api/v1 root
-			v1.GET("/", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
-			})
+			v1.GET("/", systemV1Root(v1))
 
 			// v1 /api/v1/cars endpoints
 			v1.GET("/cars", TeslaMateAPICarsV1)
@@ -142,7 +145,7 @@ func main() {
 		RegisterDocsRoutes(api)
 
 		// /api/ping endpoint
-		api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
+		api.GET("/ping", systemPing)
 
 		// health endpoints for kubernetes
 		api.GET("/healthz", healthz)
@@ -418,12 +421,81 @@ func checkArrayContainsString(s []string, e string) bool {
 	return slices.Contains(s, e)
 }
 
+// systemRoot returns the handler for `/`.
+//
+// @Summary  服务根路径
+// @Description 返回服务运行状态与 API 基础路径，用于快速联通性检查。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "服务运行中"
+// @Router   / [get]
+func systemRoot(r *gin.Engine) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
+	}
+}
+
+// systemAPIRoot returns the handler for `/api`.
+//
+// @Summary  /api 根路径
+// @Description 返回服务运行状态与 /api 基础路径。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "服务运行中"
+// @Router   /api [get]
+func systemAPIRoot(api *gin.RouterGroup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": api.BasePath()})
+	}
+}
+
+// systemV1Root returns the handler for `/api/v1`.
+//
+// @Summary  /api/v1 根路径
+// @Description 返回 V1 接口运行状态与基础路径。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "V1 接口运行中"
+// @Router   /v1 [get]
+func systemV1Root(v1 *gin.RouterGroup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
+	}
+}
+
+// systemPing simple ping/pong endpoint.
+//
+// @Summary  Ping 探活
+// @Description 简单的 ping/pong 探活接口，用于网络层连通性检测。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "pong"
+// @Router   /ping [get]
+func systemPing(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "pong"})
+}
+
 // healthz is a liveness probe.
+//
+// @Summary  存活探针
+// @Description Kubernetes liveness 探针，进程存活则返回 200。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "服务存活"
+// @Router   /healthz [get]
 func healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusText(http.StatusOK)})
 }
 
 // readyz is a readiness probe.
+//
+// @Summary  就绪探针
+// @Description Kubernetes readiness 探针，数据库连接建立后返回 200，否则 503。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} map[string]string "服务就绪"
+// @Failure  503 {object} map[string]string "尚未就绪"
+// @Router   /readyz [get]
 func readyz(c *gin.Context) {
 	if isReady == nil || !isReady.Load().(bool) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": http.StatusText(http.StatusServiceUnavailable)})

@@ -300,7 +300,7 @@ func (s V2EnvironmentalService) BuildEnvironmental(ctx context.Context, carIDPar
 //
 // @Summary V2 environmental analytics
 // @Description Returns aggregated outside/inside temperature, HVAC active minutes, and elevation statistics for one car.
-// @Tags V2 Environmental Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)

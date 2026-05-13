@@ -10,7 +10,7 @@ import (
 // TeslaMateAPICarsChargesDetailsV1 godoc
 //
 // @Summary Get one charging session by ID
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Param ChargeID path int true "Charge ID"

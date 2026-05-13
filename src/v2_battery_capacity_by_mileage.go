@@ -148,7 +148,7 @@ func (s V2CapacityByMileageService) BuildCapacityByMileage(ctx context.Context, 
 //
 // @Summary V2 battery capacity by mileage
 // @Description Returns half-month bucketed median capacity (kWh) vs odometer for one car.
-// @Tags V2 Battery Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)

@@ -143,7 +143,7 @@ func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam strin
 //
 // @Summary V2 DC charging curve (aggregate)
 // @Description Returns aggregated DC charging curve samples (per battery level: session count, median / p25 / p75 power) for one car.
-// @Tags V2 Charging Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)

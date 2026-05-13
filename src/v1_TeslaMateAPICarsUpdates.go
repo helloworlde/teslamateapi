@@ -10,7 +10,7 @@ import (
 // TeslaMateAPICarsUpdatesV1 godoc
 //
 // @Summary List firmware updates for one car
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Success 200 {object} V1JSONEnvelope

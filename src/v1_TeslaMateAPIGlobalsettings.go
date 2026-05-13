@@ -10,7 +10,7 @@ import (
 // TeslaMateAPIGlobalsettingsV1 godoc
 //
 // @Summary Get TeslaMate global settings
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope

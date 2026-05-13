@@ -15,7 +15,7 @@ const (
 // TeslaMateAPICarsChargesCurrentV1 godoc
 //
 // @Summary Get active charging session if any
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Success 200 {object} V1JSONEnvelope

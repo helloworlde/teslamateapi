@@ -131,7 +131,7 @@ func (s V2OdometerSeriesService) BuildOdometerSeries(ctx context.Context, carIDP
 //
 // @Summary V2 cumulative odometer series
 // @Description Returns one odometer reading per day in the requested window for one car.
-// @Tags V2 Lifecycle
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -345,7 +345,7 @@ func (s V2SummaryByPeriodService) BuildByPeriod(ctx context.Context, carIDParam 
 //
 // @Summary V2 flat per-period summary
 // @Description Returns drive + charging + cost metrics flattened per period (one row per period).
-// @Tags V2 Summary
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -486,7 +486,7 @@ func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, top
 //
 // @Summary V2 lifecycle places (city / state / country breakdown)
 // @Description Returns the top-N most visited cities, states and countries for one car, with last-visited timestamps.
-// @Tags V2 Lifecycle
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param top_n query int false "Top N per dimension (default 20, max 100)"
@@ -622,7 +622,7 @@ func (s V2GeofencesService) BuildGeofences(ctx context.Context) (V2GeofencesResp
 //
 // @Summary V2 list of geofences with billing rules
 // @Description Returns all geofences with their location, radius, billing type, cost per unit, and per-session fee.
-// @Tags V2 Lifecycle
+// @Tags v2
 // @Produce json
 // @Success 200 {object} V2GeofencesAPIResponse
 // @Failure 500 {object} APIErrorResponse

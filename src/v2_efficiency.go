@@ -353,7 +353,7 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 //
 // @Summary V2 efficiency analytics
 // @Description Returns net + gross consumption, consumption overhead, plus optional temperature / speed buckets for one car.
-// @Tags V2 Driving Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)

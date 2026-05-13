@@ -9,7 +9,7 @@ import (
 //
 // @Summary List TeslaMate cars or get one car
 // @Description Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int false "Car ID (omit for list)"
 // @Success 200 {object} V1JSONEnvelope

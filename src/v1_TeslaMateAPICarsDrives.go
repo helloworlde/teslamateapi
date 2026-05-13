@@ -11,7 +11,7 @@ import (
 // TeslaMateAPICarsDrivesV1 godoc
 //
 // @Summary List drives for one car
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Param page query int false "Result page"

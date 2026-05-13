@@ -15,6 +15,236 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/": {
+            "get": {
+                "description": "返回服务运行状态与 API 基础路径，用于快速联通性检查。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "服务根路径",
+                "responses": {
+                    "200": {
+                        "description": "服务运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api": {
+            "get": {
+                "description": "返回服务运行状态与 /api 基础路径。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "/api 根路径",
+                "responses": {
+                    "200": {
+                        "description": "服务运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/docs": {
+            "get": {
+                "description": "将 /api/docs 与 /api/docs/ 永久重定向到 Scalar 渲染页。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "文档跳转",
+                "responses": {
+                    "301": {
+                        "description": "已重定向",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs/assets/{filepath}": {
+            "get": {
+                "description": "返回 Scalar 渲染所需的静态资源（JS、字体等）。",
+                "produces": [
+                    "application/javascript",
+                    "font/woff2",
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "文档静态资源",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "资源相对路径",
+                        "name": "filepath",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "资源二进制流",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "路径无效",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "资源不存在",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs/swagger.json": {
+            "get": {
+                "description": "返回内嵌的 Swagger 2.0 JSON 规范，可直接被 Scalar/Swagger UI 加载。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "OpenAPI 规范",
+                "responses": {
+                    "200": {
+                        "description": "Swagger JSON 规范",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "description": "Kubernetes liveness 探针，进程存活则返回 200。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "存活探针",
+                "responses": {
+                    "200": {
+                        "description": "服务存活",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "简单的 ping/pong 探活接口，用于网络层连通性检测。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Ping 探活",
+                "responses": {
+                    "200": {
+                        "description": "pong",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/readyz": {
+            "get": {
+                "description": "Kubernetes readiness 探针，数据库连接建立后返回 200，否则 503。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "就绪探针",
+                "responses": {
+                    "200": {
+                        "description": "服务就绪",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "尚未就绪",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1": {
+            "get": {
+                "description": "返回 V1 接口运行状态与基础路径。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "/api/v1 根路径",
+                "responses": {
+                    "200": {
+                        "description": "V1 接口运行中",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/cars": {
             "get": {
                 "description": "Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.",
@@ -22,7 +252,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "List TeslaMate cars or get one car",
                 "responses": {
@@ -42,7 +272,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "List TeslaMate cars or get one car",
                 "parameters": [
@@ -69,7 +299,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get battery health for one car",
                 "parameters": [
@@ -97,7 +327,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "List charging sessions for one car",
                 "parameters": [
@@ -149,7 +379,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get active charging session if any",
                 "parameters": [
@@ -177,7 +407,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get one charging session by ID",
                 "parameters": [
@@ -212,7 +442,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "List drives for one car",
                 "parameters": [
@@ -264,7 +494,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get one drive by ID",
                 "parameters": [
@@ -317,7 +547,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get tire pressure for one car",
                 "parameters": [
@@ -351,7 +581,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "List firmware updates for one car",
                 "parameters": [
@@ -379,7 +609,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
                 "summary": "Get TeslaMate global settings",
                 "responses": {
@@ -399,7 +629,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Summary"
+                    "v2"
                 ],
                 "summary": "V2 API capabilities",
                 "responses": {
@@ -425,7 +655,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Battery Analytics"
+                    "v2"
                 ],
                 "summary": "V2 battery analytics summary",
                 "parameters": [
@@ -505,7 +735,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Battery Analytics"
+                    "v2"
                 ],
                 "summary": "V2 battery analytics timeseries",
                 "parameters": [
@@ -597,7 +827,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Charging Analytics"
+                    "v2"
                 ],
                 "summary": "V2 charging analytics summary",
                 "parameters": [
@@ -706,7 +936,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Charging Analytics"
+                    "v2"
                 ],
                 "summary": "V2 DC charging curve (aggregate)",
                 "parameters": [
@@ -792,7 +1022,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Cost Analytics"
+                    "v2"
                 ],
                 "summary": "V2 cost analytics",
                 "parameters": [
@@ -884,7 +1114,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Driving Analytics"
+                    "v2"
                 ],
                 "summary": "V2 driving analytics summary",
                 "parameters": [
@@ -964,7 +1194,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Driving Analytics"
+                    "v2"
                 ],
                 "summary": "V2 driving analytics timeseries",
                 "parameters": [
@@ -1056,7 +1286,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Driving Analytics"
+                    "v2"
                 ],
                 "summary": "V2 efficiency analytics",
                 "parameters": [
@@ -1153,7 +1383,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Environmental Analytics"
+                    "v2"
                 ],
                 "summary": "V2 environmental analytics",
                 "parameters": [
@@ -1252,7 +1482,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Parking Analytics"
+                    "v2"
                 ],
                 "summary": "V2 parking analytics summary",
                 "parameters": [
@@ -1349,7 +1579,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Summary"
+                    "v2"
                 ],
                 "summary": "V2 period summary analytics",
                 "parameters": [
@@ -1439,7 +1669,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Battery Analytics"
+                    "v2"
                 ],
                 "summary": "V2 battery capacity by mileage",
                 "parameters": [
@@ -1519,7 +1749,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Lifecycle"
+                    "v2"
                 ],
                 "summary": "V2 lifetime cumulative analytics",
                 "parameters": [
@@ -1573,7 +1803,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Lifecycle"
+                    "v2"
                 ],
                 "summary": "V2 cumulative odometer series",
                 "parameters": [
@@ -1665,7 +1895,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Lifecycle"
+                    "v2"
                 ],
                 "summary": "V2 lifecycle places (city / state / country breakdown)",
                 "parameters": [
@@ -1719,7 +1949,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Parking Analytics"
+                    "v2"
                 ],
                 "summary": "V2 parking idle periods",
                 "parameters": [
@@ -1823,7 +2053,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Summary"
+                    "v2"
                 ],
                 "summary": "V2 flat per-period summary",
                 "parameters": [
@@ -1915,7 +2145,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Lifecycle"
+                    "v2"
                 ],
                 "summary": "V2 unified event timeline",
                 "parameters": [
@@ -1988,7 +2218,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Update Analytics"
+                    "v2"
                 ],
                 "summary": "V2 update analytics",
                 "parameters": [
@@ -2068,7 +2298,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "V2 Lifecycle"
+                    "v2"
                 ],
                 "summary": "V2 list of geofences with billing rules",
                 "responses": {
@@ -3869,7 +4099,21 @@ const docTemplate = `{
                 }
             }
         }
-    }
+    },
+    "tags": [
+        {
+            "description": "系统状态、健康检查、API 文档元信息",
+            "name": "system"
+        },
+        {
+            "description": "V1 接口 — TeslaMate 原始数据查询（车辆、充电、行驶、OTA、电池、胎压、全局设置）",
+            "name": "v1"
+        },
+        {
+            "description": "V2 接口 — 聚合分析（充电/行驶/驻车/电池/费用/环境/更新/汇总/生命周期）",
+            "name": "v2"
+        }
+    ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
@@ -3879,7 +4123,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "TeslaMateApi",
-	Description:      "REST API for TeslaMate data, including V1 resources and V2 objective analytics.",
+	Description:      "TeslaMate 数据查询与分析 API。提供 V1（原始数据）和 V2（聚合分析）两套接口。",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

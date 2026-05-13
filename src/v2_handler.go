@@ -199,7 +199,7 @@ func v2CarValidationMiddleware() gin.HandlerFunc {
 //
 // @Summary V2 API capabilities
 // @Description Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per domain. Clients use this to decide which query parameters to send instead of probing each endpoint.
-// @Tags V2 Summary
+// @Tags v2
 // @Produce json
 // @Success 200 {object} V2CapabilitiesAPIResponse
 // @Failure 500 {object} APIErrorResponse
@@ -234,7 +234,7 @@ func (h V2Handlers) Capabilities(c *gin.Context) {
 //
 // @Summary V2 period summary analytics
 // @Description Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.
-// @Tags V2 Summary
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -280,7 +280,7 @@ func (h V2Handlers) Summary(c *gin.Context) {
 //
 // @Summary V2 driving analytics summary
 // @Description Returns objective driving statistics for one car.
-// @Tags V2 Driving Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -314,7 +314,7 @@ func (h V2Handlers) Driving(c *gin.Context) {
 //
 // @Summary V2 driving analytics timeseries
 // @Description Returns driving metrics grouped by day, week, month, or year for charting.
-// @Tags V2 Driving Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -358,7 +358,7 @@ func handleV2DrivingError(c *gin.Context, err error, timeRange V2TimeRange) {
 //
 // @Summary V2 charging analytics summary
 // @Description Returns objective charging statistics for one car.
-// @Tags V2 Charging Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -417,7 +417,7 @@ func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
 //
 // @Summary V2 parking analytics summary
 // @Description Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.
-// @Tags V2 Parking Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -471,7 +471,7 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 //
 // @Summary V2 battery analytics summary
 // @Description Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.
-// @Tags V2 Battery Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -505,7 +505,7 @@ func (h V2Handlers) Battery(c *gin.Context) {
 //
 // @Summary V2 battery analytics timeseries
 // @Description Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.
-// @Tags V2 Battery Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -549,7 +549,7 @@ func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
 //
 // @Summary V2 cost analytics
 // @Description Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.
-// @Tags V2 Cost Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -597,7 +597,7 @@ func handleV2CostError(c *gin.Context, err error) {
 //
 // @Summary V2 update analytics
 // @Description Returns OTA update history statistics for a car in the selected period.
-// @Tags V2 Update Analytics
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
@@ -631,7 +631,7 @@ func (h V2Handlers) Updates(c *gin.Context) {
 //
 // @Summary V2 lifetime cumulative analytics
 // @Description Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.
-// @Tags V2 Lifecycle
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param as_of query string false "Cutoff datetime in RFC3339 format. Defaults to now."
@@ -673,7 +673,7 @@ func (h V2Handlers) Lifecycle(c *gin.Context) {
 //
 // @Summary V2 unified event timeline
 // @Description Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.
-// @Tags V2 Lifecycle
+// @Tags v2
 // @Produce json
 // @Param CarID path int true "Car ID" example(1)
 // @Param type query string false "Comma-separated event types: drive,charging,update"

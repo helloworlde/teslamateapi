@@ -22,12 +22,8 @@ var embeddedSwaggerJSON []byte
 
 func RegisterDocsRoutes(api *gin.RouterGroup) {
 	spec := swaggerSpecForDocs()
-	api.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/api/docs/scalar")
-	})
-	api.GET("/docs/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/api/docs/scalar")
-	})
+	api.GET("/docs", docsRedirect)
+	api.GET("/docs/", docsRedirect)
 	api.GET("/docs/swagger.json", V2OpenAPISpec)
 	api.GET("/docs/assets/*filepath", ServeDocsAsset)
 	api.GET("/docs/scalar", scalargin.Handler(&scalar.Options{
@@ -37,6 +33,18 @@ func RegisterDocsRoutes(api *gin.RouterGroup) {
 			PageTitle: "TeslaMateApi Reference",
 		},
 	}))
+}
+
+// docsRedirect 将 /api/docs 与 /api/docs/ 永久跳转到 Scalar 文档页。
+//
+// @Summary  文档跳转
+// @Description 将 /api/docs 与 /api/docs/ 永久重定向到 Scalar 渲染页。
+// @Tags     system
+// @Produce  json
+// @Success  301 {string} string "已重定向"
+// @Router   /docs [get]
+func docsRedirect(c *gin.Context) {
+	c.Redirect(http.StatusMovedPermanently, "/api/docs/scalar")
 }
 
 func swaggerSpecForDocs() map[string]interface{} {
@@ -50,6 +58,19 @@ func swaggerSpecForDocs() map[string]interface{} {
 	return spec
 }
 
+// ServeDocsAsset 返回 docs_assets 目录下的静态资源。
+//
+// @Summary  文档静态资源
+// @Description 返回 Scalar 渲染所需的静态资源（JS、字体等）。
+// @Tags     system
+// @Produce  application/javascript
+// @Produce  font/woff2
+// @Produce  application/octet-stream
+// @Param    filepath path string true "资源相对路径"
+// @Success  200 {file} binary "资源二进制流"
+// @Failure  400 {object} APIErrorResponse "路径无效"
+// @Failure  404 {object} APIErrorResponse "资源不存在"
+// @Router   /docs/assets/{filepath} [get]
 func ServeDocsAsset(c *gin.Context) {
 	requestPath := strings.TrimPrefix(c.Param("filepath"), "/")
 	cleanPath := filepath.Clean(requestPath)
@@ -79,6 +100,14 @@ func docsAssetContentType(path string) string {
 	}
 }
 
+// V2OpenAPISpec 返回内嵌的 Swagger JSON 规范。
+//
+// @Summary  OpenAPI 规范
+// @Description 返回内嵌的 Swagger 2.0 JSON 规范，可直接被 Scalar/Swagger UI 加载。
+// @Tags     system
+// @Produce  json
+// @Success  200 {object} object "Swagger JSON 规范"
+// @Router   /docs/swagger.json [get]
 func V2OpenAPISpec(c *gin.Context) {
 	c.JSON(http.StatusOK, swaggerSpecForDocs())
 }

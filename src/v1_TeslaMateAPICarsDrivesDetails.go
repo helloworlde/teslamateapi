@@ -11,7 +11,7 @@ import (
 // TeslaMateAPICarsDrivesDetailsV1 godoc
 //
 // @Summary Get one drive by ID
-// @Tags V1
+// @Tags v1
 // @Produce json
 // @Param CarID path int true "Car ID"
 // @Param DriveID path int true "Drive ID"
