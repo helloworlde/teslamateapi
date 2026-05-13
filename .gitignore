@@ -17,3 +17,7 @@
 
 .idea/
 .claude/
+
+# Local build outputs
+/bin/
+/teslamateapi
