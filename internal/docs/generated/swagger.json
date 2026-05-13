@@ -452,18 +452,18 @@
         },
         "/v1/cars/{CarID}/status": {
             "get": {
-                "description": "Requires MQTT; returns cached telemetry when available.",
+                "description": "基于 MQTT 推送的实时车辆遥测；需启用 MQTT，未启用时返回 501。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "V1"
+                    "v1"
                 ],
-                "summary": "MQTT-backed live vehicle status",
+                "summary": "车辆实时状态（MQTT）",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true

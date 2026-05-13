@@ -423,11 +423,11 @@ func (s *StatusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
 
 // TeslaMateAPICarsStatusV1 godoc
 //
-// @Summary MQTT-backed live vehicle status
-// @Description Requires MQTT; returns cached telemetry when available.
-// @Tags V1
+// @Summary 车辆实时状态（MQTT）
+// @Description 基于 MQTT 推送的实时车辆遥测；需启用 MQTT，未启用时返回 501。
+// @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "车辆 ID"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Failure 501 {object} V1ErrorEnvelope
@@ -460,150 +460,150 @@ func (s *StatusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 	}
 
 	// creating structs for /cars
-	// BatteryDetails struct - child of MQTTInformation
+	// BatteryDetails 电池信息（MQTTInformation 子结构）
 	type BatteryDetails struct {
-		EstBatteryRange    float64 `json:"est_battery_range"`    // 372.5 - Estimated Range in km
-		RatedBatteryRange  float64 `json:"rated_battery_range"`  // 401.63 - Rated Range in km
-		IdealBatteryRange  float64 `json:"ideal_battery_range"`  // 335.79 - Ideal Range in km
-		BatteryLevel       int     `json:"battery_level"`        // 88 - Battery Level Percentage
-		UsableBatteryLevel int     `json:"usable_battery_level"` // 85 - Usable battery level percentage
+		EstBatteryRange    float64 `json:"est_battery_range"`    // 估算续航里程（km）
+		RatedBatteryRange  float64 `json:"rated_battery_range"`  // 额定续航里程（km）
+		IdealBatteryRange  float64 `json:"ideal_battery_range"`  // 理想续航里程（km）
+		BatteryLevel       int     `json:"battery_level"`        // 电量百分比
+		UsableBatteryLevel int     `json:"usable_battery_level"` // 可用电量百分比
 	}
-	// CarDetails struct - child of MQTTInformation
+	// CarDetails 车辆基本信息（MQTTInformation 子结构）
 	type CarDetails struct {
-		Model       string `json:"model"`        // character varying(255)
-		TrimBadging string `json:"trim_badging"` // P100D - Trim badging
+		Model       string `json:"model"`        // 车型
+		TrimBadging string `json:"trim_badging"` // 配置标识（如 P100D）
 	}
-	// CarExterior struct - child of MQTTInformation
+	// CarExterior 车辆外观（MQTTInformation 子结构）
 	type CarExterior struct {
-		ExteriorColor string `json:"exterior_color"` // DeepBlue - The exterior color
-		SpoilerType   string `json:"spoiler_type"`   // None - The spoiler type
-		WheelType     string `json:"wheel_type"`     // Pinwheel18 - The wheel type
+		ExteriorColor string `json:"exterior_color"` // 外观颜色
+		SpoilerType   string `json:"spoiler_type"`   // 尾翼类型
+		WheelType     string `json:"wheel_type"`     // 轮毂类型
 	}
-	// CarLocation struct - child of multiple structs
+	// CarLocation 经纬度坐标
 	type CarLocation struct {
-		Latitude  float64 `json:"latitude"`  // 35.278131 - Last reported car latitude
-		Longitude float64 `json:"longitude"` // 29.744801 - Last reported car longitude
+		Latitude  float64 `json:"latitude"`  // 最近一次上报的纬度
+		Longitude float64 `json:"longitude"` // 最近一次上报的经度
 	}
-	// CarGeodata struct - child of MQTTInformation
+	// CarGeodata 地理位置（MQTTInformation 子结构）
 	type CarGeodata struct {
-		Geofence  string      `json:"geofence"`  // Home - The name of the Geo-fence, if one exists at the current position
-		Location  CarLocation `json:"location"`  // struct
-		Latitude  float64     `json:"latitude"`  // DEPRECATED 35.278131 - Last reported car latitude
-		Longitude float64     `json:"longitude"` // DEPRECATED 29.744801 - Last reported car longitude
+		Geofence  string      `json:"geofence"`  // 当前位置所属地理围栏名称（若有）
+		Location  CarLocation `json:"location"`  // 位置坐标
+		Latitude  float64     `json:"latitude"`  // 已弃用：最近一次上报的纬度
+		Longitude float64     `json:"longitude"` // 已弃用：最近一次上报的经度
 	}
-	// CarStatus struct - child of MQTTInformation
+	// CarStatus 车辆状态（MQTTInformation 子结构）
 	type CarStatus struct {
-		Healthy                bool `json:"healthy"`                   // true - Health status of the logger for that vehicle
-		Locked                 bool `json:"locked"`                    // true - Indicates if the car is locked
-		SentryMode             bool `json:"sentry_mode"`               // false - Indicates if Sentry Mode is active
-		WindowsOpen            bool `json:"windows_open"`              // false - Indicates if any of the windows are open
-		DoorsOpen              bool `json:"doors_open"`                // false - Indicates if any of the doors are open
-		DriverFrontDoorOpen    bool `json:"driver_front_door_open"`    // false - Indicates if the driver-side front door is open
-		DriverRearDoorOpen     bool `json:"driver_rear_door_open"`     // false - Indicates if the driver-side rear door is open
-		PassengerFrontDoorOpen bool `json:"passenger_front_door_open"` // false - Indicates if the passenger-side front door is open
-		PassengerRearDoorOpen  bool `json:"passenger_rear_door_open"`  // false - Indicates if the passenger-side rear door is open
-		TrunkOpen              bool `json:"trunk_open"`                // false - Indicates if the trunk is open
-		FrunkOpen              bool `json:"frunk_open"`                // false - Indicates if the frunk is open
-		IsUserPresent          bool `json:"is_user_present"`           // false - Indicates if a user is present in the vehicle
-		CenterDisplayState     int  `json:"center_display_state"`      // 0 - Center Display State
+		Healthy                bool `json:"healthy"`                   // 该车辆 Logger 健康状态
+		Locked                 bool `json:"locked"`                    // 是否上锁
+		SentryMode             bool `json:"sentry_mode"`               // 哨兵模式是否开启
+		WindowsOpen            bool `json:"windows_open"`              // 是否有车窗打开
+		DoorsOpen              bool `json:"doors_open"`                // 是否有车门打开
+		DriverFrontDoorOpen    bool `json:"driver_front_door_open"`    // 主驾前门是否打开
+		DriverRearDoorOpen     bool `json:"driver_rear_door_open"`     // 主驾后门是否打开
+		PassengerFrontDoorOpen bool `json:"passenger_front_door_open"` // 副驾前门是否打开
+		PassengerRearDoorOpen  bool `json:"passenger_rear_door_open"`  // 副驾后门是否打开
+		TrunkOpen              bool `json:"trunk_open"`                // 后备箱是否打开
+		FrunkOpen              bool `json:"frunk_open"`                // 前备箱是否打开
+		IsUserPresent          bool `json:"is_user_present"`           // 车内是否有人
+		CenterDisplayState     int  `json:"center_display_state"`      // 中控屏状态
 	}
-	// CarVersions struct - child of MQTTInformation
+	// CarVersions 软件版本（MQTTInformation 子结构）
 	type CarVersions struct {
-		Version         string `json:"version"`          // 2019.32.12.2 - Software Version
-		UpdateAvailable bool   `json:"update_available"` // false - Indicates if a software update is available
-		UpdateVersion   string `json:"update_version"`   // 2019.32.12.3 - Software version of the available update
+		Version         string `json:"version"`          // 当前软件版本
+		UpdateAvailable bool   `json:"update_available"` // 是否有可用更新
+		UpdateVersion   string `json:"update_version"`   // 待升级版本
 	}
-	// ChargingDetails struct - child of MQTTInformation
+	// ChargingDetails 充电信息（MQTTInformation 子结构）
 	type ChargingDetails struct {
-		PluggedIn                  bool    `json:"plugged_in"`                    // true - If car is currently plugged into a charger
-		ChargingState              string  `json:"charging_state"`                // "Charging" - Indicates if the car is currently charging
-		ChargeEnergyAdded          float64 `json:"charge_energy_added"`           // 5.06 - Last added energy in kWh
-		ChargeLimitSoc             int     `json:"charge_limit_soc"`              // 90 - Charge Limit Configured in Percentage
-		ChargePortDoorOpen         bool    `json:"charge_port_door_open"`         // true - Indicates if the charger door is open
-		ChargerActualCurrent       float64 `json:"charger_actual_current"`        // 2.05 - Current amperage supplied by charger
-		ChargerPhases              int     `json:"charger_phases"`                // 3 - Number of charger power phases (1-3)
-		ChargerPower               float64 `json:"charger_power"`                 // 48.9 - Charger Power
-		ChargerVoltage             int     `json:"charger_voltage"`               // 240 - Charger Voltage
-		ChargeCurrentRequest       int     `json:"charge_current_request"`        // 40 - How many amps the car wants
-		ChargeCurrentRequestMax    int     `json:"charge_current_request_max"`    // 40 - How many amps the car can have
-		ScheduledChargingStartTime string  `json:"scheduled_charging_start_time"` // 2019-02-29T23:00:07Z - Start time of the scheduled charge
-		TimeToFullCharge           float64 `json:"time_to_full_charge"`           // 1.83 - Hours remaining to full charge
+		PluggedIn                  bool    `json:"plugged_in"`                    // 是否已插入充电器
+		ChargingState              string  `json:"charging_state"`                // 充电状态
+		ChargeEnergyAdded          float64 `json:"charge_energy_added"`           // 本次已补充电量（kWh）
+		ChargeLimitSoc             int     `json:"charge_limit_soc"`              // 充电上限百分比
+		ChargePortDoorOpen         bool    `json:"charge_port_door_open"`         // 充电口盖是否打开
+		ChargerActualCurrent       float64 `json:"charger_actual_current"`        // 充电桩实际输出电流（A）
+		ChargerPhases              int     `json:"charger_phases"`                // 充电相数（1-3）
+		ChargerPower               float64 `json:"charger_power"`                 // 充电功率（kW）
+		ChargerVoltage             int     `json:"charger_voltage"`               // 充电电压（V）
+		ChargeCurrentRequest       int     `json:"charge_current_request"`        // 车辆请求电流（A）
+		ChargeCurrentRequestMax    int     `json:"charge_current_request_max"`    // 车辆可接受最大电流（A）
+		ScheduledChargingStartTime string  `json:"scheduled_charging_start_time"` // 计划充电开始时间
+		TimeToFullCharge           float64 `json:"time_to_full_charge"`           // 预计充满剩余时长（小时）
 	}
-	// ClimateDetails struct - child of MQTTInformation
+	// ClimateDetails 空调与温度（MQTTInformation 子结构）
 	type ClimateDetails struct {
-		IsClimateOn       bool    `json:"is_climate_on"`       // true - Indicates if the climate control is on
-		InsideTemp        float64 `json:"inside_temp"`         // 20.8 - Inside Temperature in °C
-		OutsideTemp       float64 `json:"outside_temp"`        // 18.4 - Temperature in °C
-		IsPreconditioning bool    `json:"is_preconditioning"`  // false - Indicates if the vehicle is being preconditioned
-		ClimateKeeperMode string  `json:"climate_keeper_mode"` // dog - Climate Keeper Mode
+		IsClimateOn       bool    `json:"is_climate_on"`       // 空调是否开启
+		InsideTemp        float64 `json:"inside_temp"`         // 车内温度（°C）
+		OutsideTemp       float64 `json:"outside_temp"`        // 车外温度（°C）
+		IsPreconditioning bool    `json:"is_preconditioning"`  // 是否正在预空调
+		ClimateKeeperMode string  `json:"climate_keeper_mode"` // 留守模式（dog/camp 等）
 	}
-	// ActiveRouteDetails struct - child of DrivingDetails
+	// ActiveRouteDetails 当前导航路线（DrivingDetails 子结构）
 	type ActiveRouteDetails struct {
-		Destination         string      `json:"destination"`           // Home - Navigation destination name
-		EnergyAtArrival     int         `json:"energy_at_arrival"`     // 73 - Energy at arrival in kWh
-		DistanceToArrival   float64     `json:"distance_to_arrival"`   // 10.437077034 - Distance to arrival in km
-		MinutesToArrival    float64     `json:"minutes_to_arrival"`    // 23.466667 - Minutes to arrival
-		TrafficMinutesDelay float64     `json:"traffic_minutes_delay"` // 0.0 - Traffic delay in minutes
-		Location            CarLocation `json:"location"`              // struct
+		Destination         string      `json:"destination"`           // 导航目的地名称
+		EnergyAtArrival     int         `json:"energy_at_arrival"`     // 到达时预计剩余电量（kWh）
+		DistanceToArrival   float64     `json:"distance_to_arrival"`   // 到达剩余距离（km）
+		MinutesToArrival    float64     `json:"minutes_to_arrival"`    // 到达剩余时长（分钟）
+		TrafficMinutesDelay float64     `json:"traffic_minutes_delay"` // 交通延误（分钟）
+		Location            CarLocation `json:"location"`              // 目的地坐标
 	}
-	// DrivingDetails struct - child of MQTTInformation
+	// DrivingDetails 行驶信息（MQTTInformation 子结构）
 	type DrivingDetails struct {
-		ActiveRoute            ActiveRouteDetails `json:"active_route"`             // struct
-		ActiveRouteDestination string             `json:"active_route_destination"` // DEPRECATED Home - Navigation destination name
-		ActiveRouteLatitude    float64            `json:"active_route_latitude"`    // DEPRECATED 35.278131 - Navigation destination latitude
-		ActiveRouteLongitude   float64            `json:"active_route_longitude"`   // DEPRECATED 29.744801 - Navigation destination longitude
-		ShiftState             string             `json:"shift_state"`              // D - Current/Last Shift State (D/N/R/P)
-		Power                  int                `json:"power"`                    // -9 Current battery power in watts. Positive value on discharge, negative value on charge
-		Speed                  int                `json:"speed"`                    // 12 - Current Speed in km/h
-		Heading                int                `json:"heading"`                  // 340 - Last reported car direction
-		Elevation              int                `json:"elevation"`                // 70 - Current elevation above sea level in meters
+		ActiveRoute            ActiveRouteDetails `json:"active_route"`             // 当前导航路线
+		ActiveRouteDestination string             `json:"active_route_destination"` // 已弃用：导航目的地
+		ActiveRouteLatitude    float64            `json:"active_route_latitude"`    // 已弃用：目的地纬度
+		ActiveRouteLongitude   float64            `json:"active_route_longitude"`   // 已弃用：目的地经度
+		ShiftState             string             `json:"shift_state"`              // 档位状态（D/N/R/P）
+		Power                  int                `json:"power"`                    // 当前电池功率（kW，正值放电、负值充电）
+		Speed                  int                `json:"speed"`                    // 当前车速（km/h）
+		Heading                int                `json:"heading"`                  // 行进方向角度
+		Elevation              int                `json:"elevation"`                // 海拔高度（m）
 	}
-	// TpmsDetails struct - child of MQTTInformation
+	// TpmsDetails 胎压详情（MQTTInformation 子结构）
 	type TpmsDetails struct {
-		TpmsPressureFL    float64 `json:"tpms_pressure_fl"`     // 2.9 - Tire pressure measure in BAR, front left tire
-		TpmsPressureFR    float64 `json:"tpms_pressure_fr"`     // 2.8 - Tire pressure measure in BAR, front right tire
-		TpmsPressureRL    float64 `json:"tpms_pressure_rl"`     // 2.9 - Tire pressure measure in BAR, rear left tire
-		TpmsPressureRR    float64 `json:"tpms_pressure_rr"`     // 2.8 - Tire pressure measure in BAR, rear right tire
-		TpmsSoftWarningFL bool    `json:"tpms_soft_warning_fl"` // true  - Indicates if the Tire pressure measure is soft warning, front left tire
-		TpmsSoftWarningFR bool    `json:"tpms_soft_warning_fr"` // false - Indicates if the Tire pressure measure is soft warning, front right tire
-		TpmsSoftWarningRL bool    `json:"tpms_soft_warning_rl"` // false - Indicates if the Tire pressure measure is soft warning, rear left tire
-		TpmsSoftWarningRR bool    `json:"tpms_soft_warning_rr"` // false - Indicates if the Tire pressure measure is soft warning, rear right tire
+		TpmsPressureFL    float64 `json:"tpms_pressure_fl"`     // 左前轮胎压（BAR）
+		TpmsPressureFR    float64 `json:"tpms_pressure_fr"`     // 右前轮胎压（BAR）
+		TpmsPressureRL    float64 `json:"tpms_pressure_rl"`     // 左后轮胎压（BAR）
+		TpmsPressureRR    float64 `json:"tpms_pressure_rr"`     // 右后轮胎压（BAR）
+		TpmsSoftWarningFL bool    `json:"tpms_soft_warning_fl"` // 左前轮胎压软警告
+		TpmsSoftWarningFR bool    `json:"tpms_soft_warning_fr"` // 右前轮胎压软警告
+		TpmsSoftWarningRL bool    `json:"tpms_soft_warning_rl"` // 左后轮胎压软警告
+		TpmsSoftWarningRR bool    `json:"tpms_soft_warning_rr"` // 右后轮胎压软警告
 	}
-	// MQTTInformation struct - child of Cars
+	// MQTTInformation 实时遥测信息（Cars 子结构）
 	type MQTTInformation struct {
-		DisplayName     string          `json:"display_name"`     // Blue Thunder - Vehicle Name
-		State           string          `json:"state"`            // asleep - Status of the vehicle (e.g. online, asleep, charging)
-		StateSince      string          `json:"state_since"`      // 2019-02-29T23:00:07Z - Date of the last status change
-		Odometer        float64         `json:"odometer"`         // 1653 - Car odometer in km
-		CarStatus       CarStatus       `json:"car_status"`       // struct
-		CarDetails      CarDetails      `json:"car_details"`      // struct
-		CarExterior     CarExterior     `json:"car_exterior"`     // struct
-		CarGeodata      CarGeodata      `json:"car_geodata"`      // struct
-		CarVersions     CarVersions     `json:"car_versions"`     // struct
-		DrivingDetails  DrivingDetails  `json:"driving_details"`  // struct
-		ClimateDetails  ClimateDetails  `json:"climate_details"`  // struct
-		BatteryDetails  BatteryDetails  `json:"battery_details"`  // struct
-		ChargingDetails ChargingDetails `json:"charging_details"` // struct
-		TpmsDetails     TpmsDetails     `json:"tpms_details"`     // struct
+		DisplayName     string          `json:"display_name"`     // 车辆名称
+		State           string          `json:"state"`            // 车辆状态（online/asleep/charging 等）
+		StateSince      string          `json:"state_since"`      // 上次状态变化时间
+		Odometer        float64         `json:"odometer"`         // 里程表读数（km）
+		CarStatus       CarStatus       `json:"car_status"`       // 车辆状态
+		CarDetails      CarDetails      `json:"car_details"`      // 车辆基本信息
+		CarExterior     CarExterior     `json:"car_exterior"`     // 车辆外观
+		CarGeodata      CarGeodata      `json:"car_geodata"`      // 地理位置
+		CarVersions     CarVersions     `json:"car_versions"`     // 软件版本
+		DrivingDetails  DrivingDetails  `json:"driving_details"`  // 行驶信息
+		ClimateDetails  ClimateDetails  `json:"climate_details"`  // 空调与温度
+		BatteryDetails  BatteryDetails  `json:"battery_details"`  // 电池信息
+		ChargingDetails ChargingDetails `json:"charging_details"` // 充电信息
+		TpmsDetails     TpmsDetails     `json:"tpms_details"`     // 胎压信息
 	}
-	// Cars struct - child of Data
+	// Car 车辆主信息（Data 子结构）
 	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName nullx.String `json:"car_name"` // text (nullable)
+		CarID   int          `json:"car_id"`   // 车辆 ID
+		CarName nullx.String `json:"car_name"` // 车辆名称（可空）
 	}
-	// TeslaMateUnits struct - child of Data
+	// TeslaMateUnits 单位偏好（Data 子结构）
 	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsPressure    string `json:"unit_of_pressure"`    // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
+		UnitsLength      string `json:"unit_of_length"`      // 长度单位
+		UnitsPressure    string `json:"unit_of_pressure"`    // 压力单位
+		UnitsTemperature string `json:"unit_of_temperature"` // 温度单位
 	}
-	// Data struct - child of JSONData
+	// Data 响应数据主体（JSONData 子结构）
 	type Data struct {
 		Car             Car             `json:"car"`
 		MQTTInformation MQTTInformation `json:"status"`
 		TeslaMateUnits  TeslaMateUnits  `json:"units"`
 	}
-	// JSONData struct - main
+	// JSONData 响应外层包装
 	type JSONData struct {
 		Data Data `json:"data"`
 	}

@@ -9,7 +9,8 @@ BINARY ?= $(BIN_DIR)/teslamateapi
 # 与 go.mod 中 swag 版本一致；无需全局安装 swag
 SWAG_PKG := github.com/swaggo/swag/cmd/swag@v1.16.6
 # 顶层 swagger 注解所在文件（@title / @version / @tag.* 等）
-SWAG_GENERAL := internal/server/server.go
+# 注意：swag 的 -g 是相对于第一个 -d 目录解析的，因此这里只能写文件名。
+SWAG_GENERAL := server.go
 # swag 扫描目录（逗号分隔，generalInfo 文件必须在第一项）
 SWAG_DIR := internal/server,internal/api/v1,internal/api/v2,internal/apicommon,internal/docs
 # 与 internal/docs/docs.go //go:embed 一致；需提交 swagger.json 供 Docker 构建
@@ -28,6 +29,9 @@ help:
 docs swagger:
 	$(GO) run $(SWAG_PKG) init -g $(SWAG_GENERAL) -d $(SWAG_DIR) -o $(DOCS_OUT) --parseInternal
 	rm -f $(DOCS_OUT)/docs.go
+	@if [ -f scripts/normalize_swagger_main_prefix.py ]; then \
+		python3 scripts/normalize_swagger_main_prefix.py $(DOCS_OUT); \
+	fi
 
 build:
 	@mkdir -p $(BIN_DIR)

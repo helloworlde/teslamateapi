@@ -1815,9 +1815,9 @@ paths:
       - v1
   /v1/cars/{CarID}/status:
     get:
-      description: Requires MQTT; returns cached telemetry when available.
+      description: 基于 MQTT 推送的实时车辆遥测；需启用 MQTT，未启用时返回 501。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
@@ -1833,9 +1833,9 @@ paths:
           description: Not Implemented
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: MQTT-backed live vehicle status
+      summary: 车辆实时状态（MQTT）
       tags:
-      - V1
+      - v1
   /v1/cars/{CarID}/tire-pressure:
     get:
       description: 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认
