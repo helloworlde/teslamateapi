@@ -13,22 +13,22 @@ import (
 
 // @name V2EfficiencyAPIResponse
 type V2EfficiencyAPIResponse struct {
-	Data V2EfficiencyResponse `json:"data"`
-	Meta V2Meta               `json:"meta"`
+	Data V2EfficiencyResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2EfficiencyResponse
 type V2EfficiencyResponse struct {
 	Summary    V2EfficiencySummary           `json:"summary"`
-	Timeseries *V2EfficiencyTimeseries       `json:"timeseries,omitempty"`
+	Timeseries *V2EfficiencyTimeseries `json:"timeseries,omitempty"` // 时序
 	Buckets    *V2EfficiencyBuckets          `json:"buckets,omitempty"`
 }
 
 // @name V2EfficiencySummary
 type V2EfficiencySummary struct {
 	NetConsumption       *float64 `json:"net_consumption,omitempty"`
-	GrossConsumption     *float64 `json:"gross_consumption,omitempty"`
-	ConsumptionOverhead  *float64 `json:"consumption_overhead,omitempty"`
+	GrossConsumption     *float64 `json:"gross_consumption,omitempty"` // 毛能耗 (Wh/km)
+	ConsumptionOverhead  *float64 `json:"consumption_overhead,omitempty"` // 能耗开销 (Wh/km)
 	DriveDistance        float64  `json:"drive_distance"`
 	DriveDuration        float64  `json:"drive_duration"`
 	EnergyConsumedDrives float64  `json:"energy_consumed_drives"`
@@ -38,17 +38,17 @@ type V2EfficiencySummary struct {
 
 // @name V2EfficiencyTimeseries
 type V2EfficiencyTimeseries struct {
-	GroupBy string                       `json:"group_by"`
-	Items   []V2EfficiencyTimeseriesItem `json:"items"`
+	GroupBy string `json:"group_by"` // 聚合粒度
+	Items   []V2EfficiencyTimeseriesItem `json:"items"` // 条目列表
 }
 
 // @name V2EfficiencyTimeseriesItem
 type V2EfficiencyTimeseriesItem struct {
-	PeriodStart         string   `json:"period_start"`
+	PeriodStart         string `json:"period_start"` // 周期起始
 	NetConsumption      *float64 `json:"net_consumption,omitempty"`
-	GrossConsumption    *float64 `json:"gross_consumption,omitempty"`
-	ConsumptionOverhead *float64 `json:"consumption_overhead,omitempty"`
-	Distance            float64  `json:"distance"`
+	GrossConsumption    *float64 `json:"gross_consumption,omitempty"` // 毛能耗 (Wh/km)
+	ConsumptionOverhead *float64 `json:"consumption_overhead,omitempty"` // 能耗开销 (Wh/km)
+	Distance            float64 `json:"distance"` // 距离 (km)
 }
 
 // @name V2EfficiencyBuckets
@@ -60,17 +60,17 @@ type V2EfficiencyBuckets struct {
 // @name V2EfficiencyTempBucket
 type V2EfficiencyTempBucket struct {
 	Bucket      float64  `json:"bucket"`
-	DriveCount  int64    `json:"drive_count"`
-	Distance    float64  `json:"distance"`
+	DriveCount  int64 `json:"drive_count"` // 行程数
+	Distance    float64 `json:"distance"` // 距离 (km)
 	Consumption *float64 `json:"consumption,omitempty"`
-	AvgSpeed    *float64 `json:"avg_speed,omitempty"`
+	AvgSpeed    *float64 `json:"avg_speed,omitempty"` // 平均速度 (km/h)
 }
 
 // @name V2EfficiencySpeedBucket
 type V2EfficiencySpeedBucket struct {
 	Bucket      float64  `json:"bucket"`
-	DriveCount  int64    `json:"drive_count"`
-	Distance    float64  `json:"distance"`
+	DriveCount  int64 `json:"drive_count"` // 行程数
+	Distance    float64 `json:"distance"` // 距离 (km)
 	Consumption *float64 `json:"consumption,omitempty"`
 }
 
@@ -351,17 +351,17 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 
 // Efficiency godoc
 //
-// @Summary V2 efficiency analytics
-// @Description Returns net + gross consumption, consumption overhead, plus optional temperature / speed buckets for one car.
+// @Summary V2 能效分析
+// @Description 返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param include query string false "Comma-separated extras: buckets" example("buckets")
-// @Param group_by query string false "Bucket grouping (used when include=buckets)" Enums(temperature_5c, speed_10kmh)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param include query string false "逗号分隔的扩展项：buckets" example("buckets")
+// @Param group_by query string false "分桶维度（仅在 include=buckets 时生效）" Enums(temperature_5c, speed_10kmh)
 // @Success 200 {object} V2EfficiencyAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

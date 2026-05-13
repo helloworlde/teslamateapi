@@ -9,7 +9,7 @@ import (
 
 // TeslaMateAPIGlobalsettingsV1 godoc
 //
-// @Summary Get TeslaMate global settings
+// @Summary TeslaMate 全局设置
 // @Tags v1
 // @Produce json
 // @Success 200 {object} V1JSONEnvelope
@@ -57,7 +57,7 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

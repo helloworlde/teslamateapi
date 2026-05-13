@@ -96,7 +96,7 @@ func TestV2CapabilitiesHandler(t *testing.T) {
 		t.Fatalf("unexpected status: %d", recorder.Code)
 	}
 	var payload struct {
-		Data V2CapabilitiesResponse `json:"data"`
+		Data V2CapabilitiesResponse `json:"data"` // 响应数据
 	}
 	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v", err)

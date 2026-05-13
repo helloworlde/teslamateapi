@@ -10,12 +10,12 @@ import (
 
 // TeslaMateAPICarsTirePressureV1 godoc
 //
-// @Summary Get tire pressure for one car
-// @Description Latest TPMS reading + window min/max + per-day history. Pressure unit follows settings.unit_of_pressure (bar default; psi via barToPsi).
+// @Summary 车辆胎压（最近读数 + 窗口）
+// @Description 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 barToPsi 换算）。
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
-// @Param window_days query int false "History window length in days (default 30, max 365)"
+// @Param CarID path int true "车辆 ID"
+// @Param window_days query int false "历史窗口天数（默认 30，最大 365）"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/tire-pressure [get]
@@ -33,30 +33,30 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 
 	// Car struct - child of Data
 	type Car struct {
-		CarID   int        `json:"car_id"`
+		CarID   int `json:"car_id"` // 车辆 ID
 		CarName NullString `json:"car_name"`
 	}
 	// Latest tire pressure snapshot
 	type Latest struct {
-		AsOf string   `json:"as_of"`
-		FL   *float64 `json:"fl,omitempty"`
-		FR   *float64 `json:"fr,omitempty"`
-		RL   *float64 `json:"rl,omitempty"`
-		RR   *float64 `json:"rr,omitempty"`
+		AsOf string `json:"as_of"` // 快照时间
+		FL   *float64 `json:"fl,omitempty"` // 左前胎压
+		FR   *float64 `json:"fr,omitempty"` // 右前胎压
+		RL   *float64 `json:"rl,omitempty"` // 左后胎压
+		RR   *float64 `json:"rr,omitempty"` // 右后胎压
 	}
 	// PressureSet for min/max corner values
 	type PressureSet struct {
-		FL *float64 `json:"fl,omitempty"`
-		FR *float64 `json:"fr,omitempty"`
-		RL *float64 `json:"rl,omitempty"`
-		RR *float64 `json:"rr,omitempty"`
+		FL *float64 `json:"fl,omitempty"` // 左前胎压
+		FR *float64 `json:"fr,omitempty"` // 右前胎压
+		RL *float64 `json:"rl,omitempty"` // 左后胎压
+		RR *float64 `json:"rr,omitempty"` // 右后胎压
 	}
 	// Window aggregation
 	type Window struct {
-		Start string      `json:"start"`
-		End   string      `json:"end"`
-		Min   PressureSet `json:"min"`
-		Max   PressureSet `json:"max"`
+		Start string `json:"start"` // 起始时间
+		End   string `json:"end"` // 结束时间
+		Min   PressureSet `json:"min"` // 最小值
+		Max   PressureSet `json:"max"` // 最大值
 	}
 	// History entry (one per day in window)
 	type HistoryEntry struct {
@@ -68,20 +68,20 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 	}
 	// Units struct
 	type Units struct {
-		UnitsLength   string `json:"unit_of_length"`
-		UnitsPressure string `json:"unit_of_pressure"`
+		UnitsLength   string `json:"unit_of_length"` // 长度单位
+		UnitsPressure string `json:"unit_of_pressure"` // 气压单位
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car     Car            `json:"car"`
-		Latest  Latest         `json:"latest"`
-		Window  Window         `json:"window"`
-		History []HistoryEntry `json:"history"`
-		Units   Units          `json:"units"`
+		Car     Car `json:"car"` // 车辆
+		Latest  Latest `json:"latest"` // 最近值
+		Window  Window `json:"window"` // 观察窗口
+		History []HistoryEntry `json:"history"` // 历史记录
+		Units   Units `json:"units"` // 单位
 	}
 	// JSONData wrapper
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// car name + units

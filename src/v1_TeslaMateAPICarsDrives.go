@@ -10,14 +10,14 @@ import (
 
 // TeslaMateAPICarsDrivesV1 godoc
 //
-// @Summary List drives for one car
+// @Summary 车辆行程列表
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
-// @Param page query int false "Result page"
-// @Param show query int false "Page size"
-// @Param startDate query string false "Filter start date"
-// @Param endDate query string false "Filter end date"
+// @Param CarID path int true "车辆 ID"
+// @Param page query int false "结果页码"
+// @Param show query int false "每页大小"
+// @Param startDate query string false "筛选起始日期"
+// @Param endDate query string false "筛选结束日期"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/drives [get]
@@ -91,13 +91,13 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	}
 	// Geofence struct - child of Drives (added)
 	type Geofence struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+		ID   int `json:"id"` // ID
+		Name string `json:"name"` // 名称
 	}
 	// Position struct - child of Drives (added)
 	type Position struct {
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
+		Latitude  float64 `json:"latitude"` // 纬度
+		Longitude float64 `json:"longitude"` // 经度
 	}
 	// Drives struct - child of Data
 	type Drives struct {
@@ -136,13 +136,13 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car            Car            `json:"car"`
+		Car            Car `json:"car"` // 车辆
 		Drives         []Drives       `json:"drives"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
+		TeslaMateUnits TeslaMateUnits `json:"units"` // 单位
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

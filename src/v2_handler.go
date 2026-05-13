@@ -197,8 +197,8 @@ func v2CarValidationMiddleware() gin.HandlerFunc {
 
 // Capabilities godoc
 //
-// @Summary V2 API capabilities
-// @Description Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per domain. Clients use this to decide which query parameters to send instead of probing each endpoint.
+// @Summary V2 API 能力声明
+// @Description 返回 V2 分析接口版本、各子域能力开关（compare/timeseries/breakdown）、各子域允许的 breakdown 取值。客户端据此决定查询参数，免去逐个接口探测。
 // @Tags v2
 // @Produce json
 // @Success 200 {object} V2CapabilitiesAPIResponse
@@ -232,16 +232,16 @@ func (h V2Handlers) Capabilities(c *gin.Context) {
 
 // Summary godoc
 //
-// @Summary V2 period summary analytics
-// @Description Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.
+// @Summary V2 周期汇总分析
+// @Description 返回该车在所选周期内的行驶、充电、驻车、电池、OTA、充电费用汇总指标。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param compare query string false "Comparison mode" Enums(none, previous_period)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param compare query string false "对比模式" Enums(none, previous_period)
 // @Success 200 {object} V2SummaryAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -278,15 +278,15 @@ func (h V2Handlers) Summary(c *gin.Context) {
 
 // Driving godoc
 //
-// @Summary V2 driving analytics summary
-// @Description Returns objective driving statistics for one car.
+// @Summary V2 行驶分析汇总
+// @Description 返回该车的客观行驶统计。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
 // @Success 200 {object} V2DrivingAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -312,16 +312,16 @@ func (h V2Handlers) Driving(c *gin.Context) {
 
 // DrivingTimeseries godoc
 //
-// @Summary V2 driving analytics timeseries
-// @Description Returns driving metrics grouped by day, week, month, or year for charting.
+// @Summary V2 行驶分析时序
+// @Description 返回按天/周/月/年分组的行驶指标，用于图表。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param group_by query string false "Timeseries grouping" Enums(day, week, month, year)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param group_by query string false "时序聚合粒度" Enums(day, week, month, year)
 // @Success 200 {object} V2DrivingTimeseriesAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -356,18 +356,18 @@ func handleV2DrivingError(c *gin.Context, err error, timeRange V2TimeRange) {
 
 // Charging godoc
 //
-// @Summary V2 charging analytics summary
-// @Description Returns objective charging statistics for one car.
+// @Summary V2 充电分析汇总
+// @Description 返回该车的客观充电统计。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param include query string false "Comma-separated extras: timeseries,breakdown" example("timeseries,breakdown")
-// @Param group_by query string false "Timeseries grouping (used when include=timeseries)" Enums(day, week, month, year)
-// @Param breakdown query string false "Breakdown dimension (used when include=breakdown)" Enums(location, charger_type)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param include query string false "逗号分隔的扩展项：timeseries、breakdown" example("timeseries,breakdown")
+// @Param group_by query string false "时序聚合粒度（仅在 include=timeseries 时生效）" Enums(day, week, month, year)
+// @Param breakdown query string false "分项维度（仅在 include=breakdown 时生效）" Enums(location, charger_type)
 // @Success 200 {object} V2ChargingAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -415,17 +415,17 @@ func handleV2ChargingError(c *gin.Context, err error, timeRange V2TimeRange) {
 
 // Parking godoc
 //
-// @Summary V2 parking analytics summary
-// @Description Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.
+// @Summary V2 驻车分析汇总
+// @Description 返回该车的驻车时长、状态时长、推断驻车会话与估算驻车电量损失。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param include query string false "Comma-separated extras: breakdown" example("breakdown")
-// @Param breakdown query string false "Breakdown dimension (used when include=breakdown)" Enums(location, state)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param include query string false "逗号分隔的扩展项：breakdown" example("breakdown")
+// @Param breakdown query string false "分项维度（仅在 include=breakdown 时生效）" Enums(location, state)
 // @Success 200 {object} V2ParkingAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -469,15 +469,15 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 
 // Battery godoc
 //
-// @Summary V2 battery analytics summary
-// @Description Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.
+// @Summary V2 电池分析汇总
+// @Description 返回该车最近的额定/理想续航采样、估算满电续航、基线续航、估算续航衰减。注意：此为估算，非官方 SOH。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
 // @Success 200 {object} V2BatteryAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -503,16 +503,16 @@ func (h V2Handlers) Battery(c *gin.Context) {
 
 // BatteryTimeseries godoc
 //
-// @Summary V2 battery analytics timeseries
-// @Description Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.
+// @Summary V2 电池分析时序
+// @Description 返回按天/周/月/年分组的估算满电额定/理想续航，用于趋势图。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param group_by query string false "Timeseries grouping" Enums(day, week, month, year)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param group_by query string false "时序聚合粒度" Enums(day, week, month, year)
 // @Success 200 {object} V2BatteryTimeseriesAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -547,16 +547,16 @@ func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
 
 // Cost godoc
 //
-// @Summary V2 cost analytics
-// @Description Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.
+// @Summary V2 费用分析
+// @Description 返回客观的充电费用分析。当前数据范围仅含 charging_cost，不含保险、保养、停车、折旧、轮胎、维修费用。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param group_by query string false "Cost grouping" Enums(day, week, month, year)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param group_by query string false "费用聚合粒度" Enums(day, week, month, year)
 // @Success 200 {object} V2CostAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -595,15 +595,15 @@ func handleV2CostError(c *gin.Context, err error) {
 
 // Updates godoc
 //
-// @Summary V2 update analytics
-// @Description Returns OTA update history statistics for a car in the selected period.
+// @Summary V2 OTA 更新分析
+// @Description 返回所选周期内该车的 OTA 更新历史统计。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
 // @Success 200 {object} V2UpdateAnalyticsAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -629,12 +629,12 @@ func (h V2Handlers) Updates(c *gin.Context) {
 
 // Lifecycle godoc
 //
-// @Summary V2 lifetime cumulative analytics
-// @Description Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.
+// @Summary V2 累计生命周期统计
+// @Description 返回该车从首次事件至 as_of（默认当前时间）的累计生命周期统计；可通过 as_of 取历史快照。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param as_of query string false "Cutoff datetime in RFC3339 format. Defaults to now."
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param as_of query string false "截止时间（RFC3339），默认当前时间。"
 // @Success 200 {object} V2LifecycleAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -671,15 +671,15 @@ func (h V2Handlers) Lifecycle(c *gin.Context) {
 
 // Timeline godoc
 //
-// @Summary V2 unified event timeline
-// @Description Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.
+// @Summary V2 统一事件时间线
+// @Description 返回行驶/充电/OTA 事件的统一时间线，支持游标分页。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param type query string false "Comma-separated event types: drive,charging,update"
-// @Param limit query int false "Max results per page" default(50)
-// @Param before query string false "Return events before this RFC3339 timestamp (cursor, DESC order)"
-// @Param after query string false "Return events after this RFC3339 timestamp (cursor, ASC order)"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param type query string false "逗号分隔的事件类型：drive、charging、update"
+// @Param limit query int false "每页最大结果数" default(50)
+// @Param before query string false "返回此 RFC3339 时间之前的事件（降序游标）"
+// @Param after query string false "返回此 RFC3339 时间之后的事件（升序游标）"
 // @Success 200 {object} V2TimelineAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

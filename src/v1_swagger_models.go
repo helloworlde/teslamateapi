@@ -9,5 +9,5 @@ type V1JSONEnvelope struct {
 // V1ErrorEnvelope matches TeslaMateAPIHandleErrorResponse (HTTP 200 with body `{ "error": "<message>" }`).
 // @name V1ErrorEnvelope
 type V1ErrorEnvelope struct {
-	Error string `json:"error"`
+	Error string `json:"error"` // 错误体
 }

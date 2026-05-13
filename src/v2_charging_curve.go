@@ -12,20 +12,20 @@ import (
 
 // @name V2ChargingCurveAPIResponse
 type V2ChargingCurveAPIResponse struct {
-	Data V2ChargingCurveResponse `json:"data"`
-	Meta V2Meta                  `json:"meta"`
+	Data V2ChargingCurveResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2ChargingCurveResponse
 type V2ChargingCurveResponse struct {
 	MinSessions int                       `json:"min_sessions"`
-	Samples     []V2ChargingCurveSample   `json:"samples"`
+	Samples     []V2ChargingCurveSample `json:"samples"` // 样本
 }
 
 // @name V2ChargingCurveSample
 type V2ChargingCurveSample struct {
-	BatteryLevel int     `json:"battery_level"`
-	SessionCount int64   `json:"session_count"`
+	BatteryLevel int `json:"battery_level"` // 电量百分比
+	SessionCount int64 `json:"session_count"` // 充电会话数
 	MedianPower  float64 `json:"median_power"`
 	P25Power     float64 `json:"p25_power"`
 	P75Power     float64 `json:"p75_power"`
@@ -141,16 +141,16 @@ func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam strin
 
 // ChargingCurve godoc
 //
-// @Summary V2 DC charging curve (aggregate)
-// @Description Returns aggregated DC charging curve samples (per battery level: session count, median / p25 / p75 power) for one car.
+// @Summary V2 直流充电曲线（聚合）
+// @Description 返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率中位数 / P25 / P75）。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param min_sessions query int false "Minimum sessions per battery level (default 5)"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param min_sessions query int false "每个电量分桶的最少会话数（默认 5）"
 // @Success 200 {object} V2ChargingCurveAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

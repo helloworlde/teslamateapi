@@ -12,13 +12,13 @@ import (
 
 // @name V2CapacityByMileageAPIResponse
 type V2CapacityByMileageAPIResponse struct {
-	Data V2CapacityByMileageResponse `json:"data"`
-	Meta V2Meta                      `json:"meta"`
+	Data V2CapacityByMileageResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2CapacityByMileageResponse
 type V2CapacityByMileageResponse struct {
-	Items []V2CapacityByMileageItem `json:"items"`
+	Items []V2CapacityByMileageItem `json:"items"` // 条目列表
 }
 
 // @name V2CapacityByMileageItem
@@ -146,15 +146,15 @@ func (s V2CapacityByMileageService) BuildCapacityByMileage(ctx context.Context, 
 
 // CapacityByMileage godoc
 //
-// @Summary V2 battery capacity by mileage
-// @Description Returns half-month bucketed median capacity (kWh) vs odometer for one car.
+// @Summary V2 电池容量随里程趋势
+// @Description 按半月分桶返回该车的中位电池容量 (kWh) 与里程关系。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
 // @Success 200 {object} V2CapacityByMileageAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

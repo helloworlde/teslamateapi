@@ -13,39 +13,39 @@ import (
 
 // @name V2IdlePeriodsAPIResponse
 type V2IdlePeriodsAPIResponse struct {
-	Data V2IdlePeriodsResponse `json:"data"`
-	Meta V2Meta                `json:"meta"`
+	Data V2IdlePeriodsResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2IdlePeriodsResponse
 type V2IdlePeriodsResponse struct {
-	Items      []V2IdlePeriodItem `json:"items"`
-	HasMore    bool               `json:"has_more"`
-	NextCursor *string            `json:"next_cursor"`
+	Items      []V2IdlePeriodItem `json:"items"` // 条目列表
+	HasMore    bool `json:"has_more"` // 是否还有更多
+	NextCursor *string `json:"next_cursor"` // 下一页游标
 }
 
 // @name V2IdlePeriodItem
 type V2IdlePeriodItem struct {
-	ID                string         `json:"id"`
+	ID                string `json:"id"` // ID
 	StartDate         string         `json:"start_date"`
 	EndDate           string         `json:"end_date"`
-	Duration          float64        `json:"duration"`
-	StartBatteryLevel *int           `json:"start_battery_level,omitempty"`
-	EndBatteryLevel   *int           `json:"end_battery_level,omitempty"`
-	SocDiff           *int           `json:"soc_diff,omitempty"`
-	RangeLoss         *float64       `json:"range_loss,omitempty"`
-	EnergyDrained     *float64       `json:"energy_drained,omitempty"`
-	AvgPowerW         *float64       `json:"avg_power_w,omitempty"`
-	RangeLossPerHour  *float64       `json:"range_loss_per_hour,omitempty"`
-	StandbyRatio      *float64       `json:"standby_ratio,omitempty"`
-	HasReducedRange   bool           `json:"has_reduced_range"`
-	Geofence          *V2IdleGeofence `json:"geofence,omitempty"`
+	Duration          float64 `json:"duration"` // 时长 (秒)
+	StartBatteryLevel *int `json:"start_battery_level,omitempty"` // 起始电量
+	EndBatteryLevel   *int `json:"end_battery_level,omitempty"` // 结束电量
+	SocDiff           *int `json:"soc_diff,omitempty"` // SoC 差值
+	RangeLoss         *float64 `json:"range_loss,omitempty"` // 续航损失 (km)
+	EnergyDrained     *float64 `json:"energy_drained,omitempty"` // 消耗能量 (kWh)
+	AvgPowerW         *float64 `json:"avg_power_w,omitempty"` // 平均功率 (W)
+	RangeLossPerHour  *float64 `json:"range_loss_per_hour,omitempty"` // 每小时续航损失 (km/h)
+	StandbyRatio      *float64 `json:"standby_ratio,omitempty"` // 待机占比
+	HasReducedRange   bool `json:"has_reduced_range"` // 是否处于受限续航状态
+	Geofence          *V2IdleGeofence `json:"geofence,omitempty"` // 围栏
 }
 
 // @name V2IdleGeofence
 type V2IdleGeofence struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID   int64 `json:"id"` // ID
+	Name string `json:"name"` // 名称
 }
 
 // V2IdlePeriodsRepository fetches per-gap idle periods.
@@ -289,19 +289,19 @@ func (s V2IdlePeriodsService) BuildIdlePeriods(ctx context.Context, carIDParam s
 
 // IdlePeriods godoc
 //
-// @Summary V2 parking idle periods
-// @Description Returns per-gap idle periods (vampire drain candidates) with SoC diff, range loss, drained energy and standby ratio for one car.
+// @Summary V2 驻车闲置区间
+// @Description 返回该车按相邻事件间隔切分的闲置区间（vampire drain 候选），含 SoC 差、续航损失、消耗能量与待机占比。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param min_duration_hours query number false "Minimum gap length in hours (default 1)"
-// @Param geofence_id query int false "Filter by resolved geofence id"
-// @Param limit query int false "Page size (default 100, max 500)"
-// @Param cursor query string false "Pagination cursor returned by a previous response"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param min_duration_hours query number false "最小间隔时长（小时，默认 1）"
+// @Param geofence_id query int false "按已解析的围栏 ID 过滤"
+// @Param limit query int false "每页大小（默认 100，最大 500）"
+// @Param cursor query string false "由上一次响应返回的分页游标"
 // @Success 200 {object} V2IdlePeriodsAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

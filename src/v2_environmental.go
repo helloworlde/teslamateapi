@@ -13,42 +13,42 @@ import (
 
 // @name V2EnvironmentalAPIResponse
 type V2EnvironmentalAPIResponse struct {
-	Data V2EnvironmentalResponse `json:"data"`
-	Meta V2Meta                  `json:"meta"`
+	Data V2EnvironmentalResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2EnvironmentalResponse
 type V2EnvironmentalResponse struct {
 	Summary    V2EnvironmentalSummary       `json:"summary"`
-	Timeseries *V2EnvironmentalTimeseries   `json:"timeseries,omitempty"`
+	Timeseries *V2EnvironmentalTimeseries `json:"timeseries,omitempty"` // 时序
 }
 
 // @name V2EnvironmentalSummary
 type V2EnvironmentalSummary struct {
-	OutsideTempMin       *float64 `json:"outside_temp_min,omitempty"`
-	OutsideTempMax       *float64 `json:"outside_temp_max,omitempty"`
-	OutsideTempAvg       *float64 `json:"outside_temp_avg,omitempty"`
-	InsideTempAvg        *float64 `json:"inside_temp_avg,omitempty"`
-	ClimateOnMinutes     *float64 `json:"climate_on_minutes,omitempty"`
-	BatteryHeaterMinutes *float64 `json:"battery_heater_minutes,omitempty"`
-	DefrosterMinutes     *float64 `json:"defroster_minutes,omitempty"`
-	ElevationMin         *float64 `json:"elevation_min,omitempty"`
-	ElevationMax         *float64 `json:"elevation_max,omitempty"`
-	ElevationGainTotal   *float64 `json:"elevation_gain_total,omitempty"`
-	ElevationLossTotal   *float64 `json:"elevation_loss_total,omitempty"`
+	OutsideTempMin       *float64 `json:"outside_temp_min,omitempty"` // 车外最低温 (°C)
+	OutsideTempMax       *float64 `json:"outside_temp_max,omitempty"` // 车外最高温 (°C)
+	OutsideTempAvg       *float64 `json:"outside_temp_avg,omitempty"` // 车外平均温 (°C)
+	InsideTempAvg        *float64 `json:"inside_temp_avg,omitempty"` // 车内平均温 (°C)
+	ClimateOnMinutes     *float64 `json:"climate_on_minutes,omitempty"` // 空调开启时长 (分)
+	BatteryHeaterMinutes *float64 `json:"battery_heater_minutes,omitempty"` // 电池加热器时长 (分)
+	DefrosterMinutes     *float64 `json:"defroster_minutes,omitempty"` // 除霜时长 (分)
+	ElevationMin         *float64 `json:"elevation_min,omitempty"` // 最低海拔 (米)
+	ElevationMax         *float64 `json:"elevation_max,omitempty"` // 最高海拔 (米)
+	ElevationGainTotal   *float64 `json:"elevation_gain_total,omitempty"` // 累计爬升 (米)
+	ElevationLossTotal   *float64 `json:"elevation_loss_total,omitempty"` // 累计下降 (米)
 }
 
 // @name V2EnvironmentalTimeseries
 type V2EnvironmentalTimeseries struct {
-	GroupBy string                          `json:"group_by"`
-	Items   []V2EnvironmentalTimeseriesItem `json:"items"`
+	GroupBy string `json:"group_by"` // 聚合粒度
+	Items   []V2EnvironmentalTimeseriesItem `json:"items"` // 条目列表
 }
 
 // @name V2EnvironmentalTimeseriesItem
 type V2EnvironmentalTimeseriesItem struct {
-	PeriodStart    string   `json:"period_start"`
-	OutsideTempAvg *float64 `json:"outside_temp_avg,omitempty"`
-	InsideTempAvg  *float64 `json:"inside_temp_avg,omitempty"`
+	PeriodStart    string `json:"period_start"` // 周期起始
+	OutsideTempAvg *float64 `json:"outside_temp_avg,omitempty"` // 车外平均温 (°C)
+	InsideTempAvg  *float64 `json:"inside_temp_avg,omitempty"` // 车内平均温 (°C)
 	ElevationAvg   *float64 `json:"elevation_avg,omitempty"`
 	ClimateOnRatio *float64 `json:"climate_on_ratio,omitempty"`
 }
@@ -298,17 +298,17 @@ func (s V2EnvironmentalService) BuildEnvironmental(ctx context.Context, carIDPar
 
 // Environmental godoc
 //
-// @Summary V2 environmental analytics
-// @Description Returns aggregated outside/inside temperature, HVAC active minutes, and elevation statistics for one car.
+// @Summary V2 环境分析（温度/HVAC/海拔）
+// @Description 返回该车的车外/车内温度聚合、HVAC 活动时长、海拔统计。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param include query string false "Comma-separated extras: timeseries" example("timeseries")
-// @Param group_by query string false "Timeseries grouping (used when include=timeseries)" Enums(day, week, month, year)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param include query string false "逗号分隔的扩展项，如 timeseries" example("timeseries")
+// @Param group_by query string false "时序聚合粒度（仅在 include=timeseries 时生效）" Enums(day, week, month, year)
 // @Success 200 {object} V2EnvironmentalAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse

@@ -10,14 +10,14 @@ import (
 
 // TeslaMateAPICarsChargesV1 godoc
 //
-// @Summary List charging sessions for one car
+// @Summary 车辆充电会话列表
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
-// @Param page query int false "Result page (default 1)"
-// @Param show query int false "Page size (default 100)"
-// @Param startDate query string false "Filter start date"
-// @Param endDate query string false "Filter end date"
+// @Param CarID path int true "车辆 ID"
+// @Param page query int false "结果页码（默认 1）"
+// @Param show query int false "每页大小（默认 100）"
+// @Param startDate query string false "筛选起始日期"
+// @Param endDate query string false "筛选结束日期"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/charges [get]
@@ -63,8 +63,8 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 	}
 	// Geofence struct - child of Charges (added)
 	type Geofence struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+		ID   int `json:"id"` // ID
+		Name string `json:"name"` // 名称
 	}
 	// Charges struct - child of Data
 	type Charges struct {
@@ -101,13 +101,13 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car            Car            `json:"car"`
+		Car            Car `json:"car"` // 车辆
 		Charges        []Charges      `json:"charges"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
+		TeslaMateUnits TeslaMateUnits `json:"units"` // 单位
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

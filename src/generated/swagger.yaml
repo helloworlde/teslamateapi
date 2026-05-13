@@ -3,20 +3,25 @@ definitions:
   APIErrorBody:
     properties:
       code:
+        description: 错误码
         type: string
       details:
         type: object
       message:
+        description: 错误描述
         type: string
     type: object
   APIErrorResponse:
     properties:
       error:
-        $ref: '#/definitions/APIErrorBody'
+        allOf:
+        - $ref: '#/definitions/APIErrorBody'
+        description: 错误体
     type: object
   V1ErrorEnvelope:
     properties:
       error:
+        description: 错误体
         type: string
     type: object
   V1JSONEnvelope:
@@ -26,9 +31,13 @@ definitions:
   V2BatteryAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2BatteryResponse'
+        allOf:
+        - $ref: '#/definitions/V2BatteryResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2BatteryRange:
     properties:
@@ -49,35 +58,48 @@ definitions:
       estimated_range_degradation:
         type: number
       latest_ideal_range:
+        description: 最近理想续航 (km)
         type: number
       latest_level:
         type: integer
       latest_rated_range:
+        description: 最近额定续航 (km)
         type: number
       range_at_full_charge:
-        $ref: '#/definitions/V2BatteryRange'
+        allOf:
+        - $ref: '#/definitions/V2BatteryRange'
+        description: 满电续航 (km)
     type: object
   V2BatteryTimeseriesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2BatteryTimeseriesResponse'
+        allOf:
+        - $ref: '#/definitions/V2BatteryTimeseriesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2BatteryTimeseriesItem:
     properties:
       avg_level:
         type: number
       period_start:
+        description: 周期起始
         type: string
       range_at_full_charge:
-        $ref: '#/definitions/V2BatteryRange'
+        allOf:
+        - $ref: '#/definitions/V2BatteryRange'
+        description: 满电续航 (km)
     type: object
   V2BatteryTimeseriesResponse:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2BatteryTimeseriesItem'
         type: array
@@ -85,13 +107,18 @@ definitions:
   V2CapabilitiesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2CapabilitiesResponse'
+        allOf:
+        - $ref: '#/definitions/V2CapabilitiesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2CapabilitiesDomain:
     properties:
       name:
+        description: 名称
         example: driving
         type: string
       path:
@@ -117,15 +144,20 @@ definitions:
           $ref: '#/definitions/V2CapabilitiesDomain'
         type: array
       version:
+        description: 版本
         example: v2
         type: string
     type: object
   V2CapacityByMileageAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2CapacityByMileageResponse'
+        allOf:
+        - $ref: '#/definitions/V2CapacityByMileageResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2CapacityByMileageItem:
     properties:
@@ -141,6 +173,7 @@ definitions:
   V2CapacityByMileageResponse:
     properties:
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2CapacityByMileageItem'
         type: array
@@ -148,15 +181,20 @@ definitions:
   V2ChargingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2ChargingResponse'
+        allOf:
+        - $ref: '#/definitions/V2ChargingResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2ChargingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
+        description: 地点列表
         items:
           $ref: '#/definitions/V2ChargingLocationItem'
         type: array
@@ -168,15 +206,20 @@ definitions:
   V2ChargingCurveAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2ChargingCurveResponse'
+        allOf:
+        - $ref: '#/definitions/V2ChargingCurveResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2ChargingCurveResponse:
     properties:
       min_sessions:
         type: integer
       samples:
+        description: 样本
         items:
           $ref: '#/definitions/V2ChargingCurveSample'
         type: array
@@ -186,6 +229,7 @@ definitions:
       avg_voltage:
         type: number
       battery_level:
+        description: 电量百分比
         type: integer
       median_power:
         type: number
@@ -194,35 +238,48 @@ definitions:
       p75_power:
         type: number
       session_count:
+        description: 充电会话数
         type: integer
     type: object
   V2ChargingLocationItem:
     properties:
       address_id:
+        description: 地址 ID
         type: integer
       charging_efficiency:
+        description: 充电效率
         type: number
       cost:
+        description: 费用
         type: number
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       geofence_id:
+        description: 围栏 ID
         type: integer
       location_name:
+        description: 地点名称
         type: string
       session_count:
+        description: 充电会话数
         type: integer
     type: object
   V2ChargingResponse:
     properties:
       breakdown:
-        $ref: '#/definitions/V2ChargingBreakdownResponse'
+        allOf:
+        - $ref: '#/definitions/V2ChargingBreakdownResponse'
+        description: 分项维度
       summary:
         $ref: '#/definitions/V2ChargingSummary'
       timeseries:
-        $ref: '#/definitions/V2ChargingTimeseriesResponse'
+        allOf:
+        - $ref: '#/definitions/V2ChargingTimeseriesResponse'
+        description: 时序
     type: object
   V2ChargingSummary:
     properties:
@@ -235,26 +292,33 @@ definitions:
       avg_cost_per_energy:
         type: number
       avg_duration:
+        description: 平均时长 (秒)
         type: number
       avg_energy_added:
         type: number
       avg_power:
+        description: 平均功率 (kW)
         type: number
       charging_efficiency:
+        description: 充电效率
         type: number
       cost:
+        description: 费用
         type: number
       dc_energy:
         type: number
       dc_session_count:
         type: integer
       duration:
+        description: 时长 (秒)
         type: number
       end_battery_avg:
         type: number
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       largest_session:
         type: number
@@ -265,6 +329,7 @@ definitions:
       max_power:
         type: number
       session_count:
+        description: 充电会话数
         type: integer
       start_battery_avg:
         type: number
@@ -272,25 +337,34 @@ definitions:
   V2ChargingTimeseriesItem:
     properties:
       avg_power:
+        description: 平均功率 (kW)
         type: number
       cost:
+        description: 费用
         type: number
       duration:
+        description: 时长 (秒)
         type: number
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       period_start:
+        description: 周期起始
         type: string
       session_count:
+        description: 充电会话数
         type: integer
     type: object
   V2ChargingTimeseriesResponse:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2ChargingTimeseriesItem'
         type: array
@@ -300,12 +374,16 @@ definitions:
       charging_type:
         type: string
       cost:
+        description: 费用
         type: number
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       session_count:
+        description: 充电会话数
         type: integer
     type: object
   V2ComparisonValue:
@@ -322,26 +400,36 @@ definitions:
   V2CostAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2CostResponse'
+        allOf:
+        - $ref: '#/definitions/V2CostResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2CostLocationItem:
     properties:
       charging_cost:
+        description: 充电费用
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       location_name:
+        description: 地点名称
         type: string
     type: object
   V2CostPeriodItem:
     properties:
       charging_cost:
+        description: 充电费用
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       period_start:
+        description: 周期起始
         type: string
     type: object
   V2CostResponse:
@@ -360,29 +448,39 @@ definitions:
   V2CostSummary:
     properties:
       charging_cost:
+        description: 充电费用
         type: number
       cost_per_distance:
+        description: 单位里程费用
         type: number
     type: object
   V2CostSummaryDetails:
     properties:
       charging_cost:
+        description: 充电费用
         type: number
       cost_per_distance:
+        description: 单位里程费用
         type: number
       cost_per_energy:
         type: number
       distance:
+        description: 距离 (km)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
     type: object
   V2DrivingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2DrivingResponse'
+        allOf:
+        - $ref: '#/definitions/V2DrivingResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2DrivingResponse:
     properties:
@@ -392,24 +490,32 @@ definitions:
   V2DrivingSummary:
     properties:
       avg_consumption:
+        description: 平均能耗 (Wh/km)
         type: number
       avg_distance:
+        description: 平均距离 (km)
         type: number
       avg_duration:
+        description: 平均时长 (秒)
         type: number
       avg_outside_temp:
         type: number
       avg_speed:
+        description: 平均速度 (km/h)
         type: number
       battery_level_used:
         type: number
       best_consumption:
+        description: 最佳能耗 (Wh/km)
         type: number
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
       duration:
+        description: 时长 (秒)
         type: number
       estimated_energy_consumed:
         type: number
@@ -420,45 +526,60 @@ definitions:
       max_speed:
         type: number
       net_energy:
+        description: 净能量 (kWh)
         type: number
       peak_drive_power:
         type: number
       peak_regen_power:
         type: number
       range_loss:
+        description: 续航损失 (km)
         type: number
       worst_consumption:
+        description: 最差能耗 (Wh/km)
         type: number
     type: object
   V2DrivingTimeseriesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2DrivingTimeseriesResponse'
+        allOf:
+        - $ref: '#/definitions/V2DrivingTimeseriesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2DrivingTimeseriesItem:
     properties:
       avg_consumption:
+        description: 平均能耗 (Wh/km)
         type: number
       avg_speed:
+        description: 平均速度 (km/h)
         type: number
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
       duration:
+        description: 时长 (秒)
         type: number
       estimated_energy_consumed:
         type: number
       period_start:
+        description: 周期起始
         type: string
     type: object
   V2DrivingTimeseriesResponse:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2DrivingTimeseriesItem'
         type: array
@@ -466,9 +587,13 @@ definitions:
   V2EfficiencyAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2EfficiencyResponse'
+        allOf:
+        - $ref: '#/definitions/V2EfficiencyResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2EfficiencyBuckets:
     properties:
@@ -488,7 +613,9 @@ definitions:
       summary:
         $ref: '#/definitions/V2EfficiencySummary'
       timeseries:
-        $ref: '#/definitions/V2EfficiencyTimeseries'
+        allOf:
+        - $ref: '#/definitions/V2EfficiencyTimeseries'
+        description: 时序
     type: object
   V2EfficiencySpeedBucket:
     properties:
@@ -497,8 +624,10 @@ definitions:
       consumption:
         type: number
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
     type: object
   V2EfficiencySummary:
@@ -506,6 +635,7 @@ definitions:
       avg_outside_temp:
         type: number
       consumption_overhead:
+        description: 能耗开销 (Wh/km)
         type: number
       drive_distance:
         type: number
@@ -516,6 +646,7 @@ definitions:
       energy_consumed_idle:
         type: number
       gross_consumption:
+        description: 毛能耗 (Wh/km)
         type: number
       net_consumption:
         type: number
@@ -523,21 +654,26 @@ definitions:
   V2EfficiencyTempBucket:
     properties:
       avg_speed:
+        description: 平均速度 (km/h)
         type: number
       bucket:
         type: number
       consumption:
         type: number
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
     type: object
   V2EfficiencyTimeseries:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2EfficiencyTimeseriesItem'
         type: array
@@ -545,60 +681,83 @@ definitions:
   V2EfficiencyTimeseriesItem:
     properties:
       consumption_overhead:
+        description: 能耗开销 (Wh/km)
         type: number
       distance:
+        description: 距离 (km)
         type: number
       gross_consumption:
+        description: 毛能耗 (Wh/km)
         type: number
       net_consumption:
         type: number
       period_start:
+        description: 周期起始
         type: string
     type: object
   V2EnvironmentalAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2EnvironmentalResponse'
+        allOf:
+        - $ref: '#/definitions/V2EnvironmentalResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2EnvironmentalResponse:
     properties:
       summary:
         $ref: '#/definitions/V2EnvironmentalSummary'
       timeseries:
-        $ref: '#/definitions/V2EnvironmentalTimeseries'
+        allOf:
+        - $ref: '#/definitions/V2EnvironmentalTimeseries'
+        description: 时序
     type: object
   V2EnvironmentalSummary:
     properties:
       battery_heater_minutes:
+        description: 电池加热器时长 (分)
         type: number
       climate_on_minutes:
+        description: 空调开启时长 (分)
         type: number
       defroster_minutes:
+        description: 除霜时长 (分)
         type: number
       elevation_gain_total:
+        description: 累计爬升 (米)
         type: number
       elevation_loss_total:
+        description: 累计下降 (米)
         type: number
       elevation_max:
+        description: 最高海拔 (米)
         type: number
       elevation_min:
+        description: 最低海拔 (米)
         type: number
       inside_temp_avg:
+        description: 车内平均温 (°C)
         type: number
       outside_temp_avg:
+        description: 车外平均温 (°C)
         type: number
       outside_temp_max:
+        description: 车外最高温 (°C)
         type: number
       outside_temp_min:
+        description: 车外最低温 (°C)
         type: number
     type: object
   V2EnvironmentalTimeseries:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2EnvironmentalTimeseriesItem'
         type: array
@@ -610,41 +769,57 @@ definitions:
       elevation_avg:
         type: number
       inside_temp_avg:
+        description: 车内平均温 (°C)
         type: number
       outside_temp_avg:
+        description: 车外平均温 (°C)
         type: number
       period_start:
+        description: 周期起始
         type: string
     type: object
   V2Geofence:
     properties:
       billing_type:
+        description: 计费类型
         type: string
       cost_per_unit:
+        description: 单位费用
         type: number
       id:
+        description: ID
         type: integer
       latitude:
+        description: 纬度
         type: number
       longitude:
+        description: 经度
         type: number
       name:
+        description: 名称
         type: string
       radius:
+        description: 半径 (米)
         type: number
       session_fee:
+        description: 每次会话固定费用
         type: number
     type: object
   V2GeofencesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2GeofencesResponse'
+        allOf:
+        - $ref: '#/definitions/V2GeofencesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2GeofencesResponse:
     properties:
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2Geofence'
         type: array
@@ -652,37 +827,52 @@ definitions:
   V2IdleGeofence:
     properties:
       id:
+        description: ID
         type: integer
       name:
+        description: 名称
         type: string
     type: object
   V2IdlePeriodItem:
     properties:
       avg_power_w:
+        description: 平均功率 (W)
         type: number
       duration:
+        description: 时长 (秒)
         type: number
       end_battery_level:
+        description: 结束电量
         type: integer
       end_date:
         type: string
       energy_drained:
+        description: 消耗能量 (kWh)
         type: number
       geofence:
-        $ref: '#/definitions/V2IdleGeofence'
+        allOf:
+        - $ref: '#/definitions/V2IdleGeofence'
+        description: 围栏
       has_reduced_range:
+        description: 是否处于受限续航状态
         type: boolean
       id:
+        description: ID
         type: string
       range_loss:
+        description: 续航损失 (km)
         type: number
       range_loss_per_hour:
+        description: 每小时续航损失 (km/h)
         type: number
       soc_diff:
+        description: SoC 差值
         type: integer
       standby_ratio:
+        description: 待机占比
         type: number
       start_battery_level:
+        description: 起始电量
         type: integer
       start_date:
         type: string
@@ -690,51 +880,71 @@ definitions:
   V2IdlePeriodsAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2IdlePeriodsResponse'
+        allOf:
+        - $ref: '#/definitions/V2IdlePeriodsResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2IdlePeriodsResponse:
     properties:
       has_more:
+        description: 是否还有更多
         type: boolean
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2IdlePeriodItem'
         type: array
       next_cursor:
+        description: 下一页游标
         type: string
     type: object
   V2LifecycleAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2LifecycleResponse'
+        allOf:
+        - $ref: '#/definitions/V2LifecycleResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2LifecycleResponse:
     properties:
       as_of:
+        description: 快照时间
         type: string
       avg_consumption:
+        description: 平均能耗 (Wh/km)
         type: number
       avg_daily_distance:
         type: number
       avg_monthly_distance:
         type: number
       charging_cost:
+        description: 充电费用
         type: number
       charging_session_count:
+        description: 充电会话数
         type: integer
       cost_per_distance:
+        description: 单位里程费用
         type: number
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       first_recorded_at:
         type: string
@@ -743,25 +953,30 @@ definitions:
       recorded_days:
         type: integer
       update_count:
+        description: OTA 更新次数
         type: integer
     type: object
   V2Meta:
     properties:
       car_id:
+        description: 车辆 ID
         example: 1
         type: integer
       compare:
+        description: 对比模式
         enum:
         - none
         - previous_period
         type: string
       end:
+        description: 结束时间
         format: date-time
         type: string
       generated_at:
         format: date-time
         type: string
       period:
+        description: 聚合周期
         enum:
         - day
         - week
@@ -772,20 +987,28 @@ definitions:
         - lifetime
         type: string
       start:
+        description: 起始时间
         format: date-time
         type: string
       timezone:
+        description: 时区
         example: Asia/Shanghai
         type: string
       unit:
-        $ref: '#/definitions/V2Unit'
+        allOf:
+        - $ref: '#/definitions/V2Unit'
+        description: 单位
     type: object
   V2OdometerSeriesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2OdometerSeriesResponse'
+        allOf:
+        - $ref: '#/definitions/V2OdometerSeriesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2OdometerSeriesItem:
     properties:
@@ -797,30 +1020,39 @@ definitions:
   V2OdometerSeriesResponse:
     properties:
       has_more:
+        description: 是否还有更多
         type: boolean
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2OdometerSeriesItem'
         type: array
       next_cursor:
+        description: 下一页游标
         type: string
     type: object
   V2ParkingAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2ParkingResponse'
+        allOf:
+        - $ref: '#/definitions/V2ParkingResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2ParkingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
+        description: 地点列表
         items:
           $ref: '#/definitions/V2ParkingLocationItem'
         type: array
       states:
+        description: 州/省分布
         items:
           $ref: '#/definitions/V2ParkingStateItem'
         type: array
@@ -828,32 +1060,42 @@ definitions:
   V2ParkingLocationItem:
     properties:
       address_id:
+        description: 地址 ID
         type: integer
       avg_parked_duration:
+        description: 平均驻车时长 (秒)
         type: number
       geofence_id:
+        description: 围栏 ID
         type: integer
       location_name:
+        description: 地点名称
         type: string
       parked_duration:
+        description: 驻车时长 (秒)
         type: number
       parking_session_count:
+        description: 驻车会话数
         type: integer
     type: object
   V2ParkingResponse:
     properties:
       breakdown:
-        $ref: '#/definitions/V2ParkingBreakdownResponse'
+        allOf:
+        - $ref: '#/definitions/V2ParkingBreakdownResponse'
+        description: 分项维度
       summary:
         $ref: '#/definitions/V2ParkingSummary'
     type: object
   V2ParkingStateItem:
     properties:
       duration:
+        description: 时长 (秒)
         type: number
       percent:
         type: number
       state:
+        description: 状态
         type: string
       transition_count:
         type: integer
@@ -865,6 +1107,7 @@ definitions:
       avg_drain_percent_per_day:
         type: number
       avg_parked_duration:
+        description: 平均驻车时长 (秒)
         type: number
       estimated_vampire_drain:
         type: number
@@ -873,41 +1116,55 @@ definitions:
       online_duration:
         type: number
       parked_duration:
+        description: 驻车时长 (秒)
         type: number
       parking_session_count:
+        description: 驻车会话数
         type: integer
       state_transition_count:
+        description: 状态切换次数
         type: integer
       vampire_drain_percent:
+        description: 吸血式漏电比例 (%)
         type: number
     type: object
   V2PlaceBucket:
     properties:
       last_visited:
+        description: 最后访问时间
         type: string
       name:
+        description: 名称
         type: string
       visit_count:
+        description: 访问次数
         type: integer
     type: object
   V2PlacesAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2PlacesResponse'
+        allOf:
+        - $ref: '#/definitions/V2PlacesResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2PlacesResponse:
     properties:
       cities:
+        description: 城市分布
         items:
           $ref: '#/definitions/V2PlaceBucket'
         type: array
       countries:
+        description: 国家分布
         items:
           $ref: '#/definitions/V2PlaceBucket'
         type: array
       states:
+        description: 州/省分布
         items:
           $ref: '#/definitions/V2PlaceBucket'
         type: array
@@ -915,64 +1172,94 @@ definitions:
   V2Summary:
     properties:
       battery:
-        $ref: '#/definitions/V2BatterySummary'
+        allOf:
+        - $ref: '#/definitions/V2BatterySummary'
+        description: 电池指标
       charging:
-        $ref: '#/definitions/V2ChargingSummary'
+        allOf:
+        - $ref: '#/definitions/V2ChargingSummary'
+        description: 充电指标
       cost:
-        $ref: '#/definitions/V2CostSummary'
+        allOf:
+        - $ref: '#/definitions/V2CostSummary'
+        description: 费用
       driving:
-        $ref: '#/definitions/V2DrivingSummary'
+        allOf:
+        - $ref: '#/definitions/V2DrivingSummary'
+        description: 行驶指标
       parking:
         $ref: '#/definitions/V2ParkingSummary'
       updates:
         $ref: '#/definitions/V2UpdateSummary'
       vehicle:
-        $ref: '#/definitions/V2VehicleSummary'
+        allOf:
+        - $ref: '#/definitions/V2VehicleSummary'
+        description: 车辆信息
     type: object
   V2SummaryAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2SummaryResponse'
+        allOf:
+        - $ref: '#/definitions/V2SummaryResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2SummaryByPeriodAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2SummaryByPeriodResponse'
+        allOf:
+        - $ref: '#/definitions/V2SummaryByPeriodResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2SummaryByPeriodItem:
     properties:
       avg_consumption:
+        description: 平均能耗 (Wh/km)
         type: number
       charging_cost:
+        description: 充电费用
         type: number
       charging_sessions:
+        description: 充电会话数
         type: integer
       data_complete:
+        description: 数据是否完整
         type: boolean
       distance:
+        description: 距离 (km)
         type: number
       drive_count:
+        description: 行程数
         type: integer
       drive_duration:
         type: number
       energy_added:
+        description: 充入电池能量 (kWh)
         type: number
       energy_used:
+        description: 墙端用电 (kWh)
         type: number
       net_energy:
+        description: 净能量 (kWh)
         type: number
       period_start:
+        description: 周期起始
         type: string
     type: object
   V2SummaryByPeriodResponse:
     properties:
       group_by:
+        description: 聚合粒度
         type: string
       items:
+        description: 条目列表
         items:
           $ref: '#/definitions/V2SummaryByPeriodItem'
         type: array
@@ -991,15 +1278,20 @@ definitions:
   V2TimelineAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2TimelineResponse'
+        allOf:
+        - $ref: '#/definitions/V2TimelineResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2TimelineEvent:
     properties:
       end_time:
         type: string
       id:
+        description: ID
         type: integer
       metrics:
         additionalProperties: true
@@ -1009,17 +1301,21 @@ definitions:
       title:
         type: string
       type:
+        description: 类型
         type: string
     type: object
   V2TimelineResponse:
     properties:
       events:
+        description: 事件列表
         items:
           $ref: '#/definitions/V2TimelineEvent'
         type: array
       has_more:
+        description: 是否还有更多
         type: boolean
       next_cursor:
+        description: 下一页游标
         type: string
       total:
         type: integer
@@ -1033,9 +1329,11 @@ definitions:
         example: CNY
         type: string
       distance:
+        description: 距离 (km)
         example: km
         type: string
       duration:
+        description: 时长 (秒)
         example: seconds
         type: string
       elevation:
@@ -1057,24 +1355,33 @@ definitions:
   V2UpdateAnalyticsAPIResponse:
     properties:
       data:
-        $ref: '#/definitions/V2UpdateAnalyticsResponse'
+        allOf:
+        - $ref: '#/definitions/V2UpdateAnalyticsResponse'
+        description: 响应数据
       meta:
-        $ref: '#/definitions/V2Meta'
+        allOf:
+        - $ref: '#/definitions/V2Meta'
+        description: 响应元信息
     type: object
   V2UpdateAnalyticsResponse:
     properties:
       avg_update_duration:
+        description: 平均更新时长 (秒)
         type: number
       latest_updated_at:
+        description: 最近更新时间
         type: string
       latest_version:
+        description: 最近版本
         type: string
       median_days_between_updates:
         description: (added)
         type: number
       update_count:
+        description: OTA 更新次数
         type: integer
       versions:
+        description: 版本列表
         items:
           $ref: '#/definitions/V2UpdateVersion'
         type: array
@@ -1082,76 +1389,108 @@ definitions:
   V2UpdateChargingMetrics:
     properties:
       battery_energy:
+        description: 电池端能量 (kWh)
         type: number
       cost:
+        description: 费用
         type: number
       duration:
+        description: 时长 (秒)
         type: number
       efficiency:
+        description: 效率
         type: number
       session_count:
+        description: 充电会话数
         type: integer
       wall_energy:
+        description: 墙端用电 (kWh)
         type: number
     type: object
   V2UpdateDrivingMetrics:
     properties:
       avg_consumption:
+        description: 平均能耗 (Wh/km)
         type: number
       distance:
+        description: 距离 (km)
         type: number
       duration:
+        description: 时长 (秒)
         type: number
       net_energy:
+        description: 净能量 (kWh)
         type: number
       trip_count:
+        description: 行程数
         type: integer
     type: object
   V2UpdateEvent:
     properties:
       completed_at:
+        description: 完成时间
         type: string
       days_since_prior:
+        description: 距上次更新天数
         type: integer
       duration:
+        description: 时长 (秒)
         type: number
       started_at:
+        description: 开始时间
         type: string
       version:
+        description: 版本
         type: string
     type: object
   V2UpdateSummary:
     properties:
       latest_version:
+        description: 最近版本
         type: string
       update_count:
+        description: OTA 更新次数
         type: integer
     type: object
   V2UpdateVersion:
     properties:
       event:
-        $ref: '#/definitions/V2UpdateEvent'
+        allOf:
+        - $ref: '#/definitions/V2UpdateEvent'
+        description: 事件
       metrics:
-        $ref: '#/definitions/V2UpdateWindowMetrics'
+        allOf:
+        - $ref: '#/definitions/V2UpdateWindowMetrics'
+        description: 指标
       window:
-        $ref: '#/definitions/V2UpdateWindow'
+        allOf:
+        - $ref: '#/definitions/V2UpdateWindow'
+        description: 观察窗口
     type: object
   V2UpdateWindow:
     properties:
       end:
+        description: 结束时间
         type: string
       interval:
+        description: 区间秒数
         type: number
       start:
+        description: 起始时间
         type: string
     type: object
   V2UpdateWindowMetrics:
     properties:
       charging:
-        $ref: '#/definitions/V2UpdateChargingMetrics'
+        allOf:
+        - $ref: '#/definitions/V2UpdateChargingMetrics'
+        description: 充电指标
       driving:
-        $ref: '#/definitions/V2UpdateDrivingMetrics'
+        allOf:
+        - $ref: '#/definitions/V2UpdateDrivingMetrics'
+        description: 行驶指标
       inactive_duration:
+        description: 不活跃时长 (秒)
         type: number
     type: object
   V2VehicleSummary:
@@ -1324,8 +1663,7 @@ paths:
       - system
   /v1/cars:
     get:
-      description: Returns cars registered in TeslaMate. Omit CarID to list all cars;
-        include CarID for a single car.
+      description: 返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。
       produces:
       - application/json
       responses:
@@ -1333,15 +1671,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: List TeslaMate cars or get one car
+      summary: 车辆列表或单车详情
       tags:
       - v1
   /v1/cars/{CarID}:
     get:
-      description: Returns cars registered in TeslaMate. Omit CarID to list all cars;
-        include CarID for a single car.
+      description: 返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。
       parameters:
-      - description: Car ID (omit for list)
+      - description: 车辆 ID（不传则返回全部车辆）
         in: path
         name: CarID
         type: integer
@@ -1352,13 +1689,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: List TeslaMate cars or get one car
+      summary: 车辆列表或单车详情
       tags:
       - v1
   /v1/cars/{CarID}/battery-health:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
@@ -1370,30 +1707,30 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get battery health for one car
+      summary: 获取车辆电池健康度
       tags:
       - v1
   /v1/cars/{CarID}/charges:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Result page (default 1)
+      - description: 结果页码（默认 1）
         in: query
         name: page
         type: integer
-      - description: Page size (default 100)
+      - description: 每页大小（默认 100）
         in: query
         name: show
         type: integer
-      - description: Filter start date
+      - description: 筛选起始日期
         in: query
         name: startDate
         type: string
-      - description: Filter end date
+      - description: 筛选结束日期
         in: query
         name: endDate
         type: string
@@ -1404,18 +1741,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: List charging sessions for one car
+      summary: 车辆充电会话列表
       tags:
       - v1
   /v1/cars/{CarID}/charges/{ChargeID}:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Charge ID
+      - description: 充电会话 ID
         in: path
         name: ChargeID
         required: true
@@ -1427,13 +1764,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get one charging session by ID
+      summary: 单条充电会话详情
       tags:
       - v1
   /v1/cars/{CarID}/charges/current:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
@@ -1445,30 +1782,30 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get active charging session if any
+      summary: 当前进行中的充电会话
       tags:
       - v1
   /v1/cars/{CarID}/drives:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Result page
+      - description: 结果页码
         in: query
         name: page
         type: integer
-      - description: Page size
+      - description: 每页大小
         in: query
         name: show
         type: integer
-      - description: Filter start date
+      - description: 筛选起始日期
         in: query
         name: startDate
         type: string
-      - description: Filter end date
+      - description: 筛选结束日期
         in: query
         name: endDate
         type: string
@@ -1479,23 +1816,23 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: List drives for one car
+      summary: 车辆行程列表
       tags:
       - v1
   /v1/cars/{CarID}/drives/{DriveID}:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Drive ID
+      - description: 行程 ID
         in: path
         name: DriveID
         required: true
         type: integer
-      - description: 'Drive details downsampling: full, every_5s (default), every_30s'
+      - description: 行程明细下采样：full、every_5s（默认）、every_30s
         enum:
         - full
         - every_5s
@@ -1503,7 +1840,7 @@ paths:
         in: query
         name: sample
         type: string
-      - description: Set to false to skip drive_details (route) in the response
+      - description: 设为 false 可在响应中省略 drive_details（行程轨迹）
         in: query
         name: include_route
         type: boolean
@@ -1514,20 +1851,20 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get one drive by ID
+      summary: 单条行程详情
       tags:
       - v1
   /v1/cars/{CarID}/tire-pressure:
     get:
-      description: Latest TPMS reading + window min/max + per-day history. Pressure
-        unit follows settings.unit_of_pressure (bar default; psi via barToPsi).
+      description: 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认
+        bar；psi 由 barToPsi 换算）。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
         type: integer
-      - description: History window length in days (default 30, max 365)
+      - description: 历史窗口天数（默认 30，最大 365）
         in: query
         name: window_days
         type: integer
@@ -1538,13 +1875,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get tire pressure for one car
+      summary: 车辆胎压（最近读数 + 窗口）
       tags:
       - v1
   /v1/cars/{CarID}/updates:
     get:
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         in: path
         name: CarID
         required: true
@@ -1556,7 +1893,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: List firmware updates for one car
+      summary: 车辆 OTA 更新历史
       tags:
       - v1
   /v1/globalsettings:
@@ -1568,15 +1905,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/V1ErrorEnvelope'
-      summary: Get TeslaMate global settings
+      summary: TeslaMate 全局设置
       tags:
       - v1
   /v2/capabilities:
     get:
-      description: Returns the V2 analytics API version, the per-domain feature flags
-        (compare/timeseries/breakdown), and the allowed breakdown values per domain.
-        Clients use this to decide which query parameters to send instead of probing
-        each endpoint.
+      description: 返回 V2 分析接口版本、各子域能力开关（compare/timeseries/breakdown）、各子域允许的 breakdown
+        取值。客户端据此决定查询参数，免去逐个接口探测。
       produces:
       - application/json
       responses:
@@ -1588,22 +1923,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 API capabilities
+      summary: V2 API 能力声明
       tags:
       - v2
   /v2/cars/{CarID}/analytics/battery:
     get:
-      description: Returns objective latest battery range samples, estimated full-range
-        values, baseline range, and estimated range degradation. These estimates are
-        not official state of health.
+      description: 返回该车最近的额定/理想续航采样、估算满电续航、基线续航、估算续航衰减。注意：此为估算，非官方 SOH。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1614,15 +1947,15 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
@@ -1645,21 +1978,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 battery analytics summary
+      summary: V2 电池分析汇总
       tags:
       - v2
   /v2/cars/{CarID}/analytics/battery/timeseries:
     get:
-      description: Returns estimated full rated and ideal range grouped by day, week,
-        month, or year for trend charts.
+      description: 返回按天/周/月/年分组的估算满电额定/理想续航，用于趋势图。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1670,19 +2002,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Timeseries grouping
+      - description: 时序聚合粒度
         enum:
         - day
         - week
@@ -1710,20 +2042,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 battery analytics timeseries
+      summary: V2 电池分析时序
       tags:
       - v2
   /v2/cars/{CarID}/analytics/charging:
     get:
-      description: Returns objective charging statistics for one car.
+      description: 返回该车的客观充电统计。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1734,24 +2066,24 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: 'Comma-separated extras: timeseries,breakdown'
+      - description: 逗号分隔的扩展项：timeseries、breakdown
         example: '"timeseries,breakdown"'
         in: query
         name: include
         type: string
-      - description: Timeseries grouping (used when include=timeseries)
+      - description: 时序聚合粒度（仅在 include=timeseries 时生效）
         enum:
         - day
         - week
@@ -1760,7 +2092,7 @@ paths:
         in: query
         name: group_by
         type: string
-      - description: Breakdown dimension (used when include=breakdown)
+      - description: 分项维度（仅在 include=breakdown 时生效）
         enum:
         - location
         - charger_type
@@ -1786,21 +2118,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 charging analytics summary
+      summary: V2 充电分析汇总
       tags:
       - v2
   /v2/cars/{CarID}/analytics/charging/curve:
     get:
-      description: 'Returns aggregated DC charging curve samples (per battery level:
-        session count, median / p25 / p75 power) for one car.'
+      description: 返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率中位数 / P25 / P75）。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1811,19 +2142,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Minimum sessions per battery level (default 5)
+      - description: 每个电量分桶的最少会话数（默认 5）
         in: query
         name: min_sessions
         type: integer
@@ -1846,22 +2177,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 DC charging curve (aggregate)
+      summary: V2 直流充电曲线（聚合）
       tags:
       - v2
   /v2/cars/{CarID}/analytics/cost:
     get:
-      description: Returns objective charging-cost analytics. Current data scope includes
-        charging_cost only and excludes insurance, maintenance, parking, depreciation,
-        tire, and repair costs.
+      description: 返回客观的充电费用分析。当前数据范围仅含 charging_cost，不含保险、保养、停车、折旧、轮胎、维修费用。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1872,19 +2201,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Cost grouping
+      - description: 费用聚合粒度
         enum:
         - day
         - week
@@ -1912,20 +2241,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 cost analytics
+      summary: V2 费用分析
       tags:
       - v2
   /v2/cars/{CarID}/analytics/driving:
     get:
-      description: Returns objective driving statistics for one car.
+      description: 返回该车的客观行驶统计。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1936,15 +2265,15 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
@@ -1967,21 +2296,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 driving analytics summary
+      summary: V2 行驶分析汇总
       tags:
       - v2
   /v2/cars/{CarID}/analytics/driving/timeseries:
     get:
-      description: Returns driving metrics grouped by day, week, month, or year for
-        charting.
+      description: 返回按天/周/月/年分组的行驶指标，用于图表。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -1992,19 +2320,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Timeseries grouping
+      - description: 时序聚合粒度
         enum:
         - day
         - week
@@ -2032,21 +2360,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 driving analytics timeseries
+      summary: V2 行驶分析时序
       tags:
       - v2
   /v2/cars/{CarID}/analytics/efficiency:
     get:
-      description: Returns net + gross consumption, consumption overhead, plus optional
-        temperature / speed buckets for one car.
+      description: 返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2057,24 +2384,24 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: 'Comma-separated extras: buckets'
+      - description: 逗号分隔的扩展项：buckets
         example: '"buckets"'
         in: query
         name: include
         type: string
-      - description: Bucket grouping (used when include=buckets)
+      - description: 分桶维度（仅在 include=buckets 时生效）
         enum:
         - temperature_5c
         - speed_10kmh
@@ -2100,21 +2427,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 efficiency analytics
+      summary: V2 能效分析
       tags:
       - v2
   /v2/cars/{CarID}/analytics/environmental:
     get:
-      description: Returns aggregated outside/inside temperature, HVAC active minutes,
-        and elevation statistics for one car.
+      description: 返回该车的车外/车内温度聚合、HVAC 活动时长、海拔统计。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2125,24 +2451,24 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: 'Comma-separated extras: timeseries'
+      - description: 逗号分隔的扩展项，如 timeseries
         example: '"timeseries"'
         in: query
         name: include
         type: string
-      - description: Timeseries grouping (used when include=timeseries)
+      - description: 时序聚合粒度（仅在 include=timeseries 时生效）
         enum:
         - day
         - week
@@ -2170,21 +2496,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 environmental analytics
+      summary: V2 环境分析（温度/HVAC/海拔）
       tags:
       - v2
   /v2/cars/{CarID}/analytics/parking:
     get:
-      description: Returns objective parked duration, state duration, inferred parking
-        sessions, and estimated parking drain for one car.
+      description: 返回该车的驻车时长、状态时长、推断驻车会话与估算驻车电量损失。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2195,24 +2520,24 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: 'Comma-separated extras: breakdown'
+      - description: 逗号分隔的扩展项：breakdown
         example: '"breakdown"'
         in: query
         name: include
         type: string
-      - description: Breakdown dimension (used when include=breakdown)
+      - description: 分项维度（仅在 include=breakdown 时生效）
         enum:
         - location
         - state
@@ -2238,21 +2563,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 parking analytics summary
+      summary: V2 驻车分析汇总
       tags:
       - v2
   /v2/cars/{CarID}/analytics/summary:
     get:
-      description: Returns objective driving, charging, parking, battery, update,
-        and charging-cost summary metrics for one car in a selected period.
+      description: 返回该车在所选周期内的行驶、充电、驻车、电池、OTA、充电费用汇总指标。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2263,19 +2587,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Comparison mode
+      - description: 对比模式
         enum:
         - none
         - previous_period
@@ -2301,21 +2625,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 period summary analytics
+      summary: V2 周期汇总分析
       tags:
       - v2
   /v2/cars/{CarID}/battery/capacity_by_mileage:
     get:
-      description: Returns half-month bucketed median capacity (kWh) vs odometer for
-        one car.
+      description: 按半月分桶返回该车的中位电池容量 (kWh) 与里程关系。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2326,15 +2649,15 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
@@ -2357,21 +2680,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 battery capacity by mileage
+      summary: V2 电池容量随里程趋势
       tags:
       - v2
   /v2/cars/{CarID}/lifecycle:
     get:
-      description: Returns cumulative lifetime statistics for a car from the first
-        recorded event up to as_of (defaults to now). Use as_of for historical snapshots.
+      description: 返回该车从首次事件至 as_of（默认当前时间）的累计生命周期统计；可通过 as_of 取历史快照。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Cutoff datetime in RFC3339 format. Defaults to now.
+      - description: 截止时间（RFC3339），默认当前时间。
         in: query
         name: as_of
         type: string
@@ -2394,21 +2716,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 lifetime cumulative analytics
+      summary: V2 累计生命周期统计
       tags:
       - v2
   /v2/cars/{CarID}/lifecycle/odometer_series:
     get:
-      description: Returns one odometer reading per day in the requested window for
-        one car.
+      description: 返回该车在所选窗口内每日一条里程读数。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2419,23 +2740,23 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Page size (default 500, max 1000)
+      - description: 每页大小（默认 500，最大 1000）
         in: query
         name: limit
         type: integer
-      - description: Pagination cursor returned by a previous response
+      - description: 由上一次响应返回的分页游标
         in: query
         name: cursor
         type: string
@@ -2458,21 +2779,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 cumulative odometer series
+      summary: V2 累计里程序列
       tags:
       - v2
   /v2/cars/{CarID}/lifecycle/places:
     get:
-      description: Returns the top-N most visited cities, states and countries for
-        one car, with last-visited timestamps.
+      description: 返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Top N per dimension (default 20, max 100)
+      - description: 每个维度的 Top N（默认 20，最大 100）
         in: query
         name: top_n
         type: integer
@@ -2495,21 +2815,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 lifecycle places (city / state / country breakdown)
+      summary: V2 生命周期地点分布（城市/州/国家）
       tags:
       - v2
   /v2/cars/{CarID}/parking/idle_periods:
     get:
-      description: Returns per-gap idle periods (vampire drain candidates) with SoC
-        diff, range loss, drained energy and standby ratio for one car.
+      description: 返回该车按相邻事件间隔切分的闲置区间（vampire drain 候选），含 SoC 差、续航损失、消耗能量与待机占比。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2520,31 +2839,31 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Minimum gap length in hours (default 1)
+      - description: 最小间隔时长（小时，默认 1）
         in: query
         name: min_duration_hours
         type: number
-      - description: Filter by resolved geofence id
+      - description: 按已解析的围栏 ID 过滤
         in: query
         name: geofence_id
         type: integer
-      - description: Page size (default 100, max 500)
+      - description: 每页大小（默认 100，最大 500）
         in: query
         name: limit
         type: integer
-      - description: Pagination cursor returned by a previous response
+      - description: 由上一次响应返回的分页游标
         in: query
         name: cursor
         type: string
@@ -2567,21 +2886,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 parking idle periods
+      summary: V2 驻车闲置区间
       tags:
       - v2
   /v2/cars/{CarID}/summary/by_period:
     get:
-      description: Returns drive + charging + cost metrics flattened per period (one
-        row per period).
+      description: 返回按周期扁平化的行驶 + 充电 + 费用指标（每周期一行）。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2592,19 +2910,19 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
-      - description: Period grouping
+      - description: 周期聚合粒度
         enum:
         - day
         - week
@@ -2632,34 +2950,33 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 flat per-period summary
+      summary: V2 周期扁平汇总
       tags:
       - v2
   /v2/cars/{CarID}/timeline:
     get:
-      description: Returns a cursor-paginated unified chronological timeline of drive,
-        charging, and update events.
+      description: 返回行驶/充电/OTA 事件的统一时间线，支持游标分页。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: 'Comma-separated event types: drive,charging,update'
+      - description: 逗号分隔的事件类型：drive、charging、update
         in: query
         name: type
         type: string
       - default: 50
-        description: Max results per page
+        description: 每页最大结果数
         in: query
         name: limit
         type: integer
-      - description: Return events before this RFC3339 timestamp (cursor, DESC order)
+      - description: 返回此 RFC3339 时间之前的事件（降序游标）
         in: query
         name: before
         type: string
-      - description: Return events after this RFC3339 timestamp (cursor, ASC order)
+      - description: 返回此 RFC3339 时间之后的事件（升序游标）
         in: query
         name: after
         type: string
@@ -2682,21 +2999,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 unified event timeline
+      summary: V2 统一事件时间线
       tags:
       - v2
   /v2/cars/{CarID}/updates:
     get:
-      description: Returns OTA update history statistics for a car in the selected
-        period.
+      description: 返回所选周期内该车的 OTA 更新历史统计。
       parameters:
-      - description: Car ID
+      - description: 车辆 ID
         example: 1
         in: path
         name: CarID
         required: true
         type: integer
-      - description: Aggregation period
+      - description: 聚合周期
         enum:
         - day
         - week
@@ -2707,15 +3023,15 @@ paths:
         in: query
         name: period
         type: string
-      - description: Start datetime in RFC3339 format
+      - description: 起始时间（RFC3339）
         in: query
         name: start
         type: string
-      - description: End datetime in RFC3339 format
+      - description: 结束时间（RFC3339）
         in: query
         name: end
         type: string
-      - description: IANA timezone
+      - description: IANA 时区
         in: query
         name: timezone
         type: string
@@ -2738,13 +3054,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 update analytics
+      summary: V2 OTA 更新分析
       tags:
       - v2
   /v2/geofences:
     get:
-      description: Returns all geofences with their location, radius, billing type,
-        cost per unit, and per-session fee.
+      description: 返回全部围栏：位置、半径、计费类型、单位费用、每次会话固定费用。
       produces:
       - application/json
       responses:
@@ -2756,7 +3071,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/APIErrorResponse'
-      summary: V2 list of geofences with billing rules
+      summary: V2 围栏列表（含计费规则）
       tags:
       - v2
 swagger: "2.0"

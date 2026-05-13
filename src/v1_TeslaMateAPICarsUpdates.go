@@ -9,10 +9,10 @@ import (
 
 // TeslaMateAPICarsUpdatesV1 godoc
 //
-// @Summary List firmware updates for one car
+// @Summary 车辆 OTA 更新历史
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "车辆 ID"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/updates [get]
@@ -46,12 +46,12 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car     Car       `json:"car"`
+		Car     Car `json:"car"` // 车辆
 		Updates []Updates `json:"updates"`
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

@@ -14,10 +14,10 @@ const (
 
 // TeslaMateAPICarsChargesCurrentV1 godoc
 //
-// @Summary Get active charging session if any
+// @Summary 当前进行中的充电会话
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "车辆 ID"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/charges/current [get]
@@ -87,8 +87,8 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 	}
 	// Geofence struct - child of Charge (added)
 	type Geofence struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+		ID   int `json:"id"` // ID
+		Name string `json:"name"` // 名称
 	}
 	// Charge struct - child of Data
 	type Charge struct {
@@ -118,13 +118,13 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car            Car            `json:"car"`
+		Car            Car `json:"car"` // 车辆
 		Charge         Charge         `json:"charge"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
+		TeslaMateUnits TeslaMateUnits `json:"units"` // 单位
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

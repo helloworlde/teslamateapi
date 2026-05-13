@@ -9,10 +9,10 @@ import (
 
 // TeslaMateAPICarsBatteryHealthV1 godoc
 //
-// @Summary Get battery health for one car
+// @Summary 获取车辆电池健康度
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "Car ID"
+// @Param CarID path int true "车辆 ID"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/battery-health [get]
@@ -53,13 +53,13 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	}
 	// Data struct - child of JSONData
 	type Data struct {
-		Car            Car            `json:"car"`
+		Car            Car `json:"car"` // 车辆
 		BatteryHealth  BatteryHealth  `json:"battery_health"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
+		TeslaMateUnits TeslaMateUnits `json:"units"` // 单位
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

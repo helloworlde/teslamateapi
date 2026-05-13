@@ -7,11 +7,11 @@ import (
 
 // TeslaMateAPICarsV1 godoc
 //
-// @Summary List TeslaMate cars or get one car
-// @Description Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.
+// @Summary 车辆列表或单车详情
+// @Description 返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。
 // @Tags v1
 // @Produce json
-// @Param CarID path int false "Car ID (omit for list)"
+// @Param CarID path int false "车辆 ID（不传则返回全部车辆）"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars [get]
@@ -86,11 +86,11 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	}
 	// Information struct - child of JSONData
 	type Data struct {
-		Cars []Cars `json:"cars"`
+		Cars []Cars `json:"cars"` // 车辆列表
 	}
 	// JSONData struct - main
 	type JSONData struct {
-		Data Data `json:"data"`
+		Data Data `json:"data"` // 响应数据
 	}
 
 	// creating required vars

@@ -16,15 +16,15 @@ import (
 
 // @name V2OdometerSeriesAPIResponse
 type V2OdometerSeriesAPIResponse struct {
-	Data V2OdometerSeriesResponse `json:"data"`
-	Meta V2Meta                   `json:"meta"`
+	Data V2OdometerSeriesResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2OdometerSeriesResponse
 type V2OdometerSeriesResponse struct {
-	Items      []V2OdometerSeriesItem `json:"items"`
-	HasMore    bool                   `json:"has_more"`
-	NextCursor *string                `json:"next_cursor,omitempty"`
+	Items      []V2OdometerSeriesItem `json:"items"` // 条目列表
+	HasMore    bool `json:"has_more"` // 是否还有更多
+	NextCursor *string `json:"next_cursor,omitempty"` // 下一页游标
 }
 
 // @name V2OdometerSeriesItem
@@ -129,17 +129,17 @@ func (s V2OdometerSeriesService) BuildOdometerSeries(ctx context.Context, carIDP
 
 // OdometerSeries godoc
 //
-// @Summary V2 cumulative odometer series
-// @Description Returns one odometer reading per day in the requested window for one car.
+// @Summary V2 累计里程序列
+// @Description 返回该车在所选窗口内每日一条里程读数。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param limit query int false "Page size (default 500, max 1000)"
-// @Param cursor query string false "Pagination cursor returned by a previous response"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param limit query int false "每页大小（默认 500，最大 1000）"
+// @Param cursor query string false "由上一次响应返回的分页游标"
 // @Success 200 {object} V2OdometerSeriesAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -181,29 +181,29 @@ func (h V2Handlers) OdometerSeries(c *gin.Context) {
 
 // @name V2SummaryByPeriodAPIResponse
 type V2SummaryByPeriodAPIResponse struct {
-	Data V2SummaryByPeriodResponse `json:"data"`
-	Meta V2Meta                    `json:"meta"`
+	Data V2SummaryByPeriodResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2SummaryByPeriodResponse
 type V2SummaryByPeriodResponse struct {
-	GroupBy string                  `json:"group_by"`
-	Items   []V2SummaryByPeriodItem `json:"items"`
+	GroupBy string `json:"group_by"` // 聚合粒度
+	Items   []V2SummaryByPeriodItem `json:"items"` // 条目列表
 }
 
 // @name V2SummaryByPeriodItem
 type V2SummaryByPeriodItem struct {
-	PeriodStart      string   `json:"period_start"`
-	DriveCount       int64    `json:"drive_count"`
-	Distance         float64  `json:"distance"`
+	PeriodStart      string `json:"period_start"` // 周期起始
+	DriveCount       int64 `json:"drive_count"` // 行程数
+	Distance         float64 `json:"distance"` // 距离 (km)
 	DriveDuration    float64  `json:"drive_duration"`
-	NetEnergy        *float64 `json:"net_energy,omitempty"`
-	AvgConsumption   *float64 `json:"avg_consumption,omitempty"`
-	ChargingSessions int64    `json:"charging_sessions"`
-	EnergyAdded      float64  `json:"energy_added"`
-	EnergyUsed       float64  `json:"energy_used"`
-	ChargingCost     *float64 `json:"charging_cost,omitempty"`
-	DataComplete     bool     `json:"data_complete"`
+	NetEnergy        *float64 `json:"net_energy,omitempty"` // 净能量 (kWh)
+	AvgConsumption   *float64 `json:"avg_consumption,omitempty"` // 平均能耗 (Wh/km)
+	ChargingSessions int64 `json:"charging_sessions"` // 充电会话数
+	EnergyAdded      float64 `json:"energy_added"` // 充入电池能量 (kWh)
+	EnergyUsed       float64 `json:"energy_used"` // 墙端用电 (kWh)
+	ChargingCost     *float64 `json:"charging_cost,omitempty"` // 充电费用
+	DataComplete     bool `json:"data_complete"` // 数据是否完整
 }
 
 type V2SummaryByPeriodService struct {
@@ -343,16 +343,16 @@ func (s V2SummaryByPeriodService) BuildByPeriod(ctx context.Context, carIDParam 
 
 // SummaryByPeriod godoc
 //
-// @Summary V2 flat per-period summary
-// @Description Returns drive + charging + cost metrics flattened per period (one row per period).
+// @Summary V2 周期扁平汇总
+// @Description 返回按周期扁平化的行驶 + 充电 + 费用指标（每周期一行）。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param period query string false "Aggregation period" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "Start datetime in RFC3339 format"
-// @Param end query string false "End datetime in RFC3339 format"
-// @Param timezone query string false "IANA timezone"
-// @Param group_by query string false "Period grouping" Enums(day, week, month, year)
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
+// @Param start query string false "起始时间（RFC3339）"
+// @Param end query string false "结束时间（RFC3339）"
+// @Param timezone query string false "IANA 时区"
+// @Param group_by query string false "周期聚合粒度" Enums(day, week, month, year)
 // @Success 200 {object} V2SummaryByPeriodAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -389,22 +389,22 @@ func (h V2Handlers) SummaryByPeriod(c *gin.Context) {
 
 // @name V2PlacesAPIResponse
 type V2PlacesAPIResponse struct {
-	Data V2PlacesResponse `json:"data"`
-	Meta V2Meta           `json:"meta"`
+	Data V2PlacesResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2PlacesResponse
 type V2PlacesResponse struct {
-	Cities    []V2PlaceBucket `json:"cities"`
-	States    []V2PlaceBucket `json:"states"`
-	Countries []V2PlaceBucket `json:"countries"`
+	Cities    []V2PlaceBucket `json:"cities"` // 城市分布
+	States    []V2PlaceBucket `json:"states"` // 州/省分布
+	Countries []V2PlaceBucket `json:"countries"` // 国家分布
 }
 
 // @name V2PlaceBucket
 type V2PlaceBucket struct {
-	Name        string  `json:"name"`
-	VisitCount  int64   `json:"visit_count"`
-	LastVisited *string `json:"last_visited,omitempty"`
+	Name        string `json:"name"` // 名称
+	VisitCount  int64 `json:"visit_count"` // 访问次数
+	LastVisited *string `json:"last_visited,omitempty"` // 最后访问时间
 }
 
 type V2PlacesService struct {
@@ -484,12 +484,12 @@ func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, top
 
 // Places godoc
 //
-// @Summary V2 lifecycle places (city / state / country breakdown)
-// @Description Returns the top-N most visited cities, states and countries for one car, with last-visited timestamps.
+// @Summary V2 生命周期地点分布（城市/州/国家）
+// @Description 返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。
 // @Tags v2
 // @Produce json
-// @Param CarID path int true "Car ID" example(1)
-// @Param top_n query int false "Top N per dimension (default 20, max 100)"
+// @Param CarID path int true "车辆 ID" example(1)
+// @Param top_n query int false "每个维度的 Top N（默认 20，最大 100）"
 // @Success 200 {object} V2PlacesAPIResponse
 // @Failure 400 {object} APIErrorResponse
 // @Failure 404 {object} APIErrorResponse
@@ -532,25 +532,25 @@ func (h V2Handlers) Places(c *gin.Context) {
 
 // @name V2GeofencesAPIResponse
 type V2GeofencesAPIResponse struct {
-	Data V2GeofencesResponse `json:"data"`
-	Meta V2Meta              `json:"meta"`
+	Data V2GeofencesResponse `json:"data"` // 响应数据
+	Meta V2Meta `json:"meta"` // 响应元信息
 }
 
 // @name V2GeofencesResponse
 type V2GeofencesResponse struct {
-	Items []V2Geofence `json:"items"`
+	Items []V2Geofence `json:"items"` // 条目列表
 }
 
 // @name V2Geofence
 type V2Geofence struct {
-	ID          int64    `json:"id"`
-	Name        string   `json:"name"`
-	Latitude    *float64 `json:"latitude,omitempty"`
-	Longitude   *float64 `json:"longitude,omitempty"`
-	Radius      *float64 `json:"radius,omitempty"`
-	CostPerUnit *float64 `json:"cost_per_unit,omitempty"`
-	BillingType *string  `json:"billing_type,omitempty"`
-	SessionFee  *float64 `json:"session_fee,omitempty"`
+	ID          int64 `json:"id"` // ID
+	Name        string `json:"name"` // 名称
+	Latitude    *float64 `json:"latitude,omitempty"` // 纬度
+	Longitude   *float64 `json:"longitude,omitempty"` // 经度
+	Radius      *float64 `json:"radius,omitempty"` // 半径 (米)
+	CostPerUnit *float64 `json:"cost_per_unit,omitempty"` // 单位费用
+	BillingType *string `json:"billing_type,omitempty"` // 计费类型
+	SessionFee  *float64 `json:"session_fee,omitempty"` // 每次会话固定费用
 }
 
 type V2GeofencesService struct {
@@ -620,8 +620,8 @@ func (s V2GeofencesService) BuildGeofences(ctx context.Context) (V2GeofencesResp
 
 // Geofences godoc
 //
-// @Summary V2 list of geofences with billing rules
-// @Description Returns all geofences with their location, radius, billing type, cost per unit, and per-session fee.
+// @Summary V2 围栏列表（含计费规则）
+// @Description 返回全部围栏：位置、半径、计费类型、单位费用、每次会话固定费用。
 // @Tags v2
 // @Produce json
 // @Success 200 {object} V2GeofencesAPIResponse

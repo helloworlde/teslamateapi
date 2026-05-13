@@ -247,14 +247,14 @@ const docTemplate = `{
         },
         "/v1/cars": {
             "get": {
-                "description": "Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.",
+                "description": "返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v1"
                 ],
-                "summary": "List TeslaMate cars or get one car",
+                "summary": "车辆列表或单车详情",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -267,18 +267,18 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}": {
             "get": {
-                "description": "Returns cars registered in TeslaMate. Omit CarID to list all cars; include CarID for a single car.",
+                "description": "返回 TeslaMate 中登记的车辆。省略 CarID 返回全部车辆，传入 CarID 返回指定车辆。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v1"
                 ],
-                "summary": "List TeslaMate cars or get one car",
+                "summary": "车辆列表或单车详情",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID (omit for list)",
+                        "description": "车辆 ID（不传则返回全部车辆）",
                         "name": "CarID",
                         "in": "path"
                     }
@@ -301,11 +301,11 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get battery health for one car",
+                "summary": "获取车辆电池健康度",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -329,36 +329,36 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "List charging sessions for one car",
+                "summary": "车辆充电会话列表",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Result page (default 1)",
+                        "description": "结果页码（默认 1）",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size (default 100)",
+                        "description": "每页大小（默认 100）",
                         "name": "show",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter start date",
+                        "description": "筛选起始日期",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter end date",
+                        "description": "筛选结束日期",
                         "name": "endDate",
                         "in": "query"
                     }
@@ -381,11 +381,11 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get active charging session if any",
+                "summary": "当前进行中的充电会话",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -409,18 +409,18 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get one charging session by ID",
+                "summary": "单条充电会话详情",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Charge ID",
+                        "description": "充电会话 ID",
                         "name": "ChargeID",
                         "in": "path",
                         "required": true
@@ -444,36 +444,36 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "List drives for one car",
+                "summary": "车辆行程列表",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Result page",
+                        "description": "结果页码",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size",
+                        "description": "每页大小",
                         "name": "show",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter start date",
+                        "description": "筛选起始日期",
                         "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter end date",
+                        "description": "筛选结束日期",
                         "name": "endDate",
                         "in": "query"
                     }
@@ -496,18 +496,18 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get one drive by ID",
+                "summary": "单条行程详情",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Drive ID",
+                        "description": "行程 ID",
                         "name": "DriveID",
                         "in": "path",
                         "required": true
@@ -519,13 +519,13 @@ const docTemplate = `{
                             "every_30s"
                         ],
                         "type": "string",
-                        "description": "Drive details downsampling: full, every_5s (default), every_30s",
+                        "description": "行程明细下采样：full、every_5s（默认）、every_30s",
                         "name": "sample",
                         "in": "query"
                     },
                     {
                         "type": "boolean",
-                        "description": "Set to false to skip drive_details (route) in the response",
+                        "description": "设为 false 可在响应中省略 drive_details（行程轨迹）",
                         "name": "include_route",
                         "in": "query"
                     }
@@ -542,25 +542,25 @@ const docTemplate = `{
         },
         "/v1/cars/{CarID}/tire-pressure": {
             "get": {
-                "description": "Latest TPMS reading + window min/max + per-day history. Pressure unit follows settings.unit_of_pressure (bar default; psi via barToPsi).",
+                "description": "最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 barToPsi 换算）。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get tire pressure for one car",
+                "summary": "车辆胎压（最近读数 + 窗口）",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "History window length in days (default 30, max 365)",
+                        "description": "历史窗口天数（默认 30，最大 365）",
                         "name": "window_days",
                         "in": "query"
                     }
@@ -583,11 +583,11 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "List firmware updates for one car",
+                "summary": "车辆 OTA 更新历史",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -611,7 +611,7 @@ const docTemplate = `{
                 "tags": [
                     "v1"
                 ],
-                "summary": "Get TeslaMate global settings",
+                "summary": "TeslaMate 全局设置",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -624,14 +624,14 @@ const docTemplate = `{
         },
         "/v2/capabilities": {
             "get": {
-                "description": "Returns the V2 analytics API version, the per-domain feature flags (compare/timeseries/breakdown), and the allowed breakdown values per domain. Clients use this to decide which query parameters to send instead of probing each endpoint.",
+                "description": "返回 V2 分析接口版本、各子域能力开关（compare/timeseries/breakdown）、各子域允许的 breakdown 取值。客户端据此决定查询参数，免去逐个接口探测。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 API capabilities",
+                "summary": "V2 API 能力声明",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -650,19 +650,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/battery": {
             "get": {
-                "description": "Returns objective latest battery range samples, estimated full-range values, baseline range, and estimated range degradation. These estimates are not official state of health.",
+                "description": "返回该车最近的额定/理想续航采样、估算满电续航、基线续航、估算续航衰减。注意：此为估算，非官方 SOH。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 battery analytics summary",
+                "summary": "V2 电池分析汇总",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -677,25 +677,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     }
@@ -730,19 +730,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/battery/timeseries": {
             "get": {
-                "description": "Returns estimated full rated and ideal range grouped by day, week, month, or year for trend charts.",
+                "description": "返回按天/周/月/年分组的估算满电额定/理想续航，用于趋势图。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 battery analytics timeseries",
+                "summary": "V2 电池分析时序",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -757,25 +757,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
@@ -787,7 +787,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Timeseries grouping",
+                        "description": "时序聚合粒度",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -822,19 +822,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/charging": {
             "get": {
-                "description": "Returns objective charging statistics for one car.",
+                "description": "返回该车的客观充电统计。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 charging analytics summary",
+                "summary": "V2 充电分析汇总",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -849,32 +849,32 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "\"timeseries,breakdown\"",
-                        "description": "Comma-separated extras: timeseries,breakdown",
+                        "description": "逗号分隔的扩展项：timeseries、breakdown",
                         "name": "include",
                         "in": "query"
                     },
@@ -886,7 +886,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Timeseries grouping (used when include=timeseries)",
+                        "description": "时序聚合粒度（仅在 include=timeseries 时生效）",
                         "name": "group_by",
                         "in": "query"
                     },
@@ -896,7 +896,7 @@ const docTemplate = `{
                             "charger_type"
                         ],
                         "type": "string",
-                        "description": "Breakdown dimension (used when include=breakdown)",
+                        "description": "分项维度（仅在 include=breakdown 时生效）",
                         "name": "breakdown",
                         "in": "query"
                     }
@@ -931,19 +931,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/charging/curve": {
             "get": {
-                "description": "Returns aggregated DC charging curve samples (per battery level: session count, median / p25 / p75 power) for one car.",
+                "description": "返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率中位数 / P25 / P75）。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 DC charging curve (aggregate)",
+                "summary": "V2 直流充电曲线（聚合）",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -958,31 +958,31 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Minimum sessions per battery level (default 5)",
+                        "description": "每个电量分桶的最少会话数（默认 5）",
                         "name": "min_sessions",
                         "in": "query"
                     }
@@ -1017,19 +1017,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/cost": {
             "get": {
-                "description": "Returns objective charging-cost analytics. Current data scope includes charging_cost only and excludes insurance, maintenance, parking, depreciation, tire, and repair costs.",
+                "description": "返回客观的充电费用分析。当前数据范围仅含 charging_cost，不含保险、保养、停车、折旧、轮胎、维修费用。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 cost analytics",
+                "summary": "V2 费用分析",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1044,25 +1044,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
@@ -1074,7 +1074,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Cost grouping",
+                        "description": "费用聚合粒度",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -1109,19 +1109,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/driving": {
             "get": {
-                "description": "Returns objective driving statistics for one car.",
+                "description": "返回该车的客观行驶统计。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 driving analytics summary",
+                "summary": "V2 行驶分析汇总",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1136,25 +1136,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     }
@@ -1189,19 +1189,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/driving/timeseries": {
             "get": {
-                "description": "Returns driving metrics grouped by day, week, month, or year for charting.",
+                "description": "返回按天/周/月/年分组的行驶指标，用于图表。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 driving analytics timeseries",
+                "summary": "V2 行驶分析时序",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1216,25 +1216,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
@@ -1246,7 +1246,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Timeseries grouping",
+                        "description": "时序聚合粒度",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -1281,19 +1281,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/efficiency": {
             "get": {
-                "description": "Returns net + gross consumption, consumption overhead, plus optional temperature / speed buckets for one car.",
+                "description": "返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 efficiency analytics",
+                "summary": "V2 能效分析",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1308,32 +1308,32 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "\"buckets\"",
-                        "description": "Comma-separated extras: buckets",
+                        "description": "逗号分隔的扩展项：buckets",
                         "name": "include",
                         "in": "query"
                     },
@@ -1343,7 +1343,7 @@ const docTemplate = `{
                             "speed_10kmh"
                         ],
                         "type": "string",
-                        "description": "Bucket grouping (used when include=buckets)",
+                        "description": "分桶维度（仅在 include=buckets 时生效）",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -1378,19 +1378,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/environmental": {
             "get": {
-                "description": "Returns aggregated outside/inside temperature, HVAC active minutes, and elevation statistics for one car.",
+                "description": "返回该车的车外/车内温度聚合、HVAC 活动时长、海拔统计。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 environmental analytics",
+                "summary": "V2 环境分析（温度/HVAC/海拔）",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1405,32 +1405,32 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "\"timeseries\"",
-                        "description": "Comma-separated extras: timeseries",
+                        "description": "逗号分隔的扩展项，如 timeseries",
                         "name": "include",
                         "in": "query"
                     },
@@ -1442,7 +1442,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Timeseries grouping (used when include=timeseries)",
+                        "description": "时序聚合粒度（仅在 include=timeseries 时生效）",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -1477,19 +1477,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/parking": {
             "get": {
-                "description": "Returns objective parked duration, state duration, inferred parking sessions, and estimated parking drain for one car.",
+                "description": "返回该车的驻车时长、状态时长、推断驻车会话与估算驻车电量损失。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 parking analytics summary",
+                "summary": "V2 驻车分析汇总",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1504,32 +1504,32 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "example": "\"breakdown\"",
-                        "description": "Comma-separated extras: breakdown",
+                        "description": "逗号分隔的扩展项：breakdown",
                         "name": "include",
                         "in": "query"
                     },
@@ -1539,7 +1539,7 @@ const docTemplate = `{
                             "state"
                         ],
                         "type": "string",
-                        "description": "Breakdown dimension (used when include=breakdown)",
+                        "description": "分项维度（仅在 include=breakdown 时生效）",
                         "name": "breakdown",
                         "in": "query"
                     }
@@ -1574,19 +1574,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/analytics/summary": {
             "get": {
-                "description": "Returns objective driving, charging, parking, battery, update, and charging-cost summary metrics for one car in a selected period.",
+                "description": "返回该车在所选周期内的行驶、充电、驻车、电池、OTA、充电费用汇总指标。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 period summary analytics",
+                "summary": "V2 周期汇总分析",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1601,25 +1601,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
@@ -1629,7 +1629,7 @@ const docTemplate = `{
                             "previous_period"
                         ],
                         "type": "string",
-                        "description": "Comparison mode",
+                        "description": "对比模式",
                         "name": "compare",
                         "in": "query"
                     }
@@ -1664,19 +1664,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/battery/capacity_by_mileage": {
             "get": {
-                "description": "Returns half-month bucketed median capacity (kWh) vs odometer for one car.",
+                "description": "按半月分桶返回该车的中位电池容量 (kWh) 与里程关系。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 battery capacity by mileage",
+                "summary": "V2 电池容量随里程趋势",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1691,25 +1691,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     }
@@ -1744,26 +1744,26 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/lifecycle": {
             "get": {
-                "description": "Returns cumulative lifetime statistics for a car from the first recorded event up to as_of (defaults to now). Use as_of for historical snapshots.",
+                "description": "返回该车从首次事件至 as_of（默认当前时间）的累计生命周期统计；可通过 as_of 取历史快照。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 lifetime cumulative analytics",
+                "summary": "V2 累计生命周期统计",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Cutoff datetime in RFC3339 format. Defaults to now.",
+                        "description": "截止时间（RFC3339），默认当前时间。",
                         "name": "as_of",
                         "in": "query"
                     }
@@ -1798,19 +1798,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/lifecycle/odometer_series": {
             "get": {
-                "description": "Returns one odometer reading per day in the requested window for one car.",
+                "description": "返回该车在所选窗口内每日一条里程读数。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 cumulative odometer series",
+                "summary": "V2 累计里程序列",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1825,37 +1825,37 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size (default 500, max 1000)",
+                        "description": "每页大小（默认 500，最大 1000）",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Pagination cursor returned by a previous response",
+                        "description": "由上一次响应返回的分页游标",
                         "name": "cursor",
                         "in": "query"
                     }
@@ -1890,26 +1890,26 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/lifecycle/places": {
             "get": {
-                "description": "Returns the top-N most visited cities, states and countries for one car, with last-visited timestamps.",
+                "description": "返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 lifecycle places (city / state / country breakdown)",
+                "summary": "V2 生命周期地点分布（城市/州/国家）",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Top N per dimension (default 20, max 100)",
+                        "description": "每个维度的 Top N（默认 20，最大 100）",
                         "name": "top_n",
                         "in": "query"
                     }
@@ -1944,19 +1944,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/parking/idle_periods": {
             "get": {
-                "description": "Returns per-gap idle periods (vampire drain candidates) with SoC diff, range loss, drained energy and standby ratio for one car.",
+                "description": "返回该车按相邻事件间隔切分的闲置区间（vampire drain 候选），含 SoC 差、续航损失、消耗能量与待机占比。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 parking idle periods",
+                "summary": "V2 驻车闲置区间",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -1971,49 +1971,49 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
                     {
                         "type": "number",
-                        "description": "Minimum gap length in hours (default 1)",
+                        "description": "最小间隔时长（小时，默认 1）",
                         "name": "min_duration_hours",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Filter by resolved geofence id",
+                        "description": "按已解析的围栏 ID 过滤",
                         "name": "geofence_id",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size (default 100, max 500)",
+                        "description": "每页大小（默认 100，最大 500）",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Pagination cursor returned by a previous response",
+                        "description": "由上一次响应返回的分页游标",
                         "name": "cursor",
                         "in": "query"
                     }
@@ -2048,19 +2048,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/summary/by_period": {
             "get": {
-                "description": "Returns drive + charging + cost metrics flattened per period (one row per period).",
+                "description": "返回按周期扁平化的行驶 + 充电 + 费用指标（每周期一行）。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 flat per-period summary",
+                "summary": "V2 周期扁平汇总",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -2075,25 +2075,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     },
@@ -2105,7 +2105,7 @@ const docTemplate = `{
                             "year"
                         ],
                         "type": "string",
-                        "description": "Period grouping",
+                        "description": "周期聚合粒度",
                         "name": "group_by",
                         "in": "query"
                     }
@@ -2140,45 +2140,45 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/timeline": {
             "get": {
-                "description": "Returns a cursor-paginated unified chronological timeline of drive, charging, and update events.",
+                "description": "返回行驶/充电/OTA 事件的统一时间线，支持游标分页。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 unified event timeline",
+                "summary": "V2 统一事件时间线",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated event types: drive,charging,update",
+                        "description": "逗号分隔的事件类型：drive、charging、update",
                         "name": "type",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "default": 50,
-                        "description": "Max results per page",
+                        "description": "每页最大结果数",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Return events before this RFC3339 timestamp (cursor, DESC order)",
+                        "description": "返回此 RFC3339 时间之前的事件（降序游标）",
                         "name": "before",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Return events after this RFC3339 timestamp (cursor, ASC order)",
+                        "description": "返回此 RFC3339 时间之后的事件（升序游标）",
                         "name": "after",
                         "in": "query"
                     }
@@ -2213,19 +2213,19 @@ const docTemplate = `{
         },
         "/v2/cars/{CarID}/updates": {
             "get": {
-                "description": "Returns OTA update history statistics for a car in the selected period.",
+                "description": "返回所选周期内该车的 OTA 更新历史统计。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 update analytics",
+                "summary": "V2 OTA 更新分析",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
-                        "description": "Car ID",
+                        "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
                         "required": true
@@ -2240,25 +2240,25 @@ const docTemplate = `{
                             "custom"
                         ],
                         "type": "string",
-                        "description": "Aggregation period",
+                        "description": "聚合周期",
                         "name": "period",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Start datetime in RFC3339 format",
+                        "description": "起始时间（RFC3339）",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "End datetime in RFC3339 format",
+                        "description": "结束时间（RFC3339）",
                         "name": "end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "IANA timezone",
+                        "description": "IANA 时区",
                         "name": "timezone",
                         "in": "query"
                     }
@@ -2293,14 +2293,14 @@ const docTemplate = `{
         },
         "/v2/geofences": {
             "get": {
-                "description": "Returns all geofences with their location, radius, billing type, cost per unit, and per-session fee.",
+                "description": "返回全部围栏：位置、半径、计费类型、单位费用、每次会话固定费用。",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "v2"
                 ],
-                "summary": "V2 list of geofences with billing rules",
+                "summary": "V2 围栏列表（含计费规则）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2323,12 +2323,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
+                    "description": "错误码",
                     "type": "string"
                 },
                 "details": {
                     "type": "object"
                 },
                 "message": {
+                    "description": "错误描述",
                     "type": "string"
                 }
             }
@@ -2337,7 +2339,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
-                    "$ref": "#/definitions/APIErrorBody"
+                    "description": "错误体",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/APIErrorBody"
+                        }
+                    ]
                 }
             }
         },
@@ -2345,6 +2352,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "description": "错误体",
                     "type": "string"
                 }
             }
@@ -2359,10 +2367,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2BatteryResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2395,16 +2413,23 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "latest_ideal_range": {
+                    "description": "最近理想续航 (km)",
                     "type": "number"
                 },
                 "latest_level": {
                     "type": "integer"
                 },
                 "latest_rated_range": {
+                    "description": "最近额定续航 (km)",
                     "type": "number"
                 },
                 "range_at_full_charge": {
-                    "$ref": "#/definitions/V2BatteryRange"
+                    "description": "满电续航 (km)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryRange"
+                        }
+                    ]
                 }
             }
         },
@@ -2412,10 +2437,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2BatteryTimeseriesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryTimeseriesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2426,10 +2461,16 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 },
                 "range_at_full_charge": {
-                    "$ref": "#/definitions/V2BatteryRange"
+                    "description": "满电续航 (km)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatteryRange"
+                        }
+                    ]
                 }
             }
         },
@@ -2437,9 +2478,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2BatteryTimeseriesItem"
@@ -2451,10 +2494,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CapabilitiesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CapabilitiesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2462,6 +2515,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "名称",
                     "type": "string",
                     "example": "driving"
                 },
@@ -2499,6 +2553,7 @@ const docTemplate = `{
                     }
                 },
                 "version": {
+                    "description": "版本",
                     "type": "string",
                     "example": "v2"
                 }
@@ -2508,10 +2563,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CapacityByMileageResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CapacityByMileageResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2536,6 +2601,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2CapacityByMileageItem"
@@ -2547,10 +2613,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2ChargingResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2561,6 +2637,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "locations": {
+                    "description": "地点列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ChargingLocationItem"
@@ -2578,10 +2655,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2ChargingCurveResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingCurveResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2592,6 +2679,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "samples": {
+                    "description": "样本",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ChargingCurveSample"
@@ -2606,6 +2694,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "battery_level": {
+                    "description": "电量百分比",
                     "type": "integer"
                 },
                 "median_power": {
@@ -2618,6 +2707,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 }
             }
@@ -2626,27 +2716,35 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "address_id": {
+                    "description": "地址 ID",
                     "type": "integer"
                 },
                 "charging_efficiency": {
+                    "description": "充电效率",
                     "type": "number"
                 },
                 "cost": {
+                    "description": "费用",
                     "type": "number"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "geofence_id": {
+                    "description": "围栏 ID",
                     "type": "integer"
                 },
                 "location_name": {
+                    "description": "地点名称",
                     "type": "string"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 }
             }
@@ -2655,13 +2753,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "breakdown": {
-                    "$ref": "#/definitions/V2ChargingBreakdownResponse"
+                    "description": "分项维度",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingBreakdownResponse"
+                        }
+                    ]
                 },
                 "summary": {
                     "$ref": "#/definitions/V2ChargingSummary"
                 },
                 "timeseries": {
-                    "$ref": "#/definitions/V2ChargingTimeseriesResponse"
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingTimeseriesResponse"
+                        }
+                    ]
                 }
             }
         },
@@ -2681,18 +2789,22 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "avg_duration": {
+                    "description": "平均时长 (秒)",
                     "type": "number"
                 },
                 "avg_energy_added": {
                     "type": "number"
                 },
                 "avg_power": {
+                    "description": "平均功率 (kW)",
                     "type": "number"
                 },
                 "charging_efficiency": {
+                    "description": "充电效率",
                     "type": "number"
                 },
                 "cost": {
+                    "description": "费用",
                     "type": "number"
                 },
                 "dc_energy": {
@@ -2702,15 +2814,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "end_battery_avg": {
                     "type": "number"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "largest_session": {
@@ -2726,6 +2841,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 },
                 "start_battery_avg": {
@@ -2737,24 +2853,31 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_power": {
+                    "description": "平均功率 (kW)",
                     "type": "number"
                 },
                 "cost": {
+                    "description": "费用",
                     "type": "number"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 }
             }
@@ -2763,9 +2886,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ChargingTimeseriesItem"
@@ -2780,15 +2905,19 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "cost": {
+                    "description": "费用",
                     "type": "number"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 }
             }
@@ -2814,10 +2943,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2CostResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CostResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2825,12 +2964,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "location_name": {
+                    "description": "地点名称",
                     "type": "string"
                 }
             }
@@ -2839,12 +2981,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 }
             }
@@ -2873,9 +3018,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "cost_per_distance": {
+                    "description": "单位里程费用",
                     "type": "number"
                 }
             }
@@ -2884,18 +3031,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "cost_per_distance": {
+                    "description": "单位里程费用",
                     "type": "number"
                 },
                 "cost_per_energy": {
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 }
             }
@@ -2904,10 +3055,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2DrivingResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2923,33 +3084,41 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
                     "type": "number"
                 },
                 "avg_distance": {
+                    "description": "平均距离 (km)",
                     "type": "number"
                 },
                 "avg_duration": {
+                    "description": "平均时长 (秒)",
                     "type": "number"
                 },
                 "avg_outside_temp": {
                     "type": "number"
                 },
                 "avg_speed": {
+                    "description": "平均速度 (km/h)",
                     "type": "number"
                 },
                 "battery_level_used": {
                     "type": "number"
                 },
                 "best_consumption": {
+                    "description": "最佳能耗 (Wh/km)",
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "estimated_energy_consumed": {
@@ -2965,6 +3134,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "net_energy": {
+                    "description": "净能量 (kWh)",
                     "type": "number"
                 },
                 "peak_drive_power": {
@@ -2974,9 +3144,11 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "range_loss": {
+                    "description": "续航损失 (km)",
                     "type": "number"
                 },
                 "worst_consumption": {
+                    "description": "最差能耗 (Wh/km)",
                     "type": "number"
                 }
             }
@@ -2985,10 +3157,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2DrivingTimeseriesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingTimeseriesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -2996,24 +3178,30 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
                     "type": "number"
                 },
                 "avg_speed": {
+                    "description": "平均速度 (km/h)",
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "estimated_energy_consumed": {
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 }
             }
@@ -3022,9 +3210,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2DrivingTimeseriesItem"
@@ -3036,10 +3226,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2EfficiencyResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EfficiencyResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3070,7 +3270,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/V2EfficiencySummary"
                 },
                 "timeseries": {
-                    "$ref": "#/definitions/V2EfficiencyTimeseries"
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EfficiencyTimeseries"
+                        }
+                    ]
                 }
             }
         },
@@ -3084,9 +3289,11 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 }
             }
@@ -3098,6 +3305,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "consumption_overhead": {
+                    "description": "能耗开销 (Wh/km)",
                     "type": "number"
                 },
                 "drive_distance": {
@@ -3113,6 +3321,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "gross_consumption": {
+                    "description": "毛能耗 (Wh/km)",
                     "type": "number"
                 },
                 "net_consumption": {
@@ -3124,6 +3333,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_speed": {
+                    "description": "平均速度 (km/h)",
                     "type": "number"
                 },
                 "bucket": {
@@ -3133,9 +3343,11 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 }
             }
@@ -3144,9 +3356,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2EfficiencyTimeseriesItem"
@@ -3158,18 +3372,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "consumption_overhead": {
+                    "description": "能耗开销 (Wh/km)",
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "gross_consumption": {
+                    "description": "毛能耗 (Wh/km)",
                     "type": "number"
                 },
                 "net_consumption": {
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 }
             }
@@ -3178,10 +3396,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2EnvironmentalResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EnvironmentalResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3192,7 +3420,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/V2EnvironmentalSummary"
                 },
                 "timeseries": {
-                    "$ref": "#/definitions/V2EnvironmentalTimeseries"
+                    "description": "时序",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2EnvironmentalTimeseries"
+                        }
+                    ]
                 }
             }
         },
@@ -3200,36 +3433,47 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "battery_heater_minutes": {
+                    "description": "电池加热器时长 (分)",
                     "type": "number"
                 },
                 "climate_on_minutes": {
+                    "description": "空调开启时长 (分)",
                     "type": "number"
                 },
                 "defroster_minutes": {
+                    "description": "除霜时长 (分)",
                     "type": "number"
                 },
                 "elevation_gain_total": {
+                    "description": "累计爬升 (米)",
                     "type": "number"
                 },
                 "elevation_loss_total": {
+                    "description": "累计下降 (米)",
                     "type": "number"
                 },
                 "elevation_max": {
+                    "description": "最高海拔 (米)",
                     "type": "number"
                 },
                 "elevation_min": {
+                    "description": "最低海拔 (米)",
                     "type": "number"
                 },
                 "inside_temp_avg": {
+                    "description": "车内平均温 (°C)",
                     "type": "number"
                 },
                 "outside_temp_avg": {
+                    "description": "车外平均温 (°C)",
                     "type": "number"
                 },
                 "outside_temp_max": {
+                    "description": "车外最高温 (°C)",
                     "type": "number"
                 },
                 "outside_temp_min": {
+                    "description": "车外最低温 (°C)",
                     "type": "number"
                 }
             }
@@ -3238,9 +3482,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2EnvironmentalTimeseriesItem"
@@ -3258,12 +3504,15 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "inside_temp_avg": {
+                    "description": "车内平均温 (°C)",
                     "type": "number"
                 },
                 "outside_temp_avg": {
+                    "description": "车外平均温 (°C)",
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 }
             }
@@ -3272,27 +3521,35 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "billing_type": {
+                    "description": "计费类型",
                     "type": "string"
                 },
                 "cost_per_unit": {
+                    "description": "单位费用",
                     "type": "number"
                 },
                 "id": {
+                    "description": "ID",
                     "type": "integer"
                 },
                 "latitude": {
+                    "description": "纬度",
                     "type": "number"
                 },
                 "longitude": {
+                    "description": "经度",
                     "type": "number"
                 },
                 "name": {
+                    "description": "名称",
                     "type": "string"
                 },
                 "radius": {
+                    "description": "半径 (米)",
                     "type": "number"
                 },
                 "session_fee": {
+                    "description": "每次会话固定费用",
                     "type": "number"
                 }
             }
@@ -3301,10 +3558,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2GeofencesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2GeofencesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3312,6 +3579,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2Geofence"
@@ -3323,9 +3591,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
+                    "description": "ID",
                     "type": "integer"
                 },
                 "name": {
+                    "description": "名称",
                     "type": "string"
                 }
             }
@@ -3334,42 +3604,58 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_power_w": {
+                    "description": "平均功率 (W)",
                     "type": "number"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "end_battery_level": {
+                    "description": "结束电量",
                     "type": "integer"
                 },
                 "end_date": {
                     "type": "string"
                 },
                 "energy_drained": {
+                    "description": "消耗能量 (kWh)",
                     "type": "number"
                 },
                 "geofence": {
-                    "$ref": "#/definitions/V2IdleGeofence"
+                    "description": "围栏",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2IdleGeofence"
+                        }
+                    ]
                 },
                 "has_reduced_range": {
+                    "description": "是否处于受限续航状态",
                     "type": "boolean"
                 },
                 "id": {
+                    "description": "ID",
                     "type": "string"
                 },
                 "range_loss": {
+                    "description": "续航损失 (km)",
                     "type": "number"
                 },
                 "range_loss_per_hour": {
+                    "description": "每小时续航损失 (km/h)",
                     "type": "number"
                 },
                 "soc_diff": {
+                    "description": "SoC 差值",
                     "type": "integer"
                 },
                 "standby_ratio": {
+                    "description": "待机占比",
                     "type": "number"
                 },
                 "start_battery_level": {
+                    "description": "起始电量",
                     "type": "integer"
                 },
                 "start_date": {
@@ -3381,10 +3667,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2IdlePeriodsResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2IdlePeriodsResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3392,15 +3688,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "has_more": {
+                    "description": "是否还有更多",
                     "type": "boolean"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2IdlePeriodItem"
                     }
                 },
                 "next_cursor": {
+                    "description": "下一页游标",
                     "type": "string"
                 }
             }
@@ -3409,10 +3708,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2LifecycleResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2LifecycleResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3420,9 +3729,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "as_of": {
+                    "description": "快照时间",
                     "type": "string"
                 },
                 "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
                     "type": "number"
                 },
                 "avg_daily_distance": {
@@ -3432,24 +3743,31 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "charging_session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 },
                 "cost_per_distance": {
+                    "description": "单位里程费用",
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "first_recorded_at": {
@@ -3462,6 +3780,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "update_count": {
+                    "description": "OTA 更新次数",
                     "type": "integer"
                 }
             }
@@ -3470,10 +3789,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "car_id": {
+                    "description": "车辆 ID",
                     "type": "integer",
                     "example": 1
                 },
                 "compare": {
+                    "description": "对比模式",
                     "type": "string",
                     "enum": [
                         "none",
@@ -3481,6 +3802,7 @@ const docTemplate = `{
                     ]
                 },
                 "end": {
+                    "description": "结束时间",
                     "type": "string",
                     "format": "date-time"
                 },
@@ -3489,6 +3811,7 @@ const docTemplate = `{
                     "format": "date-time"
                 },
                 "period": {
+                    "description": "聚合周期",
                     "type": "string",
                     "enum": [
                         "day",
@@ -3501,15 +3824,22 @@ const docTemplate = `{
                     ]
                 },
                 "start": {
+                    "description": "起始时间",
                     "type": "string",
                     "format": "date-time"
                 },
                 "timezone": {
+                    "description": "时区",
                     "type": "string",
                     "example": "Asia/Shanghai"
                 },
                 "unit": {
-                    "$ref": "#/definitions/V2Unit"
+                    "description": "单位",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Unit"
+                        }
+                    ]
                 }
             }
         },
@@ -3517,10 +3847,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2OdometerSeriesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2OdometerSeriesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3539,15 +3879,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "has_more": {
+                    "description": "是否还有更多",
                     "type": "boolean"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2OdometerSeriesItem"
                     }
                 },
                 "next_cursor": {
+                    "description": "下一页游标",
                     "type": "string"
                 }
             }
@@ -3556,10 +3899,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2ParkingResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ParkingResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3570,12 +3923,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "locations": {
+                    "description": "地点列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ParkingLocationItem"
                     }
                 },
                 "states": {
+                    "description": "州/省分布",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2ParkingStateItem"
@@ -3587,21 +3942,27 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "address_id": {
+                    "description": "地址 ID",
                     "type": "integer"
                 },
                 "avg_parked_duration": {
+                    "description": "平均驻车时长 (秒)",
                     "type": "number"
                 },
                 "geofence_id": {
+                    "description": "围栏 ID",
                     "type": "integer"
                 },
                 "location_name": {
+                    "description": "地点名称",
                     "type": "string"
                 },
                 "parked_duration": {
+                    "description": "驻车时长 (秒)",
                     "type": "number"
                 },
                 "parking_session_count": {
+                    "description": "驻车会话数",
                     "type": "integer"
                 }
             }
@@ -3610,7 +3971,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "breakdown": {
-                    "$ref": "#/definitions/V2ParkingBreakdownResponse"
+                    "description": "分项维度",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ParkingBreakdownResponse"
+                        }
+                    ]
                 },
                 "summary": {
                     "$ref": "#/definitions/V2ParkingSummary"
@@ -3621,12 +3987,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "percent": {
                     "type": "number"
                 },
                 "state": {
+                    "description": "状态",
                     "type": "string"
                 },
                 "transition_count": {
@@ -3644,6 +4012,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "avg_parked_duration": {
+                    "description": "平均驻车时长 (秒)",
                     "type": "number"
                 },
                 "estimated_vampire_drain": {
@@ -3656,15 +4025,19 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "parked_duration": {
+                    "description": "驻车时长 (秒)",
                     "type": "number"
                 },
                 "parking_session_count": {
+                    "description": "驻车会话数",
                     "type": "integer"
                 },
                 "state_transition_count": {
+                    "description": "状态切换次数",
                     "type": "integer"
                 },
                 "vampire_drain_percent": {
+                    "description": "吸血式漏电比例 (%)",
                     "type": "number"
                 }
             }
@@ -3673,12 +4046,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "last_visited": {
+                    "description": "最后访问时间",
                     "type": "string"
                 },
                 "name": {
+                    "description": "名称",
                     "type": "string"
                 },
                 "visit_count": {
+                    "description": "访问次数",
                     "type": "integer"
                 }
             }
@@ -3687,10 +4063,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2PlacesResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2PlacesResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3698,18 +4084,21 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "cities": {
+                    "description": "城市分布",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2PlaceBucket"
                     }
                 },
                 "countries": {
+                    "description": "国家分布",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2PlaceBucket"
                     }
                 },
                 "states": {
+                    "description": "州/省分布",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2PlaceBucket"
@@ -3721,16 +4110,36 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "battery": {
-                    "$ref": "#/definitions/V2BatterySummary"
+                    "description": "电池指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2BatterySummary"
+                        }
+                    ]
                 },
                 "charging": {
-                    "$ref": "#/definitions/V2ChargingSummary"
+                    "description": "充电指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2ChargingSummary"
+                        }
+                    ]
                 },
                 "cost": {
-                    "$ref": "#/definitions/V2CostSummary"
+                    "description": "费用",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2CostSummary"
+                        }
+                    ]
                 },
                 "driving": {
-                    "$ref": "#/definitions/V2DrivingSummary"
+                    "description": "行驶指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2DrivingSummary"
+                        }
+                    ]
                 },
                 "parking": {
                     "$ref": "#/definitions/V2ParkingSummary"
@@ -3739,7 +4148,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/V2UpdateSummary"
                 },
                 "vehicle": {
-                    "$ref": "#/definitions/V2VehicleSummary"
+                    "description": "车辆信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2VehicleSummary"
+                        }
+                    ]
                 }
             }
         },
@@ -3747,10 +4161,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2SummaryResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2SummaryResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3758,10 +4182,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2SummaryByPeriodResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2SummaryByPeriodResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3769,36 +4203,46 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
                     "type": "number"
                 },
                 "charging_cost": {
+                    "description": "充电费用",
                     "type": "number"
                 },
                 "charging_sessions": {
+                    "description": "充电会话数",
                     "type": "integer"
                 },
                 "data_complete": {
+                    "description": "数据是否完整",
                     "type": "boolean"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "drive_count": {
+                    "description": "行程数",
                     "type": "integer"
                 },
                 "drive_duration": {
                     "type": "number"
                 },
                 "energy_added": {
+                    "description": "充入电池能量 (kWh)",
                     "type": "number"
                 },
                 "energy_used": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 },
                 "net_energy": {
+                    "description": "净能量 (kWh)",
                     "type": "number"
                 },
                 "period_start": {
+                    "description": "周期起始",
                     "type": "string"
                 }
             }
@@ -3807,9 +4251,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "group_by": {
+                    "description": "聚合粒度",
                     "type": "string"
                 },
                 "items": {
+                    "description": "条目列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2SummaryByPeriodItem"
@@ -3836,10 +4282,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2TimelineResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2TimelineResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3850,6 +4306,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "description": "ID",
                     "type": "integer"
                 },
                 "metrics": {
@@ -3863,6 +4320,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "description": "类型",
                     "type": "string"
                 }
             }
@@ -3871,15 +4329,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "events": {
+                    "description": "事件列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2TimelineEvent"
                     }
                 },
                 "has_more": {
+                    "description": "是否还有更多",
                     "type": "boolean"
                 },
                 "next_cursor": {
+                    "description": "下一页游标",
                     "type": "string"
                 },
                 "total": {
@@ -3899,10 +4360,12 @@ const docTemplate = `{
                     "example": "CNY"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "string",
                     "example": "km"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "string",
                     "example": "seconds"
                 },
@@ -3932,10 +4395,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/V2UpdateAnalyticsResponse"
+                    "description": "响应数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateAnalyticsResponse"
+                        }
+                    ]
                 },
                 "meta": {
-                    "$ref": "#/definitions/V2Meta"
+                    "description": "响应元信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2Meta"
+                        }
+                    ]
                 }
             }
         },
@@ -3943,12 +4416,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_update_duration": {
+                    "description": "平均更新时长 (秒)",
                     "type": "number"
                 },
                 "latest_updated_at": {
+                    "description": "最近更新时间",
                     "type": "string"
                 },
                 "latest_version": {
+                    "description": "最近版本",
                     "type": "string"
                 },
                 "median_days_between_updates": {
@@ -3956,9 +4432,11 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "update_count": {
+                    "description": "OTA 更新次数",
                     "type": "integer"
                 },
                 "versions": {
+                    "description": "版本列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/V2UpdateVersion"
@@ -3970,21 +4448,27 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "battery_energy": {
+                    "description": "电池端能量 (kWh)",
                     "type": "number"
                 },
                 "cost": {
+                    "description": "费用",
                     "type": "number"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "efficiency": {
+                    "description": "效率",
                     "type": "number"
                 },
                 "session_count": {
+                    "description": "充电会话数",
                     "type": "integer"
                 },
                 "wall_energy": {
+                    "description": "墙端用电 (kWh)",
                     "type": "number"
                 }
             }
@@ -3993,18 +4477,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avg_consumption": {
+                    "description": "平均能耗 (Wh/km)",
                     "type": "number"
                 },
                 "distance": {
+                    "description": "距离 (km)",
                     "type": "number"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "net_energy": {
+                    "description": "净能量 (kWh)",
                     "type": "number"
                 },
                 "trip_count": {
+                    "description": "行程数",
                     "type": "integer"
                 }
             }
@@ -4013,18 +4502,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "completed_at": {
+                    "description": "完成时间",
                     "type": "string"
                 },
                 "days_since_prior": {
+                    "description": "距上次更新天数",
                     "type": "integer"
                 },
                 "duration": {
+                    "description": "时长 (秒)",
                     "type": "number"
                 },
                 "started_at": {
+                    "description": "开始时间",
                     "type": "string"
                 },
                 "version": {
+                    "description": "版本",
                     "type": "string"
                 }
             }
@@ -4033,9 +4527,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "latest_version": {
+                    "description": "最近版本",
                     "type": "string"
                 },
                 "update_count": {
+                    "description": "OTA 更新次数",
                     "type": "integer"
                 }
             }
@@ -4044,13 +4540,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "event": {
-                    "$ref": "#/definitions/V2UpdateEvent"
+                    "description": "事件",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateEvent"
+                        }
+                    ]
                 },
                 "metrics": {
-                    "$ref": "#/definitions/V2UpdateWindowMetrics"
+                    "description": "指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateWindowMetrics"
+                        }
+                    ]
                 },
                 "window": {
-                    "$ref": "#/definitions/V2UpdateWindow"
+                    "description": "观察窗口",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateWindow"
+                        }
+                    ]
                 }
             }
         },
@@ -4058,12 +4569,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end": {
+                    "description": "结束时间",
                     "type": "string"
                 },
                 "interval": {
+                    "description": "区间秒数",
                     "type": "number"
                 },
                 "start": {
+                    "description": "起始时间",
                     "type": "string"
                 }
             }
@@ -4072,12 +4586,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "charging": {
-                    "$ref": "#/definitions/V2UpdateChargingMetrics"
+                    "description": "充电指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateChargingMetrics"
+                        }
+                    ]
                 },
                 "driving": {
-                    "$ref": "#/definitions/V2UpdateDrivingMetrics"
+                    "description": "行驶指标",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/V2UpdateDrivingMetrics"
+                        }
+                    ]
                 },
                 "inactive_duration": {
+                    "description": "不活跃时长 (秒)",
                     "type": "number"
                 }
             }
