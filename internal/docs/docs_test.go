@@ -23,8 +23,6 @@ func TestSwaggerSpecFromAnnotationsIncludesV2Analytics(t *testing.T) {
 		"/v2/cars/{CarID}/analytics/driving/timeseries",
 		"/v2/cars/{CarID}/analytics/charging",
 		"/v2/cars/{CarID}/analytics/parking",
-		"/v2/cars/{CarID}/analytics/battery",
-		"/v2/cars/{CarID}/analytics/battery/timeseries",
 		"/v2/cars/{CarID}/analytics/cost",
 	} {
 		if _, ok := paths[path]; !ok {

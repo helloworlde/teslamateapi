@@ -55,21 +55,6 @@ func (b fakeV2ParkingBuilder) BuildParking(context.Context, string, V2TimeRange,
 	return b.parkingResponse, b.carID, b.err
 }
 
-type fakeV2BatteryBuilder struct {
-	batteryResponse    V2BatteryResponse
-	timeseriesResponse V2BatteryTimeseriesResponse
-	carID              int64
-	err                error
-}
-
-func (b fakeV2BatteryBuilder) BuildBattery(context.Context, string, V2TimeRange) (V2BatteryResponse, int64, error) {
-	return b.batteryResponse, b.carID, b.err
-}
-
-func (b fakeV2BatteryBuilder) BuildBatteryTimeseries(context.Context, string, V2TimeRange, string) (V2BatteryTimeseriesResponse, int64, error) {
-	return b.timeseriesResponse, b.carID, b.err
-}
-
 type fakeV2CostBuilder struct {
 	costResponse V2CostResponse
 	carID        int64
@@ -242,39 +227,6 @@ func TestV2ParkingHandlerSuccess(t *testing.T) {
 		t.Fatalf("invalid json: %v", err)
 	}
 	if payload.Data.Summary.ParkingSessionCount != 2 || payload.Meta.CarID != 1 {
-		t.Fatalf("unexpected payload: %#v", payload)
-	}
-}
-
-func TestV2BatteryHandlerSuccess(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	latestLevel := int64(80)
-	estimatedRated := 430.0
-	handlers := NewV2Handlers(nil, nil)
-	handlers.batteryBuilder = fakeV2BatteryBuilder{
-		batteryResponse: V2BatteryResponse{
-			Summary: V2BatterySummary{
-				LatestLevel:       &latestLevel,
-				RangeAtFullCharge: &V2BatteryRange{Rated: &estimatedRated},
-			},
-		},
-		carID: 1,
-	}
-	handlers.now = func() time.Time { return time.Date(2026, 5, 7, 12, 0, 0, 0, time.UTC) }
-	router.GET("/api/v2/cars/:CarID/analytics/battery", handlers.Battery)
-
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v2/cars/1/analytics/battery?period=custom&start=2026-05-01T00:00:00Z&end=2026-05-02T00:00:00Z", nil))
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("unexpected status: %d body=%s", recorder.Code, recorder.Body.String())
-	}
-	var payload V2BatteryAPIResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
-		t.Fatalf("invalid json: %v", err)
-	}
-	if payload.Data.Summary.LatestLevel == nil || *payload.Data.Summary.LatestLevel != 80 || payload.Meta.CarID != 1 {
 		t.Fatalf("unexpected payload: %#v", payload)
 	}
 }

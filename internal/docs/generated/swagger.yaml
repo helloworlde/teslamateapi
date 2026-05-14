@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  apicommon.APIErrorBody:
+  APIErrorBody:
     properties:
       code:
         description: 错误码
@@ -11,50 +11,34 @@ definitions:
         description: 错误描述
         type: string
     type: object
-  apicommon.APIErrorResponse:
+  APIErrorResponse:
     properties:
       error:
         allOf:
-        - $ref: '#/definitions/apicommon.APIErrorBody'
+        - $ref: '#/definitions/APIErrorBody'
         description: 错误体
     type: object
-  v1.V1ErrorEnvelope:
+  V1ErrorEnvelope:
     properties:
       error:
         description: 错误体
         type: string
     type: object
-  v1.V1JSONEnvelope:
+  V1JSONEnvelope:
     properties:
       data: {}
     type: object
-  v2.V2BatteryAPIResponse:
-    properties:
-      data:
-        allOf:
-        - $ref: '#/definitions/v2.V2BatteryResponse'
-        description: 响应数据
-      meta:
-        allOf:
-        - $ref: '#/definitions/v2.V2Meta'
-        description: 响应元信息
-    type: object
-  v2.V2BatteryRange:
+  V2BatteryRange:
     properties:
       ideal:
         type: number
       rated:
         type: number
     type: object
-  v2.V2BatteryResponse:
-    properties:
-      summary:
-        $ref: '#/definitions/v2.V2BatterySummary'
-    type: object
-  v2.V2BatterySummary:
+  V2BatterySummary:
     properties:
       baseline_range_at_full_charge:
-        $ref: '#/definitions/v2.V2BatteryRange'
+        $ref: '#/definitions/V2BatteryRange'
       estimated_range_degradation:
         type: number
       latest_ideal_range:
@@ -67,55 +51,21 @@ definitions:
         type: number
       range_at_full_charge:
         allOf:
-        - $ref: '#/definitions/v2.V2BatteryRange'
+        - $ref: '#/definitions/V2BatteryRange'
         description: 满电续航 (km)
     type: object
-  v2.V2BatteryTimeseriesAPIResponse:
+  V2CapabilitiesAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2BatteryTimeseriesResponse'
+        - $ref: '#/definitions/V2CapabilitiesResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2BatteryTimeseriesItem:
-    properties:
-      avg_level:
-        type: number
-      period_start:
-        description: 周期起始
-        type: string
-      range_at_full_charge:
-        allOf:
-        - $ref: '#/definitions/v2.V2BatteryRange'
-        description: 满电续航 (km)
-    type: object
-  v2.V2BatteryTimeseriesResponse:
-    properties:
-      group_by:
-        description: 聚合粒度
-        type: string
-      items:
-        description: 条目列表
-        items:
-          $ref: '#/definitions/v2.V2BatteryTimeseriesItem'
-        type: array
-    type: object
-  v2.V2CapabilitiesAPIResponse:
-    properties:
-      data:
-        allOf:
-        - $ref: '#/definitions/v2.V2CapabilitiesResponse'
-        description: 响应数据
-      meta:
-        allOf:
-        - $ref: '#/definitions/v2.V2Meta'
-        description: 响应元信息
-    type: object
-  v2.V2CapabilitiesDomain:
+  V2CapabilitiesDomain:
     properties:
       deprecated:
         description: |-
@@ -137,7 +87,7 @@ definitions:
       supports_timeseries:
         type: boolean
     type: object
-  v2.V2CapabilitiesResponse:
+  V2CapabilitiesResponse:
     properties:
       breakdown_options:
         additionalProperties:
@@ -147,25 +97,25 @@ definitions:
         type: object
       domains:
         items:
-          $ref: '#/definitions/v2.V2CapabilitiesDomain'
+          $ref: '#/definitions/V2CapabilitiesDomain'
         type: array
       version:
         description: 版本
         example: v2
         type: string
     type: object
-  v2.V2CapacityByMileageAPIResponse:
+  V2CapacityByMileageAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2CapacityByMileageResponse'
+        - $ref: '#/definitions/V2CapacityByMileageResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2CapacityByMileageItem:
+  V2CapacityByMileageItem:
     properties:
       bucket:
         type: string
@@ -176,61 +126,61 @@ definitions:
       sample_count:
         type: integer
     type: object
-  v2.V2CapacityByMileageResponse:
+  V2CapacityByMileageResponse:
     properties:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2CapacityByMileageItem'
+          $ref: '#/definitions/V2CapacityByMileageItem'
         type: array
     type: object
-  v2.V2ChargingAPIResponse:
+  V2ChargingAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2ChargingResponse'
+        - $ref: '#/definitions/V2ChargingResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2ChargingBreakdownResponse:
+  V2ChargingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
         description: 地点列表
         items:
-          $ref: '#/definitions/v2.V2ChargingLocationItem'
+          $ref: '#/definitions/V2ChargingLocationItem'
         type: array
       types:
         items:
-          $ref: '#/definitions/v2.V2ChargingTypeItem'
+          $ref: '#/definitions/V2ChargingTypeItem'
         type: array
     type: object
-  v2.V2ChargingCurveAPIResponse:
+  V2ChargingCurveAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2ChargingCurveResponse'
+        - $ref: '#/definitions/V2ChargingCurveResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2ChargingCurveResponse:
+  V2ChargingCurveResponse:
     properties:
       min_sessions:
         type: integer
       samples:
         description: 样本
         items:
-          $ref: '#/definitions/v2.V2ChargingCurveSample'
+          $ref: '#/definitions/V2ChargingCurveSample'
         type: array
     type: object
-  v2.V2ChargingCurveSample:
+  V2ChargingCurveSample:
     properties:
       avg_voltage:
         type: number
@@ -253,7 +203,7 @@ definitions:
         description: 充电会话数
         type: integer
     type: object
-  v2.V2ChargingLocationItem:
+  V2ChargingLocationItem:
     properties:
       address_id:
         description: 地址 ID
@@ -280,20 +230,20 @@ definitions:
         description: 充电会话数
         type: integer
     type: object
-  v2.V2ChargingResponse:
+  V2ChargingResponse:
     properties:
       breakdown:
         allOf:
-        - $ref: '#/definitions/v2.V2ChargingBreakdownResponse'
+        - $ref: '#/definitions/V2ChargingBreakdownResponse'
         description: 分项维度
       summary:
-        $ref: '#/definitions/v2.V2ChargingSummary'
+        $ref: '#/definitions/V2ChargingSummary'
       timeseries:
         allOf:
-        - $ref: '#/definitions/v2.V2ChargingTimeseriesResponse'
+        - $ref: '#/definitions/V2ChargingTimeseriesResponse'
         description: 时序
     type: object
-  v2.V2ChargingSummary:
+  V2ChargingSummary:
     properties:
       ac_energy:
         type: number
@@ -308,16 +258,11 @@ definitions:
         type: number
       avg_energy_added:
         type: number
-      avg_power:
-        description: |-
-          Deprecated: AC and DC charging have very different power profiles, so a
-          blended average across both is meaningless. Use avg_power_ac /
-          avg_power_dc and their _median_/_max_ siblings. The next minor will
-          drop avg_power and max_power; until then we still emit them so existing
-          dashboards keep rendering (audit §1.4, spec §3.1 deprecation flow).
-        type: number
       avg_power_ac:
-        description: 交流平均功率 (kW)
+        description: |-
+          AC and DC charging have very different power profiles; a blended
+          avg_power / max_power across both is uninterpretable, so only the
+          AC/DC split is exposed (audit §1.4).
         type: number
       avg_power_dc:
         description: 直流平均功率 (kW)
@@ -349,9 +294,6 @@ definitions:
         type: number
       max_cost:
         type: number
-      max_power:
-        description: 'Deprecated: superseded by max_power_ac / max_power_dc.'
-        type: number
       max_power_ac:
         description: 交流峰值功率 (kW)
         type: number
@@ -370,13 +312,12 @@ definitions:
       start_battery_avg:
         type: number
     type: object
-  v2.V2ChargingTimeseriesItem:
+  V2ChargingTimeseriesItem:
     properties:
-      avg_power:
-        description: 'Deprecated: blended AC+DC average — see V2ChargingSummary.AvgPower.'
-        type: number
       avg_power_ac:
-        description: 交流平均功率 (kW)
+        description: |-
+          Only the AC/DC split is exposed; a blended avg_power across both is
+          not interpretable (audit §1.4).
         type: number
       avg_power_dc:
         description: 直流平均功率 (kW)
@@ -400,7 +341,7 @@ definitions:
         description: 充电会话数
         type: integer
     type: object
-  v2.V2ChargingTimeseriesResponse:
+  V2ChargingTimeseriesResponse:
     properties:
       group_by:
         description: 聚合粒度
@@ -408,10 +349,10 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2ChargingTimeseriesItem'
+          $ref: '#/definitions/V2ChargingTimeseriesItem'
         type: array
     type: object
-  v2.V2ChargingTypeItem:
+  V2ChargingTypeItem:
     properties:
       charging_type:
         type: string
@@ -428,7 +369,7 @@ definitions:
         description: 充电会话数
         type: integer
     type: object
-  v2.V2ComparisonValue:
+  V2ComparisonValue:
     properties:
       current:
         type: number
@@ -439,18 +380,18 @@ definitions:
       previous:
         type: number
     type: object
-  v2.V2CostAPIResponse:
+  V2CostAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2CostResponse'
+        - $ref: '#/definitions/V2CostResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2CostLocationItem:
+  V2CostLocationItem:
     properties:
       charging_cost:
         description: 充电费用
@@ -462,7 +403,7 @@ definitions:
         description: 地点名称
         type: string
     type: object
-  v2.V2CostPeriodItem:
+  V2CostPeriodItem:
     properties:
       charging_cost:
         description: 充电费用
@@ -474,20 +415,20 @@ definitions:
         description: 周期起始
         type: string
     type: object
-  v2.V2CostResponse:
+  V2CostResponse:
     properties:
       cost_by_location:
         items:
-          $ref: '#/definitions/v2.V2CostLocationItem'
+          $ref: '#/definitions/V2CostLocationItem'
         type: array
       cost_by_period:
         items:
-          $ref: '#/definitions/v2.V2CostPeriodItem'
+          $ref: '#/definitions/V2CostPeriodItem'
         type: array
       summary:
-        $ref: '#/definitions/v2.V2CostSummaryDetails'
+        $ref: '#/definitions/V2CostSummaryDetails'
     type: object
-  v2.V2CostSummary:
+  V2CostSummary:
     properties:
       charging_cost:
         description: 充电费用
@@ -496,7 +437,7 @@ definitions:
         description: 单位里程费用
         type: number
     type: object
-  v2.V2CostSummaryDetails:
+  V2CostSummaryDetails:
     properties:
       charging_cost:
         description: 充电费用
@@ -521,23 +462,23 @@ definitions:
           outliers).'
         type: number
     type: object
-  v2.V2DrivingAPIResponse:
+  V2DrivingAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2DrivingResponse'
+        - $ref: '#/definitions/V2DrivingResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2DrivingResponse:
+  V2DrivingResponse:
     properties:
       summary:
-        $ref: '#/definitions/v2.V2DrivingSummary'
+        $ref: '#/definitions/V2DrivingSummary'
     type: object
-  v2.V2DrivingSummary:
+  V2DrivingSummary:
     properties:
       avg_consumption:
         description: 平均能耗 (Wh/km)
@@ -547,8 +488,6 @@ definitions:
         type: number
       avg_duration:
         description: 平均时长 (秒)
-        type: number
-      avg_outside_temp:
         type: number
       avg_speed:
         description: 平均速度 (km/h)
@@ -589,18 +528,18 @@ definitions:
         description: 最差能耗 (Wh/km)
         type: number
     type: object
-  v2.V2DrivingTimeseriesAPIResponse:
+  V2DrivingTimeseriesAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2DrivingTimeseriesResponse'
+        - $ref: '#/definitions/V2DrivingTimeseriesResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2DrivingTimeseriesItem:
+  V2DrivingTimeseriesItem:
     properties:
       avg_consumption:
         description: 平均能耗 (Wh/km)
@@ -623,7 +562,7 @@ definitions:
         description: 周期起始
         type: string
     type: object
-  v2.V2DrivingTimeseriesResponse:
+  V2DrivingTimeseriesResponse:
     properties:
       group_by:
         description: 聚合粒度
@@ -631,39 +570,39 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2DrivingTimeseriesItem'
+          $ref: '#/definitions/V2DrivingTimeseriesItem'
         type: array
     type: object
-  v2.V2EfficiencyAPIResponse:
+  V2EfficiencyAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2EfficiencyResponse'
+        - $ref: '#/definitions/V2EfficiencyResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2EfficiencyBuckets:
+  V2EfficiencyBuckets:
     properties:
       speed_10kmh:
         items:
-          $ref: '#/definitions/v2.V2EfficiencySpeedBucket'
+          $ref: '#/definitions/V2EfficiencySpeedBucket'
         type: array
       temperature_5c:
         items:
-          $ref: '#/definitions/v2.V2EfficiencyTempBucket'
+          $ref: '#/definitions/V2EfficiencyTempBucket'
         type: array
     type: object
-  v2.V2EfficiencyResponse:
+  V2EfficiencyResponse:
     properties:
       buckets:
-        $ref: '#/definitions/v2.V2EfficiencyBuckets'
+        $ref: '#/definitions/V2EfficiencyBuckets'
       summary:
-        $ref: '#/definitions/v2.V2EfficiencySummary'
+        $ref: '#/definitions/V2EfficiencySummary'
     type: object
-  v2.V2EfficiencySpeedBucket:
+  V2EfficiencySpeedBucket:
     properties:
       bucket:
         type: number
@@ -676,10 +615,8 @@ definitions:
         description: 行程数
         type: integer
     type: object
-  v2.V2EfficiencySummary:
+  V2EfficiencySummary:
     properties:
-      avg_outside_temp:
-        type: number
       consumption_overhead:
         description: 能耗开销 (Wh/km)
         type: number
@@ -697,7 +634,7 @@ definitions:
       net_consumption:
         type: number
     type: object
-  v2.V2EfficiencyTempBucket:
+  V2EfficiencyTempBucket:
     properties:
       avg_speed:
         description: 平均速度 (km/h)
@@ -713,27 +650,27 @@ definitions:
         description: 行程数
         type: integer
     type: object
-  v2.V2EnvironmentalAPIResponse:
+  V2EnvironmentalAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2EnvironmentalResponse'
+        - $ref: '#/definitions/V2EnvironmentalResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2EnvironmentalResponse:
+  V2EnvironmentalResponse:
     properties:
       summary:
-        $ref: '#/definitions/v2.V2EnvironmentalSummary'
+        $ref: '#/definitions/V2EnvironmentalSummary'
       timeseries:
         allOf:
-        - $ref: '#/definitions/v2.V2EnvironmentalTimeseries'
+        - $ref: '#/definitions/V2EnvironmentalTimeseries'
         description: 时序
     type: object
-  v2.V2EnvironmentalSummary:
+  V2EnvironmentalSummary:
     properties:
       battery_heater_minutes:
         description: 电池加热器时长 (分)
@@ -756,12 +693,6 @@ definitions:
       elevation_min:
         description: 最低海拔 (米)
         type: number
-      inside_temp_avg:
-        description: 车内平均温 (°C)
-        type: number
-      outside_temp_avg:
-        description: 车外平均温 (°C)
-        type: number
       outside_temp_max:
         description: 车外最高温 (°C)
         type: number
@@ -769,7 +700,7 @@ definitions:
         description: 车外最低温 (°C)
         type: number
     type: object
-  v2.V2EnvironmentalTimeseries:
+  V2EnvironmentalTimeseries:
     properties:
       group_by:
         description: 聚合粒度
@@ -777,14 +708,12 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2EnvironmentalTimeseriesItem'
+          $ref: '#/definitions/V2EnvironmentalTimeseriesItem'
         type: array
     type: object
-  v2.V2EnvironmentalTimeseriesItem:
+  V2EnvironmentalTimeseriesItem:
     properties:
       climate_on_ratio:
-        type: number
-      elevation_avg:
         type: number
       elevation_gain:
         description: 该周期累计爬升 (米)
@@ -796,17 +725,11 @@ definitions:
         type: number
       elevation_min:
         type: number
-      inside_temp_avg:
-        description: 车内平均温 (°C)
-        type: number
       inside_temp_max:
         description: 车内最高温 (°C)
         type: number
       inside_temp_min:
         description: 车内最低温 (°C)
-        type: number
-      outside_temp_avg:
-        description: 车外平均温 (°C)
         type: number
       outside_temp_max:
         description: 车外最高温 (°C)
@@ -818,7 +741,7 @@ definitions:
         description: 周期起始
         type: string
     type: object
-  v2.V2Geofence:
+  V2Geofence:
     properties:
       billing_type:
         description: 计费类型
@@ -845,26 +768,26 @@ definitions:
         description: 每次会话固定费用
         type: number
     type: object
-  v2.V2GeofencesAPIResponse:
+  V2GeofencesAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2GeofencesResponse'
+        - $ref: '#/definitions/V2GeofencesResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2GeofencesResponse:
+  V2GeofencesResponse:
     properties:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2Geofence'
+          $ref: '#/definitions/V2Geofence'
         type: array
     type: object
-  v2.V2IdleGeofence:
+  V2IdleGeofence:
     properties:
       id:
         description: ID
@@ -873,7 +796,7 @@ definitions:
         description: 名称
         type: string
     type: object
-  v2.V2IdlePeriodItem:
+  V2IdlePeriodItem:
     properties:
       avg_power_w:
         description: 平均功率 (W)
@@ -891,7 +814,7 @@ definitions:
         type: number
       geofence:
         allOf:
-        - $ref: '#/definitions/v2.V2IdleGeofence'
+        - $ref: '#/definitions/V2IdleGeofence'
         description: 围栏
       has_reduced_range:
         description: 是否处于受限续航状态
@@ -917,18 +840,18 @@ definitions:
       start_date:
         type: string
     type: object
-  v2.V2IdlePeriodsAPIResponse:
+  V2IdlePeriodsAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2IdlePeriodsResponse'
+        - $ref: '#/definitions/V2IdlePeriodsResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2IdlePeriodsResponse:
+  V2IdlePeriodsResponse:
     properties:
       has_more:
         description: 是否还有更多
@@ -936,24 +859,24 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2IdlePeriodItem'
+          $ref: '#/definitions/V2IdlePeriodItem'
         type: array
       next_cursor:
         description: 下一页游标
         type: string
     type: object
-  v2.V2LifecycleAPIResponse:
+  V2LifecycleAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2LifecycleResponse'
+        - $ref: '#/definitions/V2LifecycleResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2LifecycleResponse:
+  V2LifecycleResponse:
     properties:
       as_of:
         description: 快照时间
@@ -996,7 +919,7 @@ definitions:
         description: OTA 更新次数
         type: integer
     type: object
-  v2.V2Meta:
+  V2Meta:
     properties:
       applied_filters:
         additionalProperties:
@@ -1046,28 +969,28 @@ definitions:
         type: string
       unit:
         allOf:
-        - $ref: '#/definitions/v2.V2Unit'
+        - $ref: '#/definitions/V2Unit'
         description: 单位
     type: object
-  v2.V2OdometerSeriesAPIResponse:
+  V2OdometerSeriesAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2OdometerSeriesResponse'
+        - $ref: '#/definitions/V2OdometerSeriesResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2OdometerSeriesItem:
+  V2OdometerSeriesItem:
     properties:
       date:
         type: string
       odometer:
         type: number
     type: object
-  v2.V2OdometerSeriesResponse:
+  V2OdometerSeriesResponse:
     properties:
       has_more:
         description: 是否还有更多
@@ -1075,39 +998,39 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2OdometerSeriesItem'
+          $ref: '#/definitions/V2OdometerSeriesItem'
         type: array
       next_cursor:
         description: 下一页游标
         type: string
     type: object
-  v2.V2ParkingAPIResponse:
+  V2ParkingAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2ParkingResponse'
+        - $ref: '#/definitions/V2ParkingResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2ParkingBreakdownResponse:
+  V2ParkingBreakdownResponse:
     properties:
       by:
         type: string
       locations:
         description: 地点列表
         items:
-          $ref: '#/definitions/v2.V2ParkingLocationItem'
+          $ref: '#/definitions/V2ParkingLocationItem'
         type: array
       states:
         description: 州/省分布
         items:
-          $ref: '#/definitions/v2.V2ParkingStateItem'
+          $ref: '#/definitions/V2ParkingStateItem'
         type: array
     type: object
-  v2.V2ParkingLocationItem:
+  V2ParkingLocationItem:
     properties:
       address_id:
         description: 地址 ID
@@ -1128,16 +1051,16 @@ definitions:
         description: 驻车会话数
         type: integer
     type: object
-  v2.V2ParkingResponse:
+  V2ParkingResponse:
     properties:
       breakdown:
         allOf:
-        - $ref: '#/definitions/v2.V2ParkingBreakdownResponse'
+        - $ref: '#/definitions/V2ParkingBreakdownResponse'
         description: 分项维度
       summary:
-        $ref: '#/definitions/v2.V2ParkingSummary'
+        $ref: '#/definitions/V2ParkingSummary'
     type: object
-  v2.V2ParkingStateItem:
+  V2ParkingStateItem:
     properties:
       duration:
         description: 时长 (秒)
@@ -1150,7 +1073,7 @@ definitions:
       transition_count:
         type: integer
     type: object
-  v2.V2ParkingSummary:
+  V2ParkingSummary:
     properties:
       asleep_duration:
         type: number
@@ -1178,7 +1101,7 @@ definitions:
         description: 吸血式漏电比例 (%)
         type: number
     type: object
-  v2.V2PlaceBucket:
+  V2PlaceBucket:
     properties:
       last_visited:
         description: 最后访问时间
@@ -1190,85 +1113,85 @@ definitions:
         description: 访问次数
         type: integer
     type: object
-  v2.V2PlacesAPIResponse:
+  V2PlacesAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2PlacesResponse'
+        - $ref: '#/definitions/V2PlacesResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2PlacesResponse:
+  V2PlacesResponse:
     properties:
       cities:
         description: 城市分布
         items:
-          $ref: '#/definitions/v2.V2PlaceBucket'
+          $ref: '#/definitions/V2PlaceBucket'
         type: array
       countries:
         description: 国家分布
         items:
-          $ref: '#/definitions/v2.V2PlaceBucket'
+          $ref: '#/definitions/V2PlaceBucket'
         type: array
       states:
         description: 州/省分布
         items:
-          $ref: '#/definitions/v2.V2PlaceBucket'
+          $ref: '#/definitions/V2PlaceBucket'
         type: array
     type: object
-  v2.V2Summary:
+  V2Summary:
     properties:
       battery:
         allOf:
-        - $ref: '#/definitions/v2.V2BatterySummary'
+        - $ref: '#/definitions/V2BatterySummary'
         description: 电池指标
       charging:
         allOf:
-        - $ref: '#/definitions/v2.V2ChargingSummary'
+        - $ref: '#/definitions/V2ChargingSummary'
         description: 充电指标
       cost:
         allOf:
-        - $ref: '#/definitions/v2.V2CostSummary'
+        - $ref: '#/definitions/V2CostSummary'
         description: 费用
       driving:
         allOf:
-        - $ref: '#/definitions/v2.V2DrivingSummary'
+        - $ref: '#/definitions/V2DrivingSummary'
         description: 行驶指标
       parking:
-        $ref: '#/definitions/v2.V2ParkingSummary'
+        $ref: '#/definitions/V2ParkingSummary'
       updates:
-        $ref: '#/definitions/v2.V2UpdateSummary'
+        $ref: '#/definitions/V2UpdateSummary'
       vehicle:
         allOf:
-        - $ref: '#/definitions/v2.V2VehicleSummary'
+        - $ref: '#/definitions/V2VehicleSummary'
         description: 车辆信息
     type: object
-  v2.V2SummaryAPIResponse:
+  V2SummaryAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2SummaryResponse'
+        - $ref: '#/definitions/V2SummaryResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2SummaryByPeriodAPIResponse:
+  V2SummaryByPeriodAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2SummaryByPeriodResponse'
+        - $ref: '#/definitions/V2SummaryByPeriodResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2SummaryByPeriodItem:
+  V2SummaryByPeriodItem:
     properties:
       avg_consumption:
         description: 平均能耗 (Wh/km)
@@ -1303,7 +1226,7 @@ definitions:
         description: 周期起始
         type: string
     type: object
-  v2.V2SummaryByPeriodResponse:
+  V2SummaryByPeriodResponse:
     properties:
       group_by:
         description: 聚合粒度
@@ -1311,32 +1234,32 @@ definitions:
       items:
         description: 条目列表
         items:
-          $ref: '#/definitions/v2.V2SummaryByPeriodItem'
+          $ref: '#/definitions/V2SummaryByPeriodItem'
         type: array
     type: object
-  v2.V2SummaryResponse:
+  V2SummaryResponse:
     properties:
       comparison:
         additionalProperties:
-          $ref: '#/definitions/v2.V2ComparisonValue'
+          $ref: '#/definitions/V2ComparisonValue'
         description: 'Comparison keys: driving/charging/parking/battery/updates/vehicle/cost
           field paths; values are current vs previous period.'
         type: object
       summary:
-        $ref: '#/definitions/v2.V2Summary'
+        $ref: '#/definitions/V2Summary'
     type: object
-  v2.V2TimelineAPIResponse:
+  V2TimelineAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2TimelineResponse'
+        - $ref: '#/definitions/V2TimelineResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2TimelineEvent:
+  V2TimelineEvent:
     properties:
       end_time:
         type: string
@@ -1354,12 +1277,12 @@ definitions:
         description: 类型
         type: string
     type: object
-  v2.V2TimelineResponse:
+  V2TimelineResponse:
     properties:
       events:
         description: 事件列表
         items:
-          $ref: '#/definitions/v2.V2TimelineEvent'
+          $ref: '#/definitions/V2TimelineEvent'
         type: array
       has_more:
         description: 是否还有更多
@@ -1370,7 +1293,7 @@ definitions:
       total:
         type: integer
     type: object
-  v2.V2Unit:
+  V2Unit:
     properties:
       consumption:
         example: Wh/km
@@ -1402,18 +1325,18 @@ definitions:
         example: C
         type: string
     type: object
-  v2.V2UpdateAnalyticsAPIResponse:
+  V2UpdateAnalyticsAPIResponse:
     properties:
       data:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateAnalyticsResponse'
+        - $ref: '#/definitions/V2UpdateAnalyticsResponse'
         description: 响应数据
       meta:
         allOf:
-        - $ref: '#/definitions/v2.V2Meta'
+        - $ref: '#/definitions/V2Meta'
         description: 响应元信息
     type: object
-  v2.V2UpdateAnalyticsResponse:
+  V2UpdateAnalyticsResponse:
     properties:
       avg_update_duration:
         description: 平均更新时长 (秒)
@@ -1433,10 +1356,10 @@ definitions:
       versions:
         description: 版本列表
         items:
-          $ref: '#/definitions/v2.V2UpdateVersion'
+          $ref: '#/definitions/V2UpdateVersion'
         type: array
     type: object
-  v2.V2UpdateChargingMetrics:
+  V2UpdateChargingMetrics:
     properties:
       battery_energy:
         description: 电池端能量 (kWh)
@@ -1457,7 +1380,7 @@ definitions:
         description: 墙端用电 (kWh)
         type: number
     type: object
-  v2.V2UpdateDrivingMetrics:
+  V2UpdateDrivingMetrics:
     properties:
       avg_consumption:
         description: 平均能耗 (Wh/km)
@@ -1475,7 +1398,7 @@ definitions:
         description: 行程数
         type: integer
     type: object
-  v2.V2UpdateEvent:
+  V2UpdateEvent:
     properties:
       completed_at:
         description: 完成时间
@@ -1493,7 +1416,7 @@ definitions:
         description: 版本
         type: string
     type: object
-  v2.V2UpdateSummary:
+  V2UpdateSummary:
     properties:
       latest_version:
         description: 最近版本
@@ -1502,22 +1425,22 @@ definitions:
         description: OTA 更新次数
         type: integer
     type: object
-  v2.V2UpdateVersion:
+  V2UpdateVersion:
     properties:
       event:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateEvent'
+        - $ref: '#/definitions/V2UpdateEvent'
         description: 事件
       metrics:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateWindowMetrics'
+        - $ref: '#/definitions/V2UpdateWindowMetrics'
         description: 指标
       window:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateWindow'
+        - $ref: '#/definitions/V2UpdateWindow'
         description: 观察窗口
     type: object
-  v2.V2UpdateWindow:
+  V2UpdateWindow:
     properties:
       end:
         description: 结束时间
@@ -1529,21 +1452,21 @@ definitions:
         description: 起始时间
         type: string
     type: object
-  v2.V2UpdateWindowMetrics:
+  V2UpdateWindowMetrics:
     properties:
       charging:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateChargingMetrics'
+        - $ref: '#/definitions/V2UpdateChargingMetrics'
         description: 充电指标
       driving:
         allOf:
-        - $ref: '#/definitions/v2.V2UpdateDrivingMetrics'
+        - $ref: '#/definitions/V2UpdateDrivingMetrics'
         description: 行驶指标
       inactive_duration:
         description: 不活跃时长 (秒)
         type: number
     type: object
-  v2.V2VehicleSummary:
+  V2VehicleSummary:
     properties:
       charge_efficiency:
         type: number
@@ -1679,7 +1602,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆列表或单车详情
       tags:
       - v1
@@ -1697,14 +1620,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆列表或单车详情
       tags:
       - v1
   /v1/cars/{CarID}/battery-health:
     get:
-      description: 返回车辆电池健康度。此前 v2 `/analytics/battery` 仅多 `baseline_range_at_full_charge`
-        与 `estimated_range_degradation` 两个字段，自 v2.3 起两者已并入本端点（audit §1.3），v2 端点进入弃用倒计时。
+      description: 返回车辆电池健康度。包含 baseline_range_at_full_charge 与 estimated_range_degradation（自
+        v2.3 起合并自原 v2 `/analytics/battery`，该 v2 端点已删除，audit §1.3）。
       parameters:
       - description: 车辆 ID
         in: path
@@ -1717,7 +1640,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 获取车辆电池健康度
       tags:
       - v1
@@ -1751,7 +1674,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆充电会话列表
       tags:
       - v1
@@ -1774,7 +1697,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 单条充电会话详情
       tags:
       - v1
@@ -1792,7 +1715,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 当前进行中的充电会话
       tags:
       - v1
@@ -1826,7 +1749,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆行程列表
       tags:
       - v1
@@ -1861,7 +1784,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 单条行程详情
       tags:
       - v1
@@ -1880,19 +1803,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
         "501":
           description: Not Implemented
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆实时状态（MQTT）
       tags:
       - v1
   /v1/cars/{CarID}/tire-pressure:
     get:
       description: 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。每日历史返回 *_min / *_max（用于发现慢漏气）和 *_avg（已弃用，下个
-        minor 删除）。日历桶按 apicommon.AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循
-        settings.unit_of_pressure（默认 bar；psi 由 conv.BarToPsi 换算）。
+        minor 删除）。日历桶按 AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循
+        settings.unit_of_pressure（默认 bar；psi 由 BarToPsi 换算）。
       parameters:
       - description: 车辆 ID
         in: path
@@ -1909,7 +1832,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆胎压（最近读数 + 窗口）
       tags:
       - v1
@@ -1927,7 +1850,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: 车辆 OTA 更新历史
       tags:
       - v1
@@ -1939,7 +1862,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.V1ErrorEnvelope'
+            $ref: '#/definitions/V1ErrorEnvelope'
       summary: TeslaMate 全局设置
       tags:
       - v1
@@ -1953,137 +1876,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2CapabilitiesAPIResponse'
+            $ref: '#/definitions/V2CapabilitiesAPIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 API 能力声明
-      tags:
-      - v2
-  /v2/cars/{CarID}/analytics/battery:
-    get:
-      deprecated: true
-      description: '**DEPRECATED — 将在下一个 minor 版本删除。** v1 `/v1/cars/{CarID}/battery-health`
-        已合并 `baseline_range_at_full_charge` 与 `estimated_range_degradation`，并提供更完整的电池健康字段（max_capacity、cycles、battery_health_percentage
-        等）。响应头会带 `Deprecation: true` 与 `Link: ... rel="successor-version"`（audit §1.3）。'
-      parameters:
-      - description: 车辆 ID
-        example: 1
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 聚合周期
-        enum:
-        - day
-        - week
-        - month
-        - quarter
-        - year
-        - custom
-        in: query
-        name: period
-        type: string
-      - description: 起始时间（RFC3339）
-        in: query
-        name: start
-        type: string
-      - description: 结束时间（RFC3339）
-        in: query
-        name: end
-        type: string
-      - description: IANA 时区
-        in: query
-        name: timezone
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.V2BatteryAPIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-      summary: V2 电池分析汇总（已弃用）
-      tags:
-      - v2
-  /v2/cars/{CarID}/analytics/battery/timeseries:
-    get:
-      deprecated: true
-      description: '**DEPRECATED — 将在下一个 minor 版本删除。** 当前实现仅在做 "假设 100% SoC 时的额定续航估计"
-        的均值，月聚合下毫无意义（audit §1.2）。建议改用 `/v2/cars/{CarID}/timeline?include_battery_levels=true`
-        拿事件级 SoC 变化。响应头会带 `Deprecation: true`。'
-      parameters:
-      - description: 车辆 ID
-        example: 1
-        in: path
-        name: CarID
-        required: true
-        type: integer
-      - description: 聚合周期
-        enum:
-        - day
-        - week
-        - month
-        - quarter
-        - year
-        - custom
-        in: query
-        name: period
-        type: string
-      - description: 起始时间（RFC3339）
-        in: query
-        name: start
-        type: string
-      - description: 结束时间（RFC3339）
-        in: query
-        name: end
-        type: string
-      - description: IANA 时区
-        in: query
-        name: timezone
-        type: string
-      - description: 时序聚合粒度
-        enum:
-        - day
-        - week
-        - month
-        - year
-        in: query
-        name: group_by
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.V2BatteryTimeseriesAPIResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
-      summary: V2 电池分析时序（已弃用）
       tags:
       - v2
   /v2/cars/{CarID}/analytics/charging:
@@ -2147,19 +1945,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2ChargingAPIResponse'
+            $ref: '#/definitions/V2ChargingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 充电分析汇总
       tags:
       - v2
@@ -2207,19 +2005,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2ChargingCurveAPIResponse'
+            $ref: '#/definitions/V2ChargingCurveAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 直流充电曲线（聚合）
       tags:
       - v2
@@ -2273,19 +2071,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2CostAPIResponse'
+            $ref: '#/definitions/V2CostAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 费用分析
       tags:
       - v2
@@ -2328,19 +2126,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2DrivingAPIResponse'
+            $ref: '#/definitions/V2DrivingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 行驶分析汇总
       tags:
       - v2
@@ -2392,19 +2190,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2DrivingTimeseriesAPIResponse'
+            $ref: '#/definitions/V2DrivingTimeseriesAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 行驶分析时序
       tags:
       - v2
@@ -2460,19 +2258,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2EfficiencyAPIResponse'
+            $ref: '#/definitions/V2EfficiencyAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 能效分析
       tags:
       - v2
@@ -2529,19 +2327,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2EnvironmentalAPIResponse'
+            $ref: '#/definitions/V2EnvironmentalAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 环境分析（温度/HVAC/海拔）
       tags:
       - v2
@@ -2596,19 +2394,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2ParkingAPIResponse'
+            $ref: '#/definitions/V2ParkingAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 驻车分析汇总
       tags:
       - v2
@@ -2658,19 +2456,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2SummaryAPIResponse'
+            $ref: '#/definitions/V2SummaryAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 周期汇总分析
       tags:
       - v2
@@ -2713,19 +2511,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2CapacityByMileageAPIResponse'
+            $ref: '#/definitions/V2CapacityByMileageAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 电池容量随里程趋势
       tags:
       - v2
@@ -2749,19 +2547,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2LifecycleAPIResponse'
+            $ref: '#/definitions/V2LifecycleAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 累计生命周期统计
       tags:
       - v2
@@ -2812,19 +2610,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2OdometerSeriesAPIResponse'
+            $ref: '#/definitions/V2OdometerSeriesAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 累计里程序列
       tags:
       - v2
@@ -2861,19 +2659,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2PlacesAPIResponse'
+            $ref: '#/definitions/V2PlacesAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 生命周期地点分布（城市/州/国家）
       tags:
       - v2
@@ -2932,19 +2730,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2IdlePeriodsAPIResponse'
+            $ref: '#/definitions/V2IdlePeriodsAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 驻车闲置区间
       tags:
       - v2
@@ -2996,19 +2794,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2SummaryByPeriodAPIResponse'
+            $ref: '#/definitions/V2SummaryByPeriodAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 周期扁平汇总
       tags:
       - v2
@@ -3045,19 +2843,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2TimelineAPIResponse'
+            $ref: '#/definitions/V2TimelineAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 统一事件时间线
       tags:
       - v2
@@ -3100,19 +2898,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2UpdateAnalyticsAPIResponse'
+            $ref: '#/definitions/V2UpdateAnalyticsAPIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 OTA 更新分析
       tags:
       - v2
@@ -3125,11 +2923,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.V2GeofencesAPIResponse'
+            $ref: '#/definitions/V2GeofencesAPIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/apicommon.APIErrorResponse'
+            $ref: '#/definitions/APIErrorResponse'
       summary: V2 围栏列表（含计费规则）
       tags:
       - v2

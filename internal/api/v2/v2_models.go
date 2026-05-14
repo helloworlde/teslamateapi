@@ -169,7 +169,6 @@ type V2DrivingSummary struct {
 	WorstConsumption        *float64 `json:"worst_consumption,omitempty"` // 最差能耗 (Wh/km)
 	RangeLoss               float64  `json:"range_loss"`                  // 续航损失 (km)
 	BatteryLevelUsed        *float64 `json:"battery_level_used,omitempty"`
-	AvgOutsideTemp          *float64 `json:"avg_outside_temp,omitempty"`
 }
 
 // V2ChargingSummary is the canonical charging aggregate; consumed by both
@@ -185,14 +184,9 @@ type V2ChargingSummary struct {
 	LongestSessionDuration *float64 `json:"longest_session_duration,omitempty"`
 	AvgEnergyAdded         *float64 `json:"avg_energy_added,omitempty"`
 	LargestSession         *float64 `json:"largest_session,omitempty"`
-	// Deprecated: AC and DC charging have very different power profiles, so a
-	// blended average across both is meaningless. Use avg_power_ac /
-	// avg_power_dc and their _median_/_max_ siblings. The next minor will
-	// drop avg_power and max_power; until then we still emit them so existing
-	// dashboards keep rendering (audit §1.4, spec §3.1 deprecation flow).
-	AvgPower *float64 `json:"avg_power,omitempty"` // 平均功率 (kW) — deprecated
-	// Deprecated: superseded by max_power_ac / max_power_dc.
-	MaxPower          *float64 `json:"max_power,omitempty"`
+	// AC and DC charging have very different power profiles; a blended
+	// avg_power / max_power across both is uninterpretable, so only the
+	// AC/DC split is exposed (audit §1.4).
 	AvgPowerAC        *float64 `json:"avg_power_ac,omitempty"`        // 交流平均功率 (kW)
 	AvgPowerDC        *float64 `json:"avg_power_dc,omitempty"`        // 直流平均功率 (kW)
 	MedianPowerAC     *float64 `json:"median_power_ac,omitempty"`     // 交流中位数功率 (kW)

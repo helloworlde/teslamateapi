@@ -13,7 +13,7 @@ import (
 // TeslaMateAPICarsBatteryHealthV1 godoc
 //
 // @Summary 获取车辆电池健康度
-// @Description 返回车辆电池健康度。此前 v2 `/analytics/battery` 仅多 `baseline_range_at_full_charge` 与 `estimated_range_degradation` 两个字段，自 v2.3 起两者已并入本端点（audit §1.3），v2 端点进入弃用倒计时。
+// @Description 返回车辆电池健康度。包含 baseline_range_at_full_charge 与 estimated_range_degradation（自 v2.3 起合并自原 v2 `/analytics/battery`，该 v2 端点已删除，audit §1.3）。
 // @Tags v1
 // @Produce json
 // @Param CarID path int true "车辆 ID"

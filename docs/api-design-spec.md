@@ -93,16 +93,18 @@
 
 ## 3. 端点演进与兼容性
 
-### 3.1 破坏性变更走两步
+### 3.1 破坏性变更原则
 
-1. 第一个 minor 版本：新字段加入；旧字段保留并在 swagger 上标记 `deprecated: true`，响应头加 `Deprecation: true` 与 `Sunset: <RFC3339 date>`。
-2. 第二个 minor 版本：删除旧字段。
+默认走两步：第一个 minor 加新字段、旧字段保留并在 swagger 上标记 `deprecated: true` + 响应头 `Deprecation: true`（带 `Sunset: <RFC3339 date>`）；第二个 minor 删除旧字段。
 
-破坏性变更必须在 `CHANGELOG.md` 单独章节列出，并在 PR 描述中显式提到 "本变更属于破坏性变更，遵守 §3.1 两步流程"。
+但如果旧字段/端点本身就是错误抽象（口径误导、与 v1 重复、单一均值无法回答任何业务问题），可以**跳过 deprecation 直接删**——继续保留只会让客户端读到坏数据。这种情况要在 `CHANGELOG.md` 标注"直接删除，未走 deprecate"，并在审计文档里写清原因。2026-05 阶段 C 的 `/v2/analytics/battery*` 与若干 `*_avg` 字段就是这一路径（见 `docs/v2-api-audit-2026-05.md` §7）。
 
-### 3.2 端点合并/删除走 deprecate 流程
+破坏性变更必须在 `CHANGELOG.md` 单独章节列出，并在 PR 描述中显式提到 "本变更属于破坏性变更"。
 
-- 删除端点前必须先在响应头加 `Deprecation: true` 至少一个 minor。
+### 3.2 端点合并/删除
+
+- 删除端点的默认流程：先在响应头加 `Deprecation: true` 至少一个 minor，下一个 minor 再真正删除。
+- 当端点从一开始就是错误抽象（重复、误导）时按 §3.1 直接删除。
 - 合并到其它端点时，被合并端点的所有字段必须能在新端点上找到等价物，文档里要给出 "字段映射表"。
 
 ### 3.3 capabilities 必须随路由表自动同步

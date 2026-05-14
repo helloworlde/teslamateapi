@@ -169,7 +169,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -197,7 +197,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -205,7 +205,7 @@
         },
         "/v1/cars/{CarID}/battery-health": {
             "get": {
-                "description": "返回车辆电池健康度。此前 v2 `/analytics/battery` 仅多 `baseline_range_at_full_charge` 与 `estimated_range_degradation` 两个字段，自 v2.3 起两者已并入本端点（audit §1.3），v2 端点进入弃用倒计时。",
+                "description": "返回车辆电池健康度。包含 baseline_range_at_full_charge 与 estimated_range_degradation（自 v2.3 起合并自原 v2 `/analytics/battery`，该 v2 端点已删除，audit §1.3）。",
                 "produces": [
                     "application/json"
                 ],
@@ -226,7 +226,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -278,7 +278,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -306,7 +306,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -341,7 +341,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -393,7 +393,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -445,7 +445,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -474,13 +474,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     },
                     "501": {
                         "description": "Not Implemented",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -488,7 +488,7 @@
         },
         "/v1/cars/{CarID}/tire-pressure": {
             "get": {
-                "description": "最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。每日历史返回 *_min / *_max（用于发现慢漏气）和 *_avg（已弃用，下个 minor 删除）。日历桶按 apicommon.AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 conv.BarToPsi 换算）。",
+                "description": "最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。每日历史返回 *_min / *_max（用于发现慢漏气）和 *_avg（已弃用，下个 minor 删除）。日历桶按 AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 BarToPsi 换算）。",
                 "produces": [
                     "application/json"
                 ],
@@ -515,7 +515,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -543,7 +543,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -562,7 +562,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.V1ErrorEnvelope"
+                            "$ref": "#/definitions/V1ErrorEnvelope"
                         }
                     }
                 }
@@ -582,187 +582,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2CapabilitiesAPIResponse"
+                            "$ref": "#/definitions/V2CapabilitiesAPIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/battery": {
-            "get": {
-                "description": "**DEPRECATED — 将在下一个 minor 版本删除。** v1 `/v1/cars/{CarID}/battery-health` 已合并 `baseline_range_at_full_charge` 与 `estimated_range_degradation`，并提供更完整的电池健康字段（max_capacity、cycles、battery_health_percentage 等）。响应头会带 `Deprecation: true` 与 `Link: ... rel=\"successor-version\"`（audit §1.3）。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v2"
-                ],
-                "summary": "V2 电池分析汇总（已弃用）",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom"
-                        ],
-                        "type": "string",
-                        "description": "聚合周期",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "起始时间（RFC3339）",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "结束时间（RFC3339）",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA 时区",
-                        "name": "timezone",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.V2BatteryAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/cars/{CarID}/analytics/battery/timeseries": {
-            "get": {
-                "description": "**DEPRECATED — 将在下一个 minor 版本删除。** 当前实现仅在做 \"假设 100% SoC 时的额定续航估计\" 的均值，月聚合下毫无意义（audit §1.2）。建议改用 `/v2/cars/{CarID}/timeline?include_battery_levels=true` 拿事件级 SoC 变化。响应头会带 `Deprecation: true`。",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v2"
-                ],
-                "summary": "V2 电池分析时序（已弃用）",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "车辆 ID",
-                        "name": "CarID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "quarter",
-                            "year",
-                            "custom"
-                        ],
-                        "type": "string",
-                        "description": "聚合周期",
-                        "name": "period",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "起始时间（RFC3339）",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "结束时间（RFC3339）",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "IANA 时区",
-                        "name": "timezone",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "day",
-                            "week",
-                            "month",
-                            "year"
-                        ],
-                        "type": "string",
-                        "description": "时序聚合粒度",
-                        "name": "group_by",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.V2BatteryTimeseriesAPIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -853,25 +679,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2ChargingAPIResponse"
+                            "$ref": "#/definitions/V2ChargingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -939,25 +765,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2ChargingCurveAPIResponse"
+                            "$ref": "#/definitions/V2ChargingCurveAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1031,25 +857,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2CostAPIResponse"
+                            "$ref": "#/definitions/V2CostAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1111,25 +937,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2DrivingAPIResponse"
+                            "$ref": "#/definitions/V2DrivingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1203,25 +1029,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2DrivingTimeseriesAPIResponse"
+                            "$ref": "#/definitions/V2DrivingTimeseriesAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1300,25 +1126,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2EfficiencyAPIResponse"
+                            "$ref": "#/definitions/V2EfficiencyAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1399,25 +1225,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2EnvironmentalAPIResponse"
+                            "$ref": "#/definitions/V2EnvironmentalAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1496,25 +1322,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2ParkingAPIResponse"
+                            "$ref": "#/definitions/V2ParkingAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1586,25 +1412,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2SummaryAPIResponse"
+                            "$ref": "#/definitions/V2SummaryAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1666,25 +1492,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2CapacityByMileageAPIResponse"
+                            "$ref": "#/definitions/V2CapacityByMileageAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1720,25 +1546,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2LifecycleAPIResponse"
+                            "$ref": "#/definitions/V2LifecycleAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1812,25 +1638,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2OdometerSeriesAPIResponse"
+                            "$ref": "#/definitions/V2OdometerSeriesAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1884,25 +1710,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2PlacesAPIResponse"
+                            "$ref": "#/definitions/V2PlacesAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -1988,25 +1814,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2IdlePeriodsAPIResponse"
+                            "$ref": "#/definitions/V2IdlePeriodsAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -2080,25 +1906,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2SummaryByPeriodAPIResponse"
+                            "$ref": "#/definitions/V2SummaryByPeriodAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -2153,25 +1979,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2TimelineAPIResponse"
+                            "$ref": "#/definitions/V2TimelineAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -2233,25 +2059,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2UpdateAnalyticsAPIResponse"
+                            "$ref": "#/definitions/V2UpdateAnalyticsAPIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -2271,13 +2097,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.V2GeofencesAPIResponse"
+                            "$ref": "#/definitions/V2GeofencesAPIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/apicommon.APIErrorResponse"
+                            "$ref": "#/definitions/APIErrorResponse"
                         }
                     }
                 }
@@ -2285,7 +2111,7 @@
         }
     },
     "definitions": {
-        "apicommon.APIErrorBody": {
+        "APIErrorBody": {
             "type": "object",
             "properties": {
                 "code": {
@@ -2301,20 +2127,20 @@
                 }
             }
         },
-        "apicommon.APIErrorResponse": {
+        "APIErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "description": "错误体",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/apicommon.APIErrorBody"
+                            "$ref": "#/definitions/APIErrorBody"
                         }
                     ]
                 }
             }
         },
-        "v1.V1ErrorEnvelope": {
+        "V1ErrorEnvelope": {
             "type": "object",
             "properties": {
                 "error": {
@@ -2323,34 +2149,13 @@
                 }
             }
         },
-        "v1.V1JSONEnvelope": {
+        "V1JSONEnvelope": {
             "type": "object",
             "properties": {
                 "data": {}
             }
         },
-        "v2.V2BatteryAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "响应数据",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v2.V2BatteryResponse"
-                        }
-                    ]
-                },
-                "meta": {
-                    "description": "响应元信息",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v2.V2Meta"
-                        }
-                    ]
-                }
-            }
-        },
-        "v2.V2BatteryRange": {
+        "V2BatteryRange": {
             "type": "object",
             "properties": {
                 "ideal": {
@@ -2361,19 +2166,11 @@
                 }
             }
         },
-        "v2.V2BatteryResponse": {
-            "type": "object",
-            "properties": {
-                "summary": {
-                    "$ref": "#/definitions/v2.V2BatterySummary"
-                }
-            }
-        },
-        "v2.V2BatterySummary": {
+        "V2BatterySummary": {
             "type": "object",
             "properties": {
                 "baseline_range_at_full_charge": {
-                    "$ref": "#/definitions/v2.V2BatteryRange"
+                    "$ref": "#/definitions/V2BatteryRange"
                 },
                 "estimated_range_degradation": {
                     "type": "number"
@@ -2393,20 +2190,20 @@
                     "description": "满电续航 (km)",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2BatteryRange"
+                            "$ref": "#/definitions/V2BatteryRange"
                         }
                     ]
                 }
             }
         },
-        "v2.V2BatteryTimeseriesAPIResponse": {
+        "V2CapabilitiesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2BatteryTimeseriesResponse"
+                            "$ref": "#/definitions/V2CapabilitiesResponse"
                         }
                     ]
                 },
@@ -2414,70 +2211,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2BatteryTimeseriesItem": {
-            "type": "object",
-            "properties": {
-                "avg_level": {
-                    "type": "number"
-                },
-                "period_start": {
-                    "description": "周期起始",
-                    "type": "string"
-                },
-                "range_at_full_charge": {
-                    "description": "满电续航 (km)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v2.V2BatteryRange"
-                        }
-                    ]
-                }
-            }
-        },
-        "v2.V2BatteryTimeseriesResponse": {
-            "type": "object",
-            "properties": {
-                "group_by": {
-                    "description": "聚合粒度",
-                    "type": "string"
-                },
-                "items": {
-                    "description": "条目列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.V2BatteryTimeseriesItem"
-                    }
-                }
-            }
-        },
-        "v2.V2CapabilitiesAPIResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "响应数据",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v2.V2CapabilitiesResponse"
-                        }
-                    ]
-                },
-                "meta": {
-                    "description": "响应元信息",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/v2.V2Meta"
-                        }
-                    ]
-                }
-            }
-        },
-        "v2.V2CapabilitiesDomain": {
+        "V2CapabilitiesDomain": {
             "type": "object",
             "properties": {
                 "deprecated": {
@@ -2504,7 +2244,7 @@
                 }
             }
         },
-        "v2.V2CapabilitiesResponse": {
+        "V2CapabilitiesResponse": {
             "type": "object",
             "properties": {
                 "breakdown_options": {
@@ -2519,7 +2259,7 @@
                 "domains": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2CapabilitiesDomain"
+                        "$ref": "#/definitions/V2CapabilitiesDomain"
                     }
                 },
                 "version": {
@@ -2529,14 +2269,14 @@
                 }
             }
         },
-        "v2.V2CapacityByMileageAPIResponse": {
+        "V2CapacityByMileageAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2CapacityByMileageResponse"
+                            "$ref": "#/definitions/V2CapacityByMileageResponse"
                         }
                     ]
                 },
@@ -2544,13 +2284,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2CapacityByMileageItem": {
+        "V2CapacityByMileageItem": {
             "type": "object",
             "properties": {
                 "bucket": {
@@ -2567,26 +2307,26 @@
                 }
             }
         },
-        "v2.V2CapacityByMileageResponse": {
+        "V2CapacityByMileageResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2CapacityByMileageItem"
+                        "$ref": "#/definitions/V2CapacityByMileageItem"
                     }
                 }
             }
         },
-        "v2.V2ChargingAPIResponse": {
+        "V2ChargingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ChargingResponse"
+                            "$ref": "#/definitions/V2ChargingResponse"
                         }
                     ]
                 },
@@ -2594,13 +2334,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2ChargingBreakdownResponse": {
+        "V2ChargingBreakdownResponse": {
             "type": "object",
             "properties": {
                 "by": {
@@ -2610,25 +2350,25 @@
                     "description": "地点列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ChargingLocationItem"
+                        "$ref": "#/definitions/V2ChargingLocationItem"
                     }
                 },
                 "types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ChargingTypeItem"
+                        "$ref": "#/definitions/V2ChargingTypeItem"
                     }
                 }
             }
         },
-        "v2.V2ChargingCurveAPIResponse": {
+        "V2ChargingCurveAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ChargingCurveResponse"
+                            "$ref": "#/definitions/V2ChargingCurveResponse"
                         }
                     ]
                 },
@@ -2636,13 +2376,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2ChargingCurveResponse": {
+        "V2ChargingCurveResponse": {
             "type": "object",
             "properties": {
                 "min_sessions": {
@@ -2652,12 +2392,12 @@
                     "description": "样本",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ChargingCurveSample"
+                        "$ref": "#/definitions/V2ChargingCurveSample"
                     }
                 }
             }
         },
-        "v2.V2ChargingCurveSample": {
+        "V2ChargingCurveSample": {
             "type": "object",
             "properties": {
                 "avg_voltage": {
@@ -2690,7 +2430,7 @@
                 }
             }
         },
-        "v2.V2ChargingLocationItem": {
+        "V2ChargingLocationItem": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -2727,31 +2467,31 @@
                 }
             }
         },
-        "v2.V2ChargingResponse": {
+        "V2ChargingResponse": {
             "type": "object",
             "properties": {
                 "breakdown": {
                     "description": "分项维度",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ChargingBreakdownResponse"
+                            "$ref": "#/definitions/V2ChargingBreakdownResponse"
                         }
                     ]
                 },
                 "summary": {
-                    "$ref": "#/definitions/v2.V2ChargingSummary"
+                    "$ref": "#/definitions/V2ChargingSummary"
                 },
                 "timeseries": {
                     "description": "时序",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ChargingTimeseriesResponse"
+                            "$ref": "#/definitions/V2ChargingTimeseriesResponse"
                         }
                     ]
                 }
             }
         },
-        "v2.V2ChargingSummary": {
+        "V2ChargingSummary": {
             "type": "object",
             "properties": {
                 "ac_energy": {
@@ -2773,12 +2513,8 @@
                 "avg_energy_added": {
                     "type": "number"
                 },
-                "avg_power": {
-                    "description": "Deprecated: AC and DC charging have very different power profiles, so a\nblended average across both is meaningless. Use avg_power_ac /\navg_power_dc and their _median_/_max_ siblings. The next minor will\ndrop avg_power and max_power; until then we still emit them so existing\ndashboards keep rendering (audit §1.4, spec §3.1 deprecation flow).",
-                    "type": "number"
-                },
                 "avg_power_ac": {
-                    "description": "交流平均功率 (kW)",
+                    "description": "AC and DC charging have very different power profiles; a blended\navg_power / max_power across both is uninterpretable, so only the\nAC/DC split is exposed (audit §1.4).",
                     "type": "number"
                 },
                 "avg_power_dc": {
@@ -2823,10 +2559,6 @@
                 "max_cost": {
                     "type": "number"
                 },
-                "max_power": {
-                    "description": "Deprecated: superseded by max_power_ac / max_power_dc.",
-                    "type": "number"
-                },
                 "max_power_ac": {
                     "description": "交流峰值功率 (kW)",
                     "type": "number"
@@ -2852,15 +2584,11 @@
                 }
             }
         },
-        "v2.V2ChargingTimeseriesItem": {
+        "V2ChargingTimeseriesItem": {
             "type": "object",
             "properties": {
-                "avg_power": {
-                    "description": "Deprecated: blended AC+DC average — see V2ChargingSummary.AvgPower.",
-                    "type": "number"
-                },
                 "avg_power_ac": {
-                    "description": "交流平均功率 (kW)",
+                    "description": "Only the AC/DC split is exposed; a blended avg_power across both is\nnot interpretable (audit §1.4).",
                     "type": "number"
                 },
                 "avg_power_dc": {
@@ -2893,7 +2621,7 @@
                 }
             }
         },
-        "v2.V2ChargingTimeseriesResponse": {
+        "V2ChargingTimeseriesResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -2904,12 +2632,12 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ChargingTimeseriesItem"
+                        "$ref": "#/definitions/V2ChargingTimeseriesItem"
                     }
                 }
             }
         },
-        "v2.V2ChargingTypeItem": {
+        "V2ChargingTypeItem": {
             "type": "object",
             "properties": {
                 "charging_type": {
@@ -2933,7 +2661,7 @@
                 }
             }
         },
-        "v2.V2ComparisonValue": {
+        "V2ComparisonValue": {
             "type": "object",
             "properties": {
                 "current": {
@@ -2950,14 +2678,14 @@
                 }
             }
         },
-        "v2.V2CostAPIResponse": {
+        "V2CostAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2CostResponse"
+                            "$ref": "#/definitions/V2CostResponse"
                         }
                     ]
                 },
@@ -2965,13 +2693,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2CostLocationItem": {
+        "V2CostLocationItem": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -2988,7 +2716,7 @@
                 }
             }
         },
-        "v2.V2CostPeriodItem": {
+        "V2CostPeriodItem": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -3005,27 +2733,27 @@
                 }
             }
         },
-        "v2.V2CostResponse": {
+        "V2CostResponse": {
             "type": "object",
             "properties": {
                 "cost_by_location": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2CostLocationItem"
+                        "$ref": "#/definitions/V2CostLocationItem"
                     }
                 },
                 "cost_by_period": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2CostPeriodItem"
+                        "$ref": "#/definitions/V2CostPeriodItem"
                     }
                 },
                 "summary": {
-                    "$ref": "#/definitions/v2.V2CostSummaryDetails"
+                    "$ref": "#/definitions/V2CostSummaryDetails"
                 }
             }
         },
-        "v2.V2CostSummary": {
+        "V2CostSummary": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -3038,7 +2766,7 @@
                 }
             }
         },
-        "v2.V2CostSummaryDetails": {
+        "V2CostSummaryDetails": {
             "type": "object",
             "properties": {
                 "charging_cost": {
@@ -3072,14 +2800,14 @@
                 }
             }
         },
-        "v2.V2DrivingAPIResponse": {
+        "V2DrivingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2DrivingResponse"
+                            "$ref": "#/definitions/V2DrivingResponse"
                         }
                     ]
                 },
@@ -3087,21 +2815,21 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2DrivingResponse": {
+        "V2DrivingResponse": {
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/v2.V2DrivingSummary"
+                    "$ref": "#/definitions/V2DrivingSummary"
                 }
             }
         },
-        "v2.V2DrivingSummary": {
+        "V2DrivingSummary": {
             "type": "object",
             "properties": {
                 "avg_consumption": {
@@ -3114,9 +2842,6 @@
                 },
                 "avg_duration": {
                     "description": "平均时长 (秒)",
-                    "type": "number"
-                },
-                "avg_outside_temp": {
                     "type": "number"
                 },
                 "avg_speed": {
@@ -3174,14 +2899,14 @@
                 }
             }
         },
-        "v2.V2DrivingTimeseriesAPIResponse": {
+        "V2DrivingTimeseriesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2DrivingTimeseriesResponse"
+                            "$ref": "#/definitions/V2DrivingTimeseriesResponse"
                         }
                     ]
                 },
@@ -3189,13 +2914,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2DrivingTimeseriesItem": {
+        "V2DrivingTimeseriesItem": {
             "type": "object",
             "properties": {
                 "avg_consumption": {
@@ -3227,7 +2952,7 @@
                 }
             }
         },
-        "v2.V2DrivingTimeseriesResponse": {
+        "V2DrivingTimeseriesResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -3238,19 +2963,19 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2DrivingTimeseriesItem"
+                        "$ref": "#/definitions/V2DrivingTimeseriesItem"
                     }
                 }
             }
         },
-        "v2.V2EfficiencyAPIResponse": {
+        "V2EfficiencyAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2EfficiencyResponse"
+                            "$ref": "#/definitions/V2EfficiencyResponse"
                         }
                     ]
                 },
@@ -3258,41 +2983,41 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2EfficiencyBuckets": {
+        "V2EfficiencyBuckets": {
             "type": "object",
             "properties": {
                 "speed_10kmh": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2EfficiencySpeedBucket"
+                        "$ref": "#/definitions/V2EfficiencySpeedBucket"
                     }
                 },
                 "temperature_5c": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2EfficiencyTempBucket"
+                        "$ref": "#/definitions/V2EfficiencyTempBucket"
                     }
                 }
             }
         },
-        "v2.V2EfficiencyResponse": {
+        "V2EfficiencyResponse": {
             "type": "object",
             "properties": {
                 "buckets": {
-                    "$ref": "#/definitions/v2.V2EfficiencyBuckets"
+                    "$ref": "#/definitions/V2EfficiencyBuckets"
                 },
                 "summary": {
-                    "$ref": "#/definitions/v2.V2EfficiencySummary"
+                    "$ref": "#/definitions/V2EfficiencySummary"
                 }
             }
         },
-        "v2.V2EfficiencySpeedBucket": {
+        "V2EfficiencySpeedBucket": {
             "type": "object",
             "properties": {
                 "bucket": {
@@ -3311,12 +3036,9 @@
                 }
             }
         },
-        "v2.V2EfficiencySummary": {
+        "V2EfficiencySummary": {
             "type": "object",
             "properties": {
-                "avg_outside_temp": {
-                    "type": "number"
-                },
                 "consumption_overhead": {
                     "description": "能耗开销 (Wh/km)",
                     "type": "number"
@@ -3342,7 +3064,7 @@
                 }
             }
         },
-        "v2.V2EfficiencyTempBucket": {
+        "V2EfficiencyTempBucket": {
             "type": "object",
             "properties": {
                 "avg_speed": {
@@ -3365,14 +3087,14 @@
                 }
             }
         },
-        "v2.V2EnvironmentalAPIResponse": {
+        "V2EnvironmentalAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2EnvironmentalResponse"
+                            "$ref": "#/definitions/V2EnvironmentalResponse"
                         }
                     ]
                 },
@@ -3380,29 +3102,29 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2EnvironmentalResponse": {
+        "V2EnvironmentalResponse": {
             "type": "object",
             "properties": {
                 "summary": {
-                    "$ref": "#/definitions/v2.V2EnvironmentalSummary"
+                    "$ref": "#/definitions/V2EnvironmentalSummary"
                 },
                 "timeseries": {
                     "description": "时序",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2EnvironmentalTimeseries"
+                            "$ref": "#/definitions/V2EnvironmentalTimeseries"
                         }
                     ]
                 }
             }
         },
-        "v2.V2EnvironmentalSummary": {
+        "V2EnvironmentalSummary": {
             "type": "object",
             "properties": {
                 "battery_heater_minutes": {
@@ -3433,14 +3155,6 @@
                     "description": "最低海拔 (米)",
                     "type": "number"
                 },
-                "inside_temp_avg": {
-                    "description": "车内平均温 (°C)",
-                    "type": "number"
-                },
-                "outside_temp_avg": {
-                    "description": "车外平均温 (°C)",
-                    "type": "number"
-                },
                 "outside_temp_max": {
                     "description": "车外最高温 (°C)",
                     "type": "number"
@@ -3451,7 +3165,7 @@
                 }
             }
         },
-        "v2.V2EnvironmentalTimeseries": {
+        "V2EnvironmentalTimeseries": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -3462,18 +3176,15 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2EnvironmentalTimeseriesItem"
+                        "$ref": "#/definitions/V2EnvironmentalTimeseriesItem"
                     }
                 }
             }
         },
-        "v2.V2EnvironmentalTimeseriesItem": {
+        "V2EnvironmentalTimeseriesItem": {
             "type": "object",
             "properties": {
                 "climate_on_ratio": {
-                    "type": "number"
-                },
-                "elevation_avg": {
                     "type": "number"
                 },
                 "elevation_gain": {
@@ -3490,20 +3201,12 @@
                 "elevation_min": {
                     "type": "number"
                 },
-                "inside_temp_avg": {
-                    "description": "车内平均温 (°C)",
-                    "type": "number"
-                },
                 "inside_temp_max": {
                     "description": "车内最高温 (°C)",
                     "type": "number"
                 },
                 "inside_temp_min": {
                     "description": "车内最低温 (°C)",
-                    "type": "number"
-                },
-                "outside_temp_avg": {
-                    "description": "车外平均温 (°C)",
                     "type": "number"
                 },
                 "outside_temp_max": {
@@ -3520,7 +3223,7 @@
                 }
             }
         },
-        "v2.V2Geofence": {
+        "V2Geofence": {
             "type": "object",
             "properties": {
                 "billing_type": {
@@ -3557,14 +3260,14 @@
                 }
             }
         },
-        "v2.V2GeofencesAPIResponse": {
+        "V2GeofencesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2GeofencesResponse"
+                            "$ref": "#/definitions/V2GeofencesResponse"
                         }
                     ]
                 },
@@ -3572,25 +3275,25 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2GeofencesResponse": {
+        "V2GeofencesResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2Geofence"
+                        "$ref": "#/definitions/V2Geofence"
                     }
                 }
             }
         },
-        "v2.V2IdleGeofence": {
+        "V2IdleGeofence": {
             "type": "object",
             "properties": {
                 "id": {
@@ -3603,7 +3306,7 @@
                 }
             }
         },
-        "v2.V2IdlePeriodItem": {
+        "V2IdlePeriodItem": {
             "type": "object",
             "properties": {
                 "avg_power_w": {
@@ -3629,7 +3332,7 @@
                     "description": "围栏",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2IdleGeofence"
+                            "$ref": "#/definitions/V2IdleGeofence"
                         }
                     ]
                 },
@@ -3666,14 +3369,14 @@
                 }
             }
         },
-        "v2.V2IdlePeriodsAPIResponse": {
+        "V2IdlePeriodsAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2IdlePeriodsResponse"
+                            "$ref": "#/definitions/V2IdlePeriodsResponse"
                         }
                     ]
                 },
@@ -3681,13 +3384,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2IdlePeriodsResponse": {
+        "V2IdlePeriodsResponse": {
             "type": "object",
             "properties": {
                 "has_more": {
@@ -3698,7 +3401,7 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2IdlePeriodItem"
+                        "$ref": "#/definitions/V2IdlePeriodItem"
                     }
                 },
                 "next_cursor": {
@@ -3707,14 +3410,14 @@
                 }
             }
         },
-        "v2.V2LifecycleAPIResponse": {
+        "V2LifecycleAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2LifecycleResponse"
+                            "$ref": "#/definitions/V2LifecycleResponse"
                         }
                     ]
                 },
@@ -3722,13 +3425,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2LifecycleResponse": {
+        "V2LifecycleResponse": {
             "type": "object",
             "properties": {
                 "as_of": {
@@ -3788,7 +3491,7 @@
                 }
             }
         },
-        "v2.V2Meta": {
+        "V2Meta": {
             "type": "object",
             "properties": {
                 "applied_filters": {
@@ -3847,20 +3550,20 @@
                     "description": "单位",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Unit"
+                            "$ref": "#/definitions/V2Unit"
                         }
                     ]
                 }
             }
         },
-        "v2.V2OdometerSeriesAPIResponse": {
+        "V2OdometerSeriesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2OdometerSeriesResponse"
+                            "$ref": "#/definitions/V2OdometerSeriesResponse"
                         }
                     ]
                 },
@@ -3868,13 +3571,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2OdometerSeriesItem": {
+        "V2OdometerSeriesItem": {
             "type": "object",
             "properties": {
                 "date": {
@@ -3885,7 +3588,7 @@
                 }
             }
         },
-        "v2.V2OdometerSeriesResponse": {
+        "V2OdometerSeriesResponse": {
             "type": "object",
             "properties": {
                 "has_more": {
@@ -3896,7 +3599,7 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2OdometerSeriesItem"
+                        "$ref": "#/definitions/V2OdometerSeriesItem"
                     }
                 },
                 "next_cursor": {
@@ -3905,14 +3608,14 @@
                 }
             }
         },
-        "v2.V2ParkingAPIResponse": {
+        "V2ParkingAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ParkingResponse"
+                            "$ref": "#/definitions/V2ParkingResponse"
                         }
                     ]
                 },
@@ -3920,13 +3623,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2ParkingBreakdownResponse": {
+        "V2ParkingBreakdownResponse": {
             "type": "object",
             "properties": {
                 "by": {
@@ -3936,19 +3639,19 @@
                     "description": "地点列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ParkingLocationItem"
+                        "$ref": "#/definitions/V2ParkingLocationItem"
                     }
                 },
                 "states": {
                     "description": "州/省分布",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2ParkingStateItem"
+                        "$ref": "#/definitions/V2ParkingStateItem"
                     }
                 }
             }
         },
-        "v2.V2ParkingLocationItem": {
+        "V2ParkingLocationItem": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -3977,23 +3680,23 @@
                 }
             }
         },
-        "v2.V2ParkingResponse": {
+        "V2ParkingResponse": {
             "type": "object",
             "properties": {
                 "breakdown": {
                     "description": "分项维度",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ParkingBreakdownResponse"
+                            "$ref": "#/definitions/V2ParkingBreakdownResponse"
                         }
                     ]
                 },
                 "summary": {
-                    "$ref": "#/definitions/v2.V2ParkingSummary"
+                    "$ref": "#/definitions/V2ParkingSummary"
                 }
             }
         },
-        "v2.V2ParkingStateItem": {
+        "V2ParkingStateItem": {
             "type": "object",
             "properties": {
                 "duration": {
@@ -4012,7 +3715,7 @@
                 }
             }
         },
-        "v2.V2ParkingSummary": {
+        "V2ParkingSummary": {
             "type": "object",
             "properties": {
                 "asleep_duration": {
@@ -4052,7 +3755,7 @@
                 }
             }
         },
-        "v2.V2PlaceBucket": {
+        "V2PlaceBucket": {
             "type": "object",
             "properties": {
                 "last_visited": {
@@ -4069,14 +3772,14 @@
                 }
             }
         },
-        "v2.V2PlacesAPIResponse": {
+        "V2PlacesAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2PlacesResponse"
+                            "$ref": "#/definitions/V2PlacesResponse"
                         }
                     ]
                 },
@@ -4084,46 +3787,46 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2PlacesResponse": {
+        "V2PlacesResponse": {
             "type": "object",
             "properties": {
                 "cities": {
                     "description": "城市分布",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2PlaceBucket"
+                        "$ref": "#/definitions/V2PlaceBucket"
                     }
                 },
                 "countries": {
                     "description": "国家分布",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2PlaceBucket"
+                        "$ref": "#/definitions/V2PlaceBucket"
                     }
                 },
                 "states": {
                     "description": "州/省分布",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2PlaceBucket"
+                        "$ref": "#/definitions/V2PlaceBucket"
                     }
                 }
             }
         },
-        "v2.V2Summary": {
+        "V2Summary": {
             "type": "object",
             "properties": {
                 "battery": {
                     "description": "电池指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2BatterySummary"
+                            "$ref": "#/definitions/V2BatterySummary"
                         }
                     ]
                 },
@@ -4131,7 +3834,7 @@
                     "description": "充电指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2ChargingSummary"
+                            "$ref": "#/definitions/V2ChargingSummary"
                         }
                     ]
                 },
@@ -4139,7 +3842,7 @@
                     "description": "费用",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2CostSummary"
+                            "$ref": "#/definitions/V2CostSummary"
                         }
                     ]
                 },
@@ -4147,34 +3850,34 @@
                     "description": "行驶指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2DrivingSummary"
+                            "$ref": "#/definitions/V2DrivingSummary"
                         }
                     ]
                 },
                 "parking": {
-                    "$ref": "#/definitions/v2.V2ParkingSummary"
+                    "$ref": "#/definitions/V2ParkingSummary"
                 },
                 "updates": {
-                    "$ref": "#/definitions/v2.V2UpdateSummary"
+                    "$ref": "#/definitions/V2UpdateSummary"
                 },
                 "vehicle": {
                     "description": "车辆信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2VehicleSummary"
+                            "$ref": "#/definitions/V2VehicleSummary"
                         }
                     ]
                 }
             }
         },
-        "v2.V2SummaryAPIResponse": {
+        "V2SummaryAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2SummaryResponse"
+                            "$ref": "#/definitions/V2SummaryResponse"
                         }
                     ]
                 },
@@ -4182,20 +3885,20 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2SummaryByPeriodAPIResponse": {
+        "V2SummaryByPeriodAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2SummaryByPeriodResponse"
+                            "$ref": "#/definitions/V2SummaryByPeriodResponse"
                         }
                     ]
                 },
@@ -4203,13 +3906,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2SummaryByPeriodItem": {
+        "V2SummaryByPeriodItem": {
             "type": "object",
             "properties": {
                 "avg_consumption": {
@@ -4257,7 +3960,7 @@
                 }
             }
         },
-        "v2.V2SummaryByPeriodResponse": {
+        "V2SummaryByPeriodResponse": {
             "type": "object",
             "properties": {
                 "group_by": {
@@ -4268,34 +3971,34 @@
                     "description": "条目列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2SummaryByPeriodItem"
+                        "$ref": "#/definitions/V2SummaryByPeriodItem"
                     }
                 }
             }
         },
-        "v2.V2SummaryResponse": {
+        "V2SummaryResponse": {
             "type": "object",
             "properties": {
                 "comparison": {
                     "description": "Comparison keys: driving/charging/parking/battery/updates/vehicle/cost field paths; values are current vs previous period.",
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/v2.V2ComparisonValue"
+                        "$ref": "#/definitions/V2ComparisonValue"
                     }
                 },
                 "summary": {
-                    "$ref": "#/definitions/v2.V2Summary"
+                    "$ref": "#/definitions/V2Summary"
                 }
             }
         },
-        "v2.V2TimelineAPIResponse": {
+        "V2TimelineAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2TimelineResponse"
+                            "$ref": "#/definitions/V2TimelineResponse"
                         }
                     ]
                 },
@@ -4303,13 +4006,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2TimelineEvent": {
+        "V2TimelineEvent": {
             "type": "object",
             "properties": {
                 "end_time": {
@@ -4335,14 +4038,14 @@
                 }
             }
         },
-        "v2.V2TimelineResponse": {
+        "V2TimelineResponse": {
             "type": "object",
             "properties": {
                 "events": {
                     "description": "事件列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2TimelineEvent"
+                        "$ref": "#/definitions/V2TimelineEvent"
                     }
                 },
                 "has_more": {
@@ -4358,7 +4061,7 @@
                 }
             }
         },
-        "v2.V2Unit": {
+        "V2Unit": {
             "type": "object",
             "properties": {
                 "consumption": {
@@ -4401,14 +4104,14 @@
                 }
             }
         },
-        "v2.V2UpdateAnalyticsAPIResponse": {
+        "V2UpdateAnalyticsAPIResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "description": "响应数据",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateAnalyticsResponse"
+                            "$ref": "#/definitions/V2UpdateAnalyticsResponse"
                         }
                     ]
                 },
@@ -4416,13 +4119,13 @@
                     "description": "响应元信息",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2Meta"
+                            "$ref": "#/definitions/V2Meta"
                         }
                     ]
                 }
             }
         },
-        "v2.V2UpdateAnalyticsResponse": {
+        "V2UpdateAnalyticsResponse": {
             "type": "object",
             "properties": {
                 "avg_update_duration": {
@@ -4449,12 +4152,12 @@
                     "description": "版本列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.V2UpdateVersion"
+                        "$ref": "#/definitions/V2UpdateVersion"
                     }
                 }
             }
         },
-        "v2.V2UpdateChargingMetrics": {
+        "V2UpdateChargingMetrics": {
             "type": "object",
             "properties": {
                 "battery_energy": {
@@ -4483,7 +4186,7 @@
                 }
             }
         },
-        "v2.V2UpdateDrivingMetrics": {
+        "V2UpdateDrivingMetrics": {
             "type": "object",
             "properties": {
                 "avg_consumption": {
@@ -4508,7 +4211,7 @@
                 }
             }
         },
-        "v2.V2UpdateEvent": {
+        "V2UpdateEvent": {
             "type": "object",
             "properties": {
                 "completed_at": {
@@ -4533,7 +4236,7 @@
                 }
             }
         },
-        "v2.V2UpdateSummary": {
+        "V2UpdateSummary": {
             "type": "object",
             "properties": {
                 "latest_version": {
@@ -4546,14 +4249,14 @@
                 }
             }
         },
-        "v2.V2UpdateVersion": {
+        "V2UpdateVersion": {
             "type": "object",
             "properties": {
                 "event": {
                     "description": "事件",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateEvent"
+                            "$ref": "#/definitions/V2UpdateEvent"
                         }
                     ]
                 },
@@ -4561,7 +4264,7 @@
                     "description": "指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateWindowMetrics"
+                            "$ref": "#/definitions/V2UpdateWindowMetrics"
                         }
                     ]
                 },
@@ -4569,13 +4272,13 @@
                     "description": "观察窗口",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateWindow"
+                            "$ref": "#/definitions/V2UpdateWindow"
                         }
                     ]
                 }
             }
         },
-        "v2.V2UpdateWindow": {
+        "V2UpdateWindow": {
             "type": "object",
             "properties": {
                 "end": {
@@ -4592,14 +4295,14 @@
                 }
             }
         },
-        "v2.V2UpdateWindowMetrics": {
+        "V2UpdateWindowMetrics": {
             "type": "object",
             "properties": {
                 "charging": {
                     "description": "充电指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateChargingMetrics"
+                            "$ref": "#/definitions/V2UpdateChargingMetrics"
                         }
                     ]
                 },
@@ -4607,7 +4310,7 @@
                     "description": "行驶指标",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/v2.V2UpdateDrivingMetrics"
+                            "$ref": "#/definitions/V2UpdateDrivingMetrics"
                         }
                     ]
                 },
@@ -4617,7 +4320,7 @@
                 }
             }
         },
-        "v2.V2VehicleSummary": {
+        "V2VehicleSummary": {
             "type": "object",
             "properties": {
                 "charge_efficiency": {

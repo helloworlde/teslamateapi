@@ -29,11 +29,6 @@ type V2ParkingBuilder interface {
 	BuildParking(ctx context.Context, carIDParam string, timeRange V2TimeRange, opts V2ParkingBuildOptions) (V2ParkingResponse, int64, error)
 }
 
-type V2BatteryBuilder interface {
-	BuildBattery(ctx context.Context, carIDParam string, timeRange V2TimeRange) (V2BatteryResponse, int64, error)
-	BuildBatteryTimeseries(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2BatteryTimeseriesResponse, int64, error)
-}
-
 type V2CostBuilder interface {
 	BuildCost(ctx context.Context, carIDParam string, timeRange V2TimeRange, groupBy string) (V2CostResponse, int64, error)
 }
@@ -101,7 +96,6 @@ type V2Handlers struct {
 	placesBuilder            V2PlacesBuilder
 	geofencesBuilder         V2GeofencesBuilder
 	parkingBuilder           V2ParkingBuilder
-	batteryBuilder           V2BatteryBuilder
 	costBuilder              V2CostBuilder
 	updateBuilder            V2UpdateBuilder
 	lifecycleBuilder         V2LifecycleBuilder
@@ -126,7 +120,6 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	var drivingRepository V2DrivingRepository
 	var chargingRepository V2ChargingRepository
 	var parkingRepository V2ParkingRepository
-	var batteryRepository V2BatteryRepository
 	var costRepository V2CostRepository
 	var updateRepository V2UpdateRepository
 	var lifecycleRepository V2LifecycleRepository
@@ -136,7 +129,6 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		drivingRepository = NewPostgresV2DrivingRepository(apicommon.DB)
 		chargingRepository = NewPostgresV2ChargingRepository(apicommon.DB)
 		parkingRepository = NewPostgresV2ParkingRepository(apicommon.DB)
-		batteryRepository = NewPostgresV2BatteryRepository(apicommon.DB)
 		costRepository = NewPostgresV2CostRepository(apicommon.DB)
 		updateRepository = NewPostgresV2UpdateRepository(apicommon.DB)
 		lifecycleRepository = NewPostgresV2LifecycleRepository(apicommon.DB)
@@ -149,7 +141,6 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 	chargingService := NewV2ChargingService(chargingRepository)
 	handlers := NewV2Handlers(NewV2SummaryService(summaryRepository), drivingService, chargingService)
 	handlers.parkingBuilder = NewV2ParkingService(parkingRepository)
-	handlers.batteryBuilder = NewV2BatteryService(batteryRepository)
 	handlers.costBuilder = NewV2CostService(costRepository)
 	handlers.updateBuilder = NewV2UpdateService(updateRepository)
 	handlers.lifecycleBuilder = NewV2LifecycleService(lifecycleRepository)
@@ -201,17 +192,12 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		registerV2Route(v2Cars, "/parking/idle_periods", handlers.IdlePeriods, handlers.capabilities, V2CapabilitiesDomain{
 			Name: "parking_idle_periods", Path: "/v2/cars/{car_id}/parking/idle_periods",
 		})
-		// audit §1.3: /analytics/battery duplicates v1 battery-health; v1 now
-		// also exposes baseline_range_at_full_charge + estimated_range_degradation,
-		// so this endpoint is deprecated.
-		registerV2Route(v2Cars, "/analytics/battery", handlers.Battery, handlers.capabilities, V2CapabilitiesDomain{
-			Name: "battery", Path: "/v2/cars/{car_id}/analytics/battery", SupportsTimeseries: true, Deprecated: true,
-		})
-		// audit §1.2: arithmetic-mean SoC over a window is meaningless; clients
-		// should use /v2/timeline?include_battery_levels=true for the SoC event log.
-		registerV2Route(v2Cars, "/analytics/battery/timeseries", handlers.BatteryTimeseries, handlers.capabilities, V2CapabilitiesDomain{
-			Name: "battery_timeseries", Path: "/v2/cars/{car_id}/analytics/battery/timeseries", SupportsTimeseries: true, Deprecated: true,
-		})
+// audit §1.2 / §1.3: /analytics/battery and /analytics/battery/timeseries
+		// were removed outright. The former duplicated v1 /battery-health (which
+		// now carries baseline_range_at_full_charge + estimated_range_degradation),
+		// and the latter only exposed an arithmetic mean of SoC over a window,
+		// which is meaningless. Clients wanting the SoC event log should use
+		// /v2/cars/{car_id}/timeline?include_battery_levels=true.
 		registerV2Route(v2Cars, "/battery/capacity_by_mileage", handlers.CapacityByMileage, handlers.capabilities, V2CapabilitiesDomain{
 			Name: "battery_capacity_by_mileage", Path: "/v2/cars/{car_id}/battery/capacity_by_mileage",
 		})
@@ -561,88 +547,6 @@ func handleV2ParkingError(c *gin.Context, err error, timeRange V2TimeRange) {
 		apicommon.V2BadRequest(c, "Invalid car id.", nil)
 	default:
 		apicommon.V2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 parking analytics.", err.Error())
-	}
-}
-
-// Battery godoc
-//
-// @Summary V2 电池分析汇总（已弃用）
-// @Deprecated
-// @Description **DEPRECATED — 将在下一个 minor 版本删除。** v1 `/v1/cars/{CarID}/battery-health` 已合并 `baseline_range_at_full_charge` 与 `estimated_range_degradation`，并提供更完整的电池健康字段（max_capacity、cycles、battery_health_percentage 等）。响应头会带 `Deprecation: true` 与 `Link: ... rel="successor-version"`（audit §1.3）。
-// @Tags v2
-// @Produce json
-// @Param CarID path int true "车辆 ID" example(1)
-// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "起始时间（RFC3339）"
-// @Param end query string false "结束时间（RFC3339）"
-// @Param timezone query string false "IANA 时区"
-// @Success 200 {object} V2BatteryAPIResponse
-// @Failure 400 {object} apicommon.APIErrorResponse
-// @Failure 404 {object} apicommon.APIErrorResponse
-// @Failure 500 {object} apicommon.APIErrorResponse
-// @Router /v2/cars/{CarID}/analytics/battery [get]
-func (h V2Handlers) Battery(c *gin.Context) {
-	setV2DeprecationHeaders(c, "/v1/cars/"+c.Param("CarID")+"/battery-health")
-	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
-	if err != nil {
-		apicommon.V2BadRequest(c, "Invalid analytics query.", err.Error())
-		return
-	}
-	if h.batteryBuilder == nil {
-		apicommon.V2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "V2 battery service is not configured.", nil)
-		return
-	}
-	response, carID, err := h.batteryBuilder.BuildBattery(c.Request.Context(), c.Param("CarID"), timeRange)
-	if err != nil {
-		handleV2BatteryError(c, err, timeRange)
-		return
-	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
-}
-
-// BatteryTimeseries godoc
-//
-// @Summary V2 电池分析时序（已弃用）
-// @Deprecated
-// @Description **DEPRECATED — 将在下一个 minor 版本删除。** 当前实现仅在做 "假设 100% SoC 时的额定续航估计" 的均值，月聚合下毫无意义（audit §1.2）。建议改用 `/v2/cars/{CarID}/timeline?include_battery_levels=true` 拿事件级 SoC 变化。响应头会带 `Deprecation: true`。
-// @Tags v2
-// @Produce json
-// @Param CarID path int true "车辆 ID" example(1)
-// @Param period query string false "聚合周期" Enums(day, week, month, quarter, year, custom)
-// @Param start query string false "起始时间（RFC3339）"
-// @Param end query string false "结束时间（RFC3339）"
-// @Param timezone query string false "IANA 时区"
-// @Param group_by query string false "时序聚合粒度" Enums(day, week, month, year)
-// @Success 200 {object} V2BatteryTimeseriesAPIResponse
-// @Failure 400 {object} apicommon.APIErrorResponse
-// @Failure 404 {object} apicommon.APIErrorResponse
-// @Failure 500 {object} apicommon.APIErrorResponse
-// @Router /v2/cars/{CarID}/analytics/battery/timeseries [get]
-func (h V2Handlers) BatteryTimeseries(c *gin.Context) {
-	setV2DeprecationHeaders(c, "/v2/cars/"+c.Param("CarID")+"/timeline?include_battery_levels=true")
-	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
-	if err != nil {
-		apicommon.V2BadRequest(c, "Invalid analytics query.", err.Error())
-		return
-	}
-	response, carID, err := h.batteryBuilder.BuildBatteryTimeseries(c.Request.Context(), c.Param("CarID"), timeRange, c.Query("group_by"))
-	if err != nil {
-		handleV2BatteryError(c, err, timeRange)
-		return
-	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
-}
-
-func handleV2BatteryError(c *gin.Context, err error, timeRange V2TimeRange) {
-	switch {
-	case errors.Is(err, errV2CarNotFound):
-		apicommon.V2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
-	case errors.Is(err, errV2InvalidDrivingGroupBy):
-		apicommon.V2BadRequest(c, "Invalid battery group_by.", nil)
-	case err.Error() == "invalid car id":
-		apicommon.V2BadRequest(c, "Invalid car id.", nil)
-	default:
-		apicommon.V2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 battery analytics.", err.Error())
 	}
 }
 

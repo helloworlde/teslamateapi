@@ -186,7 +186,7 @@ func (r PostgresV2SummaryRepository) loadDrivingSummary(ctx context.Context, car
 }
 
 func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, carID int64, start timeBound, end timeBound, summary *V2Summary, stats *V2SummaryStats) error {
-	var longestSession, avgEnergy, largestSession, avgPower, maxPower, avgCost, maxCost sql.NullFloat64
+	var longestSession, avgEnergy, largestSession, avgCost, maxCost sql.NullFloat64
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS session_count,
@@ -196,8 +196,6 @@ func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, ca
 			MAX(cp.duration_min) * 60 AS longest_session_duration,
 			AVG(cp.charge_energy_added) AS avg_energy_added,
 			MAX(cp.charge_energy_added) AS largest_session,
-			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power,
-			MAX(NULLIF(max_charge.charger_power, 0)) AS max_power,
 			COALESCE(SUM(cp.cost), 0) AS cost,
 			COUNT(cp.cost) AS cost_rows,
 			AVG(cp.cost) AS avg_cost,
@@ -221,8 +219,6 @@ func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, ca
 		&longestSession,
 		&avgEnergy,
 		&largestSession,
-		&avgPower,
-		&maxPower,
 		&summary.Charging.Cost,
 		&stats.CostRows,
 		&avgCost,
@@ -243,12 +239,6 @@ func (r PostgresV2SummaryRepository) loadChargingSummary(ctx context.Context, ca
 	}
 	if largestSession.Valid {
 		summary.Charging.LargestSession = &largestSession.Float64
-	}
-	if avgPower.Valid {
-		summary.Charging.AvgPower = &avgPower.Float64
-	}
-	if maxPower.Valid {
-		summary.Charging.MaxPower = &maxPower.Float64
 	}
 	if summary.Charging.EnergyUsed > 0 {
 		eff := summary.Charging.EnergyAdded / summary.Charging.EnergyUsed * 100

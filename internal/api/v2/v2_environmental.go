@@ -26,11 +26,14 @@ type V2EnvironmentalResponse struct {
 }
 
 // @name V2EnvironmentalSummary
+//
+// Arithmetic-mean temperature / elevation fields are intentionally absent —
+// averaging a 5°C overnight idle with a 35°C noon drive produces a number
+// that no driver can interpret. Use min/max plus elevation_gain/loss to
+// reconstruct the actual envelope of the period.
 type V2EnvironmentalSummary struct {
 	OutsideTempMin       *float64 `json:"outside_temp_min,omitempty"`       // 车外最低温 (°C)
 	OutsideTempMax       *float64 `json:"outside_temp_max,omitempty"`       // 车外最高温 (°C)
-	OutsideTempAvg       *float64 `json:"outside_temp_avg,omitempty"`       // 车外平均温 (°C)
-	InsideTempAvg        *float64 `json:"inside_temp_avg,omitempty"`        // 车内平均温 (°C)
 	ClimateOnMinutes     *float64 `json:"climate_on_minutes,omitempty"`     // 空调开启时长 (分)
 	BatteryHeaterMinutes *float64 `json:"battery_heater_minutes,omitempty"` // 电池加热器时长 (分)
 	DefrosterMinutes     *float64 `json:"defroster_minutes,omitempty"`      // 除霜时长 (分)
@@ -47,15 +50,18 @@ type V2EnvironmentalTimeseries struct {
 }
 
 // @name V2EnvironmentalTimeseriesItem
+//
+// Same rationale as V2EnvironmentalSummary — only min/max + gain/loss are
+// surfaced. Inside-temperature is omitted entirely because most TeslaMate
+// installs only have inside_temp samples while the car is awake, so an
+// "average" over a bucket that includes sleep periods is biased to driving
+// conditions and silently changes definition with usage.
 type V2EnvironmentalTimeseriesItem struct {
 	PeriodStart    string   `json:"period_start"`               // 周期起始
-	OutsideTempAvg *float64 `json:"outside_temp_avg,omitempty"` // 车外平均温 (°C)
 	OutsideTempMin *float64 `json:"outside_temp_min,omitempty"` // 车外最低温 (°C)
 	OutsideTempMax *float64 `json:"outside_temp_max,omitempty"` // 车外最高温 (°C)
-	InsideTempAvg  *float64 `json:"inside_temp_avg,omitempty"`  // 车内平均温 (°C)
 	InsideTempMin  *float64 `json:"inside_temp_min,omitempty"`  // 车内最低温 (°C)
 	InsideTempMax  *float64 `json:"inside_temp_max,omitempty"`  // 车内最高温 (°C)
-	ElevationAvg   *float64 `json:"elevation_avg,omitempty"`
 	ElevationMin   *float64 `json:"elevation_min,omitempty"`
 	ElevationMax   *float64 `json:"elevation_max,omitempty"`
 	ElevationGain  *float64 `json:"elevation_gain,omitempty"` // 该周期累计爬升 (米)
@@ -91,18 +97,17 @@ func (r PostgresV2EnvironmentalRepository) CarExists(ctx context.Context, carID 
 func (r PostgresV2EnvironmentalRepository) Summary(ctx context.Context, carID int64, start, end timeBound) (V2EnvironmentalSummary, error) {
 	var summary V2EnvironmentalSummary
 	var (
-		oMin, oMax, oAvg, iAvg sql.NullFloat64
-		eMin, eMax             sql.NullFloat64
-		ascentSum, descentSum  sql.NullFloat64
-		climateMin, heaterMin  sql.NullFloat64
-		defrosterMin           sql.NullFloat64
+		oMin, oMax            sql.NullFloat64
+		eMin, eMax            sql.NullFloat64
+		ascentSum, descentSum sql.NullFloat64
+		climateMin, heaterMin sql.NullFloat64
+		defrosterMin          sql.NullFloat64
 	)
 	err := r.db.QueryRowContext(ctx, `
 		WITH p AS (
 			SELECT
 				date,
 				outside_temp::float8 AS outside_temp,
-				inside_temp::float8 AS inside_temp,
 				elevation::float8 AS elevation,
 				is_climate_on,
 				battery_heater_on,
@@ -126,8 +131,7 @@ func (r PostgresV2EnvironmentalRepository) Summary(ctx context.Context, carID in
 			  AND start_date <  $3::timestamptz
 		)
 		SELECT
-			MIN(p.outside_temp), MAX(p.outside_temp), AVG(p.outside_temp),
-			AVG(p.inside_temp),
+			MIN(p.outside_temp), MAX(p.outside_temp),
 			MIN(p.elevation), MAX(p.elevation),
 			(SELECT ascent_total FROM drv),
 			(SELECT descent_total FROM drv),
@@ -136,7 +140,7 @@ func (r PostgresV2EnvironmentalRepository) Summary(ctx context.Context, carID in
 			SUM(CASE WHEN (p.is_front_defroster_on OR p.is_rear_defroster_on) AND p.minutes IS NOT NULL THEN p.minutes ELSE 0 END)
 		FROM p
 	`, carID, start.Time, end.Time).Scan(
-		&oMin, &oMax, &oAvg, &iAvg,
+		&oMin, &oMax,
 		&eMin, &eMax,
 		&ascentSum, &descentSum,
 		&climateMin, &heaterMin, &defrosterMin,
@@ -149,12 +153,6 @@ func (r PostgresV2EnvironmentalRepository) Summary(ctx context.Context, carID in
 	}
 	if oMax.Valid {
 		summary.OutsideTempMax = &oMax.Float64
-	}
-	if oAvg.Valid {
-		summary.OutsideTempAvg = &oAvg.Float64
-	}
-	if iAvg.Valid {
-		summary.InsideTempAvg = &iAvg.Float64
 	}
 	if eMin.Valid {
 		summary.ElevationMin = &eMin.Float64
@@ -207,13 +205,10 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 		p_agg AS (
 			SELECT
 				period_start,
-				AVG(outside_temp) AS outside_temp_avg,
 				MIN(outside_temp) AS outside_temp_min,
 				MAX(outside_temp) AS outside_temp_max,
-				AVG(inside_temp)  AS inside_temp_avg,
 				MIN(inside_temp)  AS inside_temp_min,
 				MAX(inside_temp)  AS inside_temp_max,
-				AVG(elevation)    AS elevation_avg,
 				MIN(elevation)    AS elevation_min,
 				MAX(elevation)    AS elevation_max,
 				CASE
@@ -236,9 +231,9 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 		)
 		SELECT
 			COALESCE(p_agg.period_start, drv.period_start) AS period_start,
-			p_agg.outside_temp_avg, p_agg.outside_temp_min, p_agg.outside_temp_max,
-			p_agg.inside_temp_avg,  p_agg.inside_temp_min,  p_agg.inside_temp_max,
-			p_agg.elevation_avg,    p_agg.elevation_min,    p_agg.elevation_max,
+			p_agg.outside_temp_min, p_agg.outside_temp_max,
+			p_agg.inside_temp_min,  p_agg.inside_temp_max,
+			p_agg.elevation_min,    p_agg.elevation_max,
 			drv.elevation_gain, drv.elevation_loss,
 			p_agg.climate_on_ratio
 		FROM p_agg
@@ -254,17 +249,17 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 	items := []V2EnvironmentalTimeseriesItem{}
 	for rows.Next() {
 		var (
-			periodStart                              sql.NullTime
-			oAvg, oMin, oMax                         sql.NullFloat64
-			iAvg, iMin, iMax                         sql.NullFloat64
-			eAvg, eMin, eMax, eGain, eLoss           sql.NullFloat64
-			ratio                                    sql.NullFloat64
+			periodStart                    sql.NullTime
+			oMin, oMax                     sql.NullFloat64
+			iMin, iMax                     sql.NullFloat64
+			eMin, eMax, eGain, eLoss       sql.NullFloat64
+			ratio                          sql.NullFloat64
 		)
 		if err := rows.Scan(
 			&periodStart,
-			&oAvg, &oMin, &oMax,
-			&iAvg, &iMin, &iMax,
-			&eAvg, &eMin, &eMax,
+			&oMin, &oMax,
+			&iMin, &iMax,
+			&eMin, &eMax,
 			&eGain, &eLoss,
 			&ratio,
 		); err != nil {
@@ -274,26 +269,17 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 		if periodStart.Valid {
 			item.PeriodStart = periodStart.Time.In(timeRangeLocation(timeRange)).Format(time.RFC3339)
 		}
-		if oAvg.Valid {
-			item.OutsideTempAvg = &oAvg.Float64
-		}
 		if oMin.Valid {
 			item.OutsideTempMin = &oMin.Float64
 		}
 		if oMax.Valid {
 			item.OutsideTempMax = &oMax.Float64
 		}
-		if iAvg.Valid {
-			item.InsideTempAvg = &iAvg.Float64
-		}
 		if iMin.Valid {
 			item.InsideTempMin = &iMin.Float64
 		}
 		if iMax.Valid {
 			item.InsideTempMax = &iMax.Float64
-		}
-		if eAvg.Valid {
-			item.ElevationAvg = &eAvg.Float64
 		}
 		if eMin.Valid {
 			item.ElevationMin = &eMin.Float64

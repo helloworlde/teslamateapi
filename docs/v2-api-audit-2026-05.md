@@ -287,3 +287,19 @@ v2.4.0  正式删除阶段 C 的旧端点；阶段 D 体验补强可穿插
 ```
 
 每个阶段配套 PR 和测试用例（`v2_*_service_test.go` 已经覆盖了主要路径，按字段维度补 case 即可）。
+
+---
+
+## 7. 2026-05-14 跟进：删除而非弃用
+
+阶段 C 原计划保留一个 minor 走 `Deprecation: true` 头，但用户反馈"既然没用就直接删"，所以这一轮直接拿掉了：
+
+- 端点删除：`/v2/cars/{CarID}/analytics/battery`、`/v2/cars/{CarID}/analytics/battery/timeseries`（§1.2 / §1.3）。
+  对应的 handler / service / repository / model / 测试以及 capabilities 注册项都已移除；`V2BatterySummary` / `V2BatteryRange` 仍保留，因为 `/analytics/summary` 还在嵌入它们。
+  v1 `/v1/cars/{CarID}/battery-health` 已合并 `baseline_range_at_full_charge` 与 `estimated_range_degradation`，是唯一来源。
+- 字段删除：
+  - `V2EnvironmentalSummary` / `V2EnvironmentalTimeseriesItem`：`outside_temp_avg`、`inside_temp_avg`、`elevation_avg`（§1.6）—— 算术平均掩盖了用户真正想看的高低温/海拔包络。
+  - `V2DrivingSummary.avg_outside_temp` 与 `V2EfficiencySummary.avg_outside_temp`：在多月窗口里把所有行程的车外温度搅在一起没有决策价值；想看温度对能耗的影响请用 `efficiency.buckets.temperature_5c`。
+  - `V2ChargingSummary.avg_power` / `max_power` 与 `V2ChargingTimeseriesItem.avg_power`（§1.4）—— AC/DC 混合的均值不可解释，仅暴露 `avg_power_ac` / `avg_power_dc` / `median_power_*` / `max_power_ac` / `max_power_dc`。
+
+对外通告时这些都是破坏性变更，直接计入 v2.3.0。原阶段 C 中"先 deprecate 一个 minor"的说法作废 —— 这些字段/端点本身就是错误的抽象，多保留一个 minor 只会让客户端继续读到坏数据。

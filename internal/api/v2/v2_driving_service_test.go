@@ -30,7 +30,7 @@ func TestV2DrivingServiceBuildDrivingReturnsSummary(t *testing.T) {
 	repository := &fakeV2DrivingRepository{
 		exists:  true,
 		summary: V2DrivingSummary{DriveCount: 2, Distance: 100, Duration: 3600},
-		stats:   V2DrivingStats{DriveRows: 2, EnergyEstimateRows: 2, TemperatureRows: 1},
+		stats:   V2DrivingStats{DriveRows: 2, EnergyEstimateRows: 2},
 	}
 	service := NewV2DrivingService(repository)
 	start := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)

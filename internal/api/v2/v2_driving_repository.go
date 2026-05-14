@@ -32,7 +32,6 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 	var bestConsumption sql.NullFloat64
 	var worstConsumption sql.NullFloat64
 	var estimatedRegen sql.NullFloat64
-	var avgOutsideTemp sql.NullFloat64
 	var batteryLevelUsed sql.NullFloat64
 
 	err := r.db.QueryRowContext(ctx, `
@@ -41,7 +40,6 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 				drives.distance,
 				drives.duration_min * 60 AS duration_seconds,
 				drives.speed_max,
-				drives.outside_temp_avg,
 				drives.start_rated_range_km,
 				drives.end_rated_range_km,
 				start_position.battery_level AS start_battery_level,
@@ -96,9 +94,7 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 			SUM(estimated_energy_regen) AS estimated_energy_regen,
 			COALESCE(SUM(GREATEST(COALESCE(start_rated_range_km, 0) - COALESCE(end_rated_range_km, 0), 0)), 0) AS range_loss,
 			NULLIF(SUM(GREATEST(COALESCE(start_battery_level, 0) - COALESCE(end_battery_level, 0), 0)), 0) AS battery_level_used,
-			AVG(outside_temp_avg) AS avg_outside_temp,
-			COUNT(estimated_energy_consumed) AS energy_estimate_rows,
-			COUNT(outside_temp_avg) AS temperature_rows
+			COUNT(estimated_energy_consumed) AS energy_estimate_rows
 		FROM drive_metrics`,
 		carID, start.Time, end.Time,
 	).Scan(
@@ -114,9 +110,7 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 		&estimatedRegen,
 		&summary.RangeLoss,
 		&batteryLevelUsed,
-		&avgOutsideTemp,
 		&stats.EnergyEstimateRows,
-		&stats.TemperatureRows,
 	)
 	if err != nil {
 		return summary, stats, err
@@ -147,9 +141,6 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 	}
 	if estimatedRegen.Valid {
 		summary.EstimatedEnergyRegen = &estimatedRegen.Float64
-	}
-	if avgOutsideTemp.Valid {
-		summary.AvgOutsideTemp = &avgOutsideTemp.Float64
 	}
 	if batteryLevelUsed.Valid {
 		summary.BatteryLevelUsed = &batteryLevelUsed.Float64

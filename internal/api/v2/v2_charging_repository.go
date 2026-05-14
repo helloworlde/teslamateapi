@@ -29,8 +29,6 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 	var cost sql.NullFloat64
 	var startBattery sql.NullFloat64
 	var endBattery sql.NullFloat64
-	var avgPower sql.NullFloat64
-	var maxPower sql.NullFloat64
 	var avgPowerAC sql.NullFloat64
 	var avgPowerDC sql.NullFloat64
 	var medianPowerAC sql.NullFloat64
@@ -44,11 +42,11 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 	var maxCost sql.NullFloat64
 
 	// AC/DC split: TeslaMate stores per-sample charger_power; sessions where
-	// the peak power stayed under 20 kW are AC, the rest are DC. Blending the
-	// two into one avg_power produced a number nobody could interpret (audit
-	// §1.4) — keep avg_power/max_power for one minor for back-compat, but the
-	// real signal is the per-mode aggregates. We use PERCENTILE_CONT for
-	// medians because mean is skewed by long tapering tails on DC.
+	// the peak power stayed under 20 kW are AC, the rest are DC. Blending
+	// the two into one avg_power produced a number nobody could interpret
+	// (audit §1.4), so only the per-mode aggregates are exposed. We use
+	// PERCENTILE_CONT for medians because mean is skewed by long tapering
+	// tails on DC.
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS session_count,
@@ -70,8 +68,6 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 			COUNT(*) FILTER (WHERE COALESCE(max_charge.charger_power, 0) >= 20) AS dc_session_count,
 			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) < 20), 0) AS ac_energy,
 			COALESCE(SUM(charge_energy_added) FILTER (WHERE COALESCE(max_charge.charger_power, 0) >= 20), 0) AS dc_energy,
-			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power,
-			MAX(NULLIF(max_charge.charger_power, 0)) AS max_power,
 			AVG(NULLIF(max_charge.charger_power, 0)) FILTER (WHERE COALESCE(max_charge.charger_power, 0) > 0 AND max_charge.charger_power < 20) AS avg_power_ac,
 			AVG(NULLIF(max_charge.charger_power, 0)) FILTER (WHERE max_charge.charger_power >= 20) AS avg_power_dc,
 			PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY max_charge.charger_power) FILTER (WHERE COALESCE(max_charge.charger_power, 0) > 0 AND max_charge.charger_power < 20) AS median_power_ac,
@@ -110,8 +106,6 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 		&summary.DCSessionCount,
 		&summary.ACEnergy,
 		&summary.DCEnergy,
-		&avgPower,
-		&maxPower,
 		&avgPowerAC,
 		&avgPowerDC,
 		&medianPowerAC,
@@ -157,12 +151,6 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 	if endBattery.Valid {
 		summary.EndBatteryAvg = &endBattery.Float64
 	}
-	if avgPower.Valid {
-		summary.AvgPower = &avgPower.Float64
-	}
-	if maxPower.Valid {
-		summary.MaxPower = &maxPower.Float64
-	}
 	if avgPowerAC.Valid {
 		summary.AvgPowerAC = &avgPowerAC.Float64
 	}
@@ -185,8 +173,8 @@ func (r PostgresV2ChargingRepository) Summary(ctx context.Context, carID int64, 
 }
 
 func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2ChargingTimeseriesItem, V2ChargingStats, error) {
-	// avg_power retained for one minor (deprecated); avg_power_ac /
-	// avg_power_dc are the meaningful values per the audit (§1.4).
+	// Only avg_power_ac / avg_power_dc are exposed per audit §1.4 — a blended
+	// average across both modes is uninterpretable.
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			GREATEST(date_trunc('%s', charging_processes.start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
@@ -195,7 +183,6 @@ func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int6
 			SUM(charge_energy_used) AS energy_used,
 			COALESCE(SUM(duration_min) * 60, 0) AS duration_seconds,
 			SUM(cost) AS cost,
-			AVG(NULLIF(max_charge.charger_power, 0)) AS avg_power,
 			AVG(NULLIF(max_charge.charger_power, 0)) FILTER (WHERE COALESCE(max_charge.charger_power, 0) > 0 AND max_charge.charger_power < 20) AS avg_power_ac,
 			AVG(NULLIF(max_charge.charger_power, 0)) FILTER (WHERE max_charge.charger_power >= 20) AS avg_power_dc,
 			COUNT(charge_energy_used) AS energy_used_rows,
@@ -228,11 +215,10 @@ func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int6
 		var item V2ChargingTimeseriesItem
 		var energyUsed sql.NullFloat64
 		var cost sql.NullFloat64
-		var avgPower sql.NullFloat64
 		var avgPowerAC sql.NullFloat64
 		var avgPowerDC sql.NullFloat64
 		var energyRows, costRows, powerRows int64
-		if err := rows.Scan(&periodStart, &item.SessionCount, &item.EnergyAdded, &energyUsed, &item.Duration, &cost, &avgPower, &avgPowerAC, &avgPowerDC, &energyRows, &costRows, &powerRows); err != nil {
+		if err := rows.Scan(&periodStart, &item.SessionCount, &item.EnergyAdded, &energyUsed, &item.Duration, &cost, &avgPowerAC, &avgPowerDC, &energyRows, &costRows, &powerRows); err != nil {
 			return nil, stats, err
 		}
 		item.PeriodStart = periodStart.In(location).Format(time.RFC3339)
@@ -241,9 +227,6 @@ func (r PostgresV2ChargingRepository) Timeseries(ctx context.Context, carID int6
 		}
 		if cost.Valid {
 			item.Cost = &cost.Float64
-		}
-		if avgPower.Valid {
-			item.AvgPower = &avgPower.Float64
 		}
 		if avgPowerAC.Valid {
 			item.AvgPowerAC = &avgPowerAC.Float64

@@ -28,7 +28,6 @@ type V2DrivingRepository interface {
 type V2DrivingStats struct {
 	DriveRows          int64
 	EnergyEstimateRows int64
-	TemperatureRows    int64
 }
 
 // @name V2DrivingService

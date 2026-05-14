@@ -25,6 +25,11 @@ type V2EfficiencyResponse struct {
 }
 
 // @name V2EfficiencySummary
+//
+// avg_outside_temp was intentionally removed: averaging per-drive outside
+// temperature into a single scalar over a multi-month window is not
+// decision-useful. Use the temperature_5c buckets to see how consumption
+// varies with temperature directly.
 type V2EfficiencySummary struct {
 	NetConsumption       *float64 `json:"net_consumption,omitempty"`
 	GrossConsumption     *float64 `json:"gross_consumption,omitempty"`    // 毛能耗 (Wh/km)
@@ -33,7 +38,6 @@ type V2EfficiencySummary struct {
 	DriveDuration        float64  `json:"drive_duration"`
 	EnergyConsumedDrives float64  `json:"energy_consumed_drives"`
 	EnergyConsumedIdle   float64  `json:"energy_consumed_idle"`
-	AvgOutsideTemp       *float64 `json:"avg_outside_temp,omitempty"`
 }
 
 // @name V2EfficiencyBuckets
@@ -93,7 +97,6 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 		idleEnergy       sql.NullFloat64
 		netConsumption   sql.NullFloat64
 		grossConsumption sql.NullFloat64
-		avgOutsideTemp   sql.NullFloat64
 	)
 
 	err := r.db.QueryRowContext(ctx, `
@@ -106,7 +109,6 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 				dr.duration_min,
 				dr.start_rated_range_km,
 				dr.end_rated_range_km,
-				dr.outside_temp_avg,
 				LAG(dr.end_rated_range_km) OVER (ORDER BY dr.start_date) AS prev_end_rated_range_km
 			FROM drives dr
 			WHERE dr.car_id = $1
@@ -129,10 +131,9 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 			CASE WHEN SUM(d.distance) > 0
 			     THEN (SUM(GREATEST((d.start_rated_range_km - d.end_rated_range_km), 0) * (SELECT efficiency FROM car_eff))
 			          + SUM(GREATEST((COALESCE(d.prev_end_rated_range_km, d.start_rated_range_km) - d.start_rated_range_km), 0) * (SELECT efficiency FROM car_eff))) * 1000 / SUM(d.distance)
-			END AS gross_consumption,
-			AVG(d.outside_temp_avg) AS avg_outside_temp
+			END AS gross_consumption
 		FROM d
-	`, carID, start.Time, end.Time).Scan(&distance, &duration, &driveEnergy, &idleEnergy, &netConsumption, &grossConsumption, &avgOutsideTemp)
+	`, carID, start.Time, end.Time).Scan(&distance, &duration, &driveEnergy, &idleEnergy, &netConsumption, &grossConsumption)
 	if err != nil {
 		return summary, err
 	}
@@ -161,10 +162,6 @@ func (r PostgresV2EfficiencyRepository) Summary(ctx context.Context, carID int64
 			oh := (grossConsumption.Float64 - netConsumption.Float64) / grossConsumption.Float64
 			summary.ConsumptionOverhead = &oh
 		}
-	}
-	if avgOutsideTemp.Valid {
-		v := avgOutsideTemp.Float64
-		summary.AvgOutsideTemp = &v
 	}
 	return summary, nil
 }
