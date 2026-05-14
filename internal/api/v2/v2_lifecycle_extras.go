@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -416,11 +417,20 @@ func NewV2PlacesService(db *sql.DB) V2PlacesService {
 	return V2PlacesService{db: db}
 }
 
-type V2PlacesBuilder interface {
-	BuildPlaces(ctx context.Context, carIDParam string, topN int) (V2PlacesResponse, int64, error)
+// V2PlacesOptions captures the optional date-range filter for the places
+// endpoint. When both Start and End are nil the service returns the lifetime
+// distribution (audit §2.5: clients want to ask "where did I drive last
+// summer?", which the lifetime view cannot answer).
+type V2PlacesOptions struct {
+	Start *time.Time
+	End   *time.Time
 }
 
-func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, topN int) (V2PlacesResponse, int64, error) {
+type V2PlacesBuilder interface {
+	BuildPlaces(ctx context.Context, carIDParam string, topN int, opts V2PlacesOptions) (V2PlacesResponse, int64, error)
+}
+
+func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, topN int, opts V2PlacesOptions) (V2PlacesResponse, int64, error) {
 	carID, err := strconv.ParseInt(carIDParam, 10, 64)
 	if err != nil || carID <= 0 {
 		return V2PlacesResponse{}, 0, errors.New("invalid car id")
@@ -431,20 +441,25 @@ func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, top
 	if topN <= 0 || topN > 100 {
 		topN = 20
 	}
+	loc := timeRangeLocation(V2TimeRange{Timezone: defaultV2Timezone()})
 	queryFor := func(col string) ([]V2PlaceBucket, error) {
+		// Bind the optional date range as $3/$4 so we don't have to splice the
+		// SQL based on which side is set; nil sql.NullTime acts as an open bound.
 		rows, err := s.db.QueryContext(ctx, `
 			SELECT a.`+col+` AS name,
 			       COUNT(*) AS visit_count,
-			       MAX(d.end_date)::text AS last_visited
+			       MAX(d.end_date) AS last_visited
 			FROM drives d
 			JOIN addresses a ON a.id = d.end_address_id
 			WHERE d.car_id = $1
 			  AND d.end_date IS NOT NULL
+			  AND ($3::timestamptz IS NULL OR d.start_date >= $3)
+			  AND ($4::timestamptz IS NULL OR d.start_date < $4)
 			  AND a.`+col+` IS NOT NULL AND a.`+col+` <> ''
 			GROUP BY 1
 			ORDER BY visit_count DESC
 			LIMIT $2
-		`, carID, topN)
+		`, carID, topN, nullTimePtr(opts.Start), nullTimePtr(opts.End))
 		if err != nil {
 			return nil, err
 		}
@@ -454,15 +469,15 @@ func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, top
 			var (
 				name        string
 				count       int64
-				lastVisited sql.NullString
+				lastVisited sql.NullTime
 			)
 			if err := rows.Scan(&name, &count, &lastVisited); err != nil {
 				return nil, err
 			}
 			b := V2PlaceBucket{Name: name, VisitCount: count}
-			if lastVisited.Valid && lastVisited.String != "" {
-				s := lastVisited.String
-				b.LastVisited = &s
+			if lastVisited.Valid {
+				formatted := lastVisited.Time.In(loc).Format(time.RFC3339)
+				b.LastVisited = &formatted
 			}
 			out = append(out, b)
 		}
@@ -483,14 +498,26 @@ func (s V2PlacesService) BuildPlaces(ctx context.Context, carIDParam string, top
 	return V2PlacesResponse{Cities: cities, States: states, Countries: countries}, carID, nil
 }
 
+// nullTimePtr converts an optional time.Time into a sql.NullTime so the same
+// SQL can serve "lifetime" and "ranged" queries without branching.
+func nullTimePtr(t *time.Time) sql.NullTime {
+	if t == nil {
+		return sql.NullTime{}
+	}
+	return sql.NullTime{Time: *t, Valid: true}
+}
+
 // Places godoc
 //
 // @Summary V2 生命周期地点分布（城市/州/国家）
-// @Description 返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。
+// @Description 返回该车访问最多的前 N 个城市/州/国家，含最后访问时间。可通过 start/end (RFC3339 或 YYYY-MM-DD) 指定时间范围；不传则返回全生命周期数据。
 // @Tags v2
 // @Produce json
 // @Param CarID path int true "车辆 ID" example(1)
 // @Param top_n query int false "每个维度的 Top N（默认 20，最大 100）"
+// @Param start query string false "起始时间 (RFC3339 或 YYYY-MM-DD)"
+// @Param end query string false "结束时间 (RFC3339 或 YYYY-MM-DD)"
+// @Param timezone query string false "解析 start/end 时使用的时区，默认服务器配置"
 // @Success 200 {object} V2PlacesAPIResponse
 // @Failure 400 {object} apicommon.APIErrorResponse
 // @Failure 404 {object} apicommon.APIErrorResponse
@@ -507,7 +534,41 @@ func (h V2Handlers) Places(c *gin.Context) {
 			topN = parsed
 		}
 	}
-	response, carID, err := h.placesBuilder.BuildPlaces(c.Request.Context(), c.Param("CarID"), topN)
+
+	// audit §2.5: optional start/end so callers can scope to a season /
+	// vacation / month. Reuses parseV2ClientTime so RFC3339 + YYYY-MM-DD work
+	// the same way as on the analytics endpoints.
+	tz := v2QueryDefault(c, "timezone", defaultV2Timezone())
+	location, err := time.LoadLocation(tz)
+	if err != nil {
+		apicommon.V2BadRequest(c, "Invalid timezone.", err.Error())
+		return
+	}
+	var opts V2PlacesOptions
+	if raw := strings.TrimSpace(c.Query("start")); raw != "" {
+		t, perr := parseV2ClientTime(raw, location)
+		if perr != nil {
+			apicommon.V2BadRequest(c, "Invalid start.", perr.Error())
+			return
+		}
+		utc := t.UTC()
+		opts.Start = &utc
+	}
+	if raw := strings.TrimSpace(c.Query("end")); raw != "" {
+		t, perr := parseV2ClientTime(raw, location)
+		if perr != nil {
+			apicommon.V2BadRequest(c, "Invalid end.", perr.Error())
+			return
+		}
+		utc := t.UTC()
+		opts.End = &utc
+	}
+	if opts.Start != nil && opts.End != nil && !opts.End.After(*opts.Start) {
+		apicommon.V2BadRequest(c, "end must be after start.", nil)
+		return
+	}
+
+	response, carID, err := h.placesBuilder.BuildPlaces(c.Request.Context(), c.Param("CarID"), topN, opts)
 	if err != nil {
 		switch {
 		case errors.Is(err, errV2CarNotFound):
@@ -519,13 +580,37 @@ func (h V2Handlers) Places(c *gin.Context) {
 		}
 		return
 	}
+	loc := timeRangeLocation(V2TimeRange{Timezone: tz})
+	period := "lifetime"
+	if opts.Start != nil || opts.End != nil {
+		period = "custom"
+	}
 	meta := V2Meta{
 		CarID:       carID,
-		Period:      "lifetime",
-		Timezone:    "UTC",
+		Period:      period,
+		Timezone:    tz,
 		Unit:        defaultV2Unit(),
-		GeneratedAt: h.now().UTC().Format(time.RFC3339),
+		GeneratedAt: h.now().In(loc).Format(time.RFC3339),
 	}
+	if opts.Start != nil {
+		meta.Start = opts.Start.In(loc).Format(time.RFC3339)
+	}
+	if opts.End != nil {
+		meta.End = opts.End.In(loc).Format(time.RFC3339)
+	}
+	// Echo back the resolved filters so callers can confirm the server picked
+	// up start/end/timezone/top_n exactly as expected (spec §5.2).
+	filters := map[string]string{
+		"timezone": tz,
+		"top_n":    strconv.Itoa(topN),
+	}
+	if opts.Start != nil {
+		filters["start"] = opts.Start.In(loc).Format(time.RFC3339)
+	}
+	if opts.End != nil {
+		filters["end"] = opts.End.In(loc).Format(time.RFC3339)
+	}
+	meta.AppliedFilters = filters
 	v2JSON(c, http.StatusOK, response, meta)
 }
 
@@ -638,11 +723,13 @@ func (h V2Handlers) Geofences(c *gin.Context) {
 		apicommon.V2Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Unable to build V2 geofences.", err.Error())
 		return
 	}
+	tz := defaultV2Timezone()
+	loc := timeRangeLocation(V2TimeRange{Timezone: tz})
 	meta := V2Meta{
 		Period:      "lifetime",
-		Timezone:    "UTC",
+		Timezone:    tz,
 		Unit:        defaultV2Unit(),
-		GeneratedAt: h.now().UTC().Format("2006-01-02T15:04:05Z"),
+		GeneratedAt: h.now().In(loc).Format(time.RFC3339),
 	}
 	v2JSON(c, http.StatusOK, response, meta)
 }

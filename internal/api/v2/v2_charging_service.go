@@ -5,7 +5,15 @@ import (
 	"errors"
 )
 
-var errV2InvalidChargingBreakdown = errors.New("invalid charging breakdown")
+var (
+	errV2InvalidChargingBreakdown = errors.New("invalid charging breakdown")
+	// errV2GroupByRequiresInclude is returned when group_by is supplied without
+	// the include flag that turns timeseries on. Per docs/api-design-spec.md §2.1
+	// silent dropping of parameters is forbidden; we surface a 400 instead.
+	errV2GroupByRequiresInclude = errors.New("group_by requires include=timeseries")
+	// errV2BreakdownRequiresInclude — same idea for breakdown.
+	errV2BreakdownRequiresInclude = errors.New("breakdown requires include=breakdown")
+)
 
 type V2ChargingRepository interface {
 	CarExists(ctx context.Context, carID int64) (bool, error)
@@ -55,6 +63,10 @@ func (s V2ChargingService) BuildCharging(ctx context.Context, carIDParam string,
 		if !v2AllowedDrivingGroupBy[groupBy] {
 			return V2ChargingResponse{}, 0, errV2InvalidDrivingGroupBy
 		}
+	} else if opts.GroupBy != "" {
+		// group_by without include=timeseries used to be silently dropped (see
+		// docs/v2-api-audit-2026-05.md §1.4). Per spec §2.1, surface a 400.
+		return V2ChargingResponse{}, 0, errV2GroupByRequiresInclude
 	}
 	if opts.IncludeBreakdown {
 		switch opts.BreakdownBy {
@@ -62,6 +74,8 @@ func (s V2ChargingService) BuildCharging(ctx context.Context, carIDParam string,
 		default:
 			return V2ChargingResponse{}, 0, errV2InvalidChargingBreakdown
 		}
+	} else if opts.BreakdownBy != "" {
+		return V2ChargingResponse{}, 0, errV2BreakdownRequiresInclude
 	}
 
 	if err := s.ensureCarExists(ctx, carID); err != nil {

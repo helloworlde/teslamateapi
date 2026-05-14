@@ -13,6 +13,7 @@ import (
 // TeslaMateAPICarsBatteryHealthV1 godoc
 //
 // @Summary 获取车辆电池健康度
+// @Description 返回车辆电池健康度。此前 v2 `/analytics/battery` 仅多 `baseline_range_at_full_charge` 与 `estimated_range_degradation` 两个字段，自 v2.3 起两者已并入本端点（audit §1.3），v2 端点进入弃用倒计时。
 // @Tags v1
 // @Produce json
 // @Param CarID path int true "车辆 ID"
@@ -34,6 +35,11 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		Rated float64 `json:"rated"`
 		Ideal float64 `json:"ideal"`
 	}
+	// BaselineRangeAtFullCharge struct - child of BatteryHealth (added; replaces v2 /analytics/battery)
+	type BaselineRangeAtFullCharge struct {
+		Rated *float64 `json:"rated,omitempty"`
+		Ideal *float64 `json:"ideal,omitempty"`
+	}
 	// BatteryHealth struct - child of Data
 	type BatteryHealth struct {
 		MaxRange                      float64                       `json:"max_range"`                         // float64
@@ -48,6 +54,12 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		EstimatedCapacityAtFullCharge EstimatedCapacityAtFullCharge `json:"estimated_capacity_at_full_charge"` // (added)
 		DerivedEfficiency             *float64                      `json:"derived_efficiency,omitempty"`      // (added)
 		SamplesUsed                   *int64                        `json:"samples_used,omitempty"`            // (added)
+		// 基线满电续航：取 baseline 时段（最早 N 次）满充估算的最大值，用于和当前估算对比看衰减。
+		// 来自 audit §1.3：把 v2 /analytics/battery 的两个独占字段合并到 v1，避免重复。
+		BaselineRangeAtFullCharge *BaselineRangeAtFullCharge `json:"baseline_range_at_full_charge,omitempty"`
+		// 续航衰减估算 (%)：(baseline_rated - current_estimated_rated) / baseline_rated × 100。
+		// 仅当 baseline 样本足够（≥ v2MinimumBatteryRangeSamples）时返回。
+		EstimatedRangeDegradation *float64 `json:"estimated_range_degradation,omitempty"`
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -325,6 +337,73 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.EstimatedCapacityAtFullCharge.Ideal = MaxRangeIdeal * Efficiency / 100.0 / 100.0
 	}
 
+	// Baseline range + estimated degradation (audit §1.3 — merged from v2 /analytics/battery).
+	// Baseline = the maximum observed (start_rated_range_km / start_battery_level * 100)
+	// across the car's drive history; treat the earliest healthy estimate as the
+	// reference. We require BatteryBaselineMinSamples valid drives before we trust
+	// the value (mirrors v2_battery_service.go).
+	const baselineMinSamples = 5
+	var (
+		baselineRated  sql.NullFloat64
+		baselineIdeal  sql.NullFloat64
+		baselineRows   sql.NullInt64
+		latestBattery  sql.NullInt64
+		latestRated    sql.NullFloat64
+		latestIdeal    sql.NullFloat64
+	)
+	baselineErr := apicommon.DB.QueryRow(`
+		WITH baseline AS (
+			SELECT
+				COUNT(*) FILTER (WHERE sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL) AS sample_count,
+				MAX(CASE WHEN sp.battery_level > 0 AND drives.start_rated_range_km IS NOT NULL
+					THEN drives.start_rated_range_km / sp.battery_level * 100 END) AS baseline_rated,
+				MAX(CASE WHEN sp.battery_level > 0 AND drives.start_ideal_range_km IS NOT NULL
+					THEN drives.start_ideal_range_km / sp.battery_level * 100 END) AS baseline_ideal
+			FROM drives
+			LEFT JOIN positions sp ON sp.id = drives.start_position_id
+			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
+		),
+		latest AS (
+			SELECT battery_level, rated_battery_range_km, ideal_battery_range_km
+			FROM positions
+			WHERE car_id = $1 AND battery_level IS NOT NULL
+			ORDER BY date DESC LIMIT 1
+		)
+		SELECT
+			baseline.sample_count,
+			baseline.baseline_rated,
+			baseline.baseline_ideal,
+			latest.battery_level,
+			latest.rated_battery_range_km,
+			latest.ideal_battery_range_km
+		FROM baseline LEFT JOIN latest ON true
+	`, CarID).Scan(&baselineRows, &baselineRated, &baselineIdeal, &latestBattery, &latestRated, &latestIdeal)
+	if baselineErr == nil && baselineRows.Valid && baselineRows.Int64 >= baselineMinSamples {
+		base := &BaselineRangeAtFullCharge{}
+		hasAny := false
+		if baselineRated.Valid {
+			v := baselineRated.Float64
+			base.Rated = &v
+			hasAny = true
+		}
+		if baselineIdeal.Valid {
+			v := baselineIdeal.Float64
+			base.Ideal = &v
+			hasAny = true
+		}
+		if hasAny {
+			batteryHealth.BaselineRangeAtFullCharge = base
+		}
+		// Degradation: compare latest extrapolated range at 100% SoC with the
+		// rated baseline (matches v2 /analytics/battery output).
+		if baselineRated.Valid && baselineRated.Float64 > 0 &&
+			latestBattery.Valid && latestBattery.Int64 > 0 && latestRated.Valid {
+			currentRated := latestRated.Float64 / float64(latestBattery.Int64) * 100
+			degradation := (baselineRated.Float64 - currentRated) / baselineRated.Float64 * 100
+			batteryHealth.EstimatedRangeDegradation = &degradation
+		}
+	}
+
 	// Augment with cycles / data_lost / lfp_battery / derived_efficiency / samples_used.
 	var (
 		totalChargeEnergy sql.NullFloat64
@@ -382,8 +461,20 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.MaxRange = conv.KmToMi(batteryHealth.MaxRange)
 		batteryHealth.CurrentRange = conv.KmToMi(batteryHealth.CurrentRange)
 		if batteryHealth.DataLost != nil {
-			conv := conv.KmToMi(*batteryHealth.DataLost)
-			batteryHealth.DataLost = &conv
+			c := conv.KmToMi(*batteryHealth.DataLost)
+			batteryHealth.DataLost = &c
+		}
+		// Baseline ranges are in km from the SQL — convert when client wants miles.
+		// (estimated_range_degradation is a percentage; unit-agnostic.)
+		if batteryHealth.BaselineRangeAtFullCharge != nil {
+			if batteryHealth.BaselineRangeAtFullCharge.Rated != nil {
+				v := conv.KmToMi(*batteryHealth.BaselineRangeAtFullCharge.Rated)
+				batteryHealth.BaselineRangeAtFullCharge.Rated = &v
+			}
+			if batteryHealth.BaselineRangeAtFullCharge.Ideal != nil {
+				v := conv.KmToMi(*batteryHealth.BaselineRangeAtFullCharge.Ideal)
+				batteryHealth.BaselineRangeAtFullCharge.Ideal = &v
+			}
 		}
 	}
 

@@ -84,7 +84,11 @@ func (r PostgresV2DrivingRepository) Summary(ctx context.Context, carID int64, s
 			COALESCE(SUM(distance), 0) AS distance,
 			COALESCE(SUM(duration_seconds), 0) AS duration,
 			MAX(speed_max) AS max_speed,
-			AVG(avg_speed) AS avg_speed,
+			-- Distance-weighted avg: a 1 km errand and a 200 km highway leg
+			-- shouldn't carry equal weight (audit §2.1, spec §1.1).
+			CASE WHEN COALESCE(SUM(duration_seconds), 0) > 0
+			     THEN SUM(distance) / SUM(duration_seconds) * 3600
+			END AS avg_speed,
 			SUM(estimated_energy_consumed) AS estimated_energy_consumed,
 			AVG(consumption) AS avg_consumption,
 			MIN(consumption) AS best_consumption,
@@ -161,7 +165,10 @@ func (r PostgresV2DrivingRepository) Timeseries(ctx context.Context, carID int64
 			COUNT(*) AS drive_count,
 			COALESCE(SUM(drives.distance), 0) AS distance,
 			COALESCE(SUM(drives.duration_min) * 60, 0) AS duration,
-			AVG(CASE WHEN drives.duration_min > 0 THEN drives.distance / drives.duration_min * 60 ELSE NULL END) AS avg_speed,
+			-- Distance-weighted avg, same reasoning as Summary.
+			CASE WHEN COALESCE(SUM(drives.duration_min), 0) > 0
+			     THEN SUM(drives.distance) / SUM(drives.duration_min) * 60
+			END AS avg_speed,
 			SUM(
 				CASE
 					WHEN drives.start_rated_range_km IS NOT NULL

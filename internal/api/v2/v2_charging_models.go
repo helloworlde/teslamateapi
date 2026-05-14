@@ -34,7 +34,10 @@ type V2ChargingTimeseriesItem struct {
 	EnergyUsed   *float64 `json:"energy_used,omitempty"` // 墙端用电 (kWh)
 	Duration     float64  `json:"duration"`              // 时长 (秒)
 	Cost         *float64 `json:"cost,omitempty"`        // 费用
-	AvgPower     *float64 `json:"avg_power,omitempty"`   // 平均功率 (kW)
+	// Deprecated: blended AC+DC average — see V2ChargingSummary.AvgPower.
+	AvgPower   *float64 `json:"avg_power,omitempty"`    // 平均功率 (kW) — deprecated
+	AvgPowerAC *float64 `json:"avg_power_ac,omitempty"` // 交流平均功率 (kW)
+	AvgPowerDC *float64 `json:"avg_power_dc,omitempty"` // 直流平均功率 (kW)
 }
 
 // @name V2ChargingLocationItem

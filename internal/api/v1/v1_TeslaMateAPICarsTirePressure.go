@@ -14,7 +14,7 @@ import (
 // TeslaMateAPICarsTirePressureV1 godoc
 //
 // @Summary 车辆胎压（最近读数 + 窗口）
-// @Description 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 conv.BarToPsi 换算）。
+// @Description 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。每日历史返回 *_min / *_max（用于发现慢漏气）和 *_avg（已弃用，下个 minor 删除）。日历桶按 apicommon.AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 conv.BarToPsi 换算）。
 // @Tags v1
 // @Produce json
 // @Param CarID path int true "车辆 ID"
@@ -61,12 +61,30 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		Min   PressureSet `json:"min"`   // 最小值
 		Max   PressureSet `json:"max"`   // 最大值
 	}
-	// History entry (one per day in window)
+	// History entry (one per day in window).
+	//
+	// per docs/v2-api-audit-2026-05.md §1.1: a daily AVG over TPMS readings
+	// hides slow leaks (the value the user actually wants to see). We surface
+	// MIN / MAX alongside AVG and mark *_avg as deprecated in swagger; the next
+	// minor will drop the avg fields. Until then both shapes are returned to
+	// keep existing dashboards working.
 	type HistoryEntry struct {
 		Date  string   `json:"date"`
+		FLMin *float64 `json:"fl_min,omitempty"`
+		FRMin *float64 `json:"fr_min,omitempty"`
+		RLMin *float64 `json:"rl_min,omitempty"`
+		RRMin *float64 `json:"rr_min,omitempty"`
+		FLMax *float64 `json:"fl_max,omitempty"`
+		FRMax *float64 `json:"fr_max,omitempty"`
+		RLMax *float64 `json:"rl_max,omitempty"`
+		RRMax *float64 `json:"rr_max,omitempty"`
+		// Deprecated: prefer fl_min/fl_max — averaging masks slow leaks.
 		FLAvg *float64 `json:"fl_avg,omitempty"`
+		// Deprecated: prefer fr_min/fr_max — averaging masks slow leaks.
 		FRAvg *float64 `json:"fr_avg,omitempty"`
+		// Deprecated: prefer rl_min/rl_max — averaging masks slow leaks.
 		RLAvg *float64 `json:"rl_avg,omitempty"`
+		// Deprecated: prefer rr_min/rr_max — averaging masks slow leaks.
 		RRAvg *float64 `json:"rr_avg,omitempty"`
 	}
 	// Units struct
@@ -151,9 +169,24 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		return
 	}
 
-	// per-day history
+	// per-day history.
+	//
+	// IMPORTANT: bucket by user-visible local day, not by DB session timezone.
+	// `date_trunc('day', date)` follows the DB session TZ (typically UTC), so
+	// for non-UTC users a sample at 00:30 local time falls into the previous
+	// day. We push the timezone in as a parameter and compute the day in that
+	// zone (audit §1.1 sub-item).
+	tz := tirePressureTimezone()
 	rows, hErr := apicommon.DB.Query(`
-		SELECT to_char(date_trunc('day', date), 'YYYY-MM-DD') AS day,
+		SELECT to_char(date_trunc('day', date AT TIME ZONE $3), 'YYYY-MM-DD') AS day,
+		       MIN(tpms_pressure_fl)::float8,
+		       MIN(tpms_pressure_fr)::float8,
+		       MIN(tpms_pressure_rl)::float8,
+		       MIN(tpms_pressure_rr)::float8,
+		       MAX(tpms_pressure_fl)::float8,
+		       MAX(tpms_pressure_fr)::float8,
+		       MAX(tpms_pressure_rl)::float8,
+		       MAX(tpms_pressure_rr)::float8,
 		       AVG(tpms_pressure_fl)::float8,
 		       AVG(tpms_pressure_fr)::float8,
 		       AVG(tpms_pressure_rl)::float8,
@@ -165,7 +198,7 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		    OR tpms_pressure_rl IS NOT NULL OR tpms_pressure_rr IS NOT NULL)
 		GROUP BY 1
 		ORDER BY 1 ASC
-	`, CarID, windowDays)
+	`, CarID, windowDays, tz)
 	if hErr != nil {
 		apicommon.HandleErrorResponse(c, "TeslaMateAPICarsTirePressureV1", errMsg, hErr.Error())
 		return
@@ -176,29 +209,37 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 	for rows.Next() {
 		var (
 			day                        string
+			flMin, frMin, rlMin, rrMin sql.NullFloat64
+			flMax, frMax, rlMax, rrMax sql.NullFloat64
 			flAvg, frAvg, rlAvg, rrAvg sql.NullFloat64
 		)
-		if err := rows.Scan(&day, &flAvg, &frAvg, &rlAvg, &rrAvg); err != nil {
+		if err := rows.Scan(&day,
+			&flMin, &frMin, &rlMin, &rrMin,
+			&flMax, &frMax, &rlMax, &rrMax,
+			&flAvg, &frAvg, &rlAvg, &rrAvg,
+		); err != nil {
 			apicommon.HandleErrorResponse(c, "TeslaMateAPICarsTirePressureV1", errMsg, err.Error())
 			return
 		}
 		entry := HistoryEntry{Date: day}
-		if flAvg.Valid {
-			v := flAvg.Float64
-			entry.FLAvg = &v
+		assign := func(dst **float64, src sql.NullFloat64) {
+			if src.Valid {
+				v := src.Float64
+				*dst = &v
+			}
 		}
-		if frAvg.Valid {
-			v := frAvg.Float64
-			entry.FRAvg = &v
-		}
-		if rlAvg.Valid {
-			v := rlAvg.Float64
-			entry.RLAvg = &v
-		}
-		if rrAvg.Valid {
-			v := rrAvg.Float64
-			entry.RRAvg = &v
-		}
+		assign(&entry.FLMin, flMin)
+		assign(&entry.FRMin, frMin)
+		assign(&entry.RLMin, rlMin)
+		assign(&entry.RRMin, rrMin)
+		assign(&entry.FLMax, flMax)
+		assign(&entry.FRMax, frMax)
+		assign(&entry.RLMax, rlMax)
+		assign(&entry.RRMax, rrMax)
+		assign(&entry.FLAvg, flAvg)
+		assign(&entry.FRAvg, frAvg)
+		assign(&entry.RLAvg, rlAvg)
+		assign(&entry.RRAvg, rrAvg)
 		history = append(history, entry)
 	}
 	if err := rows.Err(); err != nil {
@@ -219,23 +260,26 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		return &v
 	}
 	if psi {
+		convertField := func(p **float64) {
+			if *p == nil {
+				return
+			}
+			v := conv.BarToPsi(**p)
+			*p = &v
+		}
 		for i := range history {
-			if history[i].FLAvg != nil {
-				v := conv.BarToPsi(*history[i].FLAvg)
-				history[i].FLAvg = &v
-			}
-			if history[i].FRAvg != nil {
-				v := conv.BarToPsi(*history[i].FRAvg)
-				history[i].FRAvg = &v
-			}
-			if history[i].RLAvg != nil {
-				v := conv.BarToPsi(*history[i].RLAvg)
-				history[i].RLAvg = &v
-			}
-			if history[i].RRAvg != nil {
-				v := conv.BarToPsi(*history[i].RRAvg)
-				history[i].RRAvg = &v
-			}
+			convertField(&history[i].FLMin)
+			convertField(&history[i].FRMin)
+			convertField(&history[i].RLMin)
+			convertField(&history[i].RRMin)
+			convertField(&history[i].FLMax)
+			convertField(&history[i].FRMax)
+			convertField(&history[i].RLMax)
+			convertField(&history[i].RRMax)
+			convertField(&history[i].FLAvg)
+			convertField(&history[i].FRAvg)
+			convertField(&history[i].RLAvg)
+			convertField(&history[i].RRAvg)
 		}
 	}
 
@@ -287,4 +331,14 @@ func TeslaMateAPICarsTirePressureV1(c *gin.Context) {
 		},
 	}
 	apicommon.HandleSuccessResponse(c, "TeslaMateAPICarsTirePressureV1", jsonData)
+}
+
+// tirePressureTimezone returns the IANA timezone the day buckets should align
+// with. Order: apicommon.AppUsersTimezone (TZ env-derived) → "UTC". Postgres
+// AT TIME ZONE accepts IANA names, so this is a direct passthrough.
+func tirePressureTimezone() string {
+	if apicommon.AppUsersTimezone != nil {
+		return apicommon.AppUsersTimezone.String()
+	}
+	return "UTC"
 }

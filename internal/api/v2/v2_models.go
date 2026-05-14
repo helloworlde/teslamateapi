@@ -45,6 +45,10 @@ type V2TimeRange struct {
 	End           time.Time
 	PreviousStart *time.Time
 	PreviousEnd   *time.Time
+	// AppliedFilters carries the resolved query parameters forward into the
+	// response meta (spec §5.2). Populated by parseV2AnalyticsQuery so every
+	// handler that returns newV2Meta(...) gets meta.applied_filters for free.
+	AppliedFilters map[string]string
 }
 
 // @name V2Unit
@@ -70,6 +74,12 @@ type V2Meta struct {
 	Compare     string `json:"compare,omitempty" enums:"none,previous_period"`                       // 对比模式
 	Unit        V2Unit `json:"unit"`                                                                 // 单位
 	GeneratedAt string `json:"generated_at" format:"date-time"`
+	// AppliedFilters echoes back the query-string filters the server actually
+	// honored (audit §5.2 / spec §5.2). Helps clients debug "why did I get this
+	// payload?" — they can compare what they sent vs. what the server applied
+	// (defaults, normalized casing, ignored unknown keys, etc.). Always
+	// non-nil when populated; serialized as a JSON object.
+	AppliedFilters map[string]string `json:"applied_filters,omitempty"`
 }
 
 // @name V2APIResponse
@@ -100,6 +110,10 @@ type V2CapabilitiesDomain struct {
 	SupportsCompare    bool   `json:"supports_compare"`
 	SupportsTimeseries bool   `json:"supports_timeseries"`
 	SupportsBreakdown  bool   `json:"supports_breakdown"`
+	// Deprecated marks domains slated for removal. Clients should follow the
+	// `Link: ...; rel="successor-version"` header on the deprecated endpoint
+	// to discover its replacement (audit §1.2 / §1.3).
+	Deprecated bool `json:"deprecated,omitempty"`
 }
 
 // @name V2CapabilitiesAPIResponse
@@ -171,9 +185,21 @@ type V2ChargingSummary struct {
 	LongestSessionDuration *float64 `json:"longest_session_duration,omitempty"`
 	AvgEnergyAdded         *float64 `json:"avg_energy_added,omitempty"`
 	LargestSession         *float64 `json:"largest_session,omitempty"`
-	AvgPower               *float64 `json:"avg_power,omitempty"` // 平均功率 (kW)
-	MaxPower               *float64 `json:"max_power,omitempty"`
-	ChargingEfficiency     *float64 `json:"charging_efficiency,omitempty"` // 充电效率
+	// Deprecated: AC and DC charging have very different power profiles, so a
+	// blended average across both is meaningless. Use avg_power_ac /
+	// avg_power_dc and their _median_/_max_ siblings. The next minor will
+	// drop avg_power and max_power; until then we still emit them so existing
+	// dashboards keep rendering (audit §1.4, spec §3.1 deprecation flow).
+	AvgPower *float64 `json:"avg_power,omitempty"` // 平均功率 (kW) — deprecated
+	// Deprecated: superseded by max_power_ac / max_power_dc.
+	MaxPower          *float64 `json:"max_power,omitempty"`
+	AvgPowerAC        *float64 `json:"avg_power_ac,omitempty"`        // 交流平均功率 (kW)
+	AvgPowerDC        *float64 `json:"avg_power_dc,omitempty"`        // 直流平均功率 (kW)
+	MedianPowerAC     *float64 `json:"median_power_ac,omitempty"`     // 交流中位数功率 (kW)
+	MedianPowerDC     *float64 `json:"median_power_dc,omitempty"`     // 直流中位数功率 (kW)
+	MaxPowerAC        *float64 `json:"max_power_ac,omitempty"`        // 交流峰值功率 (kW)
+	MaxPowerDC        *float64 `json:"max_power_dc,omitempty"`        // 直流峰值功率 (kW)
+	ChargingEfficiency *float64 `json:"charging_efficiency,omitempty"` // 充电效率
 	Cost                   float64  `json:"cost"`                          // 费用
 	AvgCost                *float64 `json:"avg_cost,omitempty"`
 	MaxCost                *float64 `json:"max_cost,omitempty"`

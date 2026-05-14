@@ -20,9 +20,8 @@ type V2EfficiencyAPIResponse struct {
 
 // @name V2EfficiencyResponse
 type V2EfficiencyResponse struct {
-	Summary    V2EfficiencySummary     `json:"summary"`
-	Timeseries *V2EfficiencyTimeseries `json:"timeseries,omitempty"` // 时序
-	Buckets    *V2EfficiencyBuckets    `json:"buckets,omitempty"`
+	Summary V2EfficiencySummary  `json:"summary"`
+	Buckets *V2EfficiencyBuckets `json:"buckets,omitempty"`
 }
 
 // @name V2EfficiencySummary
@@ -35,21 +34,6 @@ type V2EfficiencySummary struct {
 	EnergyConsumedDrives float64  `json:"energy_consumed_drives"`
 	EnergyConsumedIdle   float64  `json:"energy_consumed_idle"`
 	AvgOutsideTemp       *float64 `json:"avg_outside_temp,omitempty"`
-}
-
-// @name V2EfficiencyTimeseries
-type V2EfficiencyTimeseries struct {
-	GroupBy string                       `json:"group_by"` // 聚合粒度
-	Items   []V2EfficiencyTimeseriesItem `json:"items"`    // 条目列表
-}
-
-// @name V2EfficiencyTimeseriesItem
-type V2EfficiencyTimeseriesItem struct {
-	PeriodStart         string   `json:"period_start"` // 周期起始
-	NetConsumption      *float64 `json:"net_consumption,omitempty"`
-	GrossConsumption    *float64 `json:"gross_consumption,omitempty"`    // 毛能耗 (Wh/km)
-	ConsumptionOverhead *float64 `json:"consumption_overhead,omitempty"` // 能耗开销 (Wh/km)
-	Distance            float64  `json:"distance"`                       // 距离 (km)
 }
 
 // @name V2EfficiencyBuckets
@@ -317,6 +301,18 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 			return V2EfficiencyResponse{}, carID, errV2CarNotFound
 		}
 	}
+	groupBy := strings.ToLower(strings.TrimSpace(opts.GroupBy))
+	if !opts.IncludeBuckets && groupBy != "" {
+		// Per spec §2.1: group_by without the enabling include is a 400.
+		return V2EfficiencyResponse{}, carID, errV2GroupByRequiresInclude
+	}
+	if opts.IncludeBuckets && groupBy != "" {
+		switch groupBy {
+		case "temperature_5c", "speed_10kmh":
+		default:
+			return V2EfficiencyResponse{}, carID, errV2InvalidEfficiencyGroupBy
+		}
+	}
 	start, end := asTimeBound(timeRange.Start), asTimeBound(timeRange.End)
 	summary, err := s.repository.Summary(ctx, carID, start, end)
 	if err != nil {
@@ -324,7 +320,6 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 	}
 	resp := V2EfficiencyResponse{Summary: summary}
 	if opts.IncludeBuckets {
-		groupBy := strings.ToLower(opts.GroupBy)
 		buckets := V2EfficiencyBuckets{}
 		switch groupBy {
 		case "", "temperature_5c":
@@ -350,10 +345,14 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 	return resp, carID, nil
 }
 
+// errV2InvalidEfficiencyGroupBy is returned when group_by isn't one of the
+// supported bucket dimensions.
+var errV2InvalidEfficiencyGroupBy = errors.New("invalid efficiency group_by")
+
 // Efficiency godoc
 //
 // @Summary V2 能效分析
-// @Description 返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。
+// @Description 返回该车的净能耗、毛能耗、能耗开销，以及可选的温度/速度分桶。group_by 仅在 include=buckets 时生效，否则返回 400 PARAM_DEPENDENCY_VIOLATION。
 // @Tags v2
 // @Produce json
 // @Param CarID path int true "车辆 ID" example(1)
@@ -388,6 +387,12 @@ func (h V2Handlers) Efficiency(c *gin.Context) {
 		switch {
 		case errors.Is(err, errV2CarNotFound):
 			apicommon.V2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
+		case errors.Is(err, errV2GroupByRequiresInclude):
+			apicommon.V2Error(c, http.StatusBadRequest, "PARAM_DEPENDENCY_VIOLATION",
+				"group_by requires include=buckets.",
+				map[string]string{"param": "group_by", "depends_on": "include=buckets"})
+		case errors.Is(err, errV2InvalidEfficiencyGroupBy):
+			apicommon.V2BadRequest(c, "Invalid efficiency group_by.", "group_by must be one of: temperature_5c, speed_10kmh")
 		case err.Error() == "invalid car id":
 			apicommon.V2BadRequest(c, "Invalid car id.", nil)
 		default:

@@ -27,6 +27,9 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 	var stats V2CostStats
 	var cost sql.NullFloat64
 	var energyUsed sql.NullFloat64
+	var minSessionCost sql.NullFloat64
+	var medianSessionCost sql.NullFloat64
+	var maxSessionCost sql.NullFloat64
 
 	err := r.db.QueryRowContext(ctx, `
 		SELECT
@@ -35,6 +38,9 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 			COUNT(*) AS session_count,
 			COUNT(cost) AS cost_rows,
 			COUNT(charge_energy_used) AS energy_used_rows,
+			MIN(cost) FILTER (WHERE cost IS NOT NULL AND cost > 0) AS min_session_cost,
+			PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cost) FILTER (WHERE cost IS NOT NULL AND cost > 0) AS median_session_cost,
+			MAX(cost) AS max_session_cost,
 			COALESCE((SELECT SUM(distance) FROM drives WHERE car_id = $1 AND end_date IS NOT NULL AND start_date >= $2 AND start_date < $3), 0) AS distance
 		FROM charging_processes
 		WHERE car_id = $1
@@ -42,7 +48,7 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 			AND start_date >= $2
 			AND start_date < $3`,
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time,
-	).Scan(&cost, &energyUsed, &stats.SessionRows, &stats.CostRows, &stats.EnergyUsedRows, &response.Summary.Distance)
+	).Scan(&cost, &energyUsed, &stats.SessionRows, &stats.CostRows, &stats.EnergyUsedRows, &minSessionCost, &medianSessionCost, &maxSessionCost, &response.Summary.Distance)
 	if err != nil {
 		return response, stats, err
 	}
@@ -59,6 +65,15 @@ func (r PostgresV2CostRepository) Cost(ctx context.Context, carID int64, timeRan
 	if cost.Valid && response.Summary.Distance > 0 {
 		costPer100KM := cost.Float64 / response.Summary.Distance * 100
 		response.Summary.CostPerDistance = &costPer100KM
+	}
+	if minSessionCost.Valid {
+		response.Summary.MinSessionCost = &minSessionCost.Float64
+	}
+	if medianSessionCost.Valid {
+		response.Summary.MedianSessionCost = &medianSessionCost.Float64
+	}
+	if maxSessionCost.Valid {
+		response.Summary.MaxSessionCost = &maxSessionCost.Float64
 	}
 
 	periods, err := r.costByPeriod(ctx, carID, timeRange, groupBy)

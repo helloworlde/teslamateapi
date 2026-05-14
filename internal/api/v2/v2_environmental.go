@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/apicommon"
@@ -49,8 +50,16 @@ type V2EnvironmentalTimeseries struct {
 type V2EnvironmentalTimeseriesItem struct {
 	PeriodStart    string   `json:"period_start"`               // 周期起始
 	OutsideTempAvg *float64 `json:"outside_temp_avg,omitempty"` // 车外平均温 (°C)
+	OutsideTempMin *float64 `json:"outside_temp_min,omitempty"` // 车外最低温 (°C)
+	OutsideTempMax *float64 `json:"outside_temp_max,omitempty"` // 车外最高温 (°C)
 	InsideTempAvg  *float64 `json:"inside_temp_avg,omitempty"`  // 车内平均温 (°C)
+	InsideTempMin  *float64 `json:"inside_temp_min,omitempty"`  // 车内最低温 (°C)
+	InsideTempMax  *float64 `json:"inside_temp_max,omitempty"`  // 车内最高温 (°C)
 	ElevationAvg   *float64 `json:"elevation_avg,omitempty"`
+	ElevationMin   *float64 `json:"elevation_min,omitempty"`
+	ElevationMax   *float64 `json:"elevation_max,omitempty"`
+	ElevationGain  *float64 `json:"elevation_gain,omitempty"` // 该周期累计爬升 (米)
+	ElevationLoss  *float64 `json:"elevation_loss,omitempty"` // 该周期累计下降 (米)
 	ClimateOnRatio *float64 `json:"climate_on_ratio,omitempty"`
 }
 
@@ -173,10 +182,17 @@ func (r PostgresV2EnvironmentalRepository) Summary(ctx context.Context, carID in
 
 func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID int64, timeRange V2TimeRange, groupBy string) ([]V2EnvironmentalTimeseriesItem, error) {
 	truncUnit := postgresDateTruncUnit(groupBy)
+	// Per audit §1.6: a single avg per bucket hides the heat/cold spikes the
+	// driver actually wants to see. Surface min/max for outside/inside temp
+	// and elevation, plus per-bucket ascent/descent from the drives table
+	// (positions don't carry pre-computed gain/loss). The drives subquery is
+	// independent of positions — bucketed on its own start_date — and joined
+	// back via FULL OUTER on the period_start key so that periods with no
+	// drives still surface position-only stats.
 	rows, err := r.db.QueryContext(ctx, fmt.Sprintf(`
 		WITH p AS (
 			SELECT
-				GREATEST(date_trunc('%s', date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+				GREATEST(date_trunc('%[1]s', date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
 				outside_temp::float8 AS outside_temp,
 				inside_temp::float8 AS inside_temp,
 				elevation::float8 AS elevation,
@@ -187,18 +203,46 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 				) AS minutes
 			FROM positions
 			WHERE car_id = $1 AND date >= $2 AND date < $3
+		),
+		p_agg AS (
+			SELECT
+				period_start,
+				AVG(outside_temp) AS outside_temp_avg,
+				MIN(outside_temp) AS outside_temp_min,
+				MAX(outside_temp) AS outside_temp_max,
+				AVG(inside_temp)  AS inside_temp_avg,
+				MIN(inside_temp)  AS inside_temp_min,
+				MAX(inside_temp)  AS inside_temp_max,
+				AVG(elevation)    AS elevation_avg,
+				MIN(elevation)    AS elevation_min,
+				MAX(elevation)    AS elevation_max,
+				CASE
+					WHEN SUM(minutes) > 0 THEN SUM(CASE WHEN is_climate_on AND minutes IS NOT NULL THEN minutes ELSE 0 END) / SUM(minutes)
+					ELSE NULL
+				END AS climate_on_ratio
+			FROM p
+			GROUP BY 1
+		),
+		drv AS (
+			SELECT
+				GREATEST(date_trunc('%[1]s', start_date AT TIME ZONE 'UTC' AT TIME ZONE $4), $2 AT TIME ZONE $4) AT TIME ZONE $4 AS period_start,
+				SUM(ascent)::float8  AS elevation_gain,
+				SUM(descent)::float8 AS elevation_loss
+			FROM drives
+			WHERE car_id = $1
+			  AND end_date IS NOT NULL
+			  AND start_date >= $2 AND start_date < $3
+			GROUP BY 1
 		)
 		SELECT
-			period_start,
-			AVG(outside_temp) AS outside_temp_avg,
-			AVG(inside_temp)  AS inside_temp_avg,
-			AVG(elevation)    AS elevation_avg,
-			CASE
-				WHEN SUM(minutes) > 0 THEN SUM(CASE WHEN is_climate_on AND minutes IS NOT NULL THEN minutes ELSE 0 END) / SUM(minutes)
-				ELSE NULL
-			END AS climate_on_ratio
-		FROM p
-		GROUP BY 1
+			COALESCE(p_agg.period_start, drv.period_start) AS period_start,
+			p_agg.outside_temp_avg, p_agg.outside_temp_min, p_agg.outside_temp_max,
+			p_agg.inside_temp_avg,  p_agg.inside_temp_min,  p_agg.inside_temp_max,
+			p_agg.elevation_avg,    p_agg.elevation_min,    p_agg.elevation_max,
+			drv.elevation_gain, drv.elevation_loss,
+			p_agg.climate_on_ratio
+		FROM p_agg
+		FULL OUTER JOIN drv ON drv.period_start = p_agg.period_start
 		ORDER BY 1`, truncUnit),
 		carID, asTimeBound(timeRange.Start).Time, asTimeBound(timeRange.End).Time, timeRange.Timezone,
 	)
@@ -210,22 +254,58 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 	items := []V2EnvironmentalTimeseriesItem{}
 	for rows.Next() {
 		var (
-			periodStart string
-			oAvg, iAvg  sql.NullFloat64
-			eAvg, ratio sql.NullFloat64
+			periodStart                              sql.NullTime
+			oAvg, oMin, oMax                         sql.NullFloat64
+			iAvg, iMin, iMax                         sql.NullFloat64
+			eAvg, eMin, eMax, eGain, eLoss           sql.NullFloat64
+			ratio                                    sql.NullFloat64
 		)
-		if err := rows.Scan(&periodStart, &oAvg, &iAvg, &eAvg, &ratio); err != nil {
+		if err := rows.Scan(
+			&periodStart,
+			&oAvg, &oMin, &oMax,
+			&iAvg, &iMin, &iMax,
+			&eAvg, &eMin, &eMax,
+			&eGain, &eLoss,
+			&ratio,
+		); err != nil {
 			return nil, err
 		}
-		item := V2EnvironmentalTimeseriesItem{PeriodStart: periodStart}
+		var item V2EnvironmentalTimeseriesItem
+		if periodStart.Valid {
+			item.PeriodStart = periodStart.Time.In(timeRangeLocation(timeRange)).Format(time.RFC3339)
+		}
 		if oAvg.Valid {
 			item.OutsideTempAvg = &oAvg.Float64
+		}
+		if oMin.Valid {
+			item.OutsideTempMin = &oMin.Float64
+		}
+		if oMax.Valid {
+			item.OutsideTempMax = &oMax.Float64
 		}
 		if iAvg.Valid {
 			item.InsideTempAvg = &iAvg.Float64
 		}
+		if iMin.Valid {
+			item.InsideTempMin = &iMin.Float64
+		}
+		if iMax.Valid {
+			item.InsideTempMax = &iMax.Float64
+		}
 		if eAvg.Valid {
 			item.ElevationAvg = &eAvg.Float64
+		}
+		if eMin.Valid {
+			item.ElevationMin = &eMin.Float64
+		}
+		if eMax.Valid {
+			item.ElevationMax = &eMax.Float64
+		}
+		if eGain.Valid {
+			item.ElevationGain = &eGain.Float64
+		}
+		if eLoss.Valid {
+			item.ElevationLoss = &eLoss.Float64
 		}
 		if ratio.Valid {
 			item.ClimateOnRatio = &ratio.Float64
@@ -275,8 +355,12 @@ func (s V2EnvironmentalService) BuildEnvironmental(ctx context.Context, carIDPar
 		return V2EnvironmentalResponse{}, carID, err
 	}
 	response := V2EnvironmentalResponse{Summary: summary}
+	groupBy := opts.GroupBy
+	if !opts.IncludeTimeseries && groupBy != "" {
+		// Spec §2.1: group_by is meaningless without include=timeseries.
+		return V2EnvironmentalResponse{}, carID, errV2GroupByRequiresInclude
+	}
 	if opts.IncludeTimeseries {
-		groupBy := opts.GroupBy
 		switch groupBy {
 		case "", "day", "week", "month", "year":
 		default:
@@ -337,6 +421,10 @@ func (h V2Handlers) Environmental(c *gin.Context) {
 			apicommon.V2Error(c, http.StatusNotFound, "CAR_NOT_FOUND", "Car was not found.", nil)
 		case errors.Is(err, errV2InvalidDrivingGroupBy):
 			apicommon.V2BadRequest(c, "Invalid environmental group_by.", nil)
+		case errors.Is(err, errV2GroupByRequiresInclude):
+			apicommon.V2Error(c, http.StatusBadRequest, "PARAM_DEPENDENCY_VIOLATION",
+				"group_by requires include=timeseries.",
+				map[string]string{"param": "group_by", "depends_on": "include=timeseries"})
 		case err.Error() == "invalid car id":
 			apicommon.V2BadRequest(c, "Invalid car id.", nil)
 		default:

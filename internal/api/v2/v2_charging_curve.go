@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +28,8 @@ type V2ChargingCurveResponse struct {
 type V2ChargingCurveSample struct {
 	BatteryLevel int     `json:"battery_level"` // 电量百分比
 	SessionCount int64   `json:"session_count"` // 充电会话数
+	MinPower     float64 `json:"min_power"`     // 该 SoC 桶内会话功率下限 (kW)
+	MaxPower     float64 `json:"max_power"`     // 该 SoC 桶内会话功率上限 (kW)
 	MedianPower  float64 `json:"median_power"`
 	P25Power     float64 `json:"p25_power"`
 	P75Power     float64 `json:"p75_power"`
@@ -34,8 +37,11 @@ type V2ChargingCurveSample struct {
 }
 
 // V2ChargingCurveRepository fetches DC charging curve aggregations.
+//
+// When useRange is false, start/end are ignored and the query covers the full
+// lifetime (lifetime is the default for this endpoint per spec §2.2).
 type V2ChargingCurveRepository interface {
-	Curve(ctx context.Context, carID int64, start timeBound, end timeBound, minSessions int) ([]V2ChargingCurveSample, error)
+	Curve(ctx context.Context, carID int64, start timeBound, end timeBound, useRange bool, minSessions int) ([]V2ChargingCurveSample, error)
 	CarExists(ctx context.Context, carID int64) (bool, error)
 }
 
@@ -54,11 +60,16 @@ func (r PostgresV2ChargingCurveRepository) CarExists(ctx context.Context, carID 
 	return exists, err
 }
 
-func (r PostgresV2ChargingCurveRepository) Curve(ctx context.Context, carID int64, start timeBound, end timeBound, minSessions int) ([]V2ChargingCurveSample, error) {
+func (r PostgresV2ChargingCurveRepository) Curve(ctx context.Context, carID int64, start timeBound, end timeBound, useRange bool, minSessions int) ([]V2ChargingCurveSample, error) {
 	// Restrict to DC sessions: charger_phases IS NULL marks DC fast-charging in TeslaMate.
 	// Aggregate (battery_level, session) → median charger_power; then per-level percentiles
 	// across sessions so a long session does not dominate.
-	rows, err := r.db.QueryContext(ctx, `
+	//
+	// useRange=false skips the time filter so the curve covers the full lifetime
+	// of the car. Per spec §2.2: this endpoint is fundamentally a "全生命周期"
+	// view — sharing the default window with monthly endpoints kills it for
+	// most users (audit §1.5).
+	const baseQuery = `
 		WITH per_session AS (
 			SELECT
 				c.battery_level,
@@ -68,8 +79,7 @@ func (r PostgresV2ChargingCurveRepository) Curve(ctx context.Context, carID int6
 			FROM charges c
 			JOIN charging_processes cp ON cp.id = c.charging_process_id
 			WHERE cp.car_id = $1
-				AND cp.start_date >= $2::timestamptz
-				AND cp.start_date < $3::timestamptz
+				%s
 				AND c.charger_power IS NOT NULL
 				AND c.battery_level IS NOT NULL
 				AND c.charger_phases IS NULL
@@ -78,15 +88,33 @@ func (r PostgresV2ChargingCurveRepository) Curve(ctx context.Context, carID int6
 		SELECT
 			battery_level,
 			COUNT(*) AS session_count,
+			MIN(session_power) AS min_power,
+			MAX(session_power) AS max_power,
 			PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY session_power) AS median_power,
 			PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY session_power) AS p25_power,
 			PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY session_power) AS p75_power,
 			AVG(session_voltage) AS avg_voltage
 		FROM per_session
 		GROUP BY battery_level
-		HAVING COUNT(*) >= $4
+		HAVING COUNT(*) >= %s
 		ORDER BY battery_level ASC
-	`, carID, start.Time, end.Time, minSessions)
+	`
+
+	var (
+		rangeClause string
+		query       string
+		args        []interface{}
+	)
+	if useRange {
+		rangeClause = "AND cp.start_date >= $2::timestamptz AND cp.start_date < $3::timestamptz"
+		query = fmt.Sprintf(baseQuery, rangeClause, "$4")
+		args = []interface{}{carID, start.Time, end.Time, minSessions}
+	} else {
+		query = fmt.Sprintf(baseQuery, "", "$2")
+		args = []interface{}{carID, minSessions}
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +123,23 @@ func (r PostgresV2ChargingCurveRepository) Curve(ctx context.Context, carID int6
 	samples := []V2ChargingCurveSample{}
 	for rows.Next() {
 		var sample V2ChargingCurveSample
-		var avgVoltage sql.NullFloat64
-		if err := rows.Scan(&sample.BatteryLevel, &sample.SessionCount, &sample.MedianPower, &sample.P25Power, &sample.P75Power, &avgVoltage); err != nil {
+		var (
+			minPower, maxPower sql.NullFloat64
+			avgVoltage         sql.NullFloat64
+		)
+		if err := rows.Scan(
+			&sample.BatteryLevel, &sample.SessionCount,
+			&minPower, &maxPower,
+			&sample.MedianPower, &sample.P25Power, &sample.P75Power,
+			&avgVoltage,
+		); err != nil {
 			return nil, err
+		}
+		if minPower.Valid {
+			sample.MinPower = minPower.Float64
+		}
+		if maxPower.Valid {
+			sample.MaxPower = maxPower.Float64
 		}
 		if avgVoltage.Valid {
 			sample.AvgVoltage = avgVoltage.Float64
@@ -116,7 +158,16 @@ func NewV2ChargingCurveService(repository V2ChargingCurveRepository) V2ChargingC
 	return V2ChargingCurveService{repository: repository}
 }
 
-func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam string, timeRange V2TimeRange, minSessions int) (V2ChargingCurveResponse, int64, error) {
+// V2ChargingCurveOptions toggles charging curve flags. When UseLifetime is
+// true the curve aggregates across all sessions regardless of timeRange — this
+// is the default when callers don't supply explicit start/end/period.
+type V2ChargingCurveOptions struct {
+	UseLifetime bool
+	MinSessions int
+}
+
+func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam string, timeRange V2TimeRange, opts V2ChargingCurveOptions) (V2ChargingCurveResponse, int64, error) {
+	minSessions := opts.MinSessions
 	if minSessions <= 0 {
 		minSessions = 5
 	}
@@ -133,7 +184,7 @@ func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam strin
 			return V2ChargingCurveResponse{}, carID, errV2CarNotFound
 		}
 	}
-	samples, err := s.repository.Curve(ctx, carID, asTimeBound(timeRange.Start), asTimeBound(timeRange.End), minSessions)
+	samples, err := s.repository.Curve(ctx, carID, asTimeBound(timeRange.Start), asTimeBound(timeRange.End), !opts.UseLifetime, minSessions)
 	if err != nil {
 		return V2ChargingCurveResponse{}, carID, err
 	}
@@ -143,7 +194,7 @@ func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam strin
 // ChargingCurve godoc
 //
 // @Summary V2 直流充电曲线（聚合）
-// @Description 返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率中位数 / P25 / P75）。
+// @Description 返回该车直流充电曲线的聚合样本（按电量分桶：会话数、功率分布 min/p25/median/p75/max）。默认覆盖整个生命周期；显式传入 start/end/period 时按窗口过滤。
 // @Tags v2
 // @Produce json
 // @Param CarID path int true "车辆 ID" example(1)
@@ -158,7 +209,7 @@ func (s V2ChargingCurveService) BuildCurve(ctx context.Context, carIDParam strin
 // @Failure 500 {object} apicommon.APIErrorResponse
 // @Router /v2/cars/{CarID}/analytics/charging/curve [get]
 func (h V2Handlers) ChargingCurve(c *gin.Context) {
-	_, timeRange, err := parseV2AnalyticsQuery(c, h.now())
+	query, timeRange, err := parseV2AnalyticsQuery(c, h.now())
 	if err != nil {
 		apicommon.V2BadRequest(c, "Invalid analytics query.", err.Error())
 		return
@@ -173,7 +224,15 @@ func (h V2Handlers) ChargingCurve(c *gin.Context) {
 			minSessions = parsed
 		}
 	}
-	response, carID, err := h.chargingCurveBuilder.BuildCurve(c.Request.Context(), c.Param("CarID"), timeRange, minSessions)
+	// Lifetime is the default unless the caller explicitly narrows the window.
+	// "period=month" without start/end is the parser's fallback — we treat
+	// only an explicit non-default period or any explicit start/end as
+	// "user wants a window".
+	useLifetime := query.Start == "" && query.End == "" && c.Query("period") == ""
+	response, carID, err := h.chargingCurveBuilder.BuildCurve(c.Request.Context(), c.Param("CarID"), timeRange, V2ChargingCurveOptions{
+		UseLifetime: useLifetime,
+		MinSessions: minSessions,
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, errV2CarNotFound):
@@ -185,5 +244,13 @@ func (h V2Handlers) ChargingCurve(c *gin.Context) {
 		}
 		return
 	}
-	v2JSON(c, http.StatusOK, response, newV2Meta(carID, timeRange))
+	meta := newV2Meta(carID, timeRange)
+	if useLifetime {
+		// Reflect what we actually queried so clients can see the default
+		// resolved to lifetime (spec §2.2 + §5.2).
+		meta.Period = "lifetime"
+		meta.Start = ""
+		meta.End = ""
+	}
+	v2JSON(c, http.StatusOK, response, meta)
 }

@@ -40,11 +40,12 @@ func parseV2AnalyticsQuery(c *gin.Context, now time.Time) (V2AnalyticsQuery, V2T
 	}
 
 	result := V2TimeRange{
-		Period:   query.Period,
-		Timezone: query.Timezone,
-		Compare:  query.Compare,
-		Start:    start.UTC(),
-		End:      end.UTC(),
+		Period:         query.Period,
+		Timezone:       query.Timezone,
+		Compare:        query.Compare,
+		Start:          start.UTC(),
+		End:            end.UTC(),
+		AppliedFilters: appliedAnalyticsFilters(query),
 	}
 
 	if query.Compare == "previous_period" {
@@ -152,15 +153,41 @@ func parseV2ClientTime(value string, location *time.Location) (time.Time, error)
 func newV2Meta(carID int64, timeRange V2TimeRange) V2Meta {
 	location := timeRangeLocation(timeRange)
 	return V2Meta{
-		CarID:       carID,
-		Period:      timeRange.Period,
-		Timezone:    timeRange.Timezone,
-		Start:       timeRange.Start.In(location).Format(time.RFC3339),
-		End:         timeRange.End.In(location).Format(time.RFC3339),
-		Compare:     timeRange.Compare,
-		Unit:        defaultV2Unit(),
-		GeneratedAt: time.Now().In(location).Format(time.RFC3339),
+		CarID:          carID,
+		Period:         timeRange.Period,
+		Timezone:       timeRange.Timezone,
+		Start:          timeRange.Start.In(location).Format(time.RFC3339),
+		End:            timeRange.End.In(location).Format(time.RFC3339),
+		Compare:        timeRange.Compare,
+		Unit:           defaultV2Unit(),
+		GeneratedAt:    time.Now().In(location).Format(time.RFC3339),
+		AppliedFilters: timeRange.AppliedFilters,
 	}
+}
+
+// appliedAnalyticsFilters projects the resolved analytics query into a
+// normalized map for meta.applied_filters (spec §5.2). Empty keys are dropped
+// so clients see exactly the filters the server honored — including any
+// values it defaulted on their behalf.
+func appliedAnalyticsFilters(query V2AnalyticsQuery) map[string]string {
+	out := map[string]string{}
+	addIf := func(k, v string) {
+		if v = strings.TrimSpace(v); v != "" {
+			out[k] = v
+		}
+	}
+	addIf("period", query.Period)
+	addIf("timezone", query.Timezone)
+	addIf("compare", query.Compare)
+	addIf("group_by", query.GroupBy)
+	addIf("metrics", query.Metrics)
+	addIf("include", query.Include)
+	addIf("start", query.Start)
+	addIf("end", query.End)
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func timeRangeLocation(timeRange V2TimeRange) *time.Location {
@@ -184,12 +211,72 @@ func defaultV2Unit() V2Unit {
 		Elevation:   "m",
 		Consumption: "Wh/km",
 		Temperature: "C",
-		Currency:    "CNY",
+		Currency:    defaultV2Currency(),
 	}
+}
+
+// defaultV2Currency resolves the response currency from configuration. Order:
+//  1. CURRENCY env var (operator override)
+//  2. TeslaMate `settings.currency` (read once when the V2 routes register)
+//  3. "USD" as a neutral fallback
+//
+// We do NOT hardcode CNY: every deployment lies otherwise.
+func defaultV2Currency() string {
+	if v := strings.TrimSpace(config.Env("CURRENCY", "")); v != "" {
+		return strings.ToUpper(v)
+	}
+	if v := strings.TrimSpace(teslamateSettingsCurrency); v != "" {
+		return strings.ToUpper(v)
+	}
+	return "USD"
+}
+
+// teslamateSettingsCurrency is populated at startup from the TeslaMate `settings`
+// table (best-effort; remains empty if read fails or table is absent). Updated
+// via SetTeslaMateSettingsCurrency from the routes registration.
+var teslamateSettingsCurrency string
+
+// SetTeslaMateSettingsCurrency lets the bootstrap code seed the cached currency.
+func SetTeslaMateSettingsCurrency(value string) {
+	teslamateSettingsCurrency = strings.TrimSpace(value)
+}
+
+// seedTeslaMateSettingsCurrency reads TeslaMate's settings.currency once at
+// startup. Errors are intentionally swallowed: the table may not exist on
+// minimal/embedded TeslaMate variants, and the v2 layer must still respond
+// (defaulting to env / "USD"). This is the only place we touch that table.
+func seedTeslaMateSettingsCurrency() {
+	if apicommon.DB == nil {
+		return
+	}
+	var currency string
+	// LIMIT 1: the table is single-row in practice but we don't want to error
+	// if a deployment has duplicates.
+	err := apicommon.DB.QueryRow(`SELECT COALESCE(NULLIF(currency, ''), '') FROM settings LIMIT 1`).Scan(&currency)
+	if err != nil {
+		return
+	}
+	SetTeslaMateSettingsCurrency(currency)
 }
 
 func v2JSON(c *gin.Context, status int, data interface{}, meta V2Meta) {
 	c.JSON(status, V2APIResponse{Data: data, Meta: meta})
+}
+
+// setV2DeprecationHeaders attaches IETF-style deprecation headers to the
+// response. Callers pass the successor path (relative to the API root); we
+// emit:
+//   - `Deprecation: true`        — RFC 8594 marker
+//   - `Link: <successor>; rel="successor-version"` — points clients at the
+//     replacement so they don't have to read swagger to find it
+//
+// Used by Stage C (audit §1.3 / §1.2): /v2/analytics/battery → v1
+// battery-health, /v2/analytics/battery/timeseries → /v2/timeline.
+func setV2DeprecationHeaders(c *gin.Context, successorPath string) {
+	c.Header("Deprecation", "true")
+	if successorPath != "" {
+		c.Header("Link", `<`+successorPath+`>; rel="successor-version"`)
+	}
 }
 
 // parseV2IncludeSet splits the include query parameter into a lower-cased set.
