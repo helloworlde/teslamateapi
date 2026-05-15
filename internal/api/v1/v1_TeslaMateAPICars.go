@@ -49,13 +49,13 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	}
 	// CarSettings struct - child of Cars
 	type CarSettings struct {
-		SuspendMin          int  `json:"suspend_min"`                  // int
-		SuspendAfterIdleMin int  `json:"suspend_after_idle_min"`       // int
-		ReqNotUnlocked      bool `json:"req_not_unlocked"`             // bool
-		FreeSupercharging   bool `json:"free_supercharging"`           // bool
-		UseStreamingAPI     bool `json:"use_streaming_api"`            // bool
-		LfpBattery          bool `json:"lfp_battery,omitempty"`        // bool (added)
-		Enabled             bool `json:"enabled,omitempty"`            // bool (added)
+		SuspendMin          int  `json:"suspend_min"`            // int
+		SuspendAfterIdleMin int  `json:"suspend_after_idle_min"` // int
+		ReqNotUnlocked      bool `json:"req_not_unlocked"`       // bool
+		FreeSupercharging   bool `json:"free_supercharging"`     // bool
+		UseStreamingAPI     bool `json:"use_streaming_api"`      // bool
+		LfpBattery          bool `json:"lfp_battery,omitempty"`  // bool (added)
+		Enabled             bool `json:"enabled,omitempty"`      // bool (added)
 	}
 	// TeslaMateDetails struct - child of Cars
 	type TeslaMateDetails struct {

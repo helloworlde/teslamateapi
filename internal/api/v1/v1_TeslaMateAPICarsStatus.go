@@ -427,7 +427,7 @@ func (s *StatusCache) newMessage(c mqtt.Client, msg mqtt.Message) {
 // @Description 基于 MQTT 推送的实时车辆遥测；需启用 MQTT，未启用时返回 501。
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Failure 501 {object} V1ErrorEnvelope

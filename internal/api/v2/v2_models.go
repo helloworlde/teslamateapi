@@ -187,38 +187,38 @@ type V2ChargingSummary struct {
 	// AC and DC charging have very different power profiles; a blended
 	// avg_power / max_power across both is uninterpretable, so only the
 	// AC/DC split is exposed (audit §1.4).
-	AvgPowerAC        *float64 `json:"avg_power_ac,omitempty"`        // 交流平均功率 (kW)
-	AvgPowerDC        *float64 `json:"avg_power_dc,omitempty"`        // 直流平均功率 (kW)
-	MedianPowerAC     *float64 `json:"median_power_ac,omitempty"`     // 交流中位数功率 (kW)
-	MedianPowerDC     *float64 `json:"median_power_dc,omitempty"`     // 直流中位数功率 (kW)
-	MaxPowerAC        *float64 `json:"max_power_ac,omitempty"`        // 交流峰值功率 (kW)
-	MaxPowerDC        *float64 `json:"max_power_dc,omitempty"`        // 直流峰值功率 (kW)
+	AvgPowerAC         *float64 `json:"avg_power_ac,omitempty"`        // 交流平均功率 (kW)
+	AvgPowerDC         *float64 `json:"avg_power_dc,omitempty"`        // 直流平均功率 (kW)
+	MedianPowerAC      *float64 `json:"median_power_ac,omitempty"`     // 交流中位数功率 (kW)
+	MedianPowerDC      *float64 `json:"median_power_dc,omitempty"`     // 直流中位数功率 (kW)
+	MaxPowerAC         *float64 `json:"max_power_ac,omitempty"`        // 交流峰值功率 (kW)
+	MaxPowerDC         *float64 `json:"max_power_dc,omitempty"`        // 直流峰值功率 (kW)
 	ChargingEfficiency *float64 `json:"charging_efficiency,omitempty"` // 充电效率
-	Cost                   float64  `json:"cost"`                          // 费用
-	AvgCost                *float64 `json:"avg_cost,omitempty"`
-	MaxCost                *float64 `json:"max_cost,omitempty"`
-	AvgCostPerEnergy       *float64 `json:"avg_cost_per_energy,omitempty"`
-	StartBatteryAvg        *float64 `json:"start_battery_avg,omitempty"`
-	EndBatteryAvg          *float64 `json:"end_battery_avg,omitempty"`
-	ACSessionCount         int64    `json:"ac_session_count"`
-	DCSessionCount         int64    `json:"dc_session_count"`
-	ACEnergy               float64  `json:"ac_energy"`
-	DCEnergy               float64  `json:"dc_energy"`
+	Cost               float64  `json:"cost"`                          // 费用
+	AvgCost            *float64 `json:"avg_cost,omitempty"`
+	MaxCost            *float64 `json:"max_cost,omitempty"`
+	AvgCostPerEnergy   *float64 `json:"avg_cost_per_energy,omitempty"`
+	StartBatteryAvg    *float64 `json:"start_battery_avg,omitempty"`
+	EndBatteryAvg      *float64 `json:"end_battery_avg,omitempty"`
+	ACSessionCount     int64    `json:"ac_session_count"`
+	DCSessionCount     int64    `json:"dc_session_count"`
+	ACEnergy           float64  `json:"ac_energy"`
+	DCEnergy           float64  `json:"dc_energy"`
 }
 
 // @name V2VehicleSummary
 type V2VehicleSummary struct {
-	Odometer             *float64 `json:"odometer,omitempty"`
-	RatedEfficiency      *float64 `json:"rated_efficiency,omitempty"`
-	TrackedConsumption   *float64 `json:"tracked_consumption,omitempty"`
-	TrackedWall          *float64 `json:"tracked_wall,omitempty"`
-	ChargeEfficiency     *float64 `json:"charge_efficiency,omitempty"`
-	OdometerCoverage     *float64 `json:"odometer_coverage,omitempty"`
-	OdometerTracked      *float64 `json:"odometer_tracked,omitempty"`
-	OdometerTotal        *float64 `json:"odometer_total,omitempty"`
-	TrackedDistance      float64  `json:"tracked_distance"`
-	TrackedDrives        int64    `json:"tracked_drives"`
-	TrackedCharges       int64    `json:"tracked_charges"`
+	Odometer           *float64 `json:"odometer,omitempty"`
+	RatedEfficiency    *float64 `json:"rated_efficiency,omitempty"`
+	TrackedConsumption *float64 `json:"tracked_consumption,omitempty"`
+	TrackedWall        *float64 `json:"tracked_wall,omitempty"`
+	ChargeEfficiency   *float64 `json:"charge_efficiency,omitempty"`
+	OdometerCoverage   *float64 `json:"odometer_coverage,omitempty"`
+	OdometerTracked    *float64 `json:"odometer_tracked,omitempty"`
+	OdometerTotal      *float64 `json:"odometer_total,omitempty"`
+	TrackedDistance    float64  `json:"tracked_distance"`
+	TrackedDrives      int64    `json:"tracked_drives"`
+	TrackedCharges     int64    `json:"tracked_charges"`
 }
 
 // V2ParkingSummary is the canonical parking aggregate; consumed by both

@@ -15,7 +15,7 @@ import (
 // @Summary 单条充电会话详情
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Param ChargeID path int true "充电会话 ID"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope

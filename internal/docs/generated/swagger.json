@@ -216,6 +216,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -244,6 +245,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -296,6 +298,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -324,6 +327,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -359,6 +363,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -411,6 +416,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -464,6 +470,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -499,6 +506,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",
@@ -533,6 +541,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "example": 1,
                         "description": "车辆 ID",
                         "name": "CarID",
                         "in": "path",

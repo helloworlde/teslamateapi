@@ -16,7 +16,7 @@ import (
 // @Description 返回车辆电池健康度。包含 baseline_range_at_full_charge 与 estimated_range_degradation（自 v2.3 起合并自原 v2 `/analytics/battery`，该 v2 端点已删除，audit §1.3）。
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope
 // @Router /v1/cars/{CarID}/battery-health [get]
@@ -344,12 +344,12 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	// the value (mirrors v2_battery_service.go).
 	const baselineMinSamples = 5
 	var (
-		baselineRated  sql.NullFloat64
-		baselineIdeal  sql.NullFloat64
-		baselineRows   sql.NullInt64
-		latestBattery  sql.NullInt64
-		latestRated    sql.NullFloat64
-		latestIdeal    sql.NullFloat64
+		baselineRated sql.NullFloat64
+		baselineIdeal sql.NullFloat64
+		baselineRows  sql.NullInt64
+		latestBattery sql.NullInt64
+		latestRated   sql.NullFloat64
+		latestIdeal   sql.NullFloat64
 	)
 	baselineErr := apicommon.DB.QueryRow(`
 		WITH baseline AS (

@@ -17,7 +17,7 @@ import (
 // @Description 最近一次 TPMS 读数 + 时间窗内极值 + 按天历史。每日历史返回 *_min / *_max（用于发现慢漏气）和 *_avg（已弃用，下个 minor 删除）。日历桶按 apicommon.AppUsersTimezone (TZ 环境变量) 切分，避免非 UTC 用户跨午夜 off-by-one。气压单位遵循 settings.unit_of_pressure（默认 bar；psi 由 conv.BarToPsi 换算）。
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Param window_days query int false "历史窗口天数（默认 30，最大 365）"
 // @Success 200 {object} V1JSONEnvelope
 // @Failure 200 {object} V1ErrorEnvelope

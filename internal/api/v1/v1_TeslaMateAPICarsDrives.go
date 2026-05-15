@@ -16,7 +16,7 @@ import (
 // @Summary 车辆行程列表
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Param page query int false "结果页码"
 // @Param show query int false "每页大小"
 // @Param startDate query string false "筛选起始日期"

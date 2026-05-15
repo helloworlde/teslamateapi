@@ -16,7 +16,7 @@ import (
 // @Summary 单条行程详情
 // @Tags v1
 // @Produce json
-// @Param CarID path int true "车辆 ID"
+// @Param CarID path int true "车辆 ID" example(1)
 // @Param DriveID path int true "行程 ID"
 // @Param sample query string false "行程明细下采样：full、every_5s（默认）、every_30s" Enums(full, every_5s, every_30s)
 // @Param include_route query bool false "设为 false 可在响应中省略 drive_details（行程轨迹）"

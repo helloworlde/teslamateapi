@@ -192,7 +192,7 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		registerV2Route(v2Cars, "/parking/idle_periods", handlers.IdlePeriods, handlers.capabilities, V2CapabilitiesDomain{
 			Name: "parking_idle_periods", Path: "/v2/cars/{car_id}/parking/idle_periods",
 		})
-// audit §1.2 / §1.3: /analytics/battery and /analytics/battery/timeseries
+		// audit §1.2 / §1.3: /analytics/battery and /analytics/battery/timeseries
 		// were removed outright. The former duplicated v1 /battery-health (which
 		// now carries baseline_range_at_full_charge + estimated_range_degradation),
 		// and the latter only exposed an arithmetic mean of SoC over a window,

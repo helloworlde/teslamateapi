@@ -249,11 +249,11 @@ func (r PostgresV2EnvironmentalRepository) Timeseries(ctx context.Context, carID
 	items := []V2EnvironmentalTimeseriesItem{}
 	for rows.Next() {
 		var (
-			periodStart                    sql.NullTime
-			oMin, oMax                     sql.NullFloat64
-			iMin, iMax                     sql.NullFloat64
-			eMin, eMax, eGain, eLoss       sql.NullFloat64
-			ratio                          sql.NullFloat64
+			periodStart              sql.NullTime
+			oMin, oMax               sql.NullFloat64
+			iMin, iMax               sql.NullFloat64
+			eMin, eMax, eGain, eLoss sql.NullFloat64
+			ratio                    sql.NullFloat64
 		)
 		if err := rows.Scan(
 			&periodStart,

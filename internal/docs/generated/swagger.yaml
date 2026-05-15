@@ -1630,6 +1630,7 @@ paths:
         v2.3 起合并自原 v2 `/analytics/battery`，该 v2 端点已删除，audit §1.3）。
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1648,6 +1649,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1682,6 +1684,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1705,6 +1708,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1723,6 +1727,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1757,6 +1762,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1793,6 +1799,7 @@ paths:
       description: 基于 MQTT 推送的实时车辆遥测；需启用 MQTT，未启用时返回 501。
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1818,6 +1825,7 @@ paths:
         settings.unit_of_pressure（默认 bar；psi 由 BarToPsi 换算）。
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
@@ -1840,6 +1848,7 @@ paths:
     get:
       parameters:
       - description: 车辆 ID
+        example: 1
         in: path
         name: CarID
         required: true
