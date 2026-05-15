@@ -56,6 +56,9 @@ func (s V2ChargingService) BuildCharging(ctx context.Context, carIDParam string,
 	}
 
 	groupBy := opts.GroupBy
+	if groupBy != "" {
+		opts.IncludeTimeseries = true
+	}
 	if opts.IncludeTimeseries {
 		if groupBy == "" {
 			groupBy = defaultV2DrivingGroupBy(timeRange.Period)
@@ -63,10 +66,9 @@ func (s V2ChargingService) BuildCharging(ctx context.Context, carIDParam string,
 		if !v2AllowedDrivingGroupBy[groupBy] {
 			return V2ChargingResponse{}, 0, errV2InvalidDrivingGroupBy
 		}
-	} else if opts.GroupBy != "" {
-		// group_by without include=timeseries used to be silently dropped (see
-		// docs/v2-api-audit-2026-05.md §1.4). Per spec §2.1, surface a 400.
-		return V2ChargingResponse{}, 0, errV2GroupByRequiresInclude
+	}
+	if opts.BreakdownBy != "" {
+		opts.IncludeBreakdown = true
 	}
 	if opts.IncludeBreakdown {
 		switch opts.BreakdownBy {
@@ -74,8 +76,6 @@ func (s V2ChargingService) BuildCharging(ctx context.Context, carIDParam string,
 		default:
 			return V2ChargingResponse{}, 0, errV2InvalidChargingBreakdown
 		}
-	} else if opts.BreakdownBy != "" {
-		return V2ChargingResponse{}, 0, errV2BreakdownRequiresInclude
 	}
 
 	if err := s.ensureCarExists(ctx, carID); err != nil {

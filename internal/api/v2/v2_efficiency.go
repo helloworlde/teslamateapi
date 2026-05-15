@@ -299,9 +299,8 @@ func (s V2EfficiencyService) BuildEfficiency(ctx context.Context, carIDParam str
 		}
 	}
 	groupBy := strings.ToLower(strings.TrimSpace(opts.GroupBy))
-	if !opts.IncludeBuckets && groupBy != "" {
-		// Per spec §2.1: group_by without the enabling include is a 400.
-		return V2EfficiencyResponse{}, carID, errV2GroupByRequiresInclude
+	if groupBy != "" {
+		opts.IncludeBuckets = true
 	}
 	if opts.IncludeBuckets && groupBy != "" {
 		switch groupBy {

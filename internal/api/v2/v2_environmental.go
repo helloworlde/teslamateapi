@@ -342,9 +342,8 @@ func (s V2EnvironmentalService) BuildEnvironmental(ctx context.Context, carIDPar
 	}
 	response := V2EnvironmentalResponse{Summary: summary}
 	groupBy := opts.GroupBy
-	if !opts.IncludeTimeseries && groupBy != "" {
-		// Spec §2.1: group_by is meaningless without include=timeseries.
-		return V2EnvironmentalResponse{}, carID, errV2GroupByRequiresInclude
+	if groupBy != "" {
+		opts.IncludeTimeseries = true
 	}
 	if opts.IncludeTimeseries {
 		switch groupBy {
