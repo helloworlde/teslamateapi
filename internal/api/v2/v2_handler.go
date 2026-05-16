@@ -227,9 +227,6 @@ func RegisterV2Routes(api *gin.RouterGroup, summaryRepository V2SummaryRepositor
 		registerV2Route(v2Cars, "/timeline", handlers.Timeline, handlers.capabilities, V2CapabilitiesDomain{
 			Name: "timeline", Path: "/v2/cars/{car_id}/timeline",
 		})
-		registerV2Route(v2Cars, "/drives/:DriveID/events", handlers.DriveEvents, handlers.capabilities, V2CapabilitiesDomain{
-			Name: "drive_events", Path: "/v2/cars/{car_id}/drives/{drive_id}/events",
-		})
 	}
 }
 
