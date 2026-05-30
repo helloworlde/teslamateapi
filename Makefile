@@ -15,14 +15,14 @@ install-tools: ## Install swag CLI at the pinned version
 	@command -v $(SWAG) >/dev/null 2>&1 || go install github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION)
 
 docs: install-tools ## Regenerate OpenAPI spec from swag annotations
-	cd src && $(SWAG) init -g webserver.go -o docs --outputTypes go,yaml,json --parseDependency --parseInternal
+	$(SWAG) init --dir cmd/teslamateapi,internal,pkg/dto -g main.go -o docs --outputTypes go,yaml,json --parseDependency --parseInternal
 
 docs-clean: ## Remove generated docs
-	rm -rf src/docs/docs.go src/docs/swagger.json src/docs/swagger.yaml
+	rm -f docs/docs.go docs/swagger.json docs/swagger.yaml
 
 build: docs ## Regenerate docs and build the binary into ./bin/teslamateapi
 	mkdir -p bin
-	cd src && CGO_ENABLED=0 go build -ldflags="-w -s -X 'main.apiVersion=$(API_VERSION)'" -o ../bin/teslamateapi .
+	CGO_ENABLED=0 go build -ldflags="-w -s -X 'main.apiVersion=$(API_VERSION)'" -o bin/teslamateapi ./cmd/teslamateapi
 
 run: docs ## Regenerate docs and run via dev/run-api.sh
 	./dev/run-api.sh
@@ -31,13 +31,13 @@ tidy: ## go mod tidy
 	go mod tidy
 
 fmt: ## gofmt all sources
-	gofmt -s -w src
+	gofmt -s -w cmd internal pkg
 
 vet: ## go vet
-	cd src && go vet ./...
+	go vet ./...
 
 test: ## go test
-	cd src && go test ./...
+	go test ./...
 
 lint: fmt vet ## fmt + vet
 

@@ -5,24 +5,26 @@ FROM golang:1.26.0 AS builder
 ARG apiVersion=unknown
 
 # create and set workingfolder
-WORKDIR /go/src/
+WORKDIR /go/src/teslamateapi
 
-# copy go mod files and sourcecode (preserve src/ layout — internal imports
-# resolve via github.com/tobiasehlert/teslamateapi/src/dto etc.)
+# copy go mod files and full source tree (cmd/, internal/, pkg/, docs/).
+# Module path stays github.com/tobiasehlert/teslamateapi.
 COPY go.mod go.sum ./
-COPY src/ ./src/
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
+COPY pkg/ ./pkg/
+COPY docs/ ./docs/
 
 # install swag CLI (matches the swaggo runtime locked in go.mod), regenerate
 # the OpenAPI spec from in-source annotations, then compile. swag init writes
-# docs/swagger.{go,yaml,json}; openapi_handler.go embeds the YAML at build.
+# docs/swagger.{go,yaml,json}; docs/embed.go embeds the YAML at build time.
 RUN go install github.com/swaggo/swag/cmd/swag@v1.16.4 && \
   go mod download && \
-  cd src && \
-  /go/bin/swag init -g webserver.go -o docs --outputTypes go,yaml,json --parseDependency --parseInternal && \
+  /go/bin/swag init --dir cmd/teslamateapi,internal,pkg/dto -g main.go -o docs --outputTypes go,yaml,json --parseDependency --parseInternal && \
   CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
   -X 'main.apiVersion=${apiVersion}' \
-  " -o /go/src/app .
+  " -o /go/src/app ./cmd/teslamateapi
 
 
 # get alpine container

@@ -1,0 +1,164 @@
+// Package main is the TeslaMateApi HTTP server entry point.
+//
+// @title                       TeslaMateApi
+// @version                     1.0
+// @description                 REST API in front of TeslaMate's Postgres database, the MQTT status feed, and (optionally) Tesla owner-api / TeslaMate logging command relays.
+// @BasePath                    /
+// @schemes                     http https
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 API_TOKEN bearer credential. Required for every /api/* route except /api, /api/, /api/ping, /api/healthz, /api/readyz, /api/docs, /api/openapi.yaml.
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync/atomic"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/tobiasehlert/teslamateapi/internal/auth"
+	"github.com/tobiasehlert/teslamateapi/internal/command"
+	"github.com/tobiasehlert/teslamateapi/internal/config"
+	"github.com/tobiasehlert/teslamateapi/internal/database"
+	"github.com/tobiasehlert/teslamateapi/internal/httpapi"
+	"github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/system"
+	v1 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v1"
+	v2 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v2"
+	"github.com/tobiasehlert/teslamateapi/internal/status"
+)
+
+// apiVersion is injected at link time (-ldflags "-X main.apiVersion=...").
+// It's the only package-level var here and is read-only after init.
+var apiVersion = "unspecified"
+
+func main() {
+	// readiness flag for k8s probes
+	ready := &atomic.Value{}
+	ready.Store(false)
+
+	log.SetFlags(log.Ldate | log.Lmicroseconds)
+
+	cfg := config.Load()
+
+	if !cfg.DebugMode {
+		gin.SetMode(gin.ReleaseMode)
+		log.Printf("[info] TeslaMateApi running in release mode.")
+	} else {
+		gin.SetMode(gin.DebugMode)
+		log.Printf("[info] TeslaMateApi running in debug mode.")
+	}
+
+	tz := config.LoadTZ(cfg.TZName)
+	if gin.IsDebugging() {
+		log.Println("[debug] TeslaMateApi appUsersTimezone:", tz)
+	}
+
+	db, err := database.New(cfg)
+	if err != nil {
+		log.Fatalf("[error] database init: %v", err)
+	}
+	defer db.Close()
+
+	tok := auth.New(cfg)
+	allowList := command.NewAllowList(cfg)
+
+	// Commands hit Tesla's owner-api / TeslaMate's logging endpoint with the
+	// car's stored access token. Exposing them without auth turns the API
+	// into an open relay. Refuse to start in that configuration.
+	if cfg.CommandsEnabled {
+		if cfg.APITokenDisable {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires authentication; refusing to start with API_TOKEN_DISABLE=true.")
+		}
+		if cfg.APIToken == "" {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires API_TOKEN to be set; refusing to start without it.")
+		}
+		if len(cfg.APIToken) < 32 {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires API_TOKEN of at least 32 characters; refusing to start.")
+		}
+	}
+
+	// Connect to the MQTT broker
+	statusCache, err := status.New(cfg, ready)
+	if cfg.MQTTDisabled {
+		log.Printf("[info] TeslaMateApi MQTT connection not established.")
+	} else if err != nil {
+		log.Fatalf("[error] TeslaMateApi MQTT connection failed: %s", err)
+	}
+
+	if cfg.APITokenDisable {
+		log.Println("[warning] validateAuthToken - header authorization bearer token disabled. Authorization: Bearer token will not be required for commands.")
+	}
+
+	if cfg.TeslaAPIHost != "" {
+		log.Printf("[info] TESLA_API_HOST is set: %s", cfg.TeslaAPIHost)
+	}
+
+	v1Handler := v1.New(v1.Deps{
+		DB:          db,
+		TZ:          tz,
+		AllowList:   allowList,
+		StatusCache: statusCache,
+		Token:       tok,
+		Cfg: v1.Config{
+			APIVersion:      apiVersion,
+			EncryptionKey:   cfg.EncryptionKey,
+			TeslaAPIHost:    cfg.TeslaAPIHost,
+			TeslaMateHost:   cfg.TeslaMateHost,
+			TeslaMatePort:   cfg.TeslaMatePort,
+			TeslaMateSSL:    cfg.TeslaMateSSL,
+			CommandsEnabled: cfg.CommandsEnabled,
+		},
+	})
+
+	v2Handler := v2.New(v2.Deps{
+		DB: db,
+		TZ: tz,
+		Cfg: v2.Config{
+			APIVersion: apiVersion,
+		},
+	})
+
+	systemHandler := system.New(ready)
+
+	router := httpapi.NewRouter(httpapi.Deps{
+		APIVersion:      apiVersion,
+		Token:           tok,
+		System:          systemHandler,
+		V1:              v1Handler,
+		V2:              v2Handler,
+		CommandsEnabled: cfg.CommandsEnabled,
+	})
+
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	if cfg.MQTTDisabled {
+		ready.Store(true)
+	}
+
+	// graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	go func() {
+		<-quit
+		log.Println("[info] TeslaMateAPI received shutdown input")
+		if err := server.Close(); err != nil {
+			log.Fatal("[error] TeslaMateAPI server close error:", err)
+		}
+	}()
+
+	if err := server.ListenAndServe(); err != nil {
+		if err == http.ErrServerClosed {
+			log.Println("[info] TeslaMateAPI server gracefully shut down")
+		} else {
+			log.Fatal("[error] TeslaMateAPI server closed unexpectedly")
+		}
+	}
+}
