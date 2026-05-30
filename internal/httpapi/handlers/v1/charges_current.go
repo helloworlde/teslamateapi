@@ -275,7 +275,6 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 			chargedetails.BatteryInfo.RatedBatteryRange = detailRatedBatteryRange.Float64
 		}
 
-		// Properly handle NULL values for string fields by using interface{}
 		if detailConnChargeCable.Valid {
 			chargedetails.ConnChargeCable = detailConnChargeCable.String
 		} else {

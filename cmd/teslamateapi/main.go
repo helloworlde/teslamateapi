@@ -83,10 +83,11 @@ func main() {
 
 	// Connect to the MQTT broker
 	statusCache, err := status.New(cfg, ready)
+	if err != nil {
+		log.Fatalf("[error] TeslaMateApi MQTT connection failed: %s", err)
+	}
 	if cfg.MQTTDisabled {
 		log.Printf("[info] TeslaMateApi MQTT connection not established.")
-	} else if err != nil {
-		log.Fatalf("[error] TeslaMateApi MQTT connection failed: %s", err)
 	}
 
 	if cfg.APITokenDisable {

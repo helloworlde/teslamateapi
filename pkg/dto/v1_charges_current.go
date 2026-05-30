@@ -52,7 +52,7 @@ type V1ChargeCurrentDetail struct {
 	NotEnoughPowerToHeat nullable.Bool                  `json:"not_enough_power_to_heat" swaggertype:"boolean"`
 	ChargerDetails       V1ChargeCurrentChargerDetails  `json:"charger_details"`
 	BatteryInfo          V1ChargeCurrentBatteryInfo     `json:"battery_info"`
-	ConnChargeCable      interface{}                    `json:"conn_charge_cable,omitempty" swaggertype:"string" example:"IEC"`
+	ConnChargeCable      any                            `json:"conn_charge_cable,omitempty" swaggertype:"string" example:"IEC"`
 	FastChargerInfo      V1ChargeCurrentFastChargerInfo `json:"fast_charger_info"`
 	OutsideTemp          float64                        `json:"outside_temp" example:"11.5"`
 }

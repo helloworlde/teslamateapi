@@ -6,7 +6,6 @@ package status
 import (
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -109,8 +108,10 @@ type InfoLocation struct {
 
 // Cache is the shared MQTT-backed status cache.
 type Cache struct {
-	mqttDisabled  bool
-	mqttConnected bool
+	mqttDisabled bool
+	// mqttConnected is flipped by the paho callback goroutines and read by
+	// the HTTP request goroutine — must be accessed atomically.
+	mqttConnected atomic.Bool
 
 	topicScan string
 
@@ -124,7 +125,7 @@ type Cache struct {
 func (c *Cache) Disabled() bool { return c.mqttDisabled }
 
 // Connected reports whether the MQTT broker is currently connected.
-func (c *Cache) Connected() bool { return c.mqttConnected }
+func (c *Cache) Connected() bool { return c.mqttConnected.Load() }
 
 // Get returns a snapshot of the cached Info for the given car, or nil if
 // no message has been received yet. Callers must not mutate the returned
@@ -145,6 +146,10 @@ func mqttNamespace(ns string) string {
 // New starts the MQTT client (when enabled) and returns a Cache. The ready
 // pointer is flipped to true once the broker connects (or immediately when
 // MQTT is disabled, by the caller).
+//
+// When DISABLE_MQTT=true, returns a non-nil Cache with Disabled()==true and
+// a nil error so the caller doesn't have to disambiguate "configured off"
+// from "connection failed".
 func New(cfg config.Config, ready *atomic.Value) (*Cache, error) {
 	c := &Cache{
 		cache:        make(map[int]*Info),
@@ -152,7 +157,7 @@ func New(cfg config.Config, ready *atomic.Value) (*Cache, error) {
 		ready:        ready,
 	}
 	if c.mqttDisabled {
-		return nil, errors.New("[notice] TeslaMateAPICarsStatusV1 DISABLE_MQTT is set to true.. can not return status for car without mqtt")
+		return c, nil
 	}
 
 	mqttProtocol := "tcp"
@@ -213,7 +218,7 @@ func connectingHandler(_ *url.URL, tlsCfg *tls.Config) *tls.Config {
 
 func (c *Cache) connectedHandler(client mqtt.Client) {
 	log.Println("[info] mqtt connected.")
-	c.mqttConnected = true
+	c.mqttConnected.Store(true)
 
 	topic := strings.Replace(c.topicScan, "/cars/%d/%s", "/cars/#", 1)
 	if token := client.Subscribe(topic, 0, c.newMessage); token.Wait() && token.Error() != nil {
@@ -228,7 +233,7 @@ func (c *Cache) connectedHandler(client mqtt.Client) {
 
 func (c *Cache) connectionLost(_ mqtt.Client, err error) {
 	log.Println("[error] MQTT connection lost: " + err.Error())
-	c.mqttConnected = false
+	c.mqttConnected.Store(false)
 	if c.ready != nil {
 		c.ready.Store(false)
 	}
