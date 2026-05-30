@@ -212,7 +212,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	queryParams = append(queryParams, ResultShow, ResultPage)
 
-	rows, err := db.Query(query, queryParams...)
+	rows, err := db.QueryContext(c.Request.Context(), query, queryParams...)
 
 	// checking for errors in query
 	if err != nil {

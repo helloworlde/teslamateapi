@@ -80,6 +80,23 @@ func main() {
 	// initialize allowList stored for /command section
 	initCommandAllowList()
 
+	// Commands hit Tesla's owner-api / TeslaMate's logging endpoint with the
+	// car's stored access token. Exposing them without auth turns the API into
+	// an open relay for anyone who can reach the port. Refuse to start in that
+	// configuration instead of silently registering unauthenticated routes.
+	commandsEnabled := getEnvAsBool("ENABLE_COMMANDS", false)
+	if commandsEnabled {
+		if getEnvAsBool("API_TOKEN_DISABLE", false) {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires authentication; refusing to start with API_TOKEN_DISABLE=true.")
+		}
+		if envToken == "" {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires API_TOKEN to be set; refusing to start without it.")
+		}
+		if len(envToken) < 32 {
+			log.Fatal("[error] ENABLE_COMMANDS=true requires API_TOKEN of at least 32 characters; refusing to start.")
+		}
+	}
+
 	// Connect to the MQTT broker
 	statusCache, err := startMQTT()
 	if getEnvAsBool("DISABLE_MQTT", false) {
@@ -122,8 +139,15 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
 	})
 
-	// TeslaMateApi /api endpoints
-	api := r.Group("/api")
+	// TeslaMateApi /api endpoints. The group-level auth middleware gates every
+	// /api/* route behind API_TOKEN. Unauthenticated probes (health/readiness,
+	// docs, openapi spec, ping) and the /api root itself are whitelisted —
+	// these have to be reachable from a browser or a kubelet.
+	//
+	// Per-handler validateAuthToken calls (in command/logging) still run after
+	// this middleware; the second check is a no-op for valid tokens and keeps
+	// behavior identical when API_TOKEN_DISABLE is set.
+	api := r.Group("/api", apiAuthMiddleware())
 	{
 		// TeslaMateApi /api root
 		api.GET("/", func(c *gin.Context) {
@@ -150,27 +174,31 @@ func main() {
 			v1.GET("/cars/:CarID/charges/current", TeslaMateAPICarsChargesCurrentV1)
 			v1.GET("/cars/:CarID/charges/:ChargeID", TeslaMateAPICarsChargesDetailsV1)
 
-			// v1 /api/v1/cars/:CarID/command endpoints
-			v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
-			v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandV1)
-			v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
+			// v1 /api/v1/cars/:CarID/command + /logging + /wake_up endpoints —
+			// only registered when ENABLE_COMMANDS is true. Skipping registration
+			// (vs. handler-level 403) means the routes literally don't exist on
+			// disabled deployments: scanners get 404, not a hint that command
+			// machinery is present.
+			if commandsEnabled {
+				v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
+				v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandV1)
+				v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
+
+				v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
+				v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
+
+				v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
+			}
 
 			// v1 /api/v1/cars/:CarID/drives endpoints
 			v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 			v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
-
-			// v1 /api/v1/cars/:CarID/logging endpoints
-			v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
-			v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
 
 			// v1 /api/v1/cars/:CarID/status endpoints
 			v1.GET("/cars/:CarID/status", statusCache.TeslaMateAPICarsStatusV1)
 
 			// v1 /api/v1/cars/:CarID/updates endpoints
 			v1.GET("/cars/:CarID/updates", TeslaMateAPICarsUpdatesV1)
-
-			// v1 /api/v1/cars/:CarID/wake_up endpoints
-			v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
 
 			// v1 /api/v1/globalsettings endpoints
 			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
@@ -262,6 +290,53 @@ func main() {
 	}
 }
 
+// pqQuote escapes a value for libpq's KV connection-string format. Wraps
+// every value in single quotes and backslash-escapes embedded ' and \ —
+// safe even for values without specials.
+func pqQuote(v string) string {
+	r := strings.NewReplacer(`\`, `\\`, `'`, `\'`)
+	return "'" + r.Replace(v) + "'"
+}
+
+// apiAuthMiddleware enforces API_TOKEN on /api/* with a small public allow-list.
+// Anything not in the allow-list goes through validateAuthToken; failures emit
+// a real 401 (not the legacy 200+error envelope) so clients and load
+// balancers can react correctly.
+func apiAuthMiddleware() gin.HandlerFunc {
+	publicSuffixes := []string{
+		"/api",
+		"/api/",
+		"/api/ping",
+		"/api/healthz",
+		"/api/readyz",
+		"/api/docs",
+		"/api/openapi.yaml",
+	}
+	return func(c *gin.Context) {
+		if getEnvAsBool("API_TOKEN_DISABLE", false) {
+			c.Next()
+			return
+		}
+		// Auth is opt-in. Without API_TOKEN we can't enforce anything; warn
+		// at startup (initAuthToken) and let traffic through here so
+		// existing deployments without a token aren't broken silently.
+		if envToken == "" {
+			c.Next()
+			return
+		}
+		if slices.Contains(publicSuffixes, c.Request.URL.Path) {
+			c.Next()
+			return
+		}
+		ok, msg := validateAuthToken(c)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+		c.Next()
+	}
+}
+
 // initDBconnection func
 func initDBconnection() {
 	var err error
@@ -284,12 +359,18 @@ func initDBconnection() {
 		dbsslmode = "disable"
 	}
 
-	// construct connection string
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d", dbhost, dbport, dbuser, dbpass, dbname, dbsslmode, dbtimeout)
+	// libpq KV format (key='val') with backslash-escaping for ' and \, so a
+	// password containing spaces, single quotes, or backslashes doesn't break
+	// the connection string. The previous fmt.Sprintf form silently mis-parsed
+	// such passwords (and could leak fragments via parser error logs).
+	psqlInfo := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d",
+		pqQuote(dbhost), dbport, pqQuote(dbuser), pqQuote(dbpass), pqQuote(dbname), pqQuote(dbsslmode), dbtimeout,
+	)
 
 	// add SSL certificate configuration if provided
 	if dbsslrootcert != "" {
-		psqlInfo += " sslrootcert=" + dbsslrootcert
+		psqlInfo += " sslrootcert=" + pqQuote(dbsslrootcert)
 	}
 
 	// open database connection

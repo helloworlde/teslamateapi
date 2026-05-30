@@ -252,7 +252,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	WHERE cars.id = $1;`
 
 	// execute query
-	err := db.QueryRow(query, CarID).Scan(
+	err := db.QueryRowContext(c.Request.Context(), query, CarID).Scan(
 		&MaxRangeRated,
 		&MaxRangeIdeal,
 		&CurrentRangeRated,

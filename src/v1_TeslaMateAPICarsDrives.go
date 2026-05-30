@@ -203,7 +203,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	// Add minimum/maximum distance filtering if provided
 	if minDistance > 0 || maxDistance > 0 {
 		var unitsLength string
-		err = db.QueryRow("SELECT unit_of_length FROM settings LIMIT 1").Scan(&unitsLength)
+		err = db.QueryRowContext(c.Request.Context(), "SELECT unit_of_length FROM settings LIMIT 1").Scan(&unitsLength)
 		if err != nil {
 			TeslaMateAPIHandleErrorResponse(
 				c,
@@ -240,7 +240,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	queryParams = append(queryParams, ResultShow, ResultPage)
 
-	rows, err := db.Query(query, queryParams...)
+	rows, err := db.QueryContext(c.Request.Context(), query, queryParams...)
 
 	// checking for errors in query
 	if err != nil {
@@ -293,6 +293,12 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			&UnitsTemperature,
 			&CarName,
 		)
+		// Bail before any unit conversion: a Scan error leaves drive/UnitsLength
+		// half-populated, and computing on those values silently produces garbage.
+		if err != nil {
+			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
+			return
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {
@@ -320,12 +326,6 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		// adjusting to timezone differences from UTC to be userspecific
 		drive.StartDate = getTimeInTimeZone(drive.StartDate)
 		drive.EndDate = getTimeInTimeZone(drive.EndDate)
-
-		// checking for errors after scanning
-		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
-			return
-		}
 
 		// appending drive to DrivesData
 		DrivesData = append(DrivesData, drive)

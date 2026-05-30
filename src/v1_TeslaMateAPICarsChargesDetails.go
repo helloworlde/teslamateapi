@@ -150,7 +150,7 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 		LEFT JOIN charges ON charging_processes.id = charges.id
 		WHERE charging_processes.car_id=$1 AND charging_processes.id=$2 AND charging_processes.end_date IS NOT NULL
 		ORDER BY start_date DESC;`
-	row := db.QueryRow(query, CarID, ChargeID)
+	row := db.QueryRowContext(c.Request.Context(), query, CarID, ChargeID)
 
 	// scanning row and putting values into the charge
 	err := row.Scan(
@@ -234,7 +234,7 @@ func TeslaMateAPICarsChargesDetailsV1(c *gin.Context) {
 			FROM charges
 			WHERE charging_process_id=$1
 			ORDER BY id ASC;`
-	rows, err := db.Query(query, ChargeID)
+	rows, err := db.QueryContext(c.Request.Context(), query, ChargeID)
 
 	// checking for errors in query
 	if err != nil {

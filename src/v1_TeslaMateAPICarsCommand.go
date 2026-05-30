@@ -7,10 +7,15 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
+
+// teslaCommandHTTPTimeout caps the outbound request to Tesla's owner-api so
+// a hung peer can't pin a goroutine indefinitely.
+const teslaCommandHTTPTimeout = 30 * time.Second
 
 // TeslaMateAPICarsCommandV1 func
 func TeslaMateAPICarsCommandV1(c *gin.Context) {
@@ -80,7 +85,7 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 		FROM cars
 		WHERE id = $1
 		LIMIT 1;`
-	row := db.QueryRow(query, CarID)
+	row := db.QueryRowContext(c.Request.Context(), query, CarID)
 
 	err = row.Scan(
 		&TeslaVehicleID,
@@ -108,7 +113,12 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 	}
 
 	// decrypt access token
-	TeslaAccessToken = decryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
+	TeslaAccessToken, err = decryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
+	if err != nil {
+		log.Println("[error] TeslaMateAPICarsCommandV1 token decrypt failed:", err)
+		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "unable to decrypt access token"})
+		return
+	}
 
 	switch getCarRegionAPI(TeslaAccessToken) {
 	case ChinaAPI:
@@ -117,8 +127,13 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 		TeslaEndpointUrl = getEnv("TESLA_API_HOST", "https://owner-api.teslamotors.com")
 	}
 
-	client := &http.Client{}
-	req, _ := http.NewRequest(http.MethodPost, TeslaEndpointUrl+"/api/1/vehicles/"+TeslaVehicleID+command, strings.NewReader(string(reqBody)))
+	client := &http.Client{Timeout: teslaCommandHTTPTimeout}
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, TeslaEndpointUrl+"/api/1/vehicles/"+TeslaVehicleID+command, strings.NewReader(string(reqBody)))
+	if err != nil {
+		log.Println("[error] TeslaMateAPICarsCommandV1 http.NewRequestWithContext:", err)
+		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal http request error"})
+		return
+	}
 	req.Header.Set("Authorization", "Bearer "+TeslaAccessToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "TeslaMateApi/"+apiVersion+" (+https://github.com/tobiasehlert/teslamateapi)")
@@ -140,7 +155,13 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal io reading error"})
 		return
 	}
-	json.Unmarshal([]byte(respBody), &jsonData)
+	// If Tesla returns non-JSON (HTML error page, empty body), pass the raw
+	// payload through instead of silently coercing to `null`.
+	if jsonErr := json.Unmarshal(respBody, &jsonData); jsonErr != nil {
+		log.Println("[warning] TeslaMateAPICarsCommandV1 non-JSON response from Tesla:", jsonErr)
+		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsCommandV1", gin.H{"raw": string(respBody)})
+		return
+	}
 
 	// return jsonData
 	// use TeslaMateAPIHandleOtherResponse since we use the statusCode from Tesla API

@@ -68,7 +68,7 @@ func TeslaMateAPIGlobalsettingsV1(c *gin.Context) {
 			grafana_url
 		FROM settings
 		LIMIT 1;`
-	row := db.QueryRow(query)
+	row := db.QueryRowContext(c.Request.Context(), query)
 
 	// scanning row and putting values into the globalSetting
 	err := row.Scan(

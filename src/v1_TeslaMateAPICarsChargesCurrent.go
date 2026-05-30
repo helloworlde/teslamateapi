@@ -158,7 +158,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		ORDER BY end_date IS NULL DESC, start_date DESC
 		LIMIT 1;`
 
-	row := db.QueryRow(query, CarID)
+	row := db.QueryRowContext(c.Request.Context(), query, CarID)
 
 	// Scanning row and putting values into the temp vars to handle NULLs
 	err := row.Scan(
@@ -281,7 +281,7 @@ func TeslaMateAPICarsChargesCurrentV1(c *gin.Context) {
 		FROM charges
 		WHERE charging_process_id=$1
 		ORDER BY id DESC;`
-	rows, err := db.Query(detailsQuery, charge.ChargeID)
+	rows, err := db.QueryContext(c.Request.Context(), detailsQuery, charge.ChargeID)
 
 	// Checking for errors in query
 	if err != nil {

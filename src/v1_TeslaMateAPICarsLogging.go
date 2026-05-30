@@ -7,10 +7,15 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
+
+// teslaMateLoggingHTTPTimeout caps the outbound PUT to TeslaMate so a hung
+// upstream can't pin a goroutine indefinitely.
+const teslaMateLoggingHTTPTimeout = 30 * time.Second
 
 // TeslaMateAPICarsLoggingV1 func
 func TeslaMateAPICarsLoggingV1(c *gin.Context) {
@@ -66,7 +71,7 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 		return
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: teslaMateLoggingHTTPTimeout}
 	putURL := ""
 	if getEnvAsBool("TESLAMATE_SSL", false) {
 		putURL = "https://"
@@ -74,7 +79,12 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 		putURL = "http://"
 	}
 	putURL = putURL + getEnv("TESLAMATE_HOST", "teslamate") + ":" + getEnv("TESLAMATE_PORT", "4000") + "/api/car/" + strconv.Itoa(CarID) + command
-	req, _ := http.NewRequest(http.MethodPut, putURL, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPut, putURL, strings.NewReader(string(reqBody)))
+	if err != nil {
+		log.Println("[error] TeslaMateAPICarsLoggingV1 http.NewRequestWithContext:", err)
+		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsLoggingV1", gin.H{"error": "internal http request error"})
+		return
+	}
 	req.Header.Set("User-Agent", "TeslaMateApi/"+apiVersion+" https://github.com/tobiasehlert/teslamateapi")
 	resp, err := client.Do(req)
 
@@ -94,7 +104,11 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 		TeslaMateAPIHandleOtherResponse(c, http.StatusInternalServerError, "TeslaMateAPICarsLoggingV1", gin.H{"error": "internal io reading error"})
 		return
 	}
-	json.Unmarshal([]byte(respBody), &jsonData)
+	if jsonErr := json.Unmarshal(respBody, &jsonData); jsonErr != nil {
+		log.Println("[warning] TeslaMateAPICarsLoggingV1 non-JSON response from TeslaMate:", jsonErr)
+		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsLoggingV1", gin.H{"raw": string(respBody)})
+		return
+	}
 
 	// return jsonData
 	// use TeslaMateAPIHandleOtherResponse since we use the statusCode from Tesla API

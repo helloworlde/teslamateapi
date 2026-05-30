@@ -183,7 +183,7 @@ func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 		LEFT JOIN ch ON true
 		LEFT JOIN pk ON true;`
 
-	row := db.QueryRow(query, CarID)
+	row := db.QueryRowContext(c.Request.Context(), query, CarID)
 	err := row.Scan(
 		&CarName,
 		&Since,

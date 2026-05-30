@@ -75,7 +75,14 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	// creating required vars
 	var CarsData []Cars
 
-	// getting data from database
+	// totals are aggregated in a single GROUP BY pass per table and joined
+	// once per car, instead of three correlated COUNT(*) subqueries that
+	// each forced a per-car index lookup. Same result, but linear in
+	// (cars + charging_processes + drives + updates) rows total instead of
+	// quadratic on large installs. Note: the upstream query mis-aliased
+	// total_updates as `total_charges`; the alias is cosmetic (Scan order is
+	// what matters), so leaving it untouched here would also work, but we
+	// give it the right name for readers.
 	query := `
 		SELECT
 			cars.id,
@@ -96,13 +103,16 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 			req_not_unlocked,
 			free_supercharging,
 			use_streaming_api,
-			(SELECT COUNT(*) FROM charging_processes WHERE car_id=cars.id) as total_charges,
-			(SELECT COUNT(*) FROM drives WHERE car_id=cars.id) as total_drives,
-			(SELECT COUNT(*) FROM updates WHERE car_id=cars.id) as total_charges
+			COALESCE(cp.cnt, 0) as total_charges,
+			COALESCE(d.cnt, 0)  as total_drives,
+			COALESCE(u.cnt, 0)  as total_updates
 		FROM cars
 		LEFT JOIN car_settings ON cars.id = car_settings.id
-		ORDER BY id;`
-	rows, err := db.Query(query)
+		LEFT JOIN (SELECT car_id, COUNT(*) AS cnt FROM charging_processes GROUP BY car_id) cp ON cp.car_id = cars.id
+		LEFT JOIN (SELECT car_id, COUNT(*) AS cnt FROM drives             GROUP BY car_id) d  ON d.car_id  = cars.id
+		LEFT JOIN (SELECT car_id, COUNT(*) AS cnt FROM updates            GROUP BY car_id) u  ON u.car_id  = cars.id
+		ORDER BY cars.id;`
+	rows, err := db.QueryContext(c.Request.Context(), query)
 
 	// checking for errors in query
 	if err != nil {

@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -20,90 +22,72 @@ const (
 	GlobalAPI CarRegionAPI = "Global"
 )
 
-// decryptAccessToken funct to decrypt tokens from database
-func decryptAccessToken(data string, encryptionKey string) string {
-
-	/*
-	   From Adrian....
-	   I had a look at how to decode the binary input without additional libraries. Below is sample code for Elixir. An important detail is that  "Additional Authenticated Data (AAD) " is required to decrypt the tokens. The AAD is a fixed string, in this case "AES256GCM”.
-	   << _type::bytes-1, length::integer, _tag::bytes-size(length), iv::bytes-12, ciphertag::bytes-16, ciphertext::bytes >> = input
-	   key = :crypto.hash(:sha256, key)
-	   aad = "AES256GCM"
-	   plaintext = :crypto.crypto_one_time_aead(:aes_256_gcm, key, iv, ciphertext, aad, ciphertag, false)
-
-	   How the encrypted content looks like....
-	   +----------------------------------------------------------+----------------------+
-	   |                          HEADER                          |         BODY         |
-	   +-------------------+---------------+----------------------+----------------------+
-	   | Key Tag (n bytes) | IV (n bytes)  | Ciphertag (16 bytes) | Ciphertext (n bytes) |
-	   +-------------------+---------------+----------------------+----------------------+
-	   |                   |_________________________________
-	   |                                                     |
-	   +---------------+-----------------+-------------------+
-	   | Type (1 byte) | Length (1 byte) | Key Tag (n bytes) |
-	   +---------------+-----------------+-------------------+
-	*/
+// decryptAccessToken decrypts a TeslaMate-encrypted token blob from
+// `private.tokens`. Layout (bytes — NOT runes; the previous []rune indexing
+// silently corrupted blobs whose first byte was ≥ 0x80):
+//
+//	[type(1)] [keyLen(1)] [keyTag(keyLen)] [iv(12)] [ciphertag(16)] [ciphertext(n)]
+//
+// AAD is the fixed string "AES256GCM". Errors are returned (not panicked)
+// so a malformed blob or wrong ENCRYPTION_KEY surfaces as 500, not a
+// crashed gin worker.
+func decryptAccessToken(data, encryptionKey string) (string, error) {
+	raw := []byte(data)
 
 	h := sha256.New()
 	h.Write([]byte(encryptionKey))
+	key := h.Sum(nil)
 	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Key: %x \n", h.Sum(nil))
+		log.Printf("[debug] decryptAccessToken - Key: %x", key)
 	}
 
-	key := h.Sum(nil)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return "", fmt.Errorf("decryptAccessToken: aes.NewCipher: %w", err)
 	}
 
-	// first byte
-	keyType := int([]rune(data)[0])
-	// second byte
-	keyLen := int([]rune(data)[1])
-	keyTag := data[2 : 2+keyLen]
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Type: %d \n", keyType)
-		log.Printf("[debug] decryptAccessToken - Length: %d \n", keyLen)
-		log.Printf("[debug] decryptAccessToken - Key Tag: %s \n", keyTag)
+	if len(raw) < 2 {
+		return "", errors.New("decryptAccessToken: encrypted blob too short for header")
+	}
+	keyType := int(raw[0])
+	keyLen := int(raw[1])
+
+	// 2(header) + keyLen + 12(iv) + 16(tag) is the minimum frame; ciphertext
+	// is allowed to be empty (an empty token would still parse) but a frame
+	// shorter than the minimum is malformed.
+	minLen := 2 + keyLen + 12 + 16
+	if len(raw) < minLen {
+		return "", fmt.Errorf("decryptAccessToken: encrypted blob length %d shorter than expected %d", len(raw), minLen)
 	}
 
-	/*
-	   With AES.GCM, 12-byte IV length is necessary for interoperability reasons.
-	   See https://github.com/danielberkompas/cloak/issues/93
-	   IV and nonce are often used interchangeably. Essentially though, an IV is a nonce with an additional requirement: it must be selected in a non-predictable way
-	   https://medium.com/@fridakahsas/salt-nonces-and-ivs-whats-the-difference-d7a44724a447#:~:text=IV%20and%20nonce%20are%20often,an%20IV%20must%20be%20random.
-	*/
+	keyTag := raw[2 : 2+keyLen]
+	nonce := raw[2+keyLen : 2+keyLen+12]
+	ciphertag := raw[2+keyLen+12 : 2+keyLen+12+16]
+	ciphertext := raw[2+keyLen+12+16:]
 
-	nonce := data[2+keyLen : 2+keyLen+12]
 	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - IV (hex): %x \n", nonce)
-
-		ciphertag := data[2+keyLen+12 : 2+keyLen+12+16]
-		log.Printf("[debug] decryptAccessToken - Ciphertag (hex): %x \n", ciphertag)
+		log.Printf("[debug] decryptAccessToken - Type: %d", keyType)
+		log.Printf("[debug] decryptAccessToken - Length: %d", keyLen)
+		log.Printf("[debug] decryptAccessToken - Key Tag: %s", keyTag)
+		log.Printf("[debug] decryptAccessToken - IV (hex): %x", nonce)
+		log.Printf("[debug] decryptAccessToken - Ciphertag (hex): %x", ciphertag)
 	}
 
 	aesgcm, err := cipher.NewGCMWithTagSize(block, 16)
 	if err != nil {
-		panic(err.Error())
+		return "", fmt.Errorf("decryptAccessToken: cipher.NewGCMWithTagSize: %w", err)
 	}
 
-	// https://stackoverflow.com/a/68353192
-	// golang aes expects cipertag to append ciphertext....
-	ciphertextTag := data[2+keyLen+12+16:] + data[2+keyLen+12:2+keyLen+12+16]
+	// crypto/cipher's GCM expects the auth tag appended to the ciphertext.
+	combined := make([]byte, 0, len(ciphertext)+len(ciphertag))
+	combined = append(combined, ciphertext...)
+	combined = append(combined, ciphertag...)
 
-	// AES256GCM -- Additional Authenticated Data (AAD)
-	plaintext, err := aesgcm.Open(nil, []byte(nonce), []byte(ciphertextTag), []byte("AES256GCM"))
+	plaintext, err := aesgcm.Open(nil, nonce, combined, []byte("AES256GCM"))
 	if err != nil {
-		panic(err.Error())
+		return "", fmt.Errorf("decryptAccessToken: aesgcm.Open (likely wrong ENCRYPTION_KEY or corrupt blob): %w", err)
 	}
-
-	/*
-		if gin.IsDebugging() {
-			fmt.Printf("[debug] decryptAccessToken - Decrypted: %s\n", plaintext)
-		}
-	*/
-
-	return string(plaintext)
+	return string(plaintext), nil
 }
 
 // getCarRegionAPI function to get URL from iis in accessToken
@@ -120,7 +104,11 @@ func getCarRegionAPI(accessToken string) CarRegionAPI {
 	if err = json.Unmarshal(decodedStr, &result); err != nil {
 		return GlobalAPI
 	}
-	issUrl, err := url.Parse(result["iss"].(string))
+	iss, ok := result["iss"].(string)
+	if !ok {
+		return GlobalAPI
+	}
+	issUrl, err := url.Parse(iss)
 	if err != nil {
 		return GlobalAPI
 	}

@@ -241,7 +241,7 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 		dateFilterDrives, dateFilterCharges, dateFilterParkings,
 	)
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.QueryContext(c.Request.Context(), query, args...)
 	if err != nil {
 		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return

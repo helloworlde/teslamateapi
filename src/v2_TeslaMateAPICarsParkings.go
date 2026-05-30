@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +44,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 	if !ok {
 		return
 	}
-	ResultPage, ok := v2OptionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, 1<<31-1)
+	ResultPage, ok := v2OptionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, math.MaxInt32)
 	if !ok {
 		return
 	}
@@ -51,7 +52,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 	if !ok {
 		return
 	}
-	minDuration, ok := v2OptionalIntInRange(c, handler, "min_duration", c.Query("min_duration"), 0, 0, 1<<31-1)
+	minDuration, ok := v2OptionalIntInRange(c, handler, "min_duration", c.Query("min_duration"), 0, 0, math.MaxInt32)
 	if !ok {
 		return
 	}
@@ -202,7 +203,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
 	queryParams := append(append([]any{}, filterParams...), ResultShow, offset)
 
-	rows, err := db.Query(query, queryParams...)
+	rows, err := db.QueryContext(c.Request.Context(), query, queryParams...)
 	if err != nil {
 		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 		return
@@ -262,7 +263,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		)
 		SELECT COUNT(*) FROM drive_pairs dp WHERE 1=1` + filterClauses
 	var totalCount int
-	if err := db.QueryRow(countQuery, filterParams...).Scan(&totalCount); err != nil {
+	if err := db.QueryRowContext(c.Request.Context(), countQuery, filterParams...).Scan(&totalCount); err != nil {
 		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 		return
 	}
@@ -412,7 +413,7 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		LEFT JOIN geofences geofence ON geofence.id = dp.park_geofence_id
 		WHERE dp.drive_id = $2`
 
-	row := db.QueryRow(headQuery, CarID, PrecedingDriveID)
+	row := db.QueryRowContext(c.Request.Context(), headQuery, CarID, PrecedingDriveID)
 	err := row.Scan(
 		&park.PrecedingDriveID,
 		&park.StartDate,
@@ -477,7 +478,7 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		ORDER BY p.date ASC
 		LIMIT 500;`
 
-	rows, err := db.Query(detailQuery, CarID, PrecedingDriveID)
+	rows, err := db.QueryContext(c.Request.Context(), detailQuery, CarID, PrecedingDriveID)
 	if err != nil {
 		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr2, err.Error())
 		return

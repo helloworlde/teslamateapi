@@ -67,7 +67,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 		WHERE car_id = $1 AND end_date IS NOT NULL AND version IS NOT NULL
 		ORDER BY start_date DESC
 		LIMIT $2 OFFSET $3;`
-	rows, err := db.Query(query, CarID, ResultShow, ResultPage)
+	rows, err := db.QueryContext(c.Request.Context(), query, CarID, ResultShow, ResultPage)
 
 	// checking for errors in query
 	if err != nil {

@@ -182,7 +182,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		LEFT JOIN geofences start_geofence ON start_geofence_id = start_geofence.id
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
 		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`
-	row := db.QueryRow(query, CarID, DriveID)
+	row := db.QueryRowContext(c.Request.Context(), query, CarID, DriveID)
 
 	// scanning row and putting values into the drive
 	err := row.Scan(
@@ -289,7 +289,7 @@ func TeslaMateAPICarsDrivesDetailsV1(c *gin.Context) {
 		 			FROM positions
 		 			WHERE drive_id = $1
 		 			ORDER BY id ASC;`
-	rows, err := db.Query(query, DriveID)
+	rows, err := db.QueryContext(c.Request.Context(), query, DriveID)
 
 	// checking for errors in query
 	if err != nil {

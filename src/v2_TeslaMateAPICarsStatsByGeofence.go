@@ -157,7 +157,7 @@ func TeslaMateAPICarsStatsByGeofenceV2(c *gin.Context) {
 		drvFilter, drvFilter, chFilter, pkFilter,
 	)
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.QueryContext(c.Request.Context(), query, args...)
 	if err != nil {
 		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return

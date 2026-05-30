@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"log"
 	"strings"
 
@@ -86,20 +87,19 @@ func validateAuthToken(c *gin.Context) (bool, string) {
 	return false, "failed validation"
 }
 
-// checkAuthToken func
+// checkAuthToken compares the provided token to the configured API_TOKEN in
+// constant time, so a network attacker can't recover the secret by timing
+// an early-mismatch shortcut.
 func checkAuthToken(token string) bool {
-	// checking if it's valid or not
-	if token == envToken {
-		// check that envToken was longer than zero
-		if len(envToken) == 0 {
-			log.Println("[warning] checkAuthToken - returning false (API_TOKEN is not set or empty)")
-			return false
-		}
-		log.Println("[info] checkAuthToken - returning true")
-		return true
+	if len(envToken) == 0 {
+		log.Println("[warning] checkAuthToken - returning false (API_TOKEN is not set or empty)")
+		return false
 	}
-
-	// failing check what so ever..
-	log.Println("[info] checkAuthToken - returning false (other reason)")
-	return false
+	if subtle.ConstantTimeCompare([]byte(token), []byte(envToken)) != 1 {
+		return false
+	}
+	if gin.IsDebugging() {
+		log.Println("[debug] checkAuthToken - returning true")
+	}
+	return true
 }

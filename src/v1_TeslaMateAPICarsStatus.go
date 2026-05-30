@@ -612,7 +612,7 @@ func (s *statusCache) TeslaMateAPICarsStatusV1(c *gin.Context) {
 		FROM cars
 		WHERE id=$1
 		LIMIT 1;`
-	err := db.QueryRow(query, carID).Scan(&CarData.CarID,
+	err := db.QueryRowContext(c.Request.Context(), query, carID).Scan(&CarData.CarID,
 		&CarData.CarName,
 		&UnitsLength,
 		&UnitsPressure,
