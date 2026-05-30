@@ -5,9 +5,27 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
-// TeslaMateAPICarsDrivesV1 func
+// TeslaMateAPICarsDrivesV1 returns paginated drives for the car.
+//
+// @Summary      List drives
+// @Description  Returns drives with odometer / battery / range aggregates.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID        path   int     true   "TeslaMate cars.id"
+// @Param        page         query  int     false  "1-indexed page"  default(1)
+// @Param        show         query  int     false  "page size"       default(100)
+// @Param        startDate    query  string  false  "RFC3339 lower bound"
+// @Param        endDate      query  string  false  "RFC3339 upper bound"
+// @Param        minDistance  query  number  false  "min distance (user units)"
+// @Param        maxDistance  query  number  false  "max distance (user units)"
+// @Success      200          {object}  dto.V1DrivesResponse
+// @Failure      401          {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/drives [get]
 func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	// define error messages
@@ -49,75 +67,10 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		}
 	}
 
-	// creating structs for /cars/<CarID>/drives
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// OdometerDetails struct - child of Drives
-	type OdometerDetails struct {
-		OdometerStart    float64 `json:"odometer_start"`    // float64
-		OdometerEnd      float64 `json:"odometer_end"`      // float64
-		OdometerDistance float64 `json:"odometer_distance"` // float64
-	}
-	// BatteryDetails struct - child of Drives
-	type BatteryDetails struct {
-		StartUsableBatteryLevel int  `json:"start_usable_battery_level"` // int
-		StartBatteryLevel       int  `json:"start_battery_level"`        // int
-		EndUsableBatteryLevel   int  `json:"end_usable_battery_level"`   // int
-		EndBatteryLevel         int  `json:"end_battery_level"`          // int
-		ReducedRange            bool `json:"reduced_range"`              // bool
-		IsSufficientlyPrecise   bool `json:"is_sufficiently_precise"`    // bool
-	}
-	// PreferredRange struct - child of Drives
-	type PreferredRange struct {
-		StartRange float64 `json:"start_range"` // float64
-		EndRange   float64 `json:"end_range"`   // float64
-		RangeDiff  float64 `json:"range_diff"`  // float64
-	}
-	// Drives struct - child of Data
-	type Drives struct {
-		DriveID           int             `json:"drive_id"`            // int
-		StartDate         string          `json:"start_date"`          // string
-		EndDate           string          `json:"end_date"`            // string
-		StartAddress      string          `json:"start_address"`       // string
-		EndAddress        string          `json:"end_address"`         // string
-		OdometerDetails   OdometerDetails `json:"odometer_details"`    // OdometerDetails
-		DurationMin       int             `json:"duration_min"`        // int
-		DurationStr       string          `json:"duration_str"`        // string
-		SpeedMax          int             `json:"speed_max"`           // int
-		SpeedAvg          float64         `json:"speed_avg"`           // float64
-		PowerMax          int             `json:"power_max"`           // int
-		PowerMin          int             `json:"power_min"`           // int
-		BatteryDetails    BatteryDetails  `json:"battery_details"`     // BatteryDetails
-		RangeIdeal        PreferredRange  `json:"range_ideal"`         // PreferredRange
-		RangeRated        PreferredRange  `json:"range_rated"`         // PreferredRange
-		OutsideTempAvg    float64         `json:"outside_temp_avg"`    // float64
-		InsideTempAvg     float64         `json:"inside_temp_avg"`     // float64
-		EnergyConsumedNet *float64        `json:"energy_consumed_net"` // Energy consumed (net) in kWh
-		ConsumptionNet    *float64        `json:"consumption_net"`     // Ø Consumption (net) per distance unit
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		Drives         []Drives       `json:"drives"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
 	var (
 		CarName                       NullString
-		DrivesData                    []Drives
+		DrivesData                    []dto.V1DriveListItem
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -255,7 +208,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating drive object based on struct
-		drive := Drives{}
+		drive := dto.V1DriveListItem{}
 
 		// scanning row and putting values into the drive
 		err = rows.Scan(
@@ -340,14 +293,14 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	//
 	// build the data-blob
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := dto.V1DrivesResponse{
+		Data: dto.V1DrivesData{
+			Car: dto.Car{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			Drives: DrivesData,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

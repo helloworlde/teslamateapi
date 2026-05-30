@@ -17,6 +17,17 @@ import (
 //
 // Parking aggregates are computed from the same drive-pair window the
 // /parkings endpoint uses, so the numbers reconcile.
+//
+// @Summary      Lifetime stats
+// @Description  Since-ownership aggregates over drives, charges, and derived parking sessions.
+// @Tags         v2
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path  int  true  "TeslaMate cars.id"
+// @Success      200  {object}  dto.V2LifetimeResponse
+// @Failure      400  {object}  dto.ErrorEnvelope
+// @Failure      500  {object}  dto.ErrorEnvelope
+// @Router       /api/v2/cars/{CarID}/stats/lifetime [get]
 func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 
 	const handler = "TeslaMateAPICarsStatsLifetimeV2"

@@ -23,6 +23,20 @@ import (
 // render a single bar / line chart without further joins. Empty buckets are
 // omitted — clients that need a dense series should fill in zero buckets
 // from the timeline they want to display.
+//
+// @Summary      Period summary stats
+// @Description  Aggregates bucketed by day / week / month / year in the user's timezone.
+// @Tags         v2
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID       path   int     true   "TeslaMate cars.id"
+// @Param        period      query  string  false  "bucket size"  Enums(day,week,month,year)  default(month)
+// @Param        start_date  query  string  false  "RFC3339 lower bound on bucket start"
+// @Param        end_date    query  string  false  "RFC3339 upper bound on bucket start"
+// @Success      200  {object}  dto.V2SummaryResponse
+// @Failure      400  {object}  dto.ErrorEnvelope
+// @Failure      500  {object}  dto.ErrorEnvelope
+// @Router       /api/v2/cars/{CarID}/stats/summary [get]
 func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 
 	const handler = "TeslaMateAPICarsStatsSummaryV2"

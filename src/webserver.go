@@ -1,3 +1,14 @@
+// Package main provides the TeslaMateApi HTTP server.
+//
+// @title                       TeslaMateApi
+// @version                     1.0
+// @description                 REST API in front of TeslaMate's Postgres database, the MQTT status feed, and (optionally) Tesla owner-api / TeslaMate logging command relays.
+// @BasePath                    /
+// @schemes                     http https
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 API_TOKEN bearer credential. Required for every /api/* route except /api, /api/, /api/ping, /api/healthz, /api/readyz, /api/docs, /api/openapi.yaml.
 package main
 
 import (
@@ -127,17 +138,13 @@ func main() {
 	})
 
 	// set 404 not found page
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
-	})
+	r.NoRoute(notFoundHandler)
 
 	// disable proxy feature of gin
 	_ = r.SetTrustedProxies(nil)
 
 	// root endpoint telling API is running
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
-	})
+	r.GET("/", rootRoot(r))
 
 	// TeslaMateApi /api endpoints. The group-level auth middleware gates every
 	// /api/* route behind API_TOKEN. Unauthenticated probes (health/readiness,
@@ -150,17 +157,13 @@ func main() {
 	api := r.Group("/api", apiAuthMiddleware())
 	{
 		// TeslaMateApi /api root
-		api.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": api.BasePath()})
-		})
+		api.GET("/", apiRoot(api))
 
 		// TeslaMateApi /api/v1 endpoints
 		v1 := api.Group("/v1")
 		{
 			// TeslaMateApi /api/v1 root
-			v1.GET("/", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
-			})
+			v1.GET("/", apiV1Root(v1))
 
 			// v1 /api/v1/cars endpoints
 			v1.GET("/cars", TeslaMateAPICarsV1)
@@ -180,14 +183,14 @@ func main() {
 			// disabled deployments: scanners get 404, not a hint that command
 			// machinery is present.
 			if commandsEnabled {
-				v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandV1)
-				v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandV1)
-				v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandV1)
+				v1.GET("/cars/:CarID/command", TeslaMateAPICarsCommandListV1)
+				v1.GET("/cars/:CarID/commands", TeslaMateAPICarsCommandListV1)
+				v1.POST("/cars/:CarID/command/:Command", TeslaMateAPICarsCommandExecV1)
 
-				v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
-				v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
+				v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingListV1)
+				v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingExecV1)
 
-				v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandV1)
+				v1.POST("/cars/:CarID/wake_up", TeslaMateAPICarsCommandExecV1)
 			}
 
 			// v1 /api/v1/cars/:CarID/drives endpoints
@@ -213,9 +216,7 @@ func main() {
 		v2 := api.Group("/v2")
 		{
 			// TeslaMateApi /api/v2 root
-			v2.GET("/", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": v2.BasePath()})
-			})
+			v2.GET("/", apiV2Root(v2))
 
 			// /api/v2/cars/:CarID/parkings — parking sessions derived from
 			// gaps between adjacent drives. Has list + detail with optional
@@ -231,7 +232,7 @@ func main() {
 		}
 
 		// /api/ping endpoint
-		api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
+		api.GET("/ping", apiPing)
 
 		// health endpoints for kubernetes
 		api.GET("/healthz", healthz)
@@ -430,13 +431,13 @@ func v2OptionalIntInRange(c *gin.Context, handler, name, raw string, def, min, m
 	return v, true
 }
 
-func TeslaMateAPIHandleOtherResponse(c *gin.Context, httpCode int, s string, j interface{}) {
+func TeslaMateAPIHandleOtherResponse(c *gin.Context, httpCode int, s string, j any) {
 	// return successful response
 	log.Println("[info] " + s + " - (" + c.Request.RequestURI + ") executed successfully.")
 	c.JSON(httpCode, j)
 }
 
-func TeslaMateAPIHandleSuccessResponse(c *gin.Context, s string, j interface{}) {
+func TeslaMateAPIHandleSuccessResponse(c *gin.Context, s string, j any) {
 	// print to log about request
 	if gin.IsDebugging() {
 		log.Println("[debug] " + s + " - (" + c.Request.RequestURI + ") returned data:")
@@ -589,15 +590,112 @@ func checkArrayContainsString(s []string, e string) bool {
 }
 
 // healthz is a liveness probe.
+//
+// @Summary      Liveness probe
+// @Description  Returns 200 as long as the process is up. No auth required.
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  dto.HealthResponse
+// @Router       /api/healthz [get]
 func healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusText(http.StatusOK)})
 }
 
 // readyz is a readiness probe.
+//
+// @Summary      Readiness probe
+// @Description  Returns 200 when MQTT is connected (or DISABLE_MQTT=true). 503 otherwise. No auth required.
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  dto.ReadyResponse
+// @Failure      503  {object}  dto.ErrorEnvelope
+// @Router       /api/readyz [get]
 func readyz(c *gin.Context) {
 	if isReady == nil || !isReady.Load().(bool) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": http.StatusText(http.StatusServiceUnavailable)})
 		return
 	}
 	TeslaMateAPIHandleSuccessResponse(c, "webserver", gin.H{"status": http.StatusText(http.StatusOK)})
+}
+
+// notFoundHandler renders a JSON 404 envelope for routes that don't match.
+//
+// @Summary      404 fallback
+// @Description  JSON 404 envelope returned for any unmatched route.
+// @Tags         system
+// @Produce      json
+// @Success      404  {object}  dto.NotFoundResponse
+func notFoundHandler(c *gin.Context) {
+	c.JSON(http.StatusNotFound, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+}
+
+// rootRoot returns the handler for GET / — a tiny liveness banner that
+// echoes the configured base path.
+//
+// @Summary      Root banner
+// @Description  Returns a small banner confirming the API process is running.
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  dto.MessageEnvelope
+// @Router       / [get]
+func rootRoot(r *gin.Engine) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": r.BasePath()})
+	}
+}
+
+// apiRoot returns the banner handler for GET /api.
+//
+// @Summary      /api banner
+// @Description  Banner for the /api root.
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  dto.MessageEnvelope
+// @Router       /api/ [get]
+func apiRoot(api *gin.RouterGroup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi container running..", "path": api.BasePath()})
+	}
+}
+
+// apiV1Root returns the banner handler for GET /api/v1.
+//
+// @Summary      /api/v1 banner
+// @Description  Banner for the /api/v1 root.
+// @Tags         system
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  dto.MessageEnvelope
+// @Router       /api/v1/ [get]
+func apiV1Root(v1 *gin.RouterGroup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v1 running..", "path": v1.BasePath()})
+	}
+}
+
+// apiV2Root returns the banner handler for GET /api/v2.
+//
+// @Summary      /api/v2 banner
+// @Description  Banner for the /api/v2 root.
+// @Tags         system
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  dto.MessageEnvelope
+// @Router       /api/v2/ [get]
+func apiV2Root(v2 *gin.RouterGroup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": v2.BasePath()})
+	}
+}
+
+// apiPing answers the unauthenticated /api/ping liveness check.
+//
+// @Summary      Ping
+// @Description  Returns {"message":"pong"} for simple uptime checks. No auth required.
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  dto.PongResponse
+// @Router       /api/ping [get]
+func apiPing(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "pong"})
 }

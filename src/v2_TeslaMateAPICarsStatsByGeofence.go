@@ -13,6 +13,19 @@ import (
 // departure (start_geofence). Parkings are bound to start_position.geofence_id
 // of the preceding drive's end_position. Records without a geofence are
 // dropped — those typically represent a driveby or in-transit position.
+//
+// @Summary      Stats by geofence
+// @Description  Aggregates drives, charges, and parking sessions grouped by geofence.
+// @Tags         v2
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID       path   int     true   "TeslaMate cars.id"
+// @Param        start_date  query  string  false  "RFC3339 lower bound"
+// @Param        end_date    query  string  false  "RFC3339 upper bound"
+// @Success      200  {object}  dto.V2ByGeofenceResponse
+// @Failure      400  {object}  dto.ErrorEnvelope
+// @Failure      500  {object}  dto.ErrorEnvelope
+// @Router       /api/v2/cars/{CarID}/stats/by-geofence [get]
 func TeslaMateAPICarsStatsByGeofenceV2(c *gin.Context) {
 
 	const handler = "TeslaMateAPICarsStatsByGeofenceV2"

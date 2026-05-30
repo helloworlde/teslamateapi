@@ -11,20 +11,58 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
 // teslaCommandHTTPTimeout caps the outbound request to Tesla's owner-api so
 // a hung peer can't pin a goroutine indefinitely.
 const teslaCommandHTTPTimeout = 30 * time.Second
 
-// TeslaMateAPICarsCommandV1 func
+// TeslaMateAPICarsCommandListV1 returns the allow-listed Tesla command names.
+//
+// @Summary      List Tesla commands
+// @Description  Returns the allow-list. Requires ENABLE_COMMANDS=true.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path      int  true  "TeslaMate cars.id"
+// @Success      200    {object}  dto.V1CommandList
+// @Failure      401    {object}  dto.ErrorEnvelope
+// @Failure      403    {object}  dto.ErrorEnvelope  "ENABLE_COMMANDS=false"
+// @Router       /api/v1/cars/{CarID}/command  [get]
+// @Router       /api/v1/cars/{CarID}/commands [get]
+func TeslaMateAPICarsCommandListV1(c *gin.Context) { TeslaMateAPICarsCommandV1(c) }
+
+// TeslaMateAPICarsCommandExecV1 proxies a command call to Tesla owner-api.
+//
+// @Summary      Execute Tesla command
+// @Description  Proxies to Tesla owner-api with the car's stored token. Status code and body mirror Tesla's. Requires ENABLE_COMMANDS=true.
+// @Tags         v1
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        CarID    path      int     true  "TeslaMate cars.id"
+// @Param        Command  path      string  true  "Command name"
+// @Success      200      {object}  dto.V1CommandResult  "Tesla passthrough JSON"
+// @Failure      400      {object}  dto.ErrorEnvelope
+// @Failure      401      {object}  dto.ErrorEnvelope
+// @Failure      403      {object}  dto.ErrorEnvelope    "ENABLE_COMMANDS=false"
+// @Failure      500      {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/command/{Command} [post]
+// @Router       /api/v1/cars/{CarID}/wake_up           [post]
+func TeslaMateAPICarsCommandExecV1(c *gin.Context) { TeslaMateAPICarsCommandV1(c) }
+
+// TeslaMateAPICarsCommandV1 lists or dispatches Tesla owner-api commands.
+// Routed via the per-method wrappers above so swag can document the GET
+// list-response and the POST passthrough-response separately.
 func TeslaMateAPICarsCommandV1(c *gin.Context) {
 
 	// creating required vars
 	var (
 		CarsCommandsError1                                 = "Unable to load cars."
 		TeslaAccessToken, TeslaVehicleID, TeslaEndpointUrl string
-		jsonData                                           map[string]interface{}
+		jsonData                                           map[string]any
 		err                                                error
 	)
 
@@ -37,7 +75,7 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 
 	// if request method is GET return list of commands
 	if c.Request.Method == http.MethodGet {
-		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsCommandV1", gin.H{"enabled_commands": allowList})
+		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsCommandV1", dto.V1CommandList{EnabledCommands: allowList})
 		return
 	}
 
@@ -159,7 +197,7 @@ func TeslaMateAPICarsCommandV1(c *gin.Context) {
 	// payload through instead of silently coercing to `null`.
 	if jsonErr := json.Unmarshal(respBody, &jsonData); jsonErr != nil {
 		log.Println("[warning] TeslaMateAPICarsCommandV1 non-JSON response from Tesla:", jsonErr)
-		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsCommandV1", gin.H{"raw": string(respBody)})
+		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsCommandV1", dto.V1CommandRawResponse{Raw: string(respBody)})
 		return
 	}
 

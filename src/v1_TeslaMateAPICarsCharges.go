@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
 // TeslaMateAPICarsChargesV1 returns the per-session charging history.
@@ -33,6 +35,21 @@ import (
 // phases=NULL / cable='<invalid>' throughout, brand/type set after
 // handshake). A single LATERAL pass picking the first non-null value
 // ordered by sample time is sufficient.
+// TeslaMateAPICarsChargesV1 returns the per-session charging history.
+//
+// @Summary      List charging sessions
+// @Description  Returns charging sessions with charger-shape aggregates.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID      path   int     true   "TeslaMate cars.id"
+// @Param        page       query  int     false  "1-indexed page"  default(1)
+// @Param        show       query  int     false  "page size"       default(100)
+// @Param        startDate  query  string  false  "RFC3339 lower bound"
+// @Param        endDate    query  string  false  "RFC3339 upper bound"
+// @Success      200        {object}  dto.V1ChargesResponse
+// @Failure      401        {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/charges [get]
 func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	// define error messages
@@ -57,71 +74,10 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 		return
 	}
 
-	// creating structs for /cars/<CarID>/charges
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// BatteryDetails struct - child of Charges
-	type BatteryDetails struct {
-		StartBatteryLevel int `json:"start_battery_level"` // int
-		EndBatteryLevel   int `json:"end_battery_level"`   // int
-	}
-	// PreferredRange struct - child of Charges
-	type PreferredRange struct {
-		StartRange float64 `json:"start_range"` // float64
-		EndRange   float64 `json:"end_range"`   // float64
-	}
-	// Charges struct - child of Data
-	type Charges struct {
-		ChargeID           int            `json:"charge_id"`
-		StartDate          string         `json:"start_date"`
-		EndDate            string         `json:"end_date"`
-		Address            string         `json:"address"`
-		ChargeEnergyAdded  float64        `json:"charge_energy_added"`
-		ChargeEnergyUsed   float64        `json:"charge_energy_used"`
-		Cost               float64        `json:"cost"`
-		DurationMin        int            `json:"duration_min"`
-		DurationStr        string         `json:"duration_str"`
-		BatteryDetails     BatteryDetails `json:"battery_details"`
-		RangeIdeal         PreferredRange `json:"range_ideal"`
-		RangeRated         PreferredRange `json:"range_rated"`
-		OutsideTempAvg     float64        `json:"outside_temp_avg"`
-		Odometer           float64        `json:"odometer"`
-		Latitude           float64        `json:"latitude"`
-		Longitude          float64        `json:"longitude"`
-		FastChargerPresent bool           `json:"fast_charger_present"`
-		FastChargerBrand   NullString     `json:"fast_charger_brand"`
-		FastChargerType    NullString     `json:"fast_charger_type"`
-		PeakChargerPower   int            `json:"peak_charger_power"`
-		PeakChargerVoltage int            `json:"peak_charger_voltage"`
-		ChargerPhases      NullInt64      `json:"charger_phases"`
-		ConnChargeCable    NullString     `json:"conn_charge_cable"`
-		PilotCurrentMax    NullInt64      `json:"pilot_current_max"`
-		ChargeType         string         `json:"charge_type"`
-		IsTeslaCharger     bool           `json:"is_tesla_charger"`
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		Charges        []Charges      `json:"charges"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
 	var (
 		CarName                       NullString
-		ChargesData                   []Charges
+		ChargesData                   []dto.V1ChargeListItem
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -227,7 +183,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating charge object based on struct
-		charge := Charges{}
+		charge := dto.V1ChargeListItem{}
 
 		// scanning row and putting values into the charge
 		err = rows.Scan(
@@ -302,14 +258,14 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 
 	//
 	// build the data-blob
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := dto.V1ChargesResponse{
+		Data: dto.V1ChargesData{
+			Car: dto.Car{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			Charges: ChargesData,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

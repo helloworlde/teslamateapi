@@ -1,0 +1,2615 @@
+basePath: /
+definitions:
+  dto.Car:
+    properties:
+      car_id:
+        example: 1
+        type: integer
+      car_name:
+        example: Blue Thunder
+        type: string
+    type: object
+  dto.ErrorEnvelope:
+    properties:
+      error:
+        example: Unable to load cars.
+        type: string
+    type: object
+  dto.HealthResponse:
+    properties:
+      status:
+        example: OK
+        type: string
+    type: object
+  dto.MessageEnvelope:
+    properties:
+      message:
+        example: TeslaMateApi container running..
+        type: string
+      path:
+        example: /api
+        type: string
+    type: object
+  dto.NotFoundResponse:
+    properties:
+      code:
+        example: PAGE_NOT_FOUND
+        type: string
+      message:
+        example: Page not found
+        type: string
+    type: object
+  dto.Pagination:
+    properties:
+      has_next:
+        example: false
+        type: boolean
+      page:
+        example: 1
+        type: integer
+      show:
+        example: 100
+        type: integer
+      total_count:
+        example: 382
+        type: integer
+    type: object
+  dto.PongResponse:
+    properties:
+      message:
+        example: pong
+        type: string
+    type: object
+  dto.ReadyResponse:
+    properties:
+      status:
+        example: OK
+        type: string
+    type: object
+  dto.TeslaMateUnits:
+    properties:
+      unit_of_length:
+        enum:
+        - km
+        - mi
+        example: km
+        type: string
+      unit_of_temperature:
+        enum:
+        - C
+        - F
+        example: C
+        type: string
+    type: object
+  dto.TeslaMateUnitsWithPressure:
+    properties:
+      unit_of_length:
+        enum:
+        - km
+        - mi
+        example: km
+        type: string
+      unit_of_pressure:
+        enum:
+        - bar
+        - psi
+        example: bar
+        type: string
+      unit_of_temperature:
+        enum:
+        - C
+        - F
+        example: C
+        type: string
+    type: object
+  dto.V1BatteryHealth:
+    properties:
+      battery_health_percentage:
+        example: 96.24
+        type: number
+      current_capacity:
+        example: 79.4
+        type: number
+      current_range:
+        example: 432.7
+        type: number
+      max_capacity:
+        example: 82.5
+        type: number
+      max_range:
+        example: 450.2
+        type: number
+      rated_efficiency:
+        example: 18.4
+        type: number
+    type: object
+  dto.V1BatteryHealthData:
+    properties:
+      battery_health:
+        $ref: '#/definitions/dto.V1BatteryHealth'
+      car:
+        $ref: '#/definitions/dto.Car'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1BatteryHealthResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1BatteryHealthData'
+    type: object
+  dto.V1Car:
+    properties:
+      car_details:
+        $ref: '#/definitions/dto.V1CarDetails'
+      car_exterior:
+        $ref: '#/definitions/dto.V1CarExterior'
+      car_id:
+        example: 1
+        type: integer
+      car_settings:
+        $ref: '#/definitions/dto.V1CarSettings'
+      name:
+        example: Blue Thunder
+        type: string
+      teslamate_details:
+        $ref: '#/definitions/dto.V1CarTeslaMateDetails'
+      teslamate_stats:
+        $ref: '#/definitions/dto.V1CarTeslaMateStats'
+    type: object
+  dto.V1CarDetails:
+    properties:
+      efficiency:
+        example: 0.184
+        type: number
+      eid:
+        example: 123456789012345
+        type: integer
+      model:
+        example: S
+        type: string
+      trim_badging:
+        example: P100D
+        type: string
+      vid:
+        example: 987654321098765
+        type: integer
+      vin:
+        example: 5YJSA1E26KF000000
+        type: string
+    type: object
+  dto.V1CarExterior:
+    properties:
+      exterior_color:
+        example: DeepBlue
+        type: string
+      spoiler_type:
+        example: None
+        type: string
+      wheel_type:
+        example: Pinwheel18
+        type: string
+    type: object
+  dto.V1CarSettings:
+    properties:
+      free_supercharging:
+        example: false
+        type: boolean
+      req_not_unlocked:
+        example: false
+        type: boolean
+      suspend_after_idle_min:
+        example: 15
+        type: integer
+      suspend_min:
+        example: 21
+        type: integer
+      use_streaming_api:
+        example: true
+        type: boolean
+    type: object
+  dto.V1CarTeslaMateDetails:
+    properties:
+      inserted_at:
+        example: "2020-01-01T00:00:00+01:00"
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00+01:00"
+        type: string
+    type: object
+  dto.V1CarTeslaMateStats:
+    properties:
+      total_charges:
+        example: 427
+        type: integer
+      total_drives:
+        example: 1893
+        type: integer
+      total_updates:
+        example: 38
+        type: integer
+    type: object
+  dto.V1CarsData:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/dto.V1Car'
+        type: array
+    type: object
+  dto.V1CarsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1CarsData'
+    type: object
+  dto.V1ChargeCurrent:
+    properties:
+      address:
+        example: Home
+        type: string
+      battery_details:
+        $ref: '#/definitions/dto.V1ChargeCurrentBatteryDetails'
+      charge_details:
+        items:
+          $ref: '#/definitions/dto.V1ChargeCurrentDetail'
+        type: array
+      charge_energy_added:
+        example: 15.2
+        type: number
+      charge_id:
+        example: 1234
+        type: integer
+      cost:
+        example: 3.2
+        type: number
+      duration_min:
+        example: 95
+        type: integer
+      duration_str:
+        example: "01:35"
+        type: string
+      is_charging:
+        example: true
+        type: boolean
+      odometer:
+        example: 42500
+        type: number
+      outside_temp_avg:
+        example: 11.5
+        type: number
+      rated_range:
+        $ref: '#/definitions/dto.V1ChargeCurrentPreferredRange'
+      start_date:
+        example: "2024-01-01T20:00:00+01:00"
+        type: string
+    type: object
+  dto.V1ChargeCurrentBatteryDetails:
+    properties:
+      current_battery_level:
+        example: 58
+        type: integer
+      start_battery_level:
+        example: 32
+        type: integer
+    type: object
+  dto.V1ChargeCurrentBatteryInfo:
+    properties:
+      battery_heater:
+        example: false
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        example: false
+        type: boolean
+      rated_battery_range:
+        example: 205.4
+        type: number
+    type: object
+  dto.V1ChargeCurrentChargerDetails:
+    properties:
+      charger_actual_current:
+        example: 32
+        type: integer
+      charger_phases:
+        example: 3
+        type: integer
+      charger_pilot_current:
+        example: 32
+        type: integer
+      charger_power:
+        example: 22
+        type: integer
+      charger_voltage:
+        example: 240
+        type: integer
+    type: object
+  dto.V1ChargeCurrentDetail:
+    properties:
+      battery_info:
+        $ref: '#/definitions/dto.V1ChargeCurrentBatteryInfo'
+      battery_level:
+        example: 58
+        type: integer
+      charge_energy_added:
+        example: 15.2
+        type: number
+      charger_details:
+        $ref: '#/definitions/dto.V1ChargeCurrentChargerDetails'
+      conn_charge_cable:
+        example: IEC
+        type: string
+      date:
+        example: "2024-01-01T21:30:00+01:00"
+        type: string
+      detail_id:
+        example: 123456
+        type: integer
+      fast_charger_info:
+        $ref: '#/definitions/dto.V1ChargeCurrentFastChargerInfo'
+      not_enough_power_to_heat:
+        type: boolean
+      outside_temp:
+        example: 11.5
+        type: number
+      usable_battery_level:
+        example: 57
+        type: integer
+    type: object
+  dto.V1ChargeCurrentFastChargerInfo:
+    properties:
+      fast_charger_brand:
+        example: Tesla
+        type: string
+      fast_charger_present:
+        example: false
+        type: boolean
+      fast_charger_type:
+        example: Combo
+        type: string
+    type: object
+  dto.V1ChargeCurrentPreferredRange:
+    properties:
+      added_range:
+        example: 94.9
+        type: number
+      current_range:
+        example: 205.4
+        type: number
+      start_range:
+        example: 110.5
+        type: number
+    type: object
+  dto.V1ChargeDetail:
+    properties:
+      address:
+        example: Home
+        type: string
+      battery_details:
+        $ref: '#/definitions/dto.V1ChargeDetailBatteryDetails'
+      charge_details:
+        items:
+          $ref: '#/definitions/dto.V1ChargeDetailItem'
+        type: array
+      charge_energy_added:
+        example: 38.45
+        type: number
+      charge_energy_used:
+        example: 40.1
+        type: number
+      charge_id:
+        example: 1234
+        type: integer
+      cost:
+        example: 5.42
+        type: number
+      duration_min:
+        example: 150
+        type: integer
+      duration_str:
+        example: "02:30"
+        type: string
+      end_date:
+        example: "2024-01-01T22:30:00+01:00"
+        type: string
+      latitude:
+        example: 52.52
+        type: number
+      longitude:
+        example: 13.405
+        type: number
+      odometer:
+        example: 42100.7
+        type: number
+      outside_temp_avg:
+        example: 12.5
+        type: number
+      range_ideal:
+        $ref: '#/definitions/dto.V1ChargeDetailPreferredRange'
+      range_rated:
+        $ref: '#/definitions/dto.V1ChargeDetailPreferredRange'
+      start_date:
+        example: "2024-01-01T20:00:00+01:00"
+        type: string
+    type: object
+  dto.V1ChargeDetailBatteryDetails:
+    properties:
+      end_battery_level:
+        example: 82
+        type: integer
+      start_battery_level:
+        example: 32
+        type: integer
+    type: object
+  dto.V1ChargeDetailBatteryInfo:
+    properties:
+      battery_heater:
+        example: false
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        example: false
+        type: boolean
+      ideal_battery_range:
+        example: 320.5
+        type: number
+      rated_battery_range:
+        example: 205.4
+        type: number
+    type: object
+  dto.V1ChargeDetailChargerDetails:
+    properties:
+      charger_actual_current:
+        example: 32
+        type: integer
+      charger_phases:
+        example: 3
+        type: integer
+      charger_pilot_current:
+        example: 32
+        type: integer
+      charger_power:
+        example: 22
+        type: integer
+      charger_voltage:
+        example: 240
+        type: integer
+    type: object
+  dto.V1ChargeDetailData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      charge:
+        $ref: '#/definitions/dto.V1ChargeDetail'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1ChargeDetailFastChargerInfo:
+    properties:
+      fast_charger_brand:
+        example: Tesla
+        type: string
+      fast_charger_present:
+        example: false
+        type: boolean
+      fast_charger_type:
+        example: Combo
+        type: string
+    type: object
+  dto.V1ChargeDetailItem:
+    properties:
+      battery_info:
+        $ref: '#/definitions/dto.V1ChargeDetailBatteryInfo'
+      battery_level:
+        example: 58
+        type: integer
+      charge_energy_added:
+        example: 15.2
+        type: number
+      charger_details:
+        $ref: '#/definitions/dto.V1ChargeDetailChargerDetails'
+      conn_charge_cable:
+        example: IEC
+        type: string
+      date:
+        example: "2024-01-01T21:30:00+01:00"
+        type: string
+      detail_id:
+        example: 123456
+        type: integer
+      fast_charger_info:
+        $ref: '#/definitions/dto.V1ChargeDetailFastChargerInfo'
+      not_enough_power_to_heat:
+        type: boolean
+      outside_temp:
+        example: 11.5
+        type: number
+      usable_battery_level:
+        example: 57
+        type: integer
+    type: object
+  dto.V1ChargeDetailPreferredRange:
+    properties:
+      end_range:
+        example: 320.7
+        type: number
+      start_range:
+        example: 110.5
+        type: number
+    type: object
+  dto.V1ChargeDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1ChargeDetailData'
+    type: object
+  dto.V1ChargeListItem:
+    properties:
+      address:
+        example: Home
+        type: string
+      battery_details:
+        $ref: '#/definitions/dto.V1ChargesListBatteryDetails'
+      charge_energy_added:
+        example: 38.45
+        type: number
+      charge_energy_used:
+        example: 40.1
+        type: number
+      charge_id:
+        example: 1234
+        type: integer
+      charge_type:
+        enum:
+        - ac
+        - dc
+        - unknown
+        example: ac
+        type: string
+      charger_phases:
+        example: 3
+        type: integer
+      conn_charge_cable:
+        example: IEC
+        type: string
+      cost:
+        example: 5.42
+        type: number
+      duration_min:
+        example: 150
+        type: integer
+      duration_str:
+        example: "02:30"
+        type: string
+      end_date:
+        example: "2024-01-01T22:30:00+01:00"
+        type: string
+      fast_charger_brand:
+        example: Tesla
+        type: string
+      fast_charger_present:
+        example: false
+        type: boolean
+      fast_charger_type:
+        example: Combo
+        type: string
+      is_tesla_charger:
+        example: true
+        type: boolean
+      latitude:
+        example: 52.52
+        type: number
+      longitude:
+        example: 13.405
+        type: number
+      odometer:
+        example: 42100.7
+        type: number
+      outside_temp_avg:
+        example: 12.5
+        type: number
+      peak_charger_power:
+        example: 48
+        type: integer
+      peak_charger_voltage:
+        example: 240
+        type: integer
+      pilot_current_max:
+        example: 32
+        type: integer
+      range_ideal:
+        $ref: '#/definitions/dto.V1ChargesListPreferredRange'
+      range_rated:
+        $ref: '#/definitions/dto.V1ChargesListPreferredRange'
+      start_date:
+        example: "2024-01-01T20:00:00+01:00"
+        type: string
+    type: object
+  dto.V1ChargesCurrentData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      charge:
+        $ref: '#/definitions/dto.V1ChargeCurrent'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1ChargesCurrentResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1ChargesCurrentData'
+    type: object
+  dto.V1ChargesData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      charges:
+        items:
+          $ref: '#/definitions/dto.V1ChargeListItem'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1ChargesListBatteryDetails:
+    properties:
+      end_battery_level:
+        example: 82
+        type: integer
+      start_battery_level:
+        example: 32
+        type: integer
+    type: object
+  dto.V1ChargesListPreferredRange:
+    properties:
+      end_range:
+        example: 320.7
+        type: number
+      start_range:
+        example: 110.5
+        type: number
+    type: object
+  dto.V1ChargesResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1ChargesData'
+    type: object
+  dto.V1CommandList:
+    properties:
+      enabled_commands:
+        example:
+        - /wake_up
+        - /command/auto_conditioning_start
+        items:
+          type: string
+        type: array
+    type: object
+  dto.V1CommandResult:
+    additionalProperties: {}
+    type: object
+  dto.V1DriveDetail:
+    properties:
+      battery_details:
+        $ref: '#/definitions/dto.V1DrivesBatteryDetails'
+      consumption_net:
+        example: 225
+        type: number
+      drive_details:
+        items:
+          $ref: '#/definitions/dto.V1DriveDetailPoint'
+        type: array
+      drive_id:
+        example: 1234
+        type: integer
+      duration_min:
+        example: 90
+        type: integer
+      duration_str:
+        example: "01:30"
+        type: string
+      end_address:
+        example: Office
+        type: string
+      end_date:
+        example: "2024-01-01T09:30:00+01:00"
+        type: string
+      energy_consumed_net:
+        example: 22.5
+        type: number
+      inside_temp_avg:
+        example: 21
+        type: number
+      odometer_details:
+        $ref: '#/definitions/dto.V1DrivesOdometerDetails'
+      outside_temp_avg:
+        example: 15.3
+        type: number
+      power_max:
+        example: 250
+        type: integer
+      power_min:
+        example: -50
+        type: integer
+      range_ideal:
+        $ref: '#/definitions/dto.V1DrivesPreferredRange'
+      range_rated:
+        $ref: '#/definitions/dto.V1DrivesPreferredRange'
+      speed_avg:
+        example: 66.7
+        type: number
+      speed_max:
+        example: 130
+        type: integer
+      start_address:
+        example: Home
+        type: string
+      start_date:
+        example: "2024-01-01T08:00:00+01:00"
+        type: string
+    type: object
+  dto.V1DriveDetailBatteryInfo:
+    properties:
+      battery_heater:
+        type: boolean
+      battery_heater_no_power:
+        type: boolean
+      battery_heater_on:
+        type: boolean
+      est_battery_range:
+        example: 310
+        type: number
+      ideal_battery_range:
+        example: 320
+        type: number
+      rated_battery_range:
+        example: 305
+        type: number
+    type: object
+  dto.V1DriveDetailClimateInfo:
+    properties:
+      driver_temp_setting:
+        example: 21
+        type: number
+      fan_status:
+        example: 3
+        type: integer
+      inside_temp:
+        example: 21
+        type: number
+      is_climate_on:
+        type: boolean
+      is_front_defroster_on:
+        type: boolean
+      is_rear_defroster_on:
+        type: boolean
+      outside_temp:
+        example: 15.3
+        type: number
+      passenger_temp_setting:
+        example: 21
+        type: number
+    type: object
+  dto.V1DriveDetailData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      drive:
+        $ref: '#/definitions/dto.V1DriveDetail'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1DriveDetailPoint:
+    properties:
+      battery_info:
+        $ref: '#/definitions/dto.V1DriveDetailBatteryInfo'
+      battery_level:
+        example: 68
+        type: integer
+      climate_info:
+        $ref: '#/definitions/dto.V1DriveDetailClimateInfo'
+      date:
+        example: "2024-01-01T08:30:00+01:00"
+        type: string
+      detail_id:
+        example: 123
+        type: integer
+      elevation:
+        example: 55
+        type: integer
+      latitude:
+        example: 52.52
+        type: number
+      longitude:
+        example: 13.405
+        type: number
+      odometer:
+        example: 42050.5
+        type: number
+      power:
+        example: 120
+        type: integer
+      speed:
+        example: 60
+        type: integer
+      usable_battery_level:
+        example: 67
+        type: integer
+    type: object
+  dto.V1DriveDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1DriveDetailData'
+    type: object
+  dto.V1DriveListItem:
+    properties:
+      battery_details:
+        $ref: '#/definitions/dto.V1DrivesBatteryDetails'
+      consumption_net:
+        example: 225
+        type: number
+      drive_id:
+        example: 1234
+        type: integer
+      duration_min:
+        example: 90
+        type: integer
+      duration_str:
+        example: "01:30"
+        type: string
+      end_address:
+        example: Office
+        type: string
+      end_date:
+        example: "2024-01-01T09:30:00+01:00"
+        type: string
+      energy_consumed_net:
+        example: 22.5
+        type: number
+      inside_temp_avg:
+        example: 21
+        type: number
+      odometer_details:
+        $ref: '#/definitions/dto.V1DrivesOdometerDetails'
+      outside_temp_avg:
+        example: 15.3
+        type: number
+      power_max:
+        example: 250
+        type: integer
+      power_min:
+        example: -50
+        type: integer
+      range_ideal:
+        $ref: '#/definitions/dto.V1DrivesPreferredRange'
+      range_rated:
+        $ref: '#/definitions/dto.V1DrivesPreferredRange'
+      speed_avg:
+        example: 66.7
+        type: number
+      speed_max:
+        example: 130
+        type: integer
+      start_address:
+        example: Home
+        type: string
+      start_date:
+        example: "2024-01-01T08:00:00+01:00"
+        type: string
+    type: object
+  dto.V1DrivesBatteryDetails:
+    properties:
+      end_battery_level:
+        example: 50
+        type: integer
+      end_usable_battery_level:
+        example: 50
+        type: integer
+      is_sufficiently_precise:
+        example: true
+        type: boolean
+      reduced_range:
+        example: false
+        type: boolean
+      start_battery_level:
+        example: 82
+        type: integer
+      start_usable_battery_level:
+        example: 82
+        type: integer
+    type: object
+  dto.V1DrivesData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      drives:
+        items:
+          $ref: '#/definitions/dto.V1DriveListItem'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V1DrivesOdometerDetails:
+    properties:
+      odometer_distance:
+        example: 100
+        type: number
+      odometer_end:
+        example: 42100
+        type: number
+      odometer_start:
+        example: 42000
+        type: number
+    type: object
+  dto.V1DrivesPreferredRange:
+    properties:
+      end_range:
+        example: 180.5
+        type: number
+      range_diff:
+        example: 140
+        type: number
+      start_range:
+        example: 320.5
+        type: number
+    type: object
+  dto.V1DrivesResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1DrivesData'
+    type: object
+  dto.V1GlobalSettings:
+    properties:
+      account_info:
+        $ref: '#/definitions/dto.V1GlobalSettingsAccountInfo'
+      setting_id:
+        example: 1
+        type: integer
+      teslamate_units:
+        $ref: '#/definitions/dto.V1GlobalSettingsTeslaMateUnits'
+      teslamate_urls:
+        $ref: '#/definitions/dto.V1GlobalSettingsTeslaMateURLs'
+      teslamate_webgui:
+        $ref: '#/definitions/dto.V1GlobalSettingsTeslaMateGUI'
+    type: object
+  dto.V1GlobalSettingsAccountInfo:
+    properties:
+      inserted_at:
+        example: "2020-01-01T00:00:00+01:00"
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00+01:00"
+        type: string
+    type: object
+  dto.V1GlobalSettingsData:
+    properties:
+      settings:
+        $ref: '#/definitions/dto.V1GlobalSettings'
+    type: object
+  dto.V1GlobalSettingsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1GlobalSettingsData'
+    type: object
+  dto.V1GlobalSettingsTeslaMateGUI:
+    properties:
+      language:
+        example: en
+        type: string
+      preferred_range:
+        enum:
+        - rated
+        - ideal
+        example: rated
+        type: string
+    type: object
+  dto.V1GlobalSettingsTeslaMateURLs:
+    properties:
+      base_url:
+        example: https://teslamate.example.com
+        type: string
+      grafana_url:
+        example: https://grafana.example.com
+        type: string
+    type: object
+  dto.V1GlobalSettingsTeslaMateUnits:
+    properties:
+      unit_of_length:
+        enum:
+        - km
+        - mi
+        example: km
+        type: string
+      unit_of_temperature:
+        enum:
+        - C
+        - F
+        example: C
+        type: string
+    type: object
+  dto.V1LoggingList:
+    properties:
+      enabled_commands:
+        example:
+        - /logging/resume
+        - /logging/suspend
+        items:
+          type: string
+        type: array
+    type: object
+  dto.V1LoggingResult:
+    additionalProperties: {}
+    type: object
+  dto.V1StatusActiveRouteDetails:
+    properties:
+      destination:
+        example: Home
+        type: string
+      distance_to_arrival:
+        example: 10.43
+        type: number
+      energy_at_arrival:
+        example: 73
+        type: integer
+      location:
+        $ref: '#/definitions/dto.V1StatusCarLocation'
+      minutes_to_arrival:
+        example: 23.46
+        type: number
+      traffic_minutes_delay:
+        example: 0
+        type: number
+    type: object
+  dto.V1StatusBatteryDetails:
+    properties:
+      battery_level:
+        example: 88
+        type: integer
+      est_battery_range:
+        example: 372.5
+        type: number
+      ideal_battery_range:
+        example: 335.79
+        type: number
+      rated_battery_range:
+        example: 401.63
+        type: number
+      usable_battery_level:
+        example: 85
+        type: integer
+    type: object
+  dto.V1StatusCarDetails:
+    properties:
+      model:
+        example: S
+        type: string
+      trim_badging:
+        example: P100D
+        type: string
+    type: object
+  dto.V1StatusCarExterior:
+    properties:
+      exterior_color:
+        example: DeepBlue
+        type: string
+      spoiler_type:
+        example: None
+        type: string
+      wheel_type:
+        example: Pinwheel18
+        type: string
+    type: object
+  dto.V1StatusCarGeodata:
+    properties:
+      geofence:
+        example: Home
+        type: string
+      latitude:
+        example: 35.278131
+        type: number
+      location:
+        $ref: '#/definitions/dto.V1StatusCarLocation'
+      longitude:
+        example: 29.744801
+        type: number
+    type: object
+  dto.V1StatusCarLocation:
+    properties:
+      latitude:
+        example: 35.278131
+        type: number
+      longitude:
+        example: 29.744801
+        type: number
+    type: object
+  dto.V1StatusCarStatus:
+    properties:
+      center_display_state:
+        example: 0
+        type: integer
+      doors_open:
+        example: false
+        type: boolean
+      driver_front_door_open:
+        example: false
+        type: boolean
+      driver_rear_door_open:
+        example: false
+        type: boolean
+      frunk_open:
+        example: false
+        type: boolean
+      healthy:
+        example: true
+        type: boolean
+      is_user_present:
+        example: false
+        type: boolean
+      locked:
+        example: true
+        type: boolean
+      passenger_front_door_open:
+        example: false
+        type: boolean
+      passenger_rear_door_open:
+        example: false
+        type: boolean
+      sentry_mode:
+        example: false
+        type: boolean
+      trunk_open:
+        example: false
+        type: boolean
+      windows_open:
+        example: false
+        type: boolean
+    type: object
+  dto.V1StatusCarVersions:
+    properties:
+      update_available:
+        example: false
+        type: boolean
+      update_version:
+        example: 2024.32.12.3
+        type: string
+      version:
+        example: 2024.32.12.2
+        type: string
+    type: object
+  dto.V1StatusChargingDetails:
+    properties:
+      charge_current_request:
+        example: 40
+        type: integer
+      charge_current_request_max:
+        example: 40
+        type: integer
+      charge_energy_added:
+        example: 5.06
+        type: number
+      charge_limit_soc:
+        example: 90
+        type: integer
+      charge_port_door_open:
+        example: true
+        type: boolean
+      charger_actual_current:
+        example: 2.05
+        type: number
+      charger_phases:
+        example: 3
+        type: integer
+      charger_power:
+        example: 48.9
+        type: number
+      charger_voltage:
+        example: 240
+        type: integer
+      charging_state:
+        example: charging
+        type: string
+      plugged_in:
+        example: true
+        type: boolean
+      scheduled_charging_start_time:
+        example: "2024-02-29T23:00:07+01:00"
+        type: string
+      time_to_full_charge:
+        example: 1.83
+        type: number
+    type: object
+  dto.V1StatusClimateDetails:
+    properties:
+      climate_keeper_mode:
+        example: dog
+        type: string
+      inside_temp:
+        example: 20.8
+        type: number
+      is_climate_on:
+        example: true
+        type: boolean
+      is_preconditioning:
+        example: false
+        type: boolean
+      outside_temp:
+        example: 18.4
+        type: number
+    type: object
+  dto.V1StatusData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      status:
+        $ref: '#/definitions/dto.V1StatusInformation'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnitsWithPressure'
+    type: object
+  dto.V1StatusDrivingDetails:
+    properties:
+      active_route:
+        $ref: '#/definitions/dto.V1StatusActiveRouteDetails'
+      active_route_destination:
+        example: Home
+        type: string
+      active_route_latitude:
+        example: 35.278131
+        type: number
+      active_route_longitude:
+        example: 29.744801
+        type: number
+      elevation:
+        example: 70
+        type: integer
+      heading:
+        example: 340
+        type: integer
+      power:
+        example: -9
+        type: integer
+      shift_state:
+        example: D
+        type: string
+      speed:
+        example: 12
+        type: integer
+    type: object
+  dto.V1StatusInformation:
+    properties:
+      battery_details:
+        $ref: '#/definitions/dto.V1StatusBatteryDetails'
+      car_details:
+        $ref: '#/definitions/dto.V1StatusCarDetails'
+      car_exterior:
+        $ref: '#/definitions/dto.V1StatusCarExterior'
+      car_geodata:
+        $ref: '#/definitions/dto.V1StatusCarGeodata'
+      car_status:
+        $ref: '#/definitions/dto.V1StatusCarStatus'
+      car_versions:
+        $ref: '#/definitions/dto.V1StatusCarVersions'
+      charging_details:
+        $ref: '#/definitions/dto.V1StatusChargingDetails'
+      climate_details:
+        $ref: '#/definitions/dto.V1StatusClimateDetails'
+      display_name:
+        example: Blue Thunder
+        type: string
+      driving_details:
+        $ref: '#/definitions/dto.V1StatusDrivingDetails'
+      odometer:
+        example: 42100.5
+        type: number
+      state:
+        example: asleep
+        type: string
+      state_since:
+        example: "2024-02-29T23:00:07+01:00"
+        type: string
+      tpms_details:
+        $ref: '#/definitions/dto.V1StatusTpmsDetails'
+    type: object
+  dto.V1StatusResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1StatusData'
+    type: object
+  dto.V1StatusTpmsDetails:
+    properties:
+      tpms_pressure_fl:
+        example: 2.9
+        type: number
+      tpms_pressure_fr:
+        example: 2.8
+        type: number
+      tpms_pressure_rl:
+        example: 2.9
+        type: number
+      tpms_pressure_rr:
+        example: 2.8
+        type: number
+      tpms_soft_warning_fl:
+        example: true
+        type: boolean
+      tpms_soft_warning_fr:
+        example: false
+        type: boolean
+      tpms_soft_warning_rl:
+        example: false
+        type: boolean
+      tpms_soft_warning_rr:
+        example: false
+        type: boolean
+    type: object
+  dto.V1Update:
+    properties:
+      end_date:
+        example: "2024-01-01T20:30:00+01:00"
+        type: string
+      start_date:
+        example: "2024-01-01T20:00:00+01:00"
+        type: string
+      update_id:
+        example: 42
+        type: integer
+      version:
+        example: 2024.32.12.2
+        type: string
+    type: object
+  dto.V1UpdatesData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      updates:
+        items:
+          $ref: '#/definitions/dto.V1Update'
+        type: array
+    type: object
+  dto.V1UpdatesResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V1UpdatesData'
+    type: object
+  dto.V2ByGeofenceData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      geofences:
+        items:
+          $ref: '#/definitions/dto.V2GeofenceRow'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2ByGeofenceResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2ByGeofenceData'
+    type: object
+  dto.V2ChargesAgg:
+    properties:
+      count:
+        example: 427
+        type: integer
+      fast_charge_count:
+        example: 73
+        type: integer
+      fast_charge_energy_kwh:
+        example: 3200
+        type: number
+      peak_power_max_kw:
+        example: 250
+        type: integer
+      total_cost:
+        example: 4321.5
+        type: number
+      total_energy_added_kwh:
+        example: 16500
+        type: number
+      total_energy_used_kwh:
+        example: 17200
+        type: number
+    type: object
+  dto.V2DrivesAgg:
+    properties:
+      avg_consumption:
+        example: 184
+        type: number
+      best_consumption:
+        example: 120
+        type: number
+      count:
+        example: 1893
+        type: integer
+      longest_distance:
+        example: 800
+        type: number
+      max_speed:
+        example: 180
+        type: integer
+      total_distance:
+        example: 42500.5
+        type: number
+      total_duration_min:
+        example: 38000
+        type: integer
+      total_energy_consumed_kwh:
+        example: 7825
+        type: number
+    type: object
+  dto.V2GeofenceRow:
+    properties:
+      charges_cost:
+        example: 425.3
+        type: number
+      charges_count:
+        example: 42
+        type: integer
+      charges_energy_added_kwh:
+        example: 1820.5
+        type: number
+      drives_arrived:
+        example: 125
+        type: integer
+      drives_departed:
+        example: 126
+        type: integer
+      geofence_id:
+        example: 3
+        type: integer
+      geofence_name:
+        example: Home
+        type: string
+      parkings_count:
+        example: 125
+        type: integer
+      parkings_total_duration_min:
+        example: 50000
+        type: integer
+    type: object
+  dto.V2Lifetime:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      charges:
+        $ref: '#/definitions/dto.V2ChargesAgg'
+      drives:
+        $ref: '#/definitions/dto.V2DrivesAgg'
+      parkings:
+        $ref: '#/definitions/dto.V2ParkingsAgg'
+      since:
+        example: "2020-01-01T00:00:00+01:00"
+        type: string
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2LifetimeResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2Lifetime'
+    type: object
+  dto.V2Parking:
+    properties:
+      address:
+        example: Office
+        type: string
+      duration_min:
+        example: 450
+        type: integer
+      duration_str:
+        example: "07:30"
+        type: string
+      end_battery_level:
+        example: 48
+        type: integer
+      end_date:
+        example: "2024-01-01T17:00:00+01:00"
+        type: string
+      energy_consumed_kwh:
+        example: 1.2
+        type: number
+      geofence_id:
+        example: 3
+        type: integer
+      had_charging:
+        example: false
+        type: boolean
+      latitude:
+        example: 52.52
+        type: number
+      longitude:
+        example: 13.405
+        type: number
+      preceding_drive_id:
+        example: 1234
+        type: integer
+      start_battery_level:
+        example: 50
+        type: integer
+      start_date:
+        example: "2024-01-01T09:30:00+01:00"
+        type: string
+      usable_battery_drop:
+        example: 2
+        type: integer
+    type: object
+  dto.V2ParkingDetail:
+    properties:
+      address:
+        example: Office
+        type: string
+      duration_min:
+        example: 450
+        type: integer
+      duration_str:
+        example: "07:30"
+        type: string
+      end_battery_level:
+        example: 48
+        type: integer
+      end_date:
+        example: "2024-01-01T17:00:00+01:00"
+        type: string
+      energy_consumed_kwh:
+        example: 1.2
+        type: number
+      geofence_id:
+        example: 3
+        type: integer
+      had_charging:
+        example: false
+        type: boolean
+      latitude:
+        example: 52.52
+        type: number
+      longitude:
+        example: 13.405
+        type: number
+      outside_temp_avg:
+        example: 15.3
+        type: number
+      parking_details:
+        items:
+          $ref: '#/definitions/dto.V2ParkingDetailPoint'
+        type: array
+      preceding_drive_id:
+        example: 1234
+        type: integer
+      start_battery_level:
+        example: 50
+        type: integer
+      start_date:
+        example: "2024-01-01T09:30:00+01:00"
+        type: string
+      usable_battery_drop:
+        example: 2
+        type: integer
+    type: object
+  dto.V2ParkingDetailData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      parking:
+        $ref: '#/definitions/dto.V2ParkingDetail'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2ParkingDetailPoint:
+    properties:
+      battery_level:
+        example: 50
+        type: integer
+      date:
+        example: "2024-01-01T10:00:00+01:00"
+        type: string
+      outside_temp:
+        example: 15.3
+        type: number
+      usable_battery_level:
+        example: 49
+        type: integer
+    type: object
+  dto.V2ParkingDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2ParkingDetailData'
+    type: object
+  dto.V2ParkingsAgg:
+    properties:
+      count:
+        example: 1893
+        type: integer
+      total_duration_min:
+        example: 500000
+        type: integer
+      total_vampire_drain_kwh:
+        example: 125
+        type: number
+    type: object
+  dto.V2ParkingsData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      pagination:
+        $ref: '#/definitions/dto.Pagination'
+      parkings:
+        items:
+          $ref: '#/definitions/dto.V2Parking'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2ParkingsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2ParkingsData'
+    type: object
+  dto.V2SummaryBucket:
+    properties:
+      bucket_end:
+        example: "2024-02-01T00:00:00+01:00"
+        type: string
+      bucket_start:
+        example: "2024-01-01T00:00:00+01:00"
+        type: string
+      charges_cost:
+        example: 125.4
+        type: number
+      charges_count:
+        example: 15
+        type: integer
+      charges_energy_added_kwh:
+        example: 425.7
+        type: number
+      drives_avg_consumption:
+        example: 205.6
+        type: number
+      drives_count:
+        example: 42
+        type: integer
+      drives_distance:
+        example: 1850.5
+        type: number
+      drives_duration_min:
+        example: 2200
+        type: integer
+      drives_energy_consumed_kwh:
+        example: 380.5
+        type: number
+      fast_charge_ratio:
+        example: 0.32
+        type: number
+      parkings_total_duration_min:
+        example: 42000
+        type: integer
+      vampire_drain_kwh:
+        example: 5.2
+        type: number
+    type: object
+  dto.V2SummaryData:
+    properties:
+      buckets:
+        items:
+          $ref: '#/definitions/dto.V2SummaryBucket'
+        type: array
+      car:
+        $ref: '#/definitions/dto.Car'
+      period:
+        enum:
+        - day
+        - week
+        - month
+        - year
+        example: month
+        type: string
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2SummaryResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2SummaryData'
+    type: object
+info:
+  contact: {}
+  description: REST API in front of TeslaMate's Postgres database, the MQTT status
+    feed, and (optionally) Tesla owner-api / TeslaMate logging command relays.
+  title: TeslaMateApi
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Returns a small banner confirming the API process is running.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageEnvelope'
+      summary: Root banner
+      tags:
+      - system
+  /api/:
+    get:
+      description: Banner for the /api root.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageEnvelope'
+      summary: /api banner
+      tags:
+      - system
+  /api/docs:
+    get:
+      description: Renders the Scalar API reference UI. No auth required.
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: API reference (HTML)
+      tags:
+      - system
+  /api/healthz:
+    get:
+      description: Returns 200 as long as the process is up. No auth required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+      summary: Liveness probe
+      tags:
+      - system
+  /api/openapi.yaml:
+    get:
+      description: Returns the embedded OpenAPI 3.x spec. No auth required.
+      produces:
+      - application/yaml
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: OpenAPI spec (YAML)
+      tags:
+      - system
+  /api/ping:
+    get:
+      description: Returns {"message":"pong"} for simple uptime checks. No auth required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PongResponse'
+      summary: Ping
+      tags:
+      - system
+  /api/readyz:
+    get:
+      description: Returns 200 when MQTT is connected (or DISABLE_MQTT=true). 503
+        otherwise. No auth required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ReadyResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      summary: Readiness probe
+      tags:
+      - system
+  /api/v1/:
+    get:
+      description: Banner for the /api/v1 root.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageEnvelope'
+      security:
+      - BearerAuth: []
+      summary: /api/v1 banner
+      tags:
+      - system
+  /api/v1/cars:
+    get:
+      description: Returns every car TeslaMate tracks (with details / exterior / settings
+        / stats).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1CarsResponse'
+        "401":
+          description: missing/invalid bearer token
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List cars
+      tags:
+      - v1
+  /api/v1/cars/{CarID}:
+    get:
+      description: Returns every car TeslaMate tracks (with details / exterior / settings
+        / stats).
+      parameters:
+      - description: TeslaMate cars.id; omit for all cars
+        in: path
+        name: CarID
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1CarsResponse'
+        "401":
+          description: missing/invalid bearer token
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List cars
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/battery-health:
+    get:
+      description: Returns max/current range and capacity along with a derived health
+        %.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1BatteryHealthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Battery health
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/charges:
+    get:
+      description: Returns charging sessions with charger-shape aggregates.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: 1
+        description: 1-indexed page
+        in: query
+        name: page
+        type: integer
+      - default: 100
+        description: page size
+        in: query
+        name: show
+        type: integer
+      - description: RFC3339 lower bound
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 upper bound
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1ChargesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List charging sessions
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/charges/{ChargeID}:
+    get:
+      description: Returns one charge session along with every per-sample row.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: charging_processes.id
+        in: path
+        name: ChargeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1ChargeDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Charge details
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/charges/current:
+    get:
+      description: Returns the active charge and per-sample telemetry, when present.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1ChargesCurrentResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Current charge
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/command:
+    get:
+      description: Returns the allow-list. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1CommandList'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List Tesla commands
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/command/{Command}:
+    post:
+      consumes:
+      - application/json
+      description: Proxies to Tesla owner-api with the car's stored token. Status
+        code and body mirror Tesla's. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Command name
+        in: path
+        name: Command
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tesla passthrough JSON
+          schema:
+            $ref: '#/definitions/dto.V1CommandResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Execute Tesla command
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/commands:
+    get:
+      description: Returns the allow-list. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1CommandList'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List Tesla commands
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/drives:
+    get:
+      description: Returns drives with odometer / battery / range aggregates.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: 1
+        description: 1-indexed page
+        in: query
+        name: page
+        type: integer
+      - default: 100
+        description: page size
+        in: query
+        name: show
+        type: integer
+      - description: RFC3339 lower bound
+        in: query
+        name: startDate
+        type: string
+      - description: RFC3339 upper bound
+        in: query
+        name: endDate
+        type: string
+      - description: min distance (user units)
+        in: query
+        name: minDistance
+        type: number
+      - description: max distance (user units)
+        in: query
+        name: maxDistance
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1DrivesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List drives
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/drives/{DriveID}:
+    get:
+      description: Returns one drive along with every position sample recorded for
+        it.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: drives.id
+        in: path
+        name: DriveID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1DriveDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Drive details
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/logging:
+    get:
+      description: Returns the allow-list. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1LoggingList'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List logging commands
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/logging/{Command}:
+    put:
+      consumes:
+      - application/json
+      description: Proxies to TeslaMate /api/car/{id}/logging/{Command}. Status code
+        and body mirror TeslaMate's. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: Logging command
+        in: path
+        name: Command
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: TeslaMate passthrough JSON
+          schema:
+            $ref: '#/definitions/dto.V1LoggingResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Invoke logging command
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/status:
+    get:
+      description: Returns MQTT-derived status (location, battery, charging, climate,
+        TPMS).
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: MQTT disconnected
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "501":
+          description: MQTT disabled
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Live car status
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/updates:
+    get:
+      description: Returns software-update history for the car.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: 1
+        description: 1-indexed page
+        in: query
+        name: page
+        type: integer
+      - default: 100
+        description: page size
+        in: query
+        name: show
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1UpdatesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List firmware updates
+      tags:
+      - v1
+  /api/v1/cars/{CarID}/wake_up:
+    post:
+      consumes:
+      - application/json
+      description: Proxies to Tesla owner-api with the car's stored token. Status
+        code and body mirror Tesla's. Requires ENABLE_COMMANDS=true.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tesla passthrough JSON
+          schema:
+            $ref: '#/definitions/dto.V1CommandResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "403":
+          description: ENABLE_COMMANDS=false
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Execute Tesla command
+      tags:
+      - v1
+  /api/v1/globalsettings:
+    get:
+      description: Returns the TeslaMate single-row settings (units, GUI, URLs).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V1GlobalSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Global settings
+      tags:
+      - v1
+  /api/v2/:
+    get:
+      description: Banner for the /api/v2 root.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageEnvelope'
+      security:
+      - BearerAuth: []
+      summary: /api/v2 banner
+      tags:
+      - system
+  /api/v2/cars/{CarID}/parkings:
+    get:
+      description: Returns parking sessions derived from gaps between adjacent drives.
+        Paginated.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: 1
+        description: 1-indexed page
+        in: query
+        name: page
+        type: integer
+      - default: 100
+        description: page size (1..10000)
+        in: query
+        name: show
+        type: integer
+      - default: 0
+        description: minimum duration (min)
+        in: query
+        name: min_duration
+        type: integer
+      - description: RFC3339 lower bound on park_start
+        in: query
+        name: start_date
+        type: string
+      - description: RFC3339 upper bound on park_end
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2ParkingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List parking sessions
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/parkings/{PrecedingDriveID}:
+    get:
+      description: Returns parking metadata plus a sparse SOC + outside-temp time-series
+        during the window.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: drive_id of the drive that preceded the parking session
+        in: path
+        name: PrecedingDriveID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2ParkingDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Parking session detail
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/by-geofence:
+    get:
+      description: Aggregates drives, charges, and parking sessions grouped by geofence.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 lower bound
+        in: query
+        name: start_date
+        type: string
+      - description: RFC3339 upper bound
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2ByGeofenceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Stats by geofence
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/lifetime:
+    get:
+      description: Since-ownership aggregates over drives, charges, and derived parking
+        sessions.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2LifetimeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Lifetime stats
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/summary:
+    get:
+      description: Aggregates bucketed by day / week / month / year in the user's
+        timezone.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: month
+        description: bucket size
+        enum:
+        - day
+        - week
+        - month
+        - year
+        in: query
+        name: period
+        type: string
+      - description: RFC3339 lower bound on bucket start
+        in: query
+        name: start_date
+        type: string
+      - description: RFC3339 upper bound on bucket start
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2SummaryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Period summary stats
+      tags:
+      - v2
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: API_TOKEN bearer credential. Required for every /api/* route except
+      /api, /api/, /api/ping, /api/healthz, /api/readyz, /api/docs, /api/openapi.yaml.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

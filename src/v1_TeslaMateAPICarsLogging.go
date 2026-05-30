@@ -11,13 +11,49 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
 // teslaMateLoggingHTTPTimeout caps the outbound PUT to TeslaMate so a hung
 // upstream can't pin a goroutine indefinitely.
 const teslaMateLoggingHTTPTimeout = 30 * time.Second
 
-// TeslaMateAPICarsLoggingV1 func
+// TeslaMateAPICarsLoggingListV1 returns the allow-listed logging commands.
+//
+// @Summary      List logging commands
+// @Description  Returns the allow-list. Requires ENABLE_COMMANDS=true.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path      int  true  "TeslaMate cars.id"
+// @Success      200    {object}  dto.V1LoggingList
+// @Failure      401    {object}  dto.ErrorEnvelope
+// @Failure      403    {object}  dto.ErrorEnvelope  "ENABLE_COMMANDS=false"
+// @Router       /api/v1/cars/{CarID}/logging [get]
+func TeslaMateAPICarsLoggingListV1(c *gin.Context) { TeslaMateAPICarsLoggingV1(c) }
+
+// TeslaMateAPICarsLoggingExecV1 invokes a TeslaMate logging command.
+//
+// @Summary      Invoke logging command
+// @Description  Proxies to TeslaMate /api/car/{id}/logging/{Command}. Status code and body mirror TeslaMate's. Requires ENABLE_COMMANDS=true.
+// @Tags         v1
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        CarID    path      int     true  "TeslaMate cars.id"
+// @Param        Command  path      string  true  "Logging command"
+// @Success      200      {object}  dto.V1LoggingResult  "TeslaMate passthrough JSON"
+// @Failure      400      {object}  dto.ErrorEnvelope
+// @Failure      401      {object}  dto.ErrorEnvelope
+// @Failure      403      {object}  dto.ErrorEnvelope  "ENABLE_COMMANDS=false"
+// @Failure      500      {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/logging/{Command} [put]
+func TeslaMateAPICarsLoggingExecV1(c *gin.Context) { TeslaMateAPICarsLoggingV1(c) }
+
+// TeslaMateAPICarsLoggingV1 lists or invokes TeslaMate logging commands.
+// Routed via the per-method wrappers above so swag can document the GET and
+// PUT response shapes separately.
 func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 
 	// creating required vars
@@ -35,7 +71,7 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 
 	// if request method is GET return list of commands
 	if c.Request.Method == http.MethodGet {
-		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsLoggingV1", gin.H{"enabled_commands": allowList})
+		TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsLoggingV1", dto.V1LoggingList{EnabledCommands: allowList})
 		return
 	}
 
@@ -106,7 +142,7 @@ func TeslaMateAPICarsLoggingV1(c *gin.Context) {
 	}
 	if jsonErr := json.Unmarshal(respBody, &jsonData); jsonErr != nil {
 		log.Println("[warning] TeslaMateAPICarsLoggingV1 non-JSON response from TeslaMate:", jsonErr)
-		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsLoggingV1", gin.H{"raw": string(respBody)})
+		TeslaMateAPIHandleOtherResponse(c, resp.StatusCode, "TeslaMateAPICarsLoggingV1", dto.V1LoggingRawResponse{Raw: string(respBody)})
 		return
 	}
 

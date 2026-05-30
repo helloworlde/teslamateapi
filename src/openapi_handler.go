@@ -8,15 +8,23 @@ import (
 	scalar "github.com/watchakorn-18k/scalar-go"
 )
 
-// openapiSpec embeds the hand-written OpenAPI 3.1 spec at build time so the
-// binary is self-contained — no extra files to ship alongside it. Keep this
-// path relative to the package directory; the file lives next to webserver.go.
+// openapiSpec embeds the swag-generated OpenAPI spec at build time so the
+// binary is self-contained — no extra files to ship alongside it. The path
+// is relative to this source file; `swag init` writes the YAML next to its
+// docs.go in src/docs/.
 //
-//go:embed openapi.yaml
+//go:embed docs/swagger.yaml
 var openapiSpec []byte
 
 // openapiYAML serves the raw spec at /api/openapi.yaml so external tooling
 // (Postman, codegen, the scalar UI we render below) can consume it.
+//
+// @Summary      OpenAPI spec (YAML)
+// @Description  Returns the embedded OpenAPI 3.x spec. No auth required.
+// @Tags         system
+// @Produce      application/yaml
+// @Success      200  {string}  string
+// @Router       /api/openapi.yaml [get]
 func openapiYAML(c *gin.Context) {
 	c.Data(http.StatusOK, "application/yaml; charset=utf-8", openapiSpec)
 }
@@ -24,6 +32,13 @@ func openapiYAML(c *gin.Context) {
 // scalarDocs renders the Scalar API reference UI at /api/docs. It points at
 // the sibling /api/openapi.yaml route so any change to the spec is reflected
 // without rebuilding the HTML wrapper.
+//
+// @Summary      API reference (HTML)
+// @Description  Renders the Scalar API reference UI. No auth required.
+// @Tags         system
+// @Produce      html
+// @Success      200  {string}  string
+// @Router       /api/docs [get]
 func scalarDocs(c *gin.Context) {
 	// Pass the spec inline (SpecContent) instead of SpecURL: scalar-go treats
 	// non-http URLs as filesystem paths, which breaks for our embedded spec.

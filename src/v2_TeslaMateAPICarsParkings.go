@@ -34,6 +34,22 @@ import (
 // same outside_temp samples (and aggregates) for clients that need it.
 //
 // query params: start_date / end_date / min_duration (minutes) / page / show.
+//
+// @Summary      List parking sessions
+// @Description  Returns parking sessions derived from gaps between adjacent drives. Paginated.
+// @Tags         v2
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID         path   int     true   "TeslaMate cars.id"
+// @Param        page          query  int     false  "1-indexed page"            default(1)
+// @Param        show          query  int     false  "page size (1..10000)"      default(100)
+// @Param        min_duration  query  int     false  "minimum duration (min)"    default(0)
+// @Param        start_date    query  string  false  "RFC3339 lower bound on park_start"
+// @Param        end_date      query  string  false  "RFC3339 upper bound on park_end"
+// @Success      200  {object}  dto.V2ParkingsResponse
+// @Failure      400  {object}  dto.ErrorEnvelope
+// @Failure      500  {object}  dto.ErrorEnvelope
+// @Router       /api/v2/cars/{CarID}/parkings [get]
 func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 
 	const handler = "TeslaMateAPICarsParkingsV2"
@@ -295,6 +311,19 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 // plus an SOC + outside-temp time-series sampled from positions during the
 // window. The path segment is `preceding_drive_id` — the drive_id that
 // preceded (and ended) the parking session.
+//
+// @Summary      Parking session detail
+// @Description  Returns parking metadata plus a sparse SOC + outside-temp time-series during the window.
+// @Tags         v2
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID             path   int  true  "TeslaMate cars.id"
+// @Param        PrecedingDriveID  path   int  true  "drive_id of the drive that preceded the parking session"
+// @Success      200  {object}  dto.V2ParkingDetailResponse
+// @Failure      400  {object}  dto.ErrorEnvelope
+// @Failure      404  {object}  dto.ErrorEnvelope
+// @Failure      500  {object}  dto.ErrorEnvelope
+// @Router       /api/v2/cars/{CarID}/parkings/{PrecedingDriveID} [get]
 func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 
 	const handler = "TeslaMateAPICarsParkingsDetailsV2"

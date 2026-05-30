@@ -3,9 +3,22 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
-// TeslaMateAPICarsV1 func
+// TeslaMateAPICarsV1 returns all cars (or one when CarID is set).
+//
+// @Summary      List cars
+// @Description  Returns every car TeslaMate tracks (with details / exterior / settings / stats).
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path      int  false  "TeslaMate cars.id; omit for all cars"
+// @Success      200    {object}  dto.V1CarsResponse
+// @Failure      401    {object}  dto.ErrorEnvelope  "missing/invalid bearer token"
+// @Router       /api/v1/cars      [get]
+// @Router       /api/v1/cars/{CarID} [get]
 func TeslaMateAPICarsV1(c *gin.Context) {
 
 	// define error messages
@@ -18,62 +31,8 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 		CarID = convertStringToInteger(ParamCarID)
 	}
 
-	// creating structs for /cars
-	// CarDetails struct - child of Cars
-	type CarDetails struct {
-		EID         int64       `json:"eid"`          // bigint
-		VID         int64       `json:"vid"`          // bigint
-		Vin         string      `json:"vin"`          // text
-		Model       NullString  `json:"model"`        // character varying(255)
-		TrimBadging NullString  `json:"trim_badging"` // text
-		Efficiency  NullFloat64 `json:"efficiency"`   // double precision
-	}
-	// CarExterior struct - child of Cars
-	type CarExterior struct {
-		ExteriorColor string `json:"exterior_color"` // text
-		SpoilerType   string `json:"spoiler_type"`   // text
-		WheelType     string `json:"wheel_type"`     // text
-	}
-	// CarSettings struct - child of Cars
-	type CarSettings struct {
-		SuspendMin          int  `json:"suspend_min"`            // int
-		SuspendAfterIdleMin int  `json:"suspend_after_idle_min"` // int
-		ReqNotUnlocked      bool `json:"req_not_unlocked"`       // bool
-		FreeSupercharging   bool `json:"free_supercharging"`     // bool
-		UseStreamingAPI     bool `json:"use_streaming_api"`      // bool
-	}
-	// TeslaMateDetails struct - child of Cars
-	type TeslaMateDetails struct {
-		InsertedAt string `json:"inserted_at"` // timestamp(0) without time zone
-		UpdatedAt  string `json:"updated_at"`  // timestamp(0) without time zone
-	}
-	// TeslaMateStats struct - child of Cars
-	type TeslaMateStats struct {
-		TotalCharges int `json:"total_charges"` // int
-		TotalDrives  int `json:"total_drives"`  // int
-		TotalUpdates int `json:"total_updates"` // int
-	}
-	// Cars struct - child of Data
-	type Cars struct {
-		CarID            int              `json:"car_id"`            // smallint
-		Name             NullString       `json:"name"`              // text (nullable)
-		CarDetails       CarDetails       `json:"car_details"`       // struct
-		CarExterior      CarExterior      `json:"car_exterior"`      // struct
-		CarSettings      CarSettings      `json:"car_settings"`      // struct
-		TeslaMateDetails TeslaMateDetails `json:"teslamate_details"` // struct
-		TeslaMateStats   TeslaMateStats   `json:"teslamate_stats"`   // struct
-	}
-	// Information struct - child of JSONData
-	type Data struct {
-		Cars []Cars `json:"cars"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
-	var CarsData []Cars
+	var CarsData []dto.V1Car
 
 	// totals are aggregated in a single GROUP BY pass per table and joined
 	// once per car, instead of three correlated COUNT(*) subqueries that
@@ -127,7 +86,7 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating car object based on struct
-		car := Cars{}
+		car := dto.V1Car{}
 
 		// scanning row and putting values into the car
 		err = rows.Scan(
@@ -180,8 +139,8 @@ func TeslaMateAPICarsV1(c *gin.Context) {
 
 	//
 	// build the data-blob
-	jsonData := JSONData{
-		Data{
+	jsonData := dto.V1CarsResponse{
+		Data: dto.V1CarsData{
 			Cars: CarsData,
 		},
 	}

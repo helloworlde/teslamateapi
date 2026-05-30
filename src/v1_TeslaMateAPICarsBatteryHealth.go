@@ -3,43 +3,24 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
-// TeslaMateAPICarsBatteryHealthV1 func
+// TeslaMateAPICarsBatteryHealthV1 returns derived battery-health metrics.
+//
+// @Summary      Battery health
+// @Description  Returns max/current range and capacity along with a derived health %.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path      int  true  "TeslaMate cars.id"
+// @Success      200    {object}  dto.V1BatteryHealthResponse
+// @Failure      401    {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/battery-health [get]
 func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	var CarsBatteryHealthError1 = "Unable to load battery health data."
 	CarID := convertStringToInteger(c.Param("CarID"))
-
-	// creating structs for /cars/<CarID>/battery-health
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// BatteryHealth struct - child of Data
-	type BatteryHealth struct {
-		MaxRange                float64 `json:"max_range"`                 // float64
-		CurrentRange            float64 `json:"current_range"`             // float64
-		MaxCapacity             float64 `json:"max_capacity"`              // float64
-		CurrentCapacity         float64 `json:"current_capacity"`          // float64
-		RatedEfficiency         float64 `json:"rated_efficiency"`          // float64
-		BatteryHealthPercentage float64 `json:"battery_health_percentage"` // float64
-	}
-	// TeslaMateUnits struct - child of Data
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`      // string
-		UnitsTemperature string `json:"unit_of_temperature"` // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car            Car            `json:"car"`
-		BatteryHealth  BatteryHealth  `json:"battery_health"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
 
 	// creating required vars
 	var (
@@ -273,7 +254,7 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 	}
 
 	// Create battery health object
-	batteryHealth := BatteryHealth{
+	batteryHealth := dto.V1BatteryHealth{
 		CurrentCapacity:         CurrentCapacity,
 		MaxCapacity:             MaxCapacity,
 		RatedEfficiency:         Efficiency,
@@ -300,14 +281,14 @@ func TeslaMateAPICarsBatteryHealthV1(c *gin.Context) {
 		batteryHealth.CurrentRange = kilometersToMiles(batteryHealth.CurrentRange)
 	}
 
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := dto.V1BatteryHealthResponse{
+		Data: dto.V1BatteryHealthData{
+			Car: dto.Car{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			BatteryHealth: batteryHealth,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

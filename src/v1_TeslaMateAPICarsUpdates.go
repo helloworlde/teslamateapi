@@ -3,9 +3,23 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	"github.com/tobiasehlert/teslamateapi/src/dto"
 )
 
-// TeslaMateAPICarsUpdatesV1 func
+// TeslaMateAPICarsUpdatesV1 returns paginated software-update history.
+//
+// @Summary      List firmware updates
+// @Description  Returns software-update history for the car.
+// @Tags         v1
+// @Security     BearerAuth
+// @Produce      json
+// @Param        CarID  path   int  true   "TeslaMate cars.id"
+// @Param        page   query  int  false  "1-indexed page"  default(1)
+// @Param        show   query  int  false  "page size"       default(100)
+// @Success      200    {object}  dto.V1UpdatesResponse
+// @Failure      401    {object}  dto.ErrorEnvelope
+// @Router       /api/v1/cars/{CarID}/updates [get]
 func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
 	// define error messages
@@ -17,33 +31,10 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
 	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
 
-	// creating structs for /cars/<CarID>/updates
-	// Car struct - child of Data
-	type Car struct {
-		CarID   int        `json:"car_id"`   // smallint
-		CarName NullString `json:"car_name"` // text (nullable)
-	}
-	// Updates struct - child of Data
-	type Updates struct {
-		UpdateID  int    `json:"update_id"`  // smallint
-		StartDate string `json:"start_date"` // string
-		EndDate   string `json:"end_date"`   // string
-		Version   string `json:"version"`    // string
-	}
-	// Data struct - child of JSONData
-	type Data struct {
-		Car     Car       `json:"car"`
-		Updates []Updates `json:"updates"`
-	}
-	// JSONData struct - main
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
-
 	// creating required vars
 	var (
-		UpdatesData []Updates
-		CarData     Car
+		UpdatesData []dto.V1Update
+		CarData     dto.Car
 	)
 
 	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
@@ -83,7 +74,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	for rows.Next() {
 
 		// creating update object based on struct
-		update := Updates{}
+		update := dto.V1Update{}
 
 		// scanning row and putting values into the update
 		err = rows.Scan(
@@ -118,8 +109,8 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 
 	//
 	// build the data-blob
-	jsonData := JSONData{
-		Data{
+	jsonData := dto.V1UpdatesResponse{
+		Data: dto.V1UpdatesData{
 			Car:     CarData,
 			Updates: UpdatesData,
 		},
