@@ -5,7 +5,10 @@ on:
     branches:
       - main
     paths:
-      - "src/**"
+      - "cmd/**"
+      - "internal/**"
+      - "pkg/**"
+      - "docs/**"
       - "Dockerfile"
       - "go.mod"
       - "go.sum"

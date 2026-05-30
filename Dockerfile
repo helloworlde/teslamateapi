@@ -15,12 +15,10 @@ COPY internal/ ./internal/
 COPY pkg/ ./pkg/
 COPY docs/ ./docs/
 
-# install swag CLI (matches the swaggo runtime locked in go.mod), regenerate
-# the OpenAPI spec from in-source annotations, then compile. swag init writes
-# docs/swagger.{go,yaml,json}; docs/embed.go embeds the YAML at build time.
-RUN go install github.com/swaggo/swag/cmd/swag@v1.16.4 && \
-  go mod download && \
-  /go/bin/swag init --dir cmd/teslamateapi,internal,pkg/dto -g main.go -o docs --outputTypes go,yaml,json --parseDependency --parseInternal && \
+# docs/swagger.{go,yaml,json} are committed and embedded by docs/embed.go,
+# so the build stage just needs `go build`. Skipping `swag init` here keeps
+# the QEMU-emulated arm/v7 image build from blowing past CI memory limits.
+RUN go mod download && \
   CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
   -X 'main.apiVersion=${apiVersion}' \

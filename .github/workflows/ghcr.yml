@@ -11,7 +11,10 @@ on:
       - "Dockerfile"
       - "go.mod"
       - "go.sum"
-      - "src/**"
+      - "cmd/**"
+      - "internal/**"
+      - "pkg/**"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
