@@ -169,12 +169,44 @@ func main() {
 			v1.GET("/globalsettings", TeslaMateAPIGlobalsettingsV1)
 		}
 
+		// TeslaMateApi /api/v2 endpoints — additive only; v1 routes above are
+		// frozen for backwards compatibility. v2 supplements v1 with
+		// parking sessions and lifetime/period/by-geofence aggregates.
+		// (Charges-list charger-shape fields used to live here as a
+		// separate endpoint; they are now folded into v1
+		// /api/v1/cars/:CarID/charges directly.)
+		v2 := api.Group("/v2")
+		{
+			// TeslaMateApi /api/v2 root
+			v2.GET("/", func(c *gin.Context) {
+				c.JSON(http.StatusOK, gin.H{"message": "TeslaMateApi v2 running..", "path": v2.BasePath()})
+			})
+
+			// /api/v2/cars/:CarID/parkings — parking sessions derived from
+			// gaps between adjacent drives. Has list + detail with optional
+			// SOC time-series.
+			v2.GET("/cars/:CarID/parkings", TeslaMateAPICarsParkingsV2)
+			v2.GET("/cars/:CarID/parkings/:ParkingID", TeslaMateAPICarsParkingsDetailsV2)
+
+			// /api/v2/cars/:CarID/stats/* — aggregates that v1 forces clients
+			// to compute by walking every drive/charge.
+			v2.GET("/cars/:CarID/stats/lifetime", TeslaMateAPICarsStatsLifetimeV2)
+			v2.GET("/cars/:CarID/stats/summary", TeslaMateAPICarsStatsSummaryV2)
+			v2.GET("/cars/:CarID/stats/by-geofence", TeslaMateAPICarsStatsByGeofenceV2)
+		}
+
 		// /api/ping endpoint
 		api.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
 
 		// health endpoints for kubernetes
 		api.GET("/healthz", healthz)
 		api.GET("/readyz", readyz)
+
+		// /api/docs renders the Scalar UI; /api/openapi.yaml serves the raw
+		// spec embedded into the binary. Both intentionally bypass the bearer
+		// auth middleware so they're reachable from a browser without a token.
+		api.GET("/docs", scalarDocs)
+		api.GET("/openapi.yaml", openapiYAML)
 	}
 
 	// TeslaMateApi endpoints (before versioning)

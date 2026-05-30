@@ -187,6 +187,53 @@ More detailed documentation of every endpoint will come..
 - GET `/api/ping`
 - GET `/api/readyz`
 
+#### v2 endpoints (additive — v1 is unchanged)
+
+`/api/v2` ships extra aggregates that v1 forces clients to compute by walking
+every drive / charge, plus a parking-session view derived from gaps between
+adjacent drives.
+
+- GET `/api/v2`
+- GET `/api/v2/cars/:CarID/charges`
+  - Same shape as v1 `/charges` plus per-row `fast_charger_present`,
+    `fast_charger_brand`, `fast_charger_type`, `peak_charger_power`,
+    `peak_charger_voltage` aggregated from the `charges` time-series table.
+  - Supported parameters: `startDate`, `endDate`, `page`, `show`.
+- GET `/api/v2/cars/:CarID/parkings`
+  - Parking sessions = gap between drive N's `end_date` and drive N+1's
+    `start_date`. `parking_id` equals the preceding drive's id (stable). The
+    last row is "in progress" when no following drive exists yet.
+  - Returns: `start_date`, `end_date` (nullable), `duration_min`,
+    `address`, `geofence_id`, `latitude`, `longitude`,
+    `start_battery_level`, `end_battery_level`, `usable_battery_drop`,
+    `energy_consumed_kwh`, `had_charging`, `outside_temp_avg`.
+  - Supported parameters: `startDate`, `endDate`, `minDuration` (minutes),
+    `page`, `show`.
+- GET `/api/v2/cars/:CarID/parkings/:ParkingID`
+  - Single parking session plus a `parking_details` SOC + outside-temp
+    time-series sampled from `positions` during the window (capped at 500
+    rows).
+- GET `/api/v2/cars/:CarID/stats/lifetime`
+  - Single roundtrip with since-ownership totals over drives, charges, and
+    derived parking sessions: `count`, `total_distance`,
+    `total_duration_min`, `total_energy_consumed_kwh`, `avg_consumption`,
+    `best_consumption`, `longest_distance`, `max_speed`,
+    `total_energy_added_kwh`, `total_cost`, `fast_charge_count`,
+    `fast_charge_energy_kwh`, `peak_power_max_kw`,
+    `total_vampire_drain_kwh`.
+- GET `/api/v2/cars/:CarID/stats/summary`
+  - Aggregates bucketed by `period=day|week|month|year` (default `month`),
+    bucket boundaries land in the user's timezone. Each bucket carries
+    drive / charge / parking aggregates so a single response feeds a bar
+    or line chart directly. Empty buckets are omitted.
+  - Supported parameters: `period`, `startDate`, `endDate`.
+- GET `/api/v2/cars/:CarID/stats/by-geofence`
+  - For each geofence the car has touched: `drives_arrived`,
+    `drives_departed`, `charges_count`, `charges_energy_added_kwh`,
+    `charges_cost`, `parkings_count`, `parkings_total_duration_min`. Sorted
+    by total activity.
+  - Supported parameters: `startDate`, `endDate`.
+
 > [!TIP]
 > Canonical UTC format in RFC3339, e.g. `2006-01-02T15:04:05Z` or `2006-01-02T15:04:05+07:00`
 
