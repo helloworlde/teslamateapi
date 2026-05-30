@@ -58,8 +58,15 @@ func main() {
 		log.Printf("[info] TeslaMateApi running in debug mode.")
 	}
 
-	// getting app-settings from environment
-	appUsersTimezone, _ = time.LoadLocation(getEnv("TZ", "Europe/Berlin"))
+	// getting app-settings from environment. A bad TZ name returns nil and we'd
+	// later panic on time.Time.In(nil); fall back to UTC and log loudly instead.
+	tzName := getEnv("TZ", "Europe/Berlin")
+	loc, err := time.LoadLocation(tzName)
+	if err != nil || loc == nil {
+		log.Printf("[warning] TZ=%q not loadable (%v); falling back to UTC", tzName, err)
+		loc = time.UTC
+	}
+	appUsersTimezone = loc
 	if gin.IsDebugging() {
 		log.Println("[debug] TeslaMateApi appUsersTimezone:", appUsersTimezone)
 	}
@@ -186,7 +193,7 @@ func main() {
 			// gaps between adjacent drives. Has list + detail with optional
 			// SOC time-series.
 			v2.GET("/cars/:CarID/parkings", TeslaMateAPICarsParkingsV2)
-			v2.GET("/cars/:CarID/parkings/:ParkingID", TeslaMateAPICarsParkingsDetailsV2)
+			v2.GET("/cars/:CarID/parkings/:PrecedingDriveID", TeslaMateAPICarsParkingsDetailsV2)
 
 			// /api/v2/cars/:CarID/stats/* — aggregates that v1 forces clients
 			// to compute by walking every drive/charge.
@@ -305,6 +312,41 @@ func initDBconnection() {
 func TeslaMateAPIHandleErrorResponse(c *gin.Context, s1 string, s2 string, s3 string) {
 	log.Println("[error] " + s1 + " - (" + c.Request.RequestURI + "). " + s2 + "; " + s3)
 	c.JSON(http.StatusOK, gin.H{"error": s2})
+}
+
+// v2HandleErrorResponse emits a real HTTP status code instead of the upstream-compat
+// 200+{error} envelope. v1 handlers must keep the old shape; v2 handlers should use this.
+func v2HandleErrorResponse(c *gin.Context, handler string, httpCode int, message string, detail string) {
+	log.Println("[error] " + handler + " - (" + c.Request.RequestURI + "). " + message + "; " + detail)
+	c.JSON(httpCode, gin.H{"error": message})
+}
+
+// v2RequirePositiveIntParam parses a path/query integer with strict validation:
+// non-numeric or non-positive values respond 400 and return ok=false. Used by
+// every v2 handler to avoid silently coercing garbage to 0 (which used to run
+// the SQL with an invalid id).
+func v2RequirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bool) {
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < 1 {
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, name+" is required and must be a positive integer.", "got: "+raw)
+		return 0, false
+	}
+	return v, true
+}
+
+// v2OptionalIntInRange parses a query integer with a default + min/max clamp.
+// Empty string yields the default. Non-numeric or out-of-range values respond 400.
+func v2OptionalIntInRange(c *gin.Context, handler, name, raw string, def, min, max int) (int, bool) {
+	if raw == "" {
+		return def, true
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < min || v > max {
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest,
+			fmt.Sprintf("%s must be an integer in [%d, %d].", name, min, max), "got: "+raw)
+		return 0, false
+	}
+	return v, true
 }
 
 func TeslaMateAPIHandleOtherResponse(c *gin.Context, httpCode int, s string, j interface{}) {

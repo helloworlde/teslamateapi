@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -24,10 +25,14 @@ import (
 // from the timeline they want to display.
 func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 
+	const handler = "TeslaMateAPICarsStatsSummaryV2"
 	var ErrMsg = "Unable to load summary stats."
 	var ErrDate = "Invalid date format."
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, ok := v2RequirePositiveIntParam(c, handler, "car_id", c.Param("CarID"))
+	if !ok {
+		return
+	}
 
 	period := c.DefaultQuery("period", "month")
 	pgUnit := ""
@@ -41,19 +46,19 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 	case "year":
 		pgUnit = "year"
 	default:
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", "Invalid period.",
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, "Invalid period.",
 			"period must be one of: day, week, month, year")
 		return
 	}
 
-	parsedStartDate, err := parseDateParam(c.Query("startDate"))
+	parsedStartDate, err := parseDateParam(c.Query("start_date"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", ErrDate, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ErrDate, err.Error())
 		return
 	}
-	parsedEndDate, err := parseDateParam(c.Query("endDate"))
+	parsedEndDate, err := parseDateParam(c.Query("end_date"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", ErrDate, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ErrDate, err.Error())
 		return
 	}
 
@@ -145,7 +150,13 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 				COUNT(*) AS cnt,
 				SUM(charge_energy_added) AS added,
 				SUM(cost) AS cost,
-				SUM(CASE WHEN EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present) THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) AS fast_ratio
+				-- ratio is energy-weighted: fast-charged kWh / total kWh in the bucket
+				COALESCE(
+					SUM(charge_energy_added) FILTER (
+						WHERE EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present)
+					) / NULLIF(SUM(charge_energy_added), 0),
+					0
+				) AS fast_ratio
 			FROM charging_processes cp
 			WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %s
 			GROUP BY 1
@@ -198,13 +209,16 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 			SELECT bk FROM pk
 		)
 		SELECT
-			k.bk AS bucket_start,
-			(k.bk + (CASE $2
+			-- date_trunc on (timestamptz AT TIME ZONE tz) returns a tz-naive timestamp
+			-- representing wall-clock in user tz; cast back AT TIME ZONE tz so pq scans
+			-- a real UTC instant. getTimeInTimeZone then formats it in user tz exactly once.
+			(k.bk AT TIME ZONE $3) AS bucket_start,
+			((k.bk + (CASE $2
 				WHEN 'day' THEN INTERVAL '1 day'
 				WHEN 'week' THEN INTERVAL '1 week'
 				WHEN 'month' THEN INTERVAL '1 month'
 				WHEN 'year' THEN INTERVAL '1 year'
-			END)) AS bucket_end,
+			END)) AT TIME ZONE $3) AS bucket_end,
 			COALESCE(drv.cnt, 0),
 			COALESCE(drv.dist, 0),
 			COALESCE(drv.dur, 0),
@@ -229,7 +243,7 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", ErrMsg, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -260,7 +274,7 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 			&UnitsTemperature,
 			&CarName,
 		); err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", ErrMsg, err.Error())
+			v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 			return
 		}
 
@@ -278,11 +292,11 @@ func TeslaMateAPICarsStatsSummaryV2(c *gin.Context) {
 		buckets = append(buckets, b)
 	}
 	if err = rows.Err(); err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsSummaryV2", ErrMsg, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 
-	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsStatsSummaryV2", JSONData{
+	TeslaMateAPIHandleSuccessResponse(c, handler, JSONData{
 		Data: Data{
 			Car:     Car{CarID: CarID, CarName: CarName},
 			Period:  period,

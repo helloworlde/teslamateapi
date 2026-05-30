@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -17,9 +19,13 @@ import (
 // /parkings endpoint uses, so the numbers reconcile.
 func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 
+	const handler = "TeslaMateAPICarsStatsLifetimeV2"
 	var ErrMsg = "Unable to load lifetime stats."
 
-	CarID := convertStringToInteger(c.Param("CarID"))
+	CarID, ok := v2RequirePositiveIntParam(c, handler, "car_id", c.Param("CarID"))
+	if !ok {
+		return
+	}
 
 	type DrivesAgg struct {
 		Count                  int     `json:"count"`
@@ -75,6 +81,9 @@ func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 	)
 
 	// One CTE per aggregate. Postgres flattens trivial CTEs since v12.
+	// The outer SELECT anchors on a single-row VALUES so the response is well-formed
+	// even when the car has no completed drives / charges / parkings yet (otherwise
+	// the empty `d` CTE would yield zero rows and the handler would return ErrNoRows).
 	query := `
 		WITH d AS (
 			SELECT
@@ -162,12 +171,15 @@ func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 		SELECT
 			(SELECT name FROM cars WHERE id = $1),
 			d.since,
-			d.cnt, d.total_km, d.total_dur, d.total_kwh, d.avg_consumption, COALESCE(d.best_consumption, 0), d.longest_km, d.max_speed,
-			ch.cnt, ch.total_added, ch.total_used, ch.total_cost, ch.fast_count, ch.fast_energy, ch.peak_power,
-			pk.cnt, pk.total_dur, pk.total_drop,
+			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
+			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.longest_km, 0), COALESCE(d.max_speed, 0),
+			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
+			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0), COALESCE(ch.peak_power, 0),
+			COALESCE(pk.cnt, 0), COALESCE(pk.total_dur, 0), COALESCE(pk.total_drop, 0),
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
-		FROM d
+		FROM (VALUES (1)) anchor(_)
+		LEFT JOIN d ON true
 		LEFT JOIN ch ON true
 		LEFT JOIN pk ON true;`
 
@@ -182,7 +194,7 @@ func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 		&UnitsTemperature,
 	)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsLifetimeV2", ErrMsg, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 
@@ -202,7 +214,7 @@ func TeslaMateAPICarsStatsLifetimeV2(c *gin.Context) {
 		Since = NullString(getTimeInTimeZone(string(Since)))
 	}
 
-	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsStatsLifetimeV2", JSONData{
+	TeslaMateAPIHandleSuccessResponse(c, handler, JSONData{
 		Data: Lifetime{
 			Car:      Car{CarID: CarID, CarName: CarName},
 			Since:    Since,

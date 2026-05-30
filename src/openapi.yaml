@@ -261,40 +261,49 @@ paths:
       description: |
         TeslaMate stores no parking table; sessions are derived as the time
         between consecutive `drives.end_date` and the next `drives.start_date`.
-        Active (open-ended) sessions return `end_date: null`.
+        Active (open-ended) sessions return `end_date: null`. The session is
+        keyed by `preceding_drive_id` — the drive whose end starts the parking.
       parameters:
         - { $ref: "#/components/parameters/CarID" }
         - { $ref: "#/components/parameters/Page" }
         - { $ref: "#/components/parameters/Show" }
-        - { $ref: "#/components/parameters/StartDate" }
-        - { $ref: "#/components/parameters/EndDate" }
+        - { $ref: "#/components/parameters/V2StartDate" }
+        - { $ref: "#/components/parameters/V2EndDate" }
+        - { $ref: "#/components/parameters/V2MinDuration" }
       responses:
         "200":
           description: Parking list
           content:
             application/json:
               schema: { $ref: "#/components/schemas/V2ParkingsResponse" }
-  /api/v2/cars/{CarID}/parkings/{ParkingID}:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+  /api/v2/cars/{CarID}/parkings/{PrecedingDriveID}:
     get:
       tags: [v2]
       summary: Parking detail with sampled environment points
       description: |
-        `ParkingID` is the upstream `drives.id` of the drive that ends the
-        session. Returns sampled `positions` rows during the parking window
-        (battery / temp / usable level) for vampire-drain analysis.
+        `PrecedingDriveID` is the upstream `drives.id` of the drive that ends
+        (and so starts the parking after) the session. Returns sampled
+        `positions` rows during the parking window (battery / temp / usable
+        level) for vampire-drain analysis.
       parameters:
         - { $ref: "#/components/parameters/CarID" }
         - in: path
-          name: ParkingID
+          name: PrecedingDriveID
           required: true
-          schema: { type: integer }
+          schema: { type: integer, minimum: 1 }
       responses:
         "200":
           description: Parking with sampled points
           content:
             application/json:
               schema: { $ref: "#/components/schemas/V2ParkingDetailResponse" }
-        "404": { description: Unknown ParkingID }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
 
   # ───────────────────────────────────────────────────────── v2 stats ──
   /api/v2/cars/{CarID}/stats/lifetime:
@@ -308,6 +317,9 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/V2LifetimeResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
   /api/v2/cars/{CarID}/stats/summary:
     get:
       tags: [v2]
@@ -315,7 +327,7 @@ paths:
       description: |
         Aggregate drives / charges / parkings into time buckets. `period`
         controls the bucket size (`day`, `week`, `month`, `year`). Optional
-        `startDate` / `endDate` clip the window.
+        `start_date` / `end_date` clip the window.
       parameters:
         - { $ref: "#/components/parameters/CarID" }
         - in: query
@@ -324,25 +336,34 @@ paths:
             type: string
             enum: [day, week, month, year]
             default: month
-        - { $ref: "#/components/parameters/StartDate" }
-        - { $ref: "#/components/parameters/EndDate" }
+        - { $ref: "#/components/parameters/V2StartDate" }
+        - { $ref: "#/components/parameters/V2EndDate" }
       responses:
         "200":
           description: Bucketed summary
           content:
             application/json:
               schema: { $ref: "#/components/schemas/V2SummaryResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
   /api/v2/cars/{CarID}/stats/by-geofence:
     get:
       tags: [v2]
       summary: Per-geofence activity totals
-      parameters: [{ $ref: "#/components/parameters/CarID" }]
+      parameters:
+        - { $ref: "#/components/parameters/CarID" }
+        - { $ref: "#/components/parameters/V2StartDate" }
+        - { $ref: "#/components/parameters/V2EndDate" }
       responses:
         "200":
           description: Geofence totals
           content:
             application/json:
               schema: { $ref: "#/components/schemas/V2ByGeofenceResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
 
 components:
   securitySchemes:
@@ -375,6 +396,43 @@ components:
       name: endDate
       schema: { type: string, format: date-time }
       description: ISO-8601 inclusive upper bound
+    V2StartDate:
+      in: query
+      name: start_date
+      schema: { type: string, format: date-time }
+      description: ISO-8601 inclusive lower bound (UTC or with offset). v2 uses snake_case.
+    V2EndDate:
+      in: query
+      name: end_date
+      schema: { type: string, format: date-time }
+      description: ISO-8601 inclusive upper bound. v2 uses snake_case.
+    V2MinDuration:
+      in: query
+      name: min_duration
+      schema: { type: integer, minimum: 0 }
+      description: Drop sessions shorter than N minutes (v2 parkings list).
+
+  responses:
+    BadRequest:
+      description: Invalid path or query parameter
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Bearer token missing or invalid
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource does not exist
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    InternalServerError:
+      description: Database or internal failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
     NullableString:
@@ -383,6 +441,25 @@ components:
       oneOf: [{ type: integer }, { type: "null" }]
     NullableFloat:
       oneOf: [{ type: number }, { type: "null" }]
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    Pagination:
+      type: object
+      description: |
+        Echoes the page/show the request asked for, plus the total matching
+        rows and a precomputed has_next so clients can stop paging without
+        making a probe request.
+      properties:
+        page:        { type: integer, minimum: 1 }
+        show:        { type: integer, minimum: 1 }
+        total_count: { type: integer, minimum: 0 }
+        has_next:    { type: boolean }
+      required: [page, show, total_count, has_next]
 
     Car:
       type: object

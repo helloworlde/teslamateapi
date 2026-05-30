@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -14,19 +15,23 @@ import (
 // dropped — those typically represent a driveby or in-transit position.
 func TeslaMateAPICarsStatsByGeofenceV2(c *gin.Context) {
 
+	const handler = "TeslaMateAPICarsStatsByGeofenceV2"
 	var ErrMsg = "Unable to load by-geofence stats."
 	var ErrDate = "Invalid date format."
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-
-	parsedStartDate, err := parseDateParam(c.Query("startDate"))
-	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", ErrDate, err.Error())
+	CarID, ok := v2RequirePositiveIntParam(c, handler, "car_id", c.Param("CarID"))
+	if !ok {
 		return
 	}
-	parsedEndDate, err := parseDateParam(c.Query("endDate"))
+
+	parsedStartDate, err := parseDateParam(c.Query("start_date"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", ErrDate, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ErrDate, err.Error())
+		return
+	}
+	parsedEndDate, err := parseDateParam(c.Query("end_date"))
+	if err != nil {
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ErrDate, err.Error())
 		return
 	}
 
@@ -154,7 +159,7 @@ func TeslaMateAPICarsStatsByGeofenceV2(c *gin.Context) {
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", ErrMsg, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -181,17 +186,17 @@ func TeslaMateAPICarsStatsByGeofenceV2(c *gin.Context) {
 			&UnitsTemperature,
 			&CarName,
 		); err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", ErrMsg, err.Error())
+			v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 			return
 		}
 		out = append(out, row)
 	}
 	if err = rows.Err(); err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", ErrMsg, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 
-	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsStatsByGeofenceV2", JSONData{
+	TeslaMateAPIHandleSuccessResponse(c, handler, JSONData{
 		Data: Data{
 			Car:       Car{CarID: CarID, CarName: CarName},
 			Geofences: out,

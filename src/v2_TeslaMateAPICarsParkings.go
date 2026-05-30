@@ -1,7 +1,10 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -12,9 +15,10 @@ import (
 // (drives[N].end_date, drives[N+1].start_date) on the same car, where drives
 // are ordered by start_date ASC.
 //
-// parking_id = drives[N].id (the drive that *preceded* the parking session).
-// This is stable, monotonic, and uniquely identifies the session even after
-// new drives are appended.
+// preceding_drive_id = drives[N].id (the drive that *preceded* the parking
+// session). It's stable, monotonic, and uniquely identifies the session even
+// after new drives are appended — clients use this id as the path segment in
+// /parkings/{preceding_drive_id}.
 //
 // Energy consumed during parking is approximated by SOC drop * efficiency *
 // usable nominal capacity. We expose:
@@ -28,33 +32,39 @@ import (
 // turns the list into an 11s query. The detail endpoint still returns the
 // same outside_temp samples (and aggregates) for clients that need it.
 //
-// query params: startDate / endDate / minDuration (minutes) / page / show.
+// query params: start_date / end_date / min_duration (minutes) / page / show.
 func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 
+	const handler = "TeslaMateAPICarsParkingsV2"
 	var ParkingsErr1 = "Unable to load parkings."
 	var ParkingsErr2 = "Invalid date format."
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	ResultPage := convertStringToInteger(c.DefaultQuery("page", "1"))
-	ResultShow := convertStringToInteger(c.DefaultQuery("show", "100"))
+	CarID, ok := v2RequirePositiveIntParam(c, handler, "car_id", c.Param("CarID"))
+	if !ok {
+		return
+	}
+	ResultPage, ok := v2OptionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, 1<<31-1)
+	if !ok {
+		return
+	}
+	ResultShow, ok := v2OptionalIntInRange(c, handler, "show", c.Query("show"), 100, 1, 10000)
+	if !ok {
+		return
+	}
+	minDuration, ok := v2OptionalIntInRange(c, handler, "min_duration", c.Query("min_duration"), 0, 0, 1<<31-1)
+	if !ok {
+		return
+	}
 
-	parsedStartDate, err := parseDateParam(c.Query("startDate"))
+	parsedStartDate, err := parseDateParam(c.Query("start_date"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsV2", ParkingsErr2, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ParkingsErr2, err.Error())
 		return
 	}
-	parsedEndDate, err := parseDateParam(c.Query("endDate"))
+	parsedEndDate, err := parseDateParam(c.Query("end_date"))
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsV2", ParkingsErr2, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusBadRequest, ParkingsErr2, err.Error())
 		return
-	}
-	minDurationParam := c.Query("minDuration")
-	minDuration := 0
-	if minDurationParam != "" {
-		minDuration = convertStringToInteger(minDurationParam)
-		if minDuration < 0 {
-			minDuration = 0
-		}
 	}
 
 	type Car struct {
@@ -62,28 +72,35 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		CarName NullString `json:"car_name"`
 	}
 	type Parking struct {
-		ParkingID            int         `json:"parking_id"`
-		StartDate            string      `json:"start_date"`
-		EndDate              NullString  `json:"end_date"`
-		DurationMin          int         `json:"duration_min"`
-		DurationStr          string      `json:"duration_str"`
-		Address              NullString  `json:"address"`
-		GeofenceID           NullInt64   `json:"geofence_id"`
-		Latitude             NullFloat64 `json:"latitude"`
-		Longitude            NullFloat64 `json:"longitude"`
-		StartBatteryLevel    NullInt64   `json:"start_battery_level"`
-		EndBatteryLevel      NullInt64   `json:"end_battery_level"`
-		UsableBatteryDrop    int         `json:"usable_battery_drop"`
-		EnergyConsumedKWh    NullFloat64 `json:"energy_consumed_kwh"`
-		HadCharging          bool        `json:"had_charging"`
+		PrecedingDriveID  int         `json:"preceding_drive_id"`
+		StartDate         string      `json:"start_date"`
+		EndDate           NullString  `json:"end_date"`
+		DurationMin       int         `json:"duration_min"`
+		DurationStr       string      `json:"duration_str"`
+		Address           NullString  `json:"address"`
+		GeofenceID        NullInt64   `json:"geofence_id"`
+		Latitude          NullFloat64 `json:"latitude"`
+		Longitude         NullFloat64 `json:"longitude"`
+		StartBatteryLevel NullInt64   `json:"start_battery_level"`
+		EndBatteryLevel   NullInt64   `json:"end_battery_level"`
+		UsableBatteryDrop int         `json:"usable_battery_drop"`
+		EnergyConsumedKWh NullFloat64 `json:"energy_consumed_kwh"`
+		HadCharging       bool        `json:"had_charging"`
 	}
 	type TeslaMateUnits struct {
 		UnitsLength      string `json:"unit_of_length"`
 		UnitsTemperature string `json:"unit_of_temperature"`
 	}
+	type Pagination struct {
+		Page       int  `json:"page"`
+		Show       int  `json:"show"`
+		TotalCount int  `json:"total_count"`
+		HasNext    bool `json:"has_next"`
+	}
 	type Data struct {
 		Car            Car            `json:"car"`
 		Parkings       []Parking      `json:"parkings"`
+		Pagination     Pagination     `json:"pagination"`
 		TeslaMateUnits TeslaMateUnits `json:"units"`
 	}
 	type JSONData struct {
@@ -96,12 +113,8 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	if ResultPage > 0 {
-		ResultPage--
-	} else {
-		ResultPage = 0
-	}
-	ResultPage = (ResultPage * ResultShow)
+	// 1-indexed page → 0-indexed offset. Validation guarantees ResultPage >= 1.
+	offset := (ResultPage - 1) * ResultShow
 
 	// Window functions on drives give us each drive's "next start" — that pair
 	// (end_date, next_start) is the parking window. The end_position of the
@@ -161,34 +174,37 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		LEFT JOIN geofences geofence ON geofence.id = dp.park_geofence_id
 		WHERE 1=1`
 
-	var queryParams []any
-	queryParams = append(queryParams, CarID)
+	// Build a single filter clause shared by both the page query and the
+	// total_count query so the row count exactly matches what would appear if
+	// the client paged through every page.
+	var filterClauses string
+	filterParams := []any{CarID}
 	paramIndex := 2
 
 	if parsedStartDate != "" {
-		query += fmt.Sprintf(" AND dp.park_start >= $%d", paramIndex)
-		queryParams = append(queryParams, parsedStartDate)
+		filterClauses += fmt.Sprintf(" AND dp.park_start >= $%d", paramIndex)
+		filterParams = append(filterParams, parsedStartDate)
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND (dp.park_end IS NULL OR dp.park_end <= $%d)", paramIndex)
-		queryParams = append(queryParams, parsedEndDate)
+		filterClauses += fmt.Sprintf(" AND (dp.park_end IS NULL OR dp.park_end <= $%d)", paramIndex)
+		filterParams = append(filterParams, parsedEndDate)
 		paramIndex++
 	}
 	if minDuration > 0 {
-		query += fmt.Sprintf(` AND COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int >= $%d`, paramIndex)
-		queryParams = append(queryParams, minDuration)
+		filterClauses += fmt.Sprintf(` AND COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int >= $%d`, paramIndex)
+		filterParams = append(filterParams, minDuration)
 		paramIndex++
 	}
 
-	query += fmt.Sprintf(`
+	query += filterClauses + fmt.Sprintf(`
 		ORDER BY dp.park_start DESC
 		LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
-	queryParams = append(queryParams, ResultShow, ResultPage)
+	queryParams := append(append([]any{}, filterParams...), ResultShow, offset)
 
 	rows, err := db.Query(query, queryParams...)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsV2", ParkingsErr1, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -196,7 +212,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 	for rows.Next() {
 		park := Parking{}
 		err = rows.Scan(
-			&park.ParkingID,
+			&park.PrecedingDriveID,
 			&park.StartDate,
 			&park.EndDate,
 			&park.DurationMin,
@@ -215,7 +231,7 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 			&CarName,
 		)
 		if err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsV2", ParkingsErr1, err.Error())
+			v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 			return
 		}
 
@@ -228,7 +244,26 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 	}
 
 	if err = rows.Err(); err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsV2", ParkingsErr1, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
+		return
+	}
+
+	// Total-count query uses the identical filter clauses (without LIMIT/OFFSET)
+	// so has_next is exact even when the page is partially full or empty.
+	countQuery := `
+		WITH drive_pairs AS (
+			SELECT
+				d.id AS drive_id,
+				d.end_date AS park_start,
+				LEAD(d.start_date) OVER w AS park_end
+			FROM drives d
+			WHERE d.car_id = $1 AND d.end_date IS NOT NULL
+			WINDOW w AS (PARTITION BY d.car_id ORDER BY d.start_date ASC)
+		)
+		SELECT COUNT(*) FROM drive_pairs dp WHERE 1=1` + filterClauses
+	var totalCount int
+	if err := db.QueryRow(countQuery, filterParams...).Scan(&totalCount); err != nil {
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 		return
 	}
 
@@ -239,6 +274,12 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 				CarName: CarName,
 			},
 			Parkings: ParkingsData,
+			Pagination: Pagination{
+				Page:       ResultPage,
+				Show:       ResultShow,
+				TotalCount: totalCount,
+				HasNext:    offset+len(ParkingsData) < totalCount,
+			},
 			TeslaMateUnits: TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
@@ -246,19 +287,27 @@ func TeslaMateAPICarsParkingsV2(c *gin.Context) {
 		},
 	}
 
-	TeslaMateAPIHandleSuccessResponse(c, "TeslaMateAPICarsParkingsV2", jsonData)
+	TeslaMateAPIHandleSuccessResponse(c, handler, jsonData)
 }
 
 // TeslaMateAPICarsParkingsDetailsV2 returns the parking session metadata
 // plus an SOC + outside-temp time-series sampled from positions during the
-// window. The `parking_id` is the drive_id that preceded the parking session.
+// window. The path segment is `preceding_drive_id` — the drive_id that
+// preceded (and ended) the parking session.
 func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 
+	const handler = "TeslaMateAPICarsParkingsDetailsV2"
 	var ParkingsErr1 = "Unable to load parking."
 	var ParkingsErr2 = "Unable to load parking details."
 
-	CarID := convertStringToInteger(c.Param("CarID"))
-	ParkingID := convertStringToInteger(c.Param("ParkingID"))
+	CarID, ok := v2RequirePositiveIntParam(c, handler, "car_id", c.Param("CarID"))
+	if !ok {
+		return
+	}
+	PrecedingDriveID, ok := v2RequirePositiveIntParam(c, handler, "preceding_drive_id", c.Param("PrecedingDriveID"))
+	if !ok {
+		return
+	}
 
 	type Car struct {
 		CarID   int        `json:"car_id"`
@@ -271,7 +320,7 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		OutsideTemp  NullFloat64 `json:"outside_temp"`
 	}
 	type Parking struct {
-		ParkingID         int             `json:"parking_id"`
+		PrecedingDriveID  int             `json:"preceding_drive_id"`
 		StartDate         string          `json:"start_date"`
 		EndDate           NullString      `json:"end_date"`
 		DurationMin       int             `json:"duration_min"`
@@ -363,9 +412,9 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		LEFT JOIN geofences geofence ON geofence.id = dp.park_geofence_id
 		WHERE dp.drive_id = $2`
 
-	row := db.QueryRow(headQuery, CarID, ParkingID)
+	row := db.QueryRow(headQuery, CarID, PrecedingDriveID)
 	err := row.Scan(
-		&park.ParkingID,
+		&park.PrecedingDriveID,
 		&park.StartDate,
 		&park.EndDate,
 		&park.DurationMin,
@@ -384,8 +433,12 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		&UnitsTemperature,
 		&CarName,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		v2HandleErrorResponse(c, handler, http.StatusNotFound, "Parking not found.", fmt.Sprintf("car_id=%d preceding_drive_id=%d", CarID, PrecedingDriveID))
+		return
+	}
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsDetailsV2", ParkingsErr1, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr1, err.Error())
 		return
 	}
 
@@ -424,9 +477,9 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		ORDER BY p.date ASC
 		LIMIT 500;`
 
-	rows, err := db.Query(detailQuery, CarID, ParkingID)
+	rows, err := db.Query(detailQuery, CarID, PrecedingDriveID)
 	if err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsDetailsV2", ParkingsErr2, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr2, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -434,7 +487,7 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 	for rows.Next() {
 		d := ParkingDetail{}
 		if err = rows.Scan(&d.Date, &d.BatteryLevel, &d.UsableLevel, &d.OutsideTemp); err != nil {
-			TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsDetailsV2", ParkingsErr2, err.Error())
+			v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr2, err.Error())
 			return
 		}
 		if UnitsTemperature == "F" {
@@ -444,7 +497,7 @@ func TeslaMateAPICarsParkingsDetailsV2(c *gin.Context) {
 		details = append(details, d)
 	}
 	if err = rows.Err(); err != nil {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsParkingsDetailsV2", ParkingsErr2, err.Error())
+		v2HandleErrorResponse(c, handler, http.StatusInternalServerError, ParkingsErr2, err.Error())
 		return
 	}
 	park.Details = details

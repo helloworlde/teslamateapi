@@ -183,7 +183,7 @@ func TeslaMateAPICarsChargesV1(c *gin.Context) {
 				(array_agg(fast_charger_brand ORDER BY date) FILTER (WHERE fast_charger_present AND fast_charger_brand IS NOT NULL))[1] as fast_charger_brand,
 				(array_agg(fast_charger_type  ORDER BY date) FILTER (WHERE fast_charger_present AND fast_charger_type  IS NOT NULL))[1] as fast_charger_type,
 				(array_agg(charger_phases    ORDER BY date) FILTER (WHERE charger_phases    IS NOT NULL))[1] as charger_phases,
-				(array_agg(conn_charge_cable ORDER BY date) FILTER (WHERE conn_charge_cable IS NOT NULL))[1] as conn_charge_cable
+				(array_agg(conn_charge_cable ORDER BY date) FILTER (WHERE conn_charge_cable IS NOT NULL AND conn_charge_cable <> '<invalid>'))[1] as conn_charge_cable
 			FROM charges
 			WHERE charges.charging_process_id = charging_processes.id
 		) agg ON true
