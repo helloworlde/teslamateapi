@@ -23,9 +23,12 @@ type V2DrivesAgg struct {
 	TotalEnergyConsumedKWh float64         `json:"total_energy_consumed_kwh" example:"7825.0"`
 	AvgConsumption         float64         `json:"avg_consumption" example:"184.0"`
 	BestConsumption        float64         `json:"best_consumption" example:"120.0"`
+	WorstConsumption       float64         `json:"worst_consumption" example:"285.4"`
 	LongestDistance        float64         `json:"longest_distance" example:"800.0"`
 	ShortestDistance       float64         `json:"shortest_distance" example:"0.5"`
+	LongestDurationMin     int             `json:"longest_duration_min" example:"420"`
 	MaxSpeed               int             `json:"max_speed" example:"180"`
+	PeakDrivePowerKW       int             `json:"peak_drive_power_kw" example:"380"`
 	AvgSpeed               float64         `json:"avg_speed" example:"58.5"`
 	AvgDistancePerDrive    float64         `json:"avg_distance_per_drive" example:"22.4"`
 	AvgDurationPerDrive    float64         `json:"avg_duration_per_drive_min" example:"20.1"`
@@ -53,8 +56,16 @@ type V2ChargesAgg struct {
 	GeofencedChargeEnergyKWh    float64     `json:"geofenced_charge_energy_kwh" example:"9800.0"`
 	NonGeofencedChargeEnergyKWh float64     `json:"non_geofenced_charge_energy_kwh" example:"6700.0"`
 	FreeSuperchargingKWh    float64         `json:"free_supercharging_kwh" example:"125.0"`
-	PeakPowerMaxKW          int             `json:"peak_power_max_kw" example:"250"`
-	PeakVoltageMax          int             `json:"peak_voltage_max" example:"480"`
+	PeakPowerMaxKW              int         `json:"peak_power_max_kw" example:"250"`
+	PeakVoltageMax              int         `json:"peak_voltage_max" example:"480"`
+	LongestSessionDurationMin   int         `json:"longest_session_duration_min" example:"180"`
+	LargestSessionEnergyKWh     float64     `json:"largest_session_energy_kwh" example:"78.4"`
+	MaxSessionCost              float64     `json:"max_session_cost" example:"220.5"`
+	AvgSessionCost              float64     `json:"avg_session_cost" example:"12.3"`
+	AvgPowerACKW                float64     `json:"avg_power_ac_kw" example:"7.2"`
+	AvgPowerDCKW                float64     `json:"avg_power_dc_kw" example:"120.5"`
+	MaxPowerACKW                int         `json:"max_power_ac_kw" example:"11"`
+	MaxPowerDCKW                int         `json:"max_power_dc_kw" example:"250"`
 	MinStartBatteryLevel    nullable.Int64  `json:"min_start_battery_level" swaggertype:"integer" example:"3"`
 	MaxEndBatteryLevel      nullable.Int64  `json:"max_end_battery_level" swaggertype:"integer" example:"100"`
 	DistinctChargeLocations int             `json:"distinct_charge_locations" example:"42"`
@@ -80,15 +91,23 @@ type V2UpdatesAgg struct {
 }
 
 // V2Lifetime is the `data` field of V2LifetimeResponse.
+//
+// RecordedDays is distinct days observed across drives + charging_processes
+// — different from (now - since) because data may have gaps. AvgDaily /
+// AvgMonthly distance are server-computed against RecordedDays so clients
+// can render canonical figures without re-deriving them.
 type V2Lifetime struct {
-	Car      Car             `json:"car"`
-	CarMeta  V2CarMeta       `json:"car_meta"`
-	Since    nullable.String `json:"since" swaggertype:"string" example:"2020-01-01T00:00:00+01:00"`
-	Drives   V2DrivesAgg     `json:"drives"`
-	Charges  V2ChargesAgg    `json:"charges"`
-	Parkings V2ParkingsAgg   `json:"parkings"`
-	Updates  V2UpdatesAgg    `json:"updates"`
-	Units    TeslaMateUnits  `json:"units"`
+	Car                Car             `json:"car"`
+	CarMeta            V2CarMeta       `json:"car_meta"`
+	Since              nullable.String `json:"since" swaggertype:"string" example:"2020-01-01T00:00:00+01:00"`
+	RecordedDays       int             `json:"recorded_days" example:"612"`
+	AvgDailyDistance   float64         `json:"avg_daily_distance" example:"45.6"`
+	AvgMonthlyDistance float64         `json:"avg_monthly_distance" example:"1380.0"`
+	Drives             V2DrivesAgg     `json:"drives"`
+	Charges            V2ChargesAgg    `json:"charges"`
+	Parkings           V2ParkingsAgg   `json:"parkings"`
+	Updates            V2UpdatesAgg    `json:"updates"`
+	Units              TeslaMateUnits  `json:"units"`
 }
 
 // V2LifetimeResponse is the envelope for /api/v2/cars/{CarID}/stats/lifetime.

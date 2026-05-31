@@ -3410,6 +3410,18 @@ const docTemplate = `{
                     "type": "number",
                     "example": 38.6
                 },
+                "avg_power_ac_kw": {
+                    "type": "number",
+                    "example": 7.2
+                },
+                "avg_power_dc_kw": {
+                    "type": "number",
+                    "example": 120.5
+                },
+                "avg_session_cost": {
+                    "type": "number",
+                    "example": 12.3
+                },
                 "count": {
                     "type": "integer",
                     "example": 427
@@ -3438,13 +3450,33 @@ const docTemplate = `{
                     "type": "number",
                     "example": 9800
                 },
+                "largest_session_energy_kwh": {
+                    "type": "number",
+                    "example": 78.4
+                },
                 "last_charge_date": {
                     "type": "string",
                     "example": "2026-05-30T22:00:00+01:00"
                 },
+                "longest_session_duration_min": {
+                    "type": "integer",
+                    "example": 180
+                },
                 "max_end_battery_level": {
                     "type": "integer",
                     "example": 100
+                },
+                "max_power_ac_kw": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "max_power_dc_kw": {
+                    "type": "integer",
+                    "example": 250
+                },
+                "max_session_cost": {
+                    "type": "number",
+                    "example": 220.5
                 },
                 "min_start_battery_level": {
                     "type": "integer",
@@ -3527,6 +3559,10 @@ const docTemplate = `{
                     "type": "number",
                     "example": 800
                 },
+                "longest_duration_min": {
+                    "type": "integer",
+                    "example": 420
+                },
                 "max_regen_power_kw": {
                     "type": "integer",
                     "example": 60
@@ -3534,6 +3570,10 @@ const docTemplate = `{
                 "max_speed": {
                     "type": "integer",
                     "example": 180
+                },
+                "peak_drive_power_kw": {
+                    "type": "integer",
+                    "example": 380
                 },
                 "shortest_distance": {
                     "type": "number",
@@ -3550,6 +3590,10 @@ const docTemplate = `{
                 "total_energy_consumed_kwh": {
                     "type": "number",
                     "example": 7825
+                },
+                "worst_consumption": {
+                    "type": "number",
+                    "example": 285.4
                 }
             }
         },
@@ -3597,6 +3641,14 @@ const docTemplate = `{
         "dto.V2Lifetime": {
             "type": "object",
             "properties": {
+                "avg_daily_distance": {
+                    "type": "number",
+                    "example": 45.6
+                },
+                "avg_monthly_distance": {
+                    "type": "number",
+                    "example": 1380
+                },
                 "car": {
                     "$ref": "#/definitions/dto.Car"
                 },
@@ -3611,6 +3663,10 @@ const docTemplate = `{
                 },
                 "parkings": {
                     "$ref": "#/definitions/dto.V2ParkingsAgg"
+                },
+                "recorded_days": {
+                    "type": "integer",
+                    "example": 612
                 },
                 "since": {
                     "type": "string",

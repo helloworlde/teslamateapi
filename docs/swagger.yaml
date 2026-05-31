@@ -1426,6 +1426,15 @@ definitions:
       avg_energy_per_session_kwh:
         example: 38.6
         type: number
+      avg_power_ac_kw:
+        example: 7.2
+        type: number
+      avg_power_dc_kw:
+        example: 120.5
+        type: number
+      avg_session_cost:
+        example: 12.3
+        type: number
       count:
         example: 427
         type: integer
@@ -1447,12 +1456,27 @@ definitions:
       geofenced_charge_energy_kwh:
         example: 9800
         type: number
+      largest_session_energy_kwh:
+        example: 78.4
+        type: number
       last_charge_date:
         example: "2026-05-30T22:00:00+01:00"
         type: string
+      longest_session_duration_min:
+        example: 180
+        type: integer
       max_end_battery_level:
         example: 100
         type: integer
+      max_power_ac_kw:
+        example: 11
+        type: integer
+      max_power_dc_kw:
+        example: 250
+        type: integer
+      max_session_cost:
+        example: 220.5
+        type: number
       min_start_battery_level:
         example: 3
         type: integer
@@ -1513,11 +1537,17 @@ definitions:
       longest_distance:
         example: 800
         type: number
+      longest_duration_min:
+        example: 420
+        type: integer
       max_regen_power_kw:
         example: 60
         type: integer
       max_speed:
         example: 180
+        type: integer
+      peak_drive_power_kw:
+        example: 380
         type: integer
       shortest_distance:
         example: 0.5
@@ -1530,6 +1560,9 @@ definitions:
         type: integer
       total_energy_consumed_kwh:
         example: 7825
+        type: number
+      worst_consumption:
+        example: 285.4
         type: number
     type: object
   dto.V2GeofenceRow:
@@ -1564,6 +1597,12 @@ definitions:
     type: object
   dto.V2Lifetime:
     properties:
+      avg_daily_distance:
+        example: 45.6
+        type: number
+      avg_monthly_distance:
+        example: 1380
+        type: number
       car:
         $ref: '#/definitions/dto.Car'
       car_meta:
@@ -1574,6 +1613,9 @@ definitions:
         $ref: '#/definitions/dto.V2DrivesAgg'
       parkings:
         $ref: '#/definitions/dto.V2ParkingsAgg'
+      recorded_days:
+        example: 612
+        type: integer
       since:
         example: "2020-01-01T00:00:00+01:00"
         type: string

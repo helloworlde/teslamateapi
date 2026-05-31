@@ -46,14 +46,16 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 	}
 
 	var (
-		CarName                       NullString
-		Since                         NullString
-		drives                        dto.V2DrivesAgg
-		charges                       dto.V2ChargesAgg
-		parkings                      dto.V2ParkingsAgg
-		updates                       dto.V2UpdatesAgg
-		carMeta                       dto.V2CarMeta
-		UnitsLength, UnitsTemperature string
+		CarName                                   NullString
+		Since                                     NullString
+		recordedDays                              int
+		avgDailyDistance, avgMonthlyDistance      float64
+		drives                                    dto.V2DrivesAgg
+		charges                                   dto.V2ChargesAgg
+		parkings                                  dto.V2ParkingsAgg
+		updates                                   dto.V2UpdatesAgg
+		carMeta                                   dto.V2CarMeta
+		UnitsLength, UnitsTemperature             string
 	)
 
 	tzName := h.tz.String()
@@ -78,6 +80,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(AVG(duration_min), 0) AS avg_dur_per_drive,
 				COALESCE(MAX(distance), 0) AS longest_km,
 				COALESCE(MIN(distance) FILTER (WHERE distance > 0), 0) AS shortest_km,
+				COALESCE(MAX(duration_min), 0) AS longest_dur,
+				COALESCE(MAX(power_max), 0) AS peak_drive_power,
 				COALESCE(-MIN(power_min), 0) AS max_regen_power,
 				AVG(outside_temp_avg) AS avg_outside_temp,
 				AVG(inside_temp_avg) AS avg_inside_temp,
@@ -98,7 +102,13 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
 					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
 					ELSE NULL END
-				) AS best_consumption
+				) AS best_consumption,
+				MAX(
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) AS worst_consumption
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
 			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
@@ -124,6 +134,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present AND has_free_supercharging), 0) AS free_sc_energy,
 				COALESCE(MAX(peak_power), 0) AS peak_power,
 				COALESCE(MAX(peak_voltage), 0) AS peak_voltage,
+				COALESCE(MAX(duration_min), 0) AS longest_session_dur,
+				COALESCE(MAX(charge_energy_added), 0) AS largest_session_energy,
+				COALESCE(MAX(cost), 0) AS max_session_cost,
+				COALESCE(AVG(cost) FILTER (WHERE cost IS NOT NULL), 0) AS avg_session_cost,
+				COALESCE(AVG(peak_power) FILTER (WHERE NOT fast_present), 0) AS avg_power_ac,
+				COALESCE(AVG(peak_power) FILTER (WHERE fast_present), 0) AS avg_power_dc,
+				COALESCE(MAX(peak_power) FILTER (WHERE NOT fast_present), 0) AS max_power_ac,
+				COALESCE(MAX(peak_power) FILTER (WHERE fast_present), 0) AS max_power_dc,
 				MIN(start_battery_level) AS min_start_lvl,
 				MAX(end_battery_level) AS max_end_lvl,
 				COUNT(DISTINCT COALESCE(geofence_id::text, address_id::text)) AS distinct_locations,
@@ -197,14 +215,35 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		cm AS (
 			SELECT vin, model, trim_badging, exterior_color, wheel_type, spoiler_type, efficiency, inserted_at
 			FROM cars WHERE id = $1
+		),
+		rd AS (
+			SELECT
+				COUNT(DISTINCT day) AS recorded_days,
+				COUNT(DISTINCT date_trunc('month', day)) AS recorded_months
+			FROM (
+				SELECT date_trunc('day', start_date AT TIME ZONE $2) AS day
+				FROM drives WHERE car_id = $1 AND end_date IS NOT NULL
+				UNION
+				SELECT date_trunc('day', start_date AT TIME ZONE $2)
+				FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL
+			) days
 		)
 		SELECT
 			(SELECT name FROM cars WHERE id = $1),
 			d.since,
+			COALESCE(rd.recorded_days, 0),
+			CASE WHEN COALESCE(rd.recorded_days, 0) > 0
+				THEN COALESCE(d.total_km, 0) / rd.recorded_days
+				ELSE 0 END AS avg_daily_distance,
+			CASE WHEN COALESCE(rd.recorded_months, 0) > 0
+				THEN COALESCE(d.total_km, 0) / rd.recorded_months
+				ELSE 0 END AS avg_monthly_distance,
 			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
-			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0),
+			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
 			COALESCE(d.longest_km, 0), COALESCE(d.shortest_km, 0),
+			COALESCE(d.longest_dur, 0),
 			COALESCE(d.max_speed, 0), COALESCE(d.avg_speed, 0),
+			COALESCE(d.peak_drive_power, 0)::int,
 			COALESCE(d.avg_dist_per_drive, 0), COALESCE(d.avg_dur_per_drive, 0),
 			COALESCE(d.max_regen_power, 0)::int,
 			d.avg_outside_temp, d.avg_inside_temp,
@@ -216,6 +255,10 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(ch.geofenced_energy, 0), COALESCE(ch.non_geofenced_energy, 0),
 			COALESCE(ch.free_sc_energy, 0),
 			COALESCE(ch.peak_power, 0), COALESCE(ch.peak_voltage, 0),
+			COALESCE(ch.longest_session_dur, 0), COALESCE(ch.largest_session_energy, 0),
+			COALESCE(ch.max_session_cost, 0), COALESCE(ch.avg_session_cost, 0),
+			COALESCE(ch.avg_power_ac, 0), COALESCE(ch.avg_power_dc, 0),
+			COALESCE(ch.max_power_ac, 0)::int, COALESCE(ch.max_power_dc, 0)::int,
 			ch.min_start_lvl, ch.max_end_lvl,
 			COALESCE(ch.distinct_locations, 0),
 			ch.first_charge_date, ch.last_charge_date,
@@ -229,17 +272,21 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		LEFT JOIN ch ON true
 		LEFT JOIN pk ON true
 		LEFT JOIN up ON true
-		LEFT JOIN cm ON true;`
+		LEFT JOIN cm ON true
+		LEFT JOIN rd ON true;`
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, tzName)
 	err := row.Scan(
 		&CarName,
 		&Since,
+		&recordedDays, &avgDailyDistance, &avgMonthlyDistance,
 		// drives
 		&drives.Count, &drives.TotalDistance, &drives.TotalDurationMin, &drives.TotalEnergyConsumedKWh,
-		&drives.AvgConsumption, &drives.BestConsumption,
+		&drives.AvgConsumption, &drives.BestConsumption, &drives.WorstConsumption,
 		&drives.LongestDistance, &drives.ShortestDistance,
+		&drives.LongestDurationMin,
 		&drives.MaxSpeed, &drives.AvgSpeed,
+		&drives.PeakDrivePowerKW,
 		&drives.AvgDistancePerDrive, &drives.AvgDurationPerDrive,
 		&drives.MaxRegenPower,
 		&drives.AvgOutsideTemp, &drives.AvgInsideTemp,
@@ -252,6 +299,10 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
 		&charges.FreeSuperchargingKWh,
 		&charges.PeakPowerMaxKW, &charges.PeakVoltageMax,
+		&charges.LongestSessionDurationMin, &charges.LargestSessionEnergyKWh,
+		&charges.MaxSessionCost, &charges.AvgSessionCost,
+		&charges.AvgPowerACKW, &charges.AvgPowerDCKW,
+		&charges.MaxPowerACKW, &charges.MaxPowerDCKW,
 		&charges.MinStartBatteryLevel, &charges.MaxEndBatteryLevel,
 		&charges.DistinctChargeLocations,
 		&charges.FirstChargeDate, &charges.LastChargeDate,
@@ -283,6 +334,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		drives.AvgSpeed = convert.KilometersToMiles(drives.AvgSpeed)
 		drives.AvgConsumption = drives.AvgConsumption / 0.62137119223733
 		drives.BestConsumption = drives.BestConsumption / 0.62137119223733
+		drives.WorstConsumption = drives.WorstConsumption / 0.62137119223733
+		avgDailyDistance = convert.KilometersToMiles(avgDailyDistance)
+		avgMonthlyDistance = convert.KilometersToMiles(avgMonthlyDistance)
 	}
 	if UnitsTemperature == "F" {
 		if drives.AvgOutsideTemp.Valid {
@@ -314,13 +368,16 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 
 	respond.HandleSuccess(c, handler, dto.V2LifetimeResponse{
 		Data: dto.V2Lifetime{
-			Car:      dto.Car{CarID: CarID, CarName: CarName},
-			CarMeta:  carMeta,
-			Since:    Since,
-			Drives:   drives,
-			Charges:  charges,
-			Parkings: parkings,
-			Updates:  updates,
+			Car:                dto.Car{CarID: CarID, CarName: CarName},
+			CarMeta:            carMeta,
+			Since:              Since,
+			RecordedDays:       recordedDays,
+			AvgDailyDistance:   avgDailyDistance,
+			AvgMonthlyDistance: avgMonthlyDistance,
+			Drives:             drives,
+			Charges:            charges,
+			Parkings:           parkings,
+			Updates:            updates,
 			Units: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
