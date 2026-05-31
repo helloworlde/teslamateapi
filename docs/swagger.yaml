@@ -1799,17 +1799,44 @@ definitions:
       bucket_start:
         example: "2024-01-01T00:00:00+01:00"
         type: string
+      charges_avg_power_ac_kw:
+        example: 7.2
+        type: number
+      charges_avg_power_dc_kw:
+        example: 120.5
+        type: number
       charges_cost:
         example: 125.4
         type: number
       charges_count:
         example: 15
         type: integer
+      charges_duration_min:
+        example: 640
+        type: integer
       charges_energy_added_kwh:
         example: 425.7
         type: number
+      charges_energy_used_kwh:
+        example: 445
+        type: number
+      charges_largest_session_kwh:
+        example: 78.4
+        type: number
+      charges_longest_session_duration_min:
+        example: 180
+        type: integer
+      charges_max_power_kw:
+        example: 250
+        type: integer
+      charges_max_session_cost:
+        example: 42.5
+        type: number
       drives_avg_consumption:
         example: 205.6
+        type: number
+      drives_best_consumption:
+        example: 120
         type: number
       drives_count:
         example: 42
@@ -1822,6 +1849,24 @@ definitions:
         type: integer
       drives_energy_consumed_kwh:
         example: 380.5
+        type: number
+      drives_longest_distance:
+        example: 320.4
+        type: number
+      drives_longest_duration_min:
+        example: 210
+        type: integer
+      drives_max_speed:
+        example: 180
+        type: integer
+      drives_peak_drive_power_kw:
+        example: 380
+        type: integer
+      drives_peak_regen_power_kw:
+        example: 60
+        type: integer
+      drives_worst_consumption:
+        example: 285.4
         type: number
       fast_charge_ratio:
         example: 0.32

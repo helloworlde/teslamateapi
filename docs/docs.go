@@ -3927,6 +3927,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01T00:00:00+01:00"
                 },
+                "charges_avg_power_ac_kw": {
+                    "type": "number",
+                    "example": 7.2
+                },
+                "charges_avg_power_dc_kw": {
+                    "type": "number",
+                    "example": 120.5
+                },
                 "charges_cost": {
                     "type": "number",
                     "example": 125.4
@@ -3935,13 +3943,41 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 15
                 },
+                "charges_duration_min": {
+                    "type": "integer",
+                    "example": 640
+                },
                 "charges_energy_added_kwh": {
                     "type": "number",
                     "example": 425.7
                 },
+                "charges_energy_used_kwh": {
+                    "type": "number",
+                    "example": 445
+                },
+                "charges_largest_session_kwh": {
+                    "type": "number",
+                    "example": 78.4
+                },
+                "charges_longest_session_duration_min": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "charges_max_power_kw": {
+                    "type": "integer",
+                    "example": 250
+                },
+                "charges_max_session_cost": {
+                    "type": "number",
+                    "example": 42.5
+                },
                 "drives_avg_consumption": {
                     "type": "number",
                     "example": 205.6
+                },
+                "drives_best_consumption": {
+                    "type": "number",
+                    "example": 120
                 },
                 "drives_count": {
                     "type": "integer",
@@ -3958,6 +3994,30 @@ const docTemplate = `{
                 "drives_energy_consumed_kwh": {
                     "type": "number",
                     "example": 380.5
+                },
+                "drives_longest_distance": {
+                    "type": "number",
+                    "example": 320.4
+                },
+                "drives_longest_duration_min": {
+                    "type": "integer",
+                    "example": 210
+                },
+                "drives_max_speed": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "drives_peak_drive_power_kw": {
+                    "type": "integer",
+                    "example": 380
+                },
+                "drives_peak_regen_power_kw": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "drives_worst_consumption": {
+                    "type": "number",
+                    "example": 285.4
                 },
                 "fast_charge_ratio": {
                     "type": "number",

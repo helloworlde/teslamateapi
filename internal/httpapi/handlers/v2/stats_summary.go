@@ -85,10 +85,25 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		DrivesDurationMin        int        `json:"drives_duration_min"`
 		DrivesEnergyConsumedKWh  float64    `json:"drives_energy_consumed_kwh"`
 		DrivesAvgConsumption     float64    `json:"drives_avg_consumption"`
+		DrivesLongestDistance    float64    `json:"drives_longest_distance"`
+		DrivesLongestDurationMin int        `json:"drives_longest_duration_min"`
+		DrivesMaxSpeed           int        `json:"drives_max_speed"`
+		DrivesBestConsumption    float64    `json:"drives_best_consumption"`
+		DrivesWorstConsumption   float64    `json:"drives_worst_consumption"`
+		DrivesPeakDrivePowerKW   int        `json:"drives_peak_drive_power_kw"`
+		DrivesPeakRegenPowerKW   int        `json:"drives_peak_regen_power_kw"`
 		ChargesCount             int        `json:"charges_count"`
 		ChargesEnergyAddedKWh    float64    `json:"charges_energy_added_kwh"`
+		ChargesEnergyUsedKWh     float64    `json:"charges_energy_used_kwh"`
+		ChargesDurationMin       int        `json:"charges_duration_min"`
 		ChargesCost              float64    `json:"charges_cost"`
 		FastChargeRatio          float64    `json:"fast_charge_ratio"`
+		ChargesLongestSessionMin int        `json:"charges_longest_session_duration_min"`
+		ChargesLargestSessionKWh float64    `json:"charges_largest_session_kwh"`
+		ChargesMaxSessionCost    float64    `json:"charges_max_session_cost"`
+		ChargesMaxPowerKW        int        `json:"charges_max_power_kw"`
+		ChargesAvgPowerACKW      float64    `json:"charges_avg_power_ac_kw"`
+		ChargesAvgPowerDCKW      float64    `json:"charges_avg_power_dc_kw"`
 		ParkingsTotalDurationMin int        `json:"parkings_total_duration_min"`
 		VampireDrainKWh          float64    `json:"vampire_drain_kwh"`
 	}
@@ -153,7 +168,24 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency
 					ELSE 0 END
 				) AS kwh,
-				SUM(distance) AS dist_for_avg
+				SUM(distance) AS dist_for_avg,
+				COALESCE(MAX(distance), 0) AS longest_dist,
+				COALESCE(MAX(duration_min), 0) AS longest_dur,
+				COALESCE(MAX(speed_max), 0) AS max_speed,
+				COALESCE(MAX(power_max), 0) AS peak_drive_power,
+				COALESCE(-MIN(power_min), 0) AS peak_regen_power,
+				MIN(
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) AS best_consumption,
+				MAX(
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) AS worst_consumption
 			FROM drives d
 			LEFT JOIN cars ON cars.id = d.car_id
 			WHERE d.car_id = $1 AND d.end_date IS NOT NULL %s
@@ -161,20 +193,36 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		),
 		ch AS (
 			SELECT
-				date_trunc($2, cp.start_date AT TIME ZONE $3) AS bk,
+				bk,
 				COUNT(*) AS cnt,
 				SUM(charge_energy_added) AS added,
+				SUM(GREATEST(charge_energy_used, charge_energy_added)) AS used,
+				SUM(duration_min)::int AS dur,
 				SUM(cost) AS cost,
-				-- ratio is energy-weighted: fast-charged kWh / total kWh in the bucket
 				COALESCE(
-					SUM(charge_energy_added) FILTER (
-						WHERE EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present)
-					) / NULLIF(SUM(charge_energy_added), 0),
+					SUM(charge_energy_added) FILTER (WHERE fast_present)
+					/ NULLIF(SUM(charge_energy_added), 0),
 					0
-				) AS fast_ratio
-			FROM charging_processes cp
-			WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %s
-			GROUP BY 1
+				) AS fast_ratio,
+				COALESCE(MAX(duration_min), 0)::int AS longest_session_dur,
+				COALESCE(MAX(charge_energy_added), 0) AS largest_session_energy,
+				COALESCE(MAX(cost), 0) AS max_session_cost,
+				COALESCE(MAX(peak_pw), 0)::int AS max_power,
+				COALESCE(AVG(peak_pw) FILTER (WHERE NOT fast_present), 0) AS avg_power_ac,
+				COALESCE(AVG(peak_pw) FILTER (WHERE fast_present), 0) AS avg_power_dc
+			FROM (
+				SELECT
+					date_trunc($2, cp.start_date AT TIME ZONE $3) AS bk,
+					cp.charge_energy_added,
+					cp.charge_energy_used,
+					cp.duration_min,
+					cp.cost,
+					EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present) AS fast_present,
+					(SELECT MAX(charger_power) FROM charges c WHERE c.charging_process_id = cp.id) AS peak_pw
+				FROM charging_processes cp
+				WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %s
+			) sub
+			GROUP BY bk
 		),
 		dp AS (
 			SELECT
@@ -239,10 +287,25 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			COALESCE(drv.dur, 0),
 			COALESCE(drv.kwh, 0),
 			CASE WHEN COALESCE(drv.dist_for_avg, 0) > 0 THEN drv.kwh / drv.dist_for_avg * 1000 ELSE 0 END AS avg_consumption,
+			COALESCE(drv.longest_dist, 0),
+			COALESCE(drv.longest_dur, 0),
+			COALESCE(drv.max_speed, 0),
+			COALESCE(drv.best_consumption, 0),
+			COALESCE(drv.worst_consumption, 0),
+			COALESCE(drv.peak_drive_power, 0)::int,
+			COALESCE(drv.peak_regen_power, 0)::int,
 			COALESCE(ch.cnt, 0),
 			COALESCE(ch.added, 0),
+			COALESCE(ch.used, 0),
+			COALESCE(ch.dur, 0),
 			COALESCE(ch.cost, 0),
 			COALESCE(ch.fast_ratio, 0),
+			COALESCE(ch.longest_session_dur, 0),
+			COALESCE(ch.largest_session_energy, 0),
+			COALESCE(ch.max_session_cost, 0),
+			COALESCE(ch.max_power, 0),
+			COALESCE(ch.avg_power_ac, 0),
+			COALESCE(ch.avg_power_dc, 0),
 			COALESCE(pk.dur, 0)::int,
 			COALESCE(pk.drop_kwh, 0),
 			(SELECT unit_of_length FROM settings LIMIT 1),
@@ -279,10 +342,25 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.DrivesDurationMin,
 			&b.DrivesEnergyConsumedKWh,
 			&b.DrivesAvgConsumption,
+			&b.DrivesLongestDistance,
+			&b.DrivesLongestDurationMin,
+			&b.DrivesMaxSpeed,
+			&b.DrivesBestConsumption,
+			&b.DrivesWorstConsumption,
+			&b.DrivesPeakDrivePowerKW,
+			&b.DrivesPeakRegenPowerKW,
 			&b.ChargesCount,
 			&b.ChargesEnergyAddedKWh,
+			&b.ChargesEnergyUsedKWh,
+			&b.ChargesDurationMin,
 			&b.ChargesCost,
 			&b.FastChargeRatio,
+			&b.ChargesLongestSessionMin,
+			&b.ChargesLargestSessionKWh,
+			&b.ChargesMaxSessionCost,
+			&b.ChargesMaxPowerKW,
+			&b.ChargesAvgPowerACKW,
+			&b.ChargesAvgPowerDCKW,
 			&b.ParkingsTotalDurationMin,
 			&b.VampireDrainKWh,
 			&UnitsLength,
@@ -293,10 +371,21 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			return
 		}
 
+		// avg_consumption / best_consumption / worst_consumption are Wh/(distance);
+		// converting Wh/km → Wh/mi means dividing by 0.62137... (distance unit
+		// stretches, energy stays).
 		if UnitsLength == "mi" {
 			b.DrivesDistance = convert.KilometersToMiles(b.DrivesDistance)
+			b.DrivesLongestDistance = convert.KilometersToMiles(b.DrivesLongestDistance)
+			b.DrivesMaxSpeed = convert.KilometersToMilesInteger(b.DrivesMaxSpeed)
 			if b.DrivesAvgConsumption > 0 {
 				b.DrivesAvgConsumption = b.DrivesAvgConsumption / 0.62137119223733
+			}
+			if b.DrivesBestConsumption > 0 {
+				b.DrivesBestConsumption = b.DrivesBestConsumption / 0.62137119223733
+			}
+			if b.DrivesWorstConsumption > 0 {
+				b.DrivesWorstConsumption = b.DrivesWorstConsumption / 0.62137119223733
 			}
 		}
 
