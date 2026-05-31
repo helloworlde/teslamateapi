@@ -134,8 +134,9 @@ func main() {
 		CommandsEnabled: cfg.CommandsEnabled,
 	})
 
+	const listenAddr = ":8080"
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    listenAddr,
 		Handler: router,
 	}
 
@@ -151,15 +152,19 @@ func main() {
 		<-quit
 		log.Println("[info] TeslaMateAPI received shutdown input")
 		if err := server.Close(); err != nil {
-			log.Fatal("[error] TeslaMateAPI server close error:", err)
+			log.Fatalf("[error] TeslaMateAPI server close error: %v", err)
 		}
 	}()
 
+	log.Printf("[info] TeslaMateAPI listening on %s (version=%s)", listenAddr, apiVersion)
 	if err := server.ListenAndServe(); err != nil {
 		if err == http.ErrServerClosed {
 			log.Println("[info] TeslaMateAPI server gracefully shut down")
 		} else {
-			log.Fatal("[error] TeslaMateAPI server closed unexpectedly")
+			// Most common cause: port already bound by another instance — surface
+			// the underlying os/syscall error so the user can see "address already
+			// in use" instead of just "closed unexpectedly".
+			log.Fatalf("[error] TeslaMateAPI server failed to start on %s: %v", listenAddr, err)
 		}
 	}
 }
