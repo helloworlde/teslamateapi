@@ -1382,10 +1382,55 @@ definitions:
       data:
         $ref: '#/definitions/dto.V2ByGeofenceData'
     type: object
+  dto.V2CarMeta:
+    properties:
+      efficiency:
+        example: 0.184
+        type: number
+      exterior_color:
+        example: DeepBlue
+        type: string
+      inserted_at:
+        example: "2020-01-01T00:00:00+01:00"
+        type: string
+      model:
+        example: S
+        type: string
+      spoiler_type:
+        example: None
+        type: string
+      trim_badging:
+        example: P100D
+        type: string
+      vin:
+        example: 5YJSA1E26KF000000
+        type: string
+      wheel_type:
+        example: Pinwheel18
+        type: string
+    type: object
   dto.V2ChargesAgg:
     properties:
+      ac_charge_count:
+        example: 354
+        type: integer
+      ac_charge_energy_kwh:
+        example: 13300
+        type: number
+      avg_cost_per_kwh:
+        example: 0.26
+        type: number
+      avg_duration_min:
+        example: 42.3
+        type: number
+      avg_energy_per_session_kwh:
+        example: 38.6
+        type: number
       count:
         example: 427
+        type: integer
+      distinct_charge_locations:
+        example: 42
         type: integer
       fast_charge_count:
         example: 73
@@ -1393,8 +1438,32 @@ definitions:
       fast_charge_energy_kwh:
         example: 3200
         type: number
+      first_charge_date:
+        example: "2020-01-05T19:30:00+01:00"
+        type: string
+      free_supercharging_kwh:
+        example: 125
+        type: number
+      geofenced_charge_energy_kwh:
+        example: 9800
+        type: number
+      last_charge_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      max_end_battery_level:
+        example: 100
+        type: integer
+      min_start_battery_level:
+        example: 3
+        type: integer
+      non_geofenced_charge_energy_kwh:
+        example: 6700
+        type: number
       peak_power_max_kw:
         example: 250
+        type: integer
+      peak_voltage_max:
+        example: 480
         type: integer
       total_cost:
         example: 4321.5
@@ -1408,8 +1477,26 @@ definitions:
     type: object
   dto.V2DrivesAgg:
     properties:
+      active_days:
+        example: 612
+        type: integer
       avg_consumption:
         example: 184
+        type: number
+      avg_distance_per_drive:
+        example: 22.4
+        type: number
+      avg_duration_per_drive_min:
+        example: 20.1
+        type: number
+      avg_inside_temp:
+        example: 21
+        type: number
+      avg_outside_temp:
+        example: 14.5
+        type: number
+      avg_speed:
+        example: 58.5
         type: number
       best_consumption:
         example: 120
@@ -1417,12 +1504,24 @@ definitions:
       count:
         example: 1893
         type: integer
+      current_odometer:
+        example: 42500
+        type: number
+      last_drive_date:
+        example: "2026-05-30T18:42:00+01:00"
+        type: string
       longest_distance:
         example: 800
         type: number
+      max_regen_power_kw:
+        example: 60
+        type: integer
       max_speed:
         example: 180
         type: integer
+      shortest_distance:
+        example: 0.5
+        type: number
       total_distance:
         example: 42500.5
         type: number
@@ -1467,6 +1566,8 @@ definitions:
     properties:
       car:
         $ref: '#/definitions/dto.Car'
+      car_meta:
+        $ref: '#/definitions/dto.V2CarMeta'
       charges:
         $ref: '#/definitions/dto.V2ChargesAgg'
       drives:
@@ -1478,6 +1579,8 @@ definitions:
         type: string
       units:
         $ref: '#/definitions/dto.TeslaMateUnits'
+      updates:
+        $ref: '#/definitions/dto.V2UpdatesAgg'
     type: object
   dto.V2LifetimeResponse:
     properties:
@@ -1612,8 +1715,14 @@ definitions:
     type: object
   dto.V2ParkingsAgg:
     properties:
+      avg_duration_min:
+        example: 264.2
+        type: number
       count:
         example: 1893
+        type: integer
+      longest_parking_min:
+        example: 43200
         type: integer
       total_duration_min:
         example: 500000
@@ -1705,6 +1814,21 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/dto.V2SummaryData'
+    type: object
+  dto.V2UpdatesAgg:
+    properties:
+      count:
+        example: 58
+        type: integer
+      first_version:
+        example: 2020.4.10
+        type: string
+      latest_update_date:
+        example: "2026-05-15T03:00:00+01:00"
+        type: string
+      latest_version:
+        example: 2026.20.1
+        type: string
     type: object
 info:
   contact: {}
@@ -2526,8 +2650,8 @@ paths:
       - v2
   /api/v2/cars/{CarID}/stats/lifetime:
     get:
-      description: Since-ownership aggregates over drives, charges, and derived parking
-        sessions.
+      description: Since-ownership aggregates over drives, charges, parkings, firmware
+        updates, plus static car metadata.
       parameters:
       - description: TeslaMate cars.id
         in: path

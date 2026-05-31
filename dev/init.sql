@@ -6,9 +6,36 @@
 -- schema to exercise the handlers.
 
 CREATE TABLE IF NOT EXISTS cars (
-    id          smallint PRIMARY KEY,
-    name        text,
-    efficiency  double precision
+    id              smallint PRIMARY KEY,
+    eid             bigint,
+    vid             bigint,
+    name            text,
+    model           text,
+    efficiency      double precision,
+    inserted_at     timestamp,
+    updated_at      timestamp,
+    vin             text,
+    trim_badging    text,
+    exterior_color  text,
+    spoiler_type    text,
+    wheel_type      text
+);
+
+CREATE TABLE IF NOT EXISTS car_settings (
+    id                       smallint PRIMARY KEY,
+    suspend_min              int,
+    suspend_after_idle_min   int,
+    req_not_unlocked         boolean,
+    free_supercharging       boolean,
+    use_streaming_api        boolean
+);
+
+CREATE TABLE IF NOT EXISTS updates (
+    id          bigserial PRIMARY KEY,
+    car_id      smallint NOT NULL,
+    start_date  timestamp,
+    end_date    timestamp,
+    version     text
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -125,9 +152,18 @@ CREATE TABLE IF NOT EXISTS charges (
 INSERT INTO settings (id, unit_of_length, unit_of_temperature, preferred_range)
 VALUES (1, 'km', 'C', 'rated');
 
-INSERT INTO cars (id, name, efficiency) VALUES
-    (1, 'Pearl',  0.156),
-    (2, 'Onyx',   0.149);
+INSERT INTO cars (id, eid, vid, name, model, efficiency, inserted_at, updated_at, vin, trim_badging, exterior_color, spoiler_type, wheel_type) VALUES
+    (1, 100001, 200001, 'Pearl', 'S', 0.156, '2020-01-01 00:00:00', '2026-05-30 00:00:00', '5YJSA1E26KF000001', 'P100D', 'DeepBlue', 'None',     'Pinwheel18'),
+    (2, 100002, 200002, 'Onyx',  '3', 0.149, '2021-06-01 00:00:00', '2026-05-30 00:00:00', '5YJ3E1EA5KF000002', '74D',   'MidnightSilver', 'None', 'Stiletto19');
+
+INSERT INTO car_settings (id, suspend_min, suspend_after_idle_min, req_not_unlocked, free_supercharging, use_streaming_api) VALUES
+    (1, 21, 15, false, true,  true),
+    (2, 21, 15, false, false, true);
+
+INSERT INTO updates (id, car_id, start_date, end_date, version) VALUES
+    (1, 1, '2024-03-01 03:00:00', '2024-03-01 03:30:00', '2024.6.1'),
+    (2, 1, '2025-09-15 02:00:00', '2025-09-15 02:30:00', '2025.32.4'),
+    (3, 1, '2026-05-15 03:00:00', '2026-05-15 03:30:00', '2026.20.1');
 
 INSERT INTO geofences (id, name) VALUES
     (1, '家'),

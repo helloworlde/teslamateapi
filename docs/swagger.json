@@ -1271,7 +1271,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Since-ownership aggregates over drives, charges, and derived parking sessions.",
+                "description": "Since-ownership aggregates over drives, charges, parkings, firmware updates, plus static car metadata.",
                 "produces": [
                     "application/json"
                 ],
@@ -3347,12 +3347,73 @@
                 }
             }
         },
+        "dto.V2CarMeta": {
+            "type": "object",
+            "properties": {
+                "efficiency": {
+                    "type": "number",
+                    "example": 0.184
+                },
+                "exterior_color": {
+                    "type": "string",
+                    "example": "DeepBlue"
+                },
+                "inserted_at": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00+01:00"
+                },
+                "model": {
+                    "type": "string",
+                    "example": "S"
+                },
+                "spoiler_type": {
+                    "type": "string",
+                    "example": "None"
+                },
+                "trim_badging": {
+                    "type": "string",
+                    "example": "P100D"
+                },
+                "vin": {
+                    "type": "string",
+                    "example": "5YJSA1E26KF000000"
+                },
+                "wheel_type": {
+                    "type": "string",
+                    "example": "Pinwheel18"
+                }
+            }
+        },
         "dto.V2ChargesAgg": {
             "type": "object",
             "properties": {
+                "ac_charge_count": {
+                    "type": "integer",
+                    "example": 354
+                },
+                "ac_charge_energy_kwh": {
+                    "type": "number",
+                    "example": 13300
+                },
+                "avg_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.26
+                },
+                "avg_duration_min": {
+                    "type": "number",
+                    "example": 42.3
+                },
+                "avg_energy_per_session_kwh": {
+                    "type": "number",
+                    "example": 38.6
+                },
                 "count": {
                     "type": "integer",
                     "example": 427
+                },
+                "distinct_charge_locations": {
+                    "type": "integer",
+                    "example": 42
                 },
                 "fast_charge_count": {
                     "type": "integer",
@@ -3362,9 +3423,41 @@
                     "type": "number",
                     "example": 3200
                 },
+                "first_charge_date": {
+                    "type": "string",
+                    "example": "2020-01-05T19:30:00+01:00"
+                },
+                "free_supercharging_kwh": {
+                    "type": "number",
+                    "example": 125
+                },
+                "geofenced_charge_energy_kwh": {
+                    "type": "number",
+                    "example": 9800
+                },
+                "last_charge_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "max_end_battery_level": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "min_start_battery_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "non_geofenced_charge_energy_kwh": {
+                    "type": "number",
+                    "example": 6700
+                },
                 "peak_power_max_kw": {
                     "type": "integer",
                     "example": 250
+                },
+                "peak_voltage_max": {
+                    "type": "integer",
+                    "example": 480
                 },
                 "total_cost": {
                     "type": "number",
@@ -3383,9 +3476,33 @@
         "dto.V2DrivesAgg": {
             "type": "object",
             "properties": {
+                "active_days": {
+                    "type": "integer",
+                    "example": 612
+                },
                 "avg_consumption": {
                     "type": "number",
                     "example": 184
+                },
+                "avg_distance_per_drive": {
+                    "type": "number",
+                    "example": 22.4
+                },
+                "avg_duration_per_drive_min": {
+                    "type": "number",
+                    "example": 20.1
+                },
+                "avg_inside_temp": {
+                    "type": "number",
+                    "example": 21
+                },
+                "avg_outside_temp": {
+                    "type": "number",
+                    "example": 14.5
+                },
+                "avg_speed": {
+                    "type": "number",
+                    "example": 58.5
                 },
                 "best_consumption": {
                     "type": "number",
@@ -3395,13 +3512,29 @@
                     "type": "integer",
                     "example": 1893
                 },
+                "current_odometer": {
+                    "type": "number",
+                    "example": 42500
+                },
+                "last_drive_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:42:00+01:00"
+                },
                 "longest_distance": {
                     "type": "number",
                     "example": 800
                 },
+                "max_regen_power_kw": {
+                    "type": "integer",
+                    "example": 60
+                },
                 "max_speed": {
                     "type": "integer",
                     "example": 180
+                },
+                "shortest_distance": {
+                    "type": "number",
+                    "example": 0.5
                 },
                 "total_distance": {
                     "type": "number",
@@ -3464,6 +3597,9 @@
                 "car": {
                     "$ref": "#/definitions/dto.Car"
                 },
+                "car_meta": {
+                    "$ref": "#/definitions/dto.V2CarMeta"
+                },
                 "charges": {
                     "$ref": "#/definitions/dto.V2ChargesAgg"
                 },
@@ -3479,6 +3615,9 @@
                 },
                 "units": {
                     "$ref": "#/definitions/dto.TeslaMateUnits"
+                },
+                "updates": {
+                    "$ref": "#/definitions/dto.V2UpdatesAgg"
                 }
             }
         },
@@ -3668,9 +3807,17 @@
         "dto.V2ParkingsAgg": {
             "type": "object",
             "properties": {
+                "avg_duration_min": {
+                    "type": "number",
+                    "example": 264.2
+                },
                 "count": {
                     "type": "integer",
                     "example": 1893
+                },
+                "longest_parking_min": {
+                    "type": "integer",
+                    "example": 43200
                 },
                 "total_duration_min": {
                     "type": "integer",
@@ -3799,6 +3946,27 @@
             "properties": {
                 "data": {
                     "$ref": "#/definitions/dto.V2SummaryData"
+                }
+            }
+        },
+        "dto.V2UpdatesAgg": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "example": 58
+                },
+                "first_version": {
+                    "type": "string",
+                    "example": "2020.4.10"
+                },
+                "latest_update_date": {
+                    "type": "string",
+                    "example": "2026-05-15T03:00:00+01:00"
+                },
+                "latest_version": {
+                    "type": "string",
+                    "example": "2026.20.1"
                 }
             }
         }
