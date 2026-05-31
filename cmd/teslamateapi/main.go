@@ -20,6 +20,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/tobiasehlert/teslamateapi/internal/audit"
 	"github.com/tobiasehlert/teslamateapi/internal/auth"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
 	"github.com/tobiasehlert/teslamateapi/internal/config"
@@ -28,6 +29,7 @@ import (
 	"github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/system"
 	v1 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v1"
 	v2 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v2"
+	"github.com/tobiasehlert/teslamateapi/internal/metrics"
 	"github.com/tobiasehlert/teslamateapi/internal/status"
 )
 
@@ -62,6 +64,12 @@ func main() {
 		log.Fatalf("[error] database init: %v", err)
 	}
 	defer db.Close()
+	metrics.RegisterDB(db)
+
+	// Audit hook → Prometheus counter. Wired here (rather than in the audit
+	// package's init) so internal/audit stays free of the prometheus
+	// dependency for environments that compile it out.
+	audit.ObserveHook = metrics.ObserveAudit
 
 	tok := auth.New(cfg)
 	allowList := command.NewAllowList(cfg)
@@ -88,6 +96,11 @@ func main() {
 	}
 	if cfg.MQTTDisabled {
 		log.Printf("[info] TeslaMateApi MQTT connection not established.")
+		metrics.SetMQTTConnected(metrics.MQTTDisabled)
+	} else if statusCache.Connected() {
+		metrics.SetMQTTConnected(metrics.MQTTConnectedState)
+	} else {
+		metrics.SetMQTTConnected(metrics.MQTTDisconnected)
 	}
 
 	if cfg.APITokenDisable {

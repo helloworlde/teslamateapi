@@ -20,6 +20,7 @@ import (
 
 	"github.com/tobiasehlert/teslamateapi/internal/config"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
+	"github.com/tobiasehlert/teslamateapi/internal/metrics"
 )
 
 // Info holds the latest MQTT-derived snapshot for a car.
@@ -219,6 +220,7 @@ func connectingHandler(_ *url.URL, tlsCfg *tls.Config) *tls.Config {
 func (c *Cache) connectedHandler(client mqtt.Client) {
 	log.Println("[info] mqtt connected.")
 	c.mqttConnected.Store(true)
+	metrics.SetMQTTConnected(metrics.MQTTConnectedState)
 
 	topic := strings.Replace(c.topicScan, "/cars/%d/%s", "/cars/#", 1)
 	if token := client.Subscribe(topic, 0, c.newMessage); token.Wait() && token.Error() != nil {
@@ -234,6 +236,7 @@ func (c *Cache) connectedHandler(client mqtt.Client) {
 func (c *Cache) connectionLost(_ mqtt.Client, err error) {
 	log.Println("[error] MQTT connection lost: " + err.Error())
 	c.mqttConnected.Store(false)
+	metrics.SetMQTTConnected(metrics.MQTTDisconnected)
 	if c.ready != nil {
 		c.ready.Store(false)
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/system"
 	v1 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v1"
 	v2 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v2"
+	"github.com/tobiasehlert/teslamateapi/internal/metrics"
 )
 
 // Deps groups everything NewRouter needs to wire the gin engine.
@@ -29,11 +30,18 @@ func NewRouter(d Deps) *gin.Engine {
 	r := gin.Default()
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	r.Use(APIVersionHeader(d.APIVersion))
+	r.Use(metrics.Middleware())
 	r.NoRoute(system.NotFound)
 	_ = r.SetTrustedProxies(nil)
 
 	// root endpoint telling API is running
 	r.GET("/", system.Root(r))
+
+	// /metrics is intentionally outside the /api group: it bypasses the
+	// bearer-auth gate (matching /api/healthz / /api/readyz) so an in-cluster
+	// Prometheus can scrape without plumbing the API_TOKEN through scrape
+	// configs. If you need it gated, put it behind your reverse proxy.
+	r.GET("/metrics", gin.WrapH(metrics.Handler()))
 
 	// /api with auth gate; the gate has its own internal allow-list for
 	// public probes (health, readiness, docs, openapi spec, ping) and the

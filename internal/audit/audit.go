@@ -39,6 +39,13 @@ const (
 	ReasonUpstreamNonJSON   = "upstream_non_json"
 )
 
+// ObserveHook, if non-nil, is invoked once per Log call with the event's
+// action, outcome, and reason. Wired by main.go to feed Prometheus counters
+// without forcing this package to import internal/metrics — audit deliberately
+// keeps its dependency footprint minimal so it can run in environments where
+// the metrics endpoint is disabled.
+var ObserveHook func(action, outcome, reason string)
+
 // Event is one audit record. Fields default to zero-values; only populated
 // fields are emitted, so a deny-before-DB-lookup record stays compact.
 type Event struct {
@@ -96,6 +103,10 @@ func Log(e Event) {
 	writeKV(&b, "user_agent", e.UserAgent)
 	writeKV(&b, "err", e.ErrDetail)
 	log.Println(b.String())
+
+	if ObserveHook != nil {
+		ObserveHook(e.Action, e.Outcome, e.Reason)
+	}
 }
 
 func writeKV(b *strings.Builder, k, v string) {
