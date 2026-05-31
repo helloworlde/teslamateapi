@@ -8,11 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 // CarRegionAPI distinguishes the global Tesla API from the China-specific one.
@@ -39,9 +36,6 @@ func DecryptAccessToken(data, encryptionKey string) (string, error) {
 	h := sha256.New()
 	h.Write([]byte(encryptionKey))
 	key := h.Sum(nil)
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Key: %x", key)
-	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -51,7 +45,8 @@ func DecryptAccessToken(data, encryptionKey string) (string, error) {
 	if len(raw) < 2 {
 		return "", errors.New("decryptAccessToken: encrypted blob too short for header")
 	}
-	keyType := int(raw[0])
+	// raw[0] is keyType, raw[1] is keyLen. Neither is needed for AES-GCM-Open;
+	// they're part of TeslaMate's on-disk layout but only the offsets matter.
 	keyLen := int(raw[1])
 
 	minLen := 2 + keyLen + 12 + 16
@@ -59,18 +54,9 @@ func DecryptAccessToken(data, encryptionKey string) (string, error) {
 		return "", fmt.Errorf("decryptAccessToken: encrypted blob length %d shorter than expected %d", len(raw), minLen)
 	}
 
-	keyTag := raw[2 : 2+keyLen]
 	nonce := raw[2+keyLen : 2+keyLen+12]
 	ciphertag := raw[2+keyLen+12 : 2+keyLen+12+16]
 	ciphertext := raw[2+keyLen+12+16:]
-
-	if gin.IsDebugging() {
-		log.Printf("[debug] decryptAccessToken - Type: %d", keyType)
-		log.Printf("[debug] decryptAccessToken - Length: %d", keyLen)
-		log.Printf("[debug] decryptAccessToken - Key Tag: %s", keyTag)
-		log.Printf("[debug] decryptAccessToken - IV (hex): %x", nonce)
-		log.Printf("[debug] decryptAccessToken - Ciphertag (hex): %x", ciphertag)
-	}
 
 	aesgcm, err := cipher.NewGCMWithTagSize(block, 16)
 	if err != nil {
