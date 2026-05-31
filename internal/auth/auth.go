@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/tobiasehlert/teslamateapi/internal/audit"
 	"github.com/tobiasehlert/teslamateapi/internal/config"
 )
 
@@ -125,9 +126,39 @@ func Middleware(t *Token) gin.HandlerFunc {
 		}
 		ok, msg := t.Validate(c)
 		if !ok {
+			// Auth failures on privileged endpoints (Tesla command proxy /
+			// TeslaMate logging proxy) are recorded here because the handler
+			// never runs. We classify by path prefix rather than parsing the
+			// full route so /command, /commands, /command/<x>, /wake_up, and
+			// /logging/<x> all fall under the same audit umbrella.
+			if action := privilegedAuditAction(c.Request.URL.Path); action != "" {
+				audit.Log(audit.Event{
+					Action:    action,
+					Method:    c.Request.Method,
+					ClientIP:  c.ClientIP(),
+					UserAgent: c.Request.UserAgent(),
+					Outcome:   audit.OutcomeDenied,
+					Reason:    audit.ReasonUnauthorized,
+					ErrDetail: msg,
+				})
+			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
 		c.Next()
 	}
+}
+
+// privilegedAuditAction returns the audit action name for paths that proxy
+// to Tesla owner-api or TeslaMate logging, or "" for everything else. We
+// match by substring so the same logic covers /command, /commands,
+// /wake_up, and /logging/... without duplicating route patterns.
+func privilegedAuditAction(p string) string {
+	switch {
+	case strings.Contains(p, "/logging"):
+		return "logging_exec"
+	case strings.Contains(p, "/command"), strings.HasSuffix(p, "/wake_up"):
+		return "command_exec"
+	}
+	return ""
 }

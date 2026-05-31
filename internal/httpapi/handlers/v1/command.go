@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/tobiasehlert/teslamateapi/internal/audit"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
@@ -58,9 +59,12 @@ func (h *Handler) CommandExec(c *gin.Context) { h.Command(c) }
 // TeslaMateAPICarsCommandV1 lists or dispatches Tesla owner-api commands.
 // Routed via the per-method wrappers above so swag can document the GET
 // list-response and the POST passthrough-response separately.
+//
+// Every privileged invocation emits one [audit] log line — see
+// internal/audit. GET (list) is not privileged and is not audited.
 func (h *Handler) Command(c *gin.Context) {
 
-	// creating required vars
+	const handler = "TeslaMateAPICarsCommandV1"
 	var (
 		CarsCommandsError1                                 = "Unable to load cars."
 		TeslaAccessToken, TeslaVehicleID, TeslaEndpointUrl string
@@ -68,31 +72,56 @@ func (h *Handler) Command(c *gin.Context) {
 		err                                                error
 	)
 
+	startedAt := time.Now()
+	ev := audit.Event{
+		Action:    "command_exec",
+		Method:    c.Request.Method,
+		ClientIP:  c.ClientIP(),
+		UserAgent: c.Request.UserAgent(),
+	}
+	emit := func() {
+		ev.DurationMS = time.Since(startedAt).Milliseconds()
+		audit.Log(ev)
+	}
+
 	// check if commands are enabled.. if not we need to abort
 	if !h.cfg.CommandsEnabled {
 		log.Println("[warning] TeslaMateAPICarsCommandV1 ENABLE_COMMANDS is not true.. returning 403 forbidden.")
-		respond.HandleOther(c, http.StatusForbidden, "TeslaMateAPICarsCommandV1", gin.H{"error": "You are not allowed to access commands"})
+		ev.Outcome = audit.OutcomeDenied
+		ev.Reason = audit.ReasonCommandsDisabled
+		emit()
+		respond.HandleOther(c, http.StatusForbidden, handler, gin.H{"error": "You are not allowed to access commands"})
 		return
 	}
 
 	// if request method is GET return list of commands
 	if c.Request.Method == http.MethodGet {
-		respond.HandleSuccess(c, "TeslaMateAPICarsCommandV1", dto.V1CommandList{EnabledCommands: h.allowListItems()})
+		// Listing the allow-list is not a privileged action; skip audit to
+		// avoid drowning the log when clients poll the catalog.
+		respond.HandleSuccess(c, handler, dto.V1CommandList{EnabledCommands: h.allowListItems()})
 		return
 	}
 
 	// authentication for the endpoint
 	validToken, errorMessage := h.validateAuthToken(c)
 	if !validToken {
-		respond.HandleOther(c, http.StatusUnauthorized, "TeslaMateAPICarsCommandV1", gin.H{"error": errorMessage})
+		ev.Outcome = audit.OutcomeDenied
+		ev.Reason = audit.ReasonUnauthorized
+		ev.ErrDetail = errorMessage
+		emit()
+		respond.HandleOther(c, http.StatusUnauthorized, handler, gin.H{"error": errorMessage})
 		return
 	}
 
 	// getting CarID param from URL and validating that it's not zero
 	CarID := convert.StrToInt(c.Param("CarID"))
+	ev.CarID = CarID
 	if CarID == 0 {
 		log.Println("[error] TeslaMateAPICarsCommandV1 CarID is invalid (zero)!")
-		respond.HandleOther(c, http.StatusBadRequest, "TeslaMateAPICarsCommandV1", gin.H{"error": "CarID invalid"})
+		ev.Outcome = audit.OutcomeDenied
+		ev.Reason = audit.ReasonInvalidCarID
+		emit()
+		respond.HandleOther(c, http.StatusBadRequest, handler, gin.H{"error": "CarID invalid"})
 		return
 	}
 
@@ -100,9 +129,14 @@ func (h *Handler) Command(c *gin.Context) {
 	reqBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 error in first io.ReadAll", err)
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal io reading error"})
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonReadBodyFail
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
 		return
 	}
+	ev.ReqBytes = len(reqBody)
 
 	// getting :Command
 	cmdPath := ("/command/" + c.Param("Command"))
@@ -110,10 +144,14 @@ func (h *Handler) Command(c *gin.Context) {
 	if cmdPath == "/command/" || cmdPath == "/command/wake_up" {
 		cmdPath = "/wake_up"
 	}
+	ev.Command = cmdPath
 
 	if !h.allowListContains(cmdPath) {
-		log.Println("[warning] TeslaMateAPICarsCommandV1 command not allowed!")
-		respond.HandleOther(c, http.StatusUnauthorized, "TeslaMateAPICarsCommandV1", gin.H{"error": "unauthorized"})
+		log.Printf("[warning] TeslaMateAPICarsCommandV1 command not allowed: %s (car_id=%d)", cmdPath, CarID)
+		ev.Outcome = audit.OutcomeDenied
+		ev.Reason = audit.ReasonNotInAllowList
+		emit()
+		respond.HandleOther(c, http.StatusUnauthorized, handler, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -134,13 +172,21 @@ func (h *Handler) Command(c *gin.Context) {
 
 	switch err {
 	case sql.ErrNoRows:
-		respond.HandleError(c, "TeslaMateAPICarsCommandV1", "No rows were returned!", err.Error())
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonDBLookupFailed
+		ev.ErrDetail = "no rows"
+		emit()
+		respond.HandleError(c, handler, "No rows were returned!", err.Error())
 		return
 	case nil:
 		// nothing wrong.. continuing
 		break
 	default:
-		respond.HandleError(c, "TeslaMateAPICarsCommandV1", CarsCommandsError1, err.Error())
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonDBLookupFailed
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleError(c, handler, CarsCommandsError1, err.Error())
 		return
 	}
 
@@ -148,7 +194,10 @@ func (h *Handler) Command(c *gin.Context) {
 	teslaMateEncryptionKey := h.cfg.EncryptionKey
 	if teslaMateEncryptionKey == "" {
 		log.Println("[error] TeslaMateAPICarsCommandV1 can't get ENCRYPTION_KEY.. will fail to perform command.")
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "missing ENCRYPTION_KEY env variable"})
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonMissingEncKey
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "missing ENCRYPTION_KEY env variable"})
 		return
 	}
 
@@ -156,7 +205,11 @@ func (h *Handler) Command(c *gin.Context) {
 	TeslaAccessToken, err = command.DecryptAccessToken(TeslaAccessToken, teslaMateEncryptionKey)
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 token decrypt failed:", err)
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "unable to decrypt access token"})
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonTokenDecryptFail
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "unable to decrypt access token"})
 		return
 	}
 
@@ -178,11 +231,18 @@ func (h *Handler) Command(c *gin.Context) {
 		}
 	}
 
+	upstreamURL := TeslaEndpointUrl + "/api/1/vehicles/" + TeslaVehicleID + cmdPath
+	ev.UpstreamURL = upstreamURL
+
 	client := &http.Client{Timeout: teslaCommandHTTPTimeout}
-	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, TeslaEndpointUrl+"/api/1/vehicles/"+TeslaVehicleID+cmdPath, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, upstreamURL, strings.NewReader(string(reqBody)))
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 http.NewRequestWithContext:", err)
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal http request error"})
+		ev.Outcome = audit.OutcomeError
+		ev.Reason = audit.ReasonRequestBuildFail
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal http request error"})
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+TeslaAccessToken)
@@ -193,7 +253,11 @@ func (h *Handler) Command(c *gin.Context) {
 	// check response error
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 error in http request to "+TeslaEndpointUrl, err)
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal http request error"})
+		ev.Outcome = audit.OutcomeUpstream
+		ev.Reason = audit.ReasonUpstreamReachFail
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal http request error"})
 		return
 	}
 
@@ -203,19 +267,38 @@ func (h *Handler) Command(c *gin.Context) {
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 error in second io.ReadAll:", err)
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsCommandV1", gin.H{"error": "internal io reading error"})
+		ev.Outcome = audit.OutcomeUpstream
+		ev.Reason = audit.ReasonReadBodyFail
+		ev.UpstreamCode = resp.StatusCode
+		ev.ErrDetail = err.Error()
+		emit()
+		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
 		return
 	}
+	ev.UpstreamCode = resp.StatusCode
+	ev.RespBytes = len(respBody)
+
 	// If Tesla returns non-JSON (HTML error page, empty body), pass the raw
 	// payload through instead of silently coercing to `null`.
 	if jsonErr := json.Unmarshal(respBody, &jsonData); jsonErr != nil {
 		log.Println("[warning] TeslaMateAPICarsCommandV1 non-JSON response from Tesla:", jsonErr)
-		respond.HandleOther(c, resp.StatusCode, "TeslaMateAPICarsCommandV1", dto.V1CommandRawResponse{Raw: string(respBody)})
+		ev.Outcome = audit.OutcomeUpstream
+		ev.Reason = audit.ReasonUpstreamNonJSON
+		ev.ErrDetail = jsonErr.Error()
+		emit()
+		respond.HandleOther(c, resp.StatusCode, handler, dto.V1CommandRawResponse{Raw: string(respBody)})
 		return
 	}
 
+	// 2xx upstream → success; 4xx/5xx → upstream_error so monitors can split.
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		ev.Outcome = audit.OutcomeSuccess
+	} else {
+		ev.Outcome = audit.OutcomeUpstream
+	}
+	emit()
+
 	// return jsonData
 	// use respond.HandleOther since we use the statusCode from Tesla API
-	respond.HandleOther(c, resp.StatusCode, "TeslaMateAPICarsCommandV1", jsonData)
-
+	respond.HandleOther(c, resp.StatusCode, handler, jsonData)
 }
