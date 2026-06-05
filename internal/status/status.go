@@ -117,7 +117,7 @@ type Cache struct {
 	topicScan string
 
 	cache map[int]*Info
-	mu    sync.Mutex
+	mu    sync.RWMutex
 
 	ready *atomic.Value
 }
@@ -128,13 +128,26 @@ func (c *Cache) Disabled() bool { return c.mqttDisabled }
 // Connected reports whether the MQTT broker is currently connected.
 func (c *Cache) Connected() bool { return c.mqttConnected.Load() }
 
-// Get returns a snapshot of the cached Info for the given car, or nil if
-// no message has been received yet. Callers must not mutate the returned
-// pointer.
+// Snapshot returns a copy of the cached Info for the given car.
+func (c *Cache) Snapshot(carID int) (Info, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	stat := c.cache[carID]
+	if stat == nil {
+		return Info{}, false
+	}
+	return *stat, true
+}
+
+// Get returns a snapshot pointer for the given car, or nil if no message
+// has been received yet. The returned pointer does not reference the live
+// internal cache.
 func (c *Cache) Get(carID int) *Info {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.cache[carID]
+	stat, ok := c.Snapshot(carID)
+	if !ok {
+		return nil
+	}
+	return &stat
 }
 
 func mqttNamespace(ns string) string {

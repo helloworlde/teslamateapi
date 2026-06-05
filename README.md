@@ -23,6 +23,7 @@ TeslaMateApi is a RESTful API to get data collected by self-hosted data logger *
   - [Available endpoints](#available-endpoints)
   - [Authentication](#authentication)
   - [Commands](#commands)
+  - [代码审查结论与功能模块索引](#代码审查结论与功能模块索引)
 - [Security information](#security-information)
 - [Credits](#credits)
 
@@ -156,6 +157,10 @@ Basically the same environment variables for the database, mqqt and timezone nee
 More detailed documentation of every endpoint will come..
 
 For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-detail-downsampling.md`](docs/v1-detail-downsampling.md).
+
+### 代码审查结论与功能模块索引
+
+代码审查结论与功能模块索引见 [`docs/codebase-review.md`](docs/codebase-review.md)。
 
 ### Available endpoints
 

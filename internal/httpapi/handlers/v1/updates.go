@@ -3,7 +3,6 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
@@ -24,13 +23,23 @@ import (
 func (h *Handler) Updates(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsUpdatesV1"
 	var CarsUpdatesError1 = "Unable to load updates."
 
 	// getting CarID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
 	// query options to modify query when collecting data
-	ResultPage := convert.StrToInt(c.DefaultQuery("page", "1"))
-	ResultShow := convert.StrToInt(c.DefaultQuery("show", "100"))
+	ResultPage, ok := optionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, 2147483647)
+	if !ok {
+		return
+	}
+	ResultShow, ok := optionalIntInRange(c, handler, "show", c.Query("show"), 100, 1, maxV1PageSize)
+	if !ok {
+		return
+	}
 
 	// creating required vars
 	var (

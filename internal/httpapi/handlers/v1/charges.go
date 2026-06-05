@@ -54,24 +54,34 @@ import (
 func (h *Handler) Charges(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsChargesV1"
 	var CarsChargesError1 = "Unable to load charges."
 	var CarsChargesError2 = "Invalid date format."
 
 	// getting CarID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
 	// query options to modify query when collecting data
-	ResultPage := convert.StrToInt(c.DefaultQuery("page", "1"))
-	ResultShow := convert.StrToInt(c.DefaultQuery("show", "100"))
+	ResultPage, ok := optionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, 2147483647)
+	if !ok {
+		return
+	}
+	ResultShow, ok := optionalIntInRange(c, handler, "show", c.Query("show"), 100, 1, maxV1PageSize)
+	if !ok {
+		return
+	}
 
 	// get startDate and endDate from query parameters
 	parsedStartDate, err := h.parseDate(c.Query("startDate"))
 	if err != nil {
-		respond.HandleError(c, "TeslaMateAPICarsChargesV1", CarsChargesError2, err.Error())
+		respond.HandleError(c, handler, CarsChargesError2, err.Error())
 		return
 	}
 	parsedEndDate, err := h.parseDate(c.Query("endDate"))
 	if err != nil {
-		respond.HandleError(c, "TeslaMateAPICarsChargesV1", CarsChargesError2, err.Error())
+		respond.HandleError(c, handler, CarsChargesError2, err.Error())
 		return
 	}
 

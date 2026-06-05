@@ -30,42 +30,46 @@ import (
 func (h *Handler) Drives(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsDrivesV1"
 	var CarsDrivesError1 = "Unable to load drives."
 	var CarsDrivesError2 = "Invalid date format."
 
 	// getting CarID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
 	// query options to modify query when collecting data
-	ResultPage := convert.StrToInt(c.DefaultQuery("page", "1"))
-	ResultShow := convert.StrToInt(c.DefaultQuery("show", "100"))
+	ResultPage, ok := optionalIntInRange(c, handler, "page", c.Query("page"), 1, 1, 2147483647)
+	if !ok {
+		return
+	}
+	ResultShow, ok := optionalIntInRange(c, handler, "show", c.Query("show"), 100, 1, maxV1PageSize)
+	if !ok {
+		return
+	}
 
 	// get startDate and endDate from query parameters
 	parsedStartDate, err := h.parseDate(c.Query("startDate"))
 	if err != nil {
-		respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError2, err.Error())
+		respond.HandleError(c, handler, CarsDrivesError2, err.Error())
 		return
 	}
 	parsedEndDate, err := h.parseDate(c.Query("endDate"))
 	if err != nil {
-		respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError2, err.Error())
+		respond.HandleError(c, handler, CarsDrivesError2, err.Error())
 		return
 	}
 	// get optional minDistance and maxDistance filters from query parameters
 	minDistanceParam := c.Query("minDistance")
-	minDistance := 0.0
-	if minDistanceParam != "" {
-		minDistance = convert.StrToFloat(minDistanceParam)
-		if minDistance < 0 {
-			minDistance = 0
-		}
+	minDistance, ok := optionalFloatMin(c, handler, "minDistance", minDistanceParam, 0)
+	if !ok {
+		return
 	}
 	maxDistanceParam := c.Query("maxDistance")
-	maxDistance := 0.0
-	if maxDistanceParam != "" {
-		maxDistance = convert.StrToFloat(maxDistanceParam)
-		if maxDistance < 0 {
-			maxDistance = 0
-		}
+	maxDistance, ok := optionalFloatMin(c, handler, "maxDistance", maxDistanceParam, 0)
+	if !ok {
+		return
 	}
 
 	// creating required vars
@@ -268,7 +272,7 @@ func (h *Handler) Drives(c *gin.Context) {
 			drive.RangeRated.EndRange = convert.KilometersToMiles(drive.RangeRated.EndRange)
 			drive.RangeRated.RangeDiff = convert.KilometersToMiles(drive.RangeRated.RangeDiff)
 			if drive.ConsumptionNet != nil {
-				*drive.ConsumptionNet = convert.KilometersToMiles(*drive.ConsumptionNet)
+				*drive.ConsumptionNet = convert.WhPerKmToWhPerMile(*drive.ConsumptionNet)
 			}
 		}
 		// converting values based of settings UnitsTemperature

@@ -12,11 +12,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -149,8 +152,12 @@ func main() {
 
 	const listenAddr = ":8080"
 	server := &http.Server{
-		Addr:    listenAddr,
-		Handler: router,
+		Addr:              listenAddr,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	if cfg.MQTTDisabled {
@@ -158,14 +165,19 @@ func main() {
 	}
 
 	// graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	shutdownSignal, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
 
 	go func() {
-		<-quit
+		<-shutdownSignal.Done()
 		log.Println("[info] TeslaMateAPI received shutdown input")
-		if err := server.Close(); err != nil {
-			log.Fatalf("[error] TeslaMateAPI server close error: %v", err)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("[error] TeslaMateAPI graceful shutdown error: %v", err)
+			if closeErr := server.Close(); closeErr != nil {
+				log.Printf("[error] TeslaMateAPI server close error: %v", closeErr)
+			}
 		}
 	}()
 

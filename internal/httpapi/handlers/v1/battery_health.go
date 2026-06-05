@@ -20,8 +20,12 @@ import (
 // @Failure      401    {object}  dto.ErrorEnvelope
 // @Router       /api/v1/cars/{CarID}/battery-health [get]
 func (h *Handler) BatteryHealth(c *gin.Context) {
+	const handler = "TeslaMateAPICarsBatteryHealthV1"
 	var CarsBatteryHealthError1 = "Unable to load battery health data."
-	CarID := convert.StrToInt(c.Param("CarID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
 
 	// creating required vars
 	var (

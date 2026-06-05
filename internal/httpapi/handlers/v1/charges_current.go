@@ -29,6 +29,7 @@ const (
 func (h *Handler) ChargesCurrent(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsChargesCurrentV1"
 	var (
 		CarsChargesCurrentError1 = "Unable to load current charge."
 		CarsChargesCurrentError2 = "Unable to load current charge details."
@@ -36,7 +37,10 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 	)
 
 	// getting CarID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
 
 	// creating required vars
 	var (
@@ -55,7 +59,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 		outsideTempAvg                         sql.NullFloat64
 		odometer                               sql.NullFloat64
 		durationMin                            sql.NullFloat64
-		durationStr, address                   sql.NullString
+		durationStr, address, latestDetailDate sql.NullString
 	)
 
 	// Construct the query with the preferred range setting
@@ -76,6 +80,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 			position.odometer as odometer,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
+			(SELECT date FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS latest_detail_date,
 			cars.name,
 			end_date IS NULL AS is_charging
 		FROM charging_processes
@@ -106,6 +111,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 		&odometer,
 		&UnitsLength,
 		&UnitsTemperature,
+		&latestDetailDate,
 		&CarName,
 		&isCharging,
 	)
@@ -183,6 +189,19 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 
 	// Adjusting to timezone differences from UTC to be user-specific
 	charge.StartDate = h.timeInTZ(charge.StartDate)
+
+	if latestDetailDate.Valid {
+		latestDetailDateInTZ := h.timeInTZ(latestDetailDate.String)
+		latestDetailTime, err := time.Parse(time.RFC3339, latestDetailDateInTZ)
+		if err != nil {
+			respond.HandleError(c, handler, CarsChargesCurrentError2, "Error parsing charge detail date")
+			return
+		}
+		if time.Since(latestDetailTime).Minutes() > maxChargeInactivityThresholdMinutes {
+			respond.HandleError(c, handler, CarsChargesCurrentError3, "No active charging in progress. There are incomplete charges but last update was more than 15 minutes ago.")
+			return
+		}
+	}
 
 	// Getting detailed charge data from database
 	detailsQuery := `

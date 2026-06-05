@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,11 +19,11 @@ import (
 // legacy TeslaMateAPIHandleSuccessResponse helper.
 func HandleSuccess(c *gin.Context, handler string, j any) {
 	if gin.IsDebugging() {
-		log.Println("[debug] " + handler + " - (" + c.Request.RequestURI + ") returned data:")
+		log.Println("[debug] " + handler + " - (" + SafeRequestURI(c) + ") returned data:")
 		js, _ := json.Marshal(j)
 		log.Printf("[debug] %s\n", js)
 	}
-	log.Println("[info] " + handler + " - (" + c.Request.RequestURI + ") executed successfully.")
+	log.Println("[info] " + handler + " - (" + SafeRequestURI(c) + ") executed successfully.")
 	c.JSON(http.StatusOK, j)
 }
 
@@ -29,22 +31,47 @@ func HandleSuccess(c *gin.Context, handler string, j any) {
 // pass-through and for the legacy 200+error envelope variants. Mirrors
 // TeslaMateAPIHandleOtherResponse.
 func HandleOther(c *gin.Context, httpCode int, handler string, j any) {
-	log.Println("[info] " + handler + " - (" + c.Request.RequestURI + ") executed successfully.")
+	log.Println("[info] " + handler + " - (" + SafeRequestURI(c) + ") executed successfully.")
 	c.JSON(httpCode, j)
 }
 
 // HandleError emits the legacy v1 error envelope: HTTP 200 with `{"error": s2}`.
 // v1 handlers must keep this shape for backwards compatibility.
 func HandleError(c *gin.Context, handler, message, detail string) {
-	log.Println("[error] " + handler + " - (" + c.Request.RequestURI + "). " + message + "; " + detail)
+	log.Println("[error] " + handler + " - (" + SafeRequestURI(c) + "). " + message + "; " + detail)
 	c.JSON(http.StatusOK, gin.H{"error": message})
 }
 
 // HandleErrorV2 emits a real HTTP status code instead of the upstream-compat
 // 200+{error} envelope. v2 handlers should use this.
 func HandleErrorV2(c *gin.Context, handler string, httpCode int, message, detail string) {
-	log.Println("[error] " + handler + " - (" + c.Request.RequestURI + "). " + message + "; " + detail)
+	log.Println("[error] " + handler + " - (" + SafeRequestURI(c) + "). " + message + "; " + detail)
 	c.JSON(httpCode, gin.H{"error": message})
+}
+
+// SafeRequestURI returns the request URI with sensitive query values redacted.
+func SafeRequestURI(c *gin.Context) string {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return ""
+	}
+	return SafeRequestURIFromURL(c.Request.URL)
+}
+
+// SafeRequestURIFromURL returns the request URI with sensitive query values redacted.
+func SafeRequestURIFromURL(rawURL *url.URL) string {
+	if rawURL == nil {
+		return ""
+	}
+	u := *rawURL
+	q := u.Query()
+	for key := range q {
+		lowerKey := strings.ToLower(key)
+		if lowerKey == "token" || strings.Contains(lowerKey, "token") {
+			q.Set(key, "[REDACTED]")
+		}
+	}
+	u.RawQuery = q.Encode()
+	return u.RequestURI()
 }
 
 // RequirePositiveIntParam parses a path/query integer with strict

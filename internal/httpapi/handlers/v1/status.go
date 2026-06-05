@@ -37,9 +37,12 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 
-	carID := convert.StrToInt(c.Param("CarID"))
-	stat := h.statusCache.Get(carID)
-	if stat == nil {
+	carID, ok := requirePositiveIntParam(c, "TeslaMateAPICarsStatusV1", "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
+	stat, ok := h.statusCache.Snapshot(carID)
+	if !ok {
 		respond.HandleError(c, "TeslaMateAPICarsStatusV1", "no info on this car ID", "-")
 		return
 	}

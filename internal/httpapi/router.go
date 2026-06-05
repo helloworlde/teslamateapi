@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/gzip"
@@ -11,6 +12,7 @@ import (
 	v1 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v1"
 	v2 "github.com/tobiasehlert/teslamateapi/internal/httpapi/handlers/v2"
 	"github.com/tobiasehlert/teslamateapi/internal/metrics"
+	"github.com/tobiasehlert/teslamateapi/internal/respond"
 )
 
 // Deps groups everything NewRouter needs to wire the gin engine.
@@ -27,7 +29,23 @@ type Deps struct {
 // src/webserver.go. External HTTP behaviour (paths, methods, redirects,
 // 404 shape) is preserved byte-identical.
 func NewRouter(d Deps) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		path := param.Path
+		if param.Request != nil {
+			path = respond.SafeRequestURIFromURL(param.Request.URL)
+		}
+		return fmt.Sprintf("[GIN] %v | %3d | %13v | %15s | %-7s %#v\n%s",
+			param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+			param.StatusCode,
+			param.Latency,
+			param.ClientIP,
+			param.Method,
+			path,
+			param.ErrorMessage,
+		)
+	}))
+	r.Use(gin.Recovery())
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	r.Use(APIVersionHeader(d.APIVersion))
 	r.Use(metrics.Middleware())

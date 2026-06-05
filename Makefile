@@ -1,7 +1,7 @@
 .PHONY: help build run docs docs-clean tidy fmt vet test lint clean docker-build docker-run install-tools
 
 # Pinned to match the swaggo runtime locked in go.mod
-SWAG_VERSION := v1.16.4
+SWAG_VERSION := v1.16.6
 SWAG := $(shell go env GOPATH)/bin/swag
 
 API_VERSION  ?= dev

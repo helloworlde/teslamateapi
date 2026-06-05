@@ -1,19 +1,18 @@
 package v1
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
-	"io"
+	"errors"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/audit"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
-	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
@@ -21,6 +20,8 @@ import (
 // teslaCommandHTTPTimeout caps the outbound request to Tesla's owner-api so
 // a hung peer can't pin a goroutine indefinitely.
 const teslaCommandHTTPTimeout = 30 * time.Second
+
+var teslaCommandHTTPClient = &http.Client{Timeout: teslaCommandHTTPTimeout}
 
 // TeslaMateAPICarsCommandListV1 returns the allow-listed Tesla command names.
 //
@@ -114,25 +115,27 @@ func (h *Handler) Command(c *gin.Context) {
 	}
 
 	// getting CarID param from URL and validating that it's not zero
-	CarID := convert.StrToInt(c.Param("CarID"))
-	ev.CarID = CarID
-	if CarID == 0 {
-		log.Println("[error] TeslaMateAPICarsCommandV1 CarID is invalid (zero)!")
+	CarID, ok := requirePositiveIntParamStatus(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
 		ev.Outcome = audit.OutcomeDenied
 		ev.Reason = audit.ReasonInvalidCarID
 		emit()
-		respond.HandleOther(c, http.StatusBadRequest, handler, gin.H{"error": "CarID invalid"})
 		return
 	}
+	ev.CarID = CarID
 
 	// getting request body to pass to Tesla
-	reqBody, err := io.ReadAll(c.Request.Body)
+	reqBody, err := readAllLimited(c.Request.Body, maxProxyRequestBodyBytes)
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 error in first io.ReadAll", err)
 		ev.Outcome = audit.OutcomeError
 		ev.Reason = audit.ReasonReadBodyFail
 		ev.ErrDetail = err.Error()
 		emit()
+		if bodyTooLarge(err) {
+			respond.HandleOther(c, http.StatusRequestEntityTooLarge, handler, gin.H{"error": "request body too large"})
+			return
+		}
 		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
 		return
 	}
@@ -234,8 +237,7 @@ func (h *Handler) Command(c *gin.Context) {
 	upstreamURL := TeslaEndpointUrl + "/api/1/vehicles/" + TeslaVehicleID + cmdPath
 	ev.UpstreamURL = upstreamURL
 
-	client := &http.Client{Timeout: teslaCommandHTTPTimeout}
-	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, upstreamURL, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, upstreamURL, bytes.NewReader(reqBody))
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 http.NewRequestWithContext:", err)
 		ev.Outcome = audit.OutcomeError
@@ -248,7 +250,7 @@ func (h *Handler) Command(c *gin.Context) {
 	req.Header.Set("Authorization", "Bearer "+TeslaAccessToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "TeslaMateApi/"+h.cfg.APIVersion+" (+https://github.com/tobiasehlert/teslamateapi)")
-	resp, err := client.Do(req)
+	resp, err := teslaCommandHTTPClient.Do(req)
 
 	// check response error
 	if err != nil {
@@ -262,9 +264,8 @@ func (h *Handler) Command(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
-	defer client.CloseIdleConnections()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := readAllLimited(resp.Body, maxProxyResponseBodyBytes)
 	if err != nil {
 		log.Println("[error] TeslaMateAPICarsCommandV1 error in second io.ReadAll:", err)
 		ev.Outcome = audit.OutcomeUpstream
@@ -272,6 +273,10 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.UpstreamCode = resp.StatusCode
 		ev.ErrDetail = err.Error()
 		emit()
+		if errors.Is(err, errBodyTooLarge) {
+			respond.HandleOther(c, http.StatusBadGateway, handler, gin.H{"error": "upstream response too large"})
+			return
+		}
 		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
 		return
 	}

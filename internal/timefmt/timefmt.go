@@ -18,7 +18,16 @@ const DBTimestampFormat = "2006-01-02T15:04:05Z"
 // GetTimeInTimeZone converts a DBTimestampFormat datestring into RFC3339
 // in tz.
 func GetTimeInTimeZone(datestring string, tz *time.Location) string {
-	t, _ := time.Parse(DBTimestampFormat, datestring)
+	if datestring == "" {
+		return ""
+	}
+	t, err := time.Parse(DBTimestampFormat, datestring)
+	if err != nil {
+		if gin.IsDebugging() {
+			log.Printf("[warning] getTimeInTimeZone - failed to parse %q: %v", datestring, err)
+		}
+		return datestring
+	}
 	out := t.In(tz).Format(time.RFC3339)
 	if gin.IsDebugging() {
 		log.Println("[debug] getTimeInTimeZone - UTC", t.Format(time.RFC3339), "time converted to", tz, "is", out)

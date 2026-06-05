@@ -7,12 +7,18 @@ package v1
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/auth"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
+	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/internal/status"
 	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/nullable"
@@ -113,4 +119,70 @@ func (h *Handler) allowListContains(cmd string) bool {
 		return false
 	}
 	return h.allowList.Contains(cmd)
+}
+
+const maxV1PageSize = 10000
+
+const (
+	maxProxyRequestBodyBytes  int64 = 1 << 20
+	maxProxyResponseBodyBytes int64 = 10 << 20
+)
+
+var errBodyTooLarge = errors.New("body exceeds configured limit")
+
+func requirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bool) {
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < 1 {
+		respond.HandleError(c, handler, name+" must be a positive integer.", "got: "+raw)
+		return 0, false
+	}
+	return v, true
+}
+
+func requirePositiveIntParamStatus(c *gin.Context, handler, name, raw string) (int, bool) {
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < 1 {
+		respond.HandleOther(c, http.StatusBadRequest, handler, gin.H{"error": name + " invalid"})
+		return 0, false
+	}
+	return v, true
+}
+
+func optionalIntInRange(c *gin.Context, handler, name, raw string, def, min, max int) (int, bool) {
+	if raw == "" {
+		return def, true
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil || v < min || v > max {
+		respond.HandleError(c, handler, fmt.Sprintf("%s must be an integer in [%d, %d].", name, min, max), "got: "+raw)
+		return 0, false
+	}
+	return v, true
+}
+
+func optionalFloatMin(c *gin.Context, handler, name, raw string, min float64) (float64, bool) {
+	if raw == "" {
+		return 0, true
+	}
+	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil || v < min {
+		respond.HandleError(c, handler, fmt.Sprintf("%s must be a number >= %.0f.", name, min), "got: "+raw)
+		return 0, false
+	}
+	return v, true
+}
+
+func readAllLimited(r io.Reader, limit int64) ([]byte, error) {
+	b, err := io.ReadAll(io.LimitReader(r, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(b)) > limit {
+		return nil, fmt.Errorf("%w: %d bytes", errBodyTooLarge, limit)
+	}
+	return b, nil
+}
+
+func bodyTooLarge(err error) bool {
+	return errors.Is(err, errBodyTooLarge)
 }

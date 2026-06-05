@@ -23,8 +23,8 @@ func pqQuote(v string) string {
 
 // New opens and pings a Postgres connection using settings from cfg.
 //
-// Returns a fatal log on failure (matches the historical behaviour from
-// initDBconnection in src/webserver.go); callers should not need to retry.
+// Startup policy lives in main; this package only returns wrapped errors so
+// tests and future callers can decide whether to retry, fail readiness, or exit.
 func New(cfg config.Config) (*sql.DB, error) {
 	dbsslmode := cfg.DBSSLMode
 	switch dbsslmode {
@@ -48,10 +48,11 @@ func New(cfg config.Config) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Fatalf("[error] initDBconnection - database connection error: %v", err)
+		return nil, fmt.Errorf("database open: %w", err)
 	}
 	if err := db.Ping(); err != nil {
-		log.Fatalf("[error] initDBconnection - database ping error: %v", err)
+		_ = db.Close()
+		return nil, fmt.Errorf("database ping: %w", err)
 	}
 	if gin.IsDebugging() {
 		log.Println("[debug] initDBconnection - database connection established successfully.")

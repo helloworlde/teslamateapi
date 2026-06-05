@@ -3,7 +3,6 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
@@ -29,7 +28,11 @@ func (h *Handler) Cars(c *gin.Context) {
 	ParamCarID := c.Param("CarID")
 	var CarID int
 	if ParamCarID != "" {
-		CarID = convert.StrToInt(ParamCarID)
+		var ok bool
+		CarID, ok = requirePositiveIntParam(c, "TeslaMateAPICarsV1", "CarID", ParamCarID)
+		if !ok {
+			return
+		}
 	}
 
 	// creating required vars

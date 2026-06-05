@@ -64,6 +64,9 @@ func MilesToKilometers(mi float64) float64 { return mi * 1.609344 }
 // KilometersToMilesInteger converts a kilometre integer to miles, truncated.
 func KilometersToMilesInteger(km int) int { return int(float64(km) * 0.62137119223733) }
 
+// WhPerKmToWhPerMile converts consumption from Wh/km to Wh/mi.
+func WhPerKmToWhPerMile(whPerKm float64) float64 { return whPerKm * 1.609344 }
+
 // BarToPsi converts bar to psi.
 func BarToPsi(bar float64) float64 { return bar * 14.503773800722 }
 

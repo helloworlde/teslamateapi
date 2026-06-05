@@ -28,14 +28,21 @@ import (
 func (h *Handler) ChargesDetails(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsChargesDetailsV1"
 	var (
 		CarsChargesDetailsError1 = "Unable to load charge."
 		CarsChargesDetailsError2 = "Unable to load charge details."
 	)
 
 	// getting CarID and ChargeID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
-	ChargeID := convert.StrToInt(c.Param("ChargeID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
+	ChargeID, ok := requirePositiveIntParam(c, handler, "ChargeID", c.Param("ChargeID"))
+	if !ok {
+		return
+	}
 
 	// creating required vars
 	var (

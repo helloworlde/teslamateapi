@@ -28,14 +28,21 @@ import (
 func (h *Handler) DrivesDetails(c *gin.Context) {
 
 	// define error messages
+	const handler = "TeslaMateAPICarsDrivesDetailsV1"
 	var (
 		CarsDrivesDetailsError1 = "Unable to load drive."
 		CarsDrivesDetailsError2 = "Unable to load drive details."
 	)
 
 	// getting CarID and DriveID param from URL
-	CarID := convert.StrToInt(c.Param("CarID"))
-	DriveID := convert.StrToInt(c.Param("DriveID"))
+	CarID, ok := requirePositiveIntParam(c, handler, "CarID", c.Param("CarID"))
+	if !ok {
+		return
+	}
+	DriveID, ok := requirePositiveIntParam(c, handler, "DriveID", c.Param("DriveID"))
+	if !ok {
+		return
+	}
 
 	// creating required vars
 	var (
@@ -163,7 +170,7 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 		drive.RangeRated.EndRange = convert.KilometersToMiles(drive.RangeRated.EndRange)
 		drive.RangeRated.RangeDiff = convert.KilometersToMiles(drive.RangeRated.RangeDiff)
 		if drive.ConsumptionNet != nil {
-			*drive.ConsumptionNet = convert.KilometersToMiles(*drive.ConsumptionNet)
+			*drive.ConsumptionNet = convert.WhPerKmToWhPerMile(*drive.ConsumptionNet)
 		}
 	}
 	// converting values based of settings UnitsTemperature

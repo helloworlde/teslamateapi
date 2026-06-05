@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/tobiasehlert/teslamateapi/internal/respond"
 )
 
 // Handler bundles the readiness flag for the probe handlers. All other
@@ -116,7 +118,7 @@ func (h *Handler) Readyz(c *gin.Context) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": http.StatusText(http.StatusServiceUnavailable)})
 		return
 	}
-	log.Println("[info] webserver - (" + c.Request.RequestURI + ") executed successfully.")
+	log.Println("[info] webserver - (" + respond.SafeRequestURI(c) + ") executed successfully.")
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusText(http.StatusOK)})
 }
 
