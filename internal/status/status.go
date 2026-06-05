@@ -43,7 +43,7 @@ type Info struct {
 	MQTTDataSpeed                      int
 	MQTTDataHeading                    int
 	MQTTDataElevation                  int
-	MQTTDataLocked                     bool
+	MQTTDataLocked                     *bool
 	MQTTDataSentryMode                 bool
 	MQTTDataWindowsOpen                bool
 	MQTTDataDoorsOpen                  bool
@@ -312,7 +312,9 @@ func (c *Cache) newMessage(_ mqtt.Client, msg mqtt.Message) {
 	case "elevation":
 		stat.MQTTDataElevation = convert.StrToInt(string(msg.Payload()))
 	case "locked":
-		stat.MQTTDataLocked = convert.StrToBool(string(msg.Payload()))
+		if value, ok := convert.StrToBoolOK(string(msg.Payload())); ok {
+			stat.MQTTDataLocked = &value
+		}
 	case "sentry_mode":
 		stat.MQTTDataSentryMode = convert.StrToBool(string(msg.Payload()))
 	case "windows_open":

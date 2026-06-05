@@ -39,19 +39,19 @@ type V1StatusCarGeodata struct {
 
 // V1StatusCarStatus captures door/lock/sentry-mode booleans for /status.
 type V1StatusCarStatus struct {
-	Healthy                bool `json:"healthy" example:"true"`
-	Locked                 bool `json:"locked" example:"true"`
-	SentryMode             bool `json:"sentry_mode" example:"false"`
-	WindowsOpen            bool `json:"windows_open" example:"false"`
-	DoorsOpen              bool `json:"doors_open" example:"false"`
-	DriverFrontDoorOpen    bool `json:"driver_front_door_open" example:"false"`
-	DriverRearDoorOpen     bool `json:"driver_rear_door_open" example:"false"`
-	PassengerFrontDoorOpen bool `json:"passenger_front_door_open" example:"false"`
-	PassengerRearDoorOpen  bool `json:"passenger_rear_door_open" example:"false"`
-	TrunkOpen              bool `json:"trunk_open" example:"false"`
-	FrunkOpen              bool `json:"frunk_open" example:"false"`
-	IsUserPresent          bool `json:"is_user_present" example:"false"`
-	CenterDisplayState     int  `json:"center_display_state" example:"0"`
+	Healthy                bool  `json:"healthy" example:"true"`
+	Locked                 *bool `json:"locked" example:"true"`
+	SentryMode             bool  `json:"sentry_mode" example:"false"`
+	WindowsOpen            bool  `json:"windows_open" example:"false"`
+	DoorsOpen              bool  `json:"doors_open" example:"false"`
+	DriverFrontDoorOpen    bool  `json:"driver_front_door_open" example:"false"`
+	DriverRearDoorOpen     bool  `json:"driver_rear_door_open" example:"false"`
+	PassengerFrontDoorOpen bool  `json:"passenger_front_door_open" example:"false"`
+	PassengerRearDoorOpen  bool  `json:"passenger_rear_door_open" example:"false"`
+	TrunkOpen              bool  `json:"trunk_open" example:"false"`
+	FrunkOpen              bool  `json:"frunk_open" example:"false"`
+	IsUserPresent          bool  `json:"is_user_present" example:"false"`
+	CenterDisplayState     int   `json:"center_display_state" example:"0"`
 }
 
 // V1StatusCarVersions captures software version info for /status.

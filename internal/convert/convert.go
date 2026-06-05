@@ -25,6 +25,18 @@ func StrToBool(data string) bool {
 	return value
 }
 
+// StrToBoolOK parses data as a bool and reports whether parsing succeeded.
+func StrToBoolOK(data string) (bool, bool) {
+	value, err := strconv.ParseBool(data)
+	if err != nil {
+		if gin.IsDebugging() {
+			log.Printf("[warning] convertStringToBool: failed to parse '%s' as boolean", data)
+		}
+		return false, false
+	}
+	return value, true
+}
+
 // StrToFloat parses data as a float64, returning 0.0 on parse failure.
 func StrToFloat(data string) float64 {
 	value, err := strconv.ParseFloat(data, 64)
