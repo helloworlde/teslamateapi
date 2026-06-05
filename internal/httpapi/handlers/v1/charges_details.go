@@ -13,12 +13,15 @@ import (
 // TeslaMateAPICarsChargesDetailsV1 returns one charging session with samples.
 //
 // @Summary      Charge details
-// @Description  Returns one charge session along with every per-sample row.
+// @Description  Returns one charge session with charge samples. Use sample/include_details query parameters to control detail density.
 // @Tags         v1
 // @Security     BearerAuth
 // @Produce      json
 // @Param        CarID     path      int  true  "TeslaMate cars.id"
 // @Param        ChargeID  path      int  true  "charging_processes.id"
+// @Param        sample      query     string  false  "充电明细下采样：auto（默认）、full、every_5s、every_30s"  Enums(auto, full, every_5s, every_30s)
+// @Param        max_points  query     int     false  "auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留"
+// @Param        include_details  query  bool  false  "设为 false 可在响应中省略 charge_details"
 // @Success      200       {object}  dto.V1ChargeDetailResponse
 // @Failure      401       {object}  dto.ErrorEnvelope
 // @Router       /api/v1/cars/{CarID}/charges/{ChargeID} [get]
@@ -132,34 +135,31 @@ func (h *Handler) ChargesDetails(c *gin.Context) {
 	charge.StartDate = h.timeInTZ(charge.StartDate)
 	charge.EndDate = h.timeInTZ(charge.EndDate)
 
+	includeDetails := true
+	if v := c.Query("include_details"); v == "false" || v == "0" {
+		includeDetails = false
+	}
+	if !includeDetails {
+		jsonData := dto.V1ChargeDetailResponse{
+			Data: dto.V1ChargeDetailData{
+				Car: dto.Car{
+					CarID:   CarID,
+					CarName: CarName,
+				},
+				Charge: charge,
+				TeslaMateUnits: dto.TeslaMateUnits{
+					UnitsLength:      UnitsLength,
+					UnitsTemperature: UnitsTemperature,
+				},
+			},
+		}
+		respond.HandleSuccess(c, "TeslaMateAPICarsChargesDetailsV1", jsonData)
+		return
+	}
+
 	// getting detailed charge data from database
-	query = `
- 			SELECT
-				id AS detail_id,
-				date,
-				battery_level,
-				usable_battery_level,
-				charge_energy_added,
-				not_enough_power_to_heat,
-				COALESCE(charger_actual_current, 0) as charger_actual_current,
-				COALESCE(charger_phases, 0) AS charger_phases,
-				COALESCE(charger_pilot_current, 0) as charger_pilot_current,
-				COALESCE(charger_power, 0) as charger_power,
-				COALESCE(charger_voltage, 0) as charger_voltage,
-				ideal_battery_range_km AS ideal_battery_range,
-				rated_battery_range_km AS rated_battery_range,
-				battery_heater,
-				battery_heater_on,
-				battery_heater_no_power,
-				conn_charge_cable,
-				fast_charger_present,
-				fast_charger_brand,
-				fast_charger_type,
-				outside_temp
-			FROM charges
-			WHERE charging_process_id=$1
-			ORDER BY id ASC;`
-	rows, err := h.db.QueryContext(c.Request.Context(), query, ChargeID)
+	query, detailArgs := chargeDetailsQuery(ChargeID, c.DefaultQuery("sample", "auto"), detailMaxPoints(c.Query("max_points")))
+	rows, err := h.db.QueryContext(c.Request.Context(), query, detailArgs...)
 
 	// checking for errors in query
 	if err != nil {

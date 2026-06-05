@@ -13,12 +13,15 @@ import (
 // TeslaMateAPICarsDrivesDetailsV1 returns one drive with per-sample positions.
 //
 // @Summary      Drive details
-// @Description  Returns one drive along with every position sample recorded for it.
+// @Description  Returns one drive with position samples. Use sample/include_route query parameters to control detail density.
 // @Tags         v1
 // @Security     BearerAuth
 // @Produce      json
 // @Param        CarID    path      int  true  "TeslaMate cars.id"
 // @Param        DriveID  path      int  true  "drives.id"
+// @Param        sample      query     string  false  "行程明细下采样：full、every_5s（默认）、every_30s、auto"  Enums(full, every_5s, every_30s, auto)
+// @Param        max_points  query     int     false  "auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留"
+// @Param        include_route  query  bool    false  "设为 false 可在响应中省略 drive_details（行程轨迹）"
 // @Success      200      {object}  dto.V1DriveDetailResponse
 // @Failure      401      {object}  dto.ErrorEnvelope
 // @Router       /api/v1/cars/{CarID}/drives/{DriveID} [get]
@@ -172,37 +175,31 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 	drive.StartDate = h.timeInTZ(drive.StartDate)
 	drive.EndDate = h.timeInTZ(drive.EndDate)
 
+	includeRoute := true
+	if v := c.Query("include_route"); v == "false" || v == "0" {
+		includeRoute = false
+	}
+	if !includeRoute {
+		jsonData := dto.V1DriveDetailResponse{
+			Data: dto.V1DriveDetailData{
+				Car: dto.Car{
+					CarID:   CarID,
+					CarName: CarName,
+				},
+				Drive: drive,
+				TeslaMateUnits: dto.TeslaMateUnits{
+					UnitsLength:      UnitsLength,
+					UnitsTemperature: UnitsTemperature,
+				},
+			},
+		}
+		respond.HandleSuccess(c, "TeslaMateAPICarsDrivesDetailsV1", jsonData)
+		return
+	}
+
 	// getting detailed drive data from database
-	query = `
-		 			SELECT
-						id AS detail_id,
-						date,
-						latitude,
-						longitude,
-						COALESCE(speed, 0) AS speed,
-						power,
-						odometer,
-						battery_level,
-						usable_battery_level,
-						elevation,
-						inside_temp,
-						outside_temp,
-						is_climate_on,
-						fan_status,
-						driver_temp_setting,
-						passenger_temp_setting,
-						is_rear_defroster_on,
-						is_front_defroster_on,
-						est_battery_range_km,
-						ideal_battery_range_km,
-						rated_battery_range_km,
-						battery_heater,
-						battery_heater_on,
-						battery_heater_no_power
-		 			FROM positions
-		 			WHERE drive_id = $1
-		 			ORDER BY id ASC;`
-	rows, err := h.db.QueryContext(c.Request.Context(), query, DriveID)
+	query, detailArgs := driveDetailsQuery(DriveID, c.DefaultQuery("sample", "every_5s"), detailMaxPoints(c.Query("max_points")))
+	rows, err := h.db.QueryContext(c.Request.Context(), query, detailArgs...)
 
 	// checking for errors in query
 	if err != nil {

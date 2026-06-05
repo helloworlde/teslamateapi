@@ -155,6 +155,8 @@ Basically the same environment variables for the database, mqqt and timezone nee
 
 More detailed documentation of every endpoint will come..
 
+For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-detail-downsampling.md`](docs/v1-detail-downsampling.md).
+
 ### Available endpoints
 
 - GET `/api`
@@ -168,6 +170,10 @@ More detailed documentation of every endpoint will come..
     - `endDate` (optional, use canonical UTC format in RFC3339)
 - GET `/api/v1/cars/:CarID/charges/current`
 - GET `/api/v1/cars/:CarID/charges/:ChargeID`
+  - Supported parameters:
+    - `sample` (optional, `auto` by default; supported values: `auto`, `full`, `every_5s`, `every_30s`)
+    - `max_points` (optional, target detail points for `auto`; valid range `100`-`3000`, default `800`; state-change points are always preserved)
+    - `include_details` (optional, set to `false` or `0` to omit `charge_details`)
 - GET `/api/v1/cars/:CarID/command`
 - POST `/api/v1/cars/:CarID/command/:Command`
 - GET `/api/v1/cars/:CarID/drives`
@@ -177,6 +183,10 @@ More detailed documentation of every endpoint will come..
     - `minDistance` (optional, filter by minimum trip distance, units based on TeslaMate settings)
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
+  - Supported parameters:
+    - `sample` (optional, `every_5s` by default for backward compatibility; supported values: `full`, `every_5s`, `every_30s`, `auto`)
+    - `max_points` (optional, target detail points for `auto`; valid range `100`-`3000`, default `800`; state-change points are always preserved)
+    - `include_route` (optional, set to `false` or `0` to omit `drive_details`)
 - PUT `/api/v1/cars/:CarID/logging/:Command`
 - GET `/api/v1/cars/:CarID/logging`
 - GET `/api/v1/cars/:CarID/status`

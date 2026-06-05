@@ -2151,7 +2151,8 @@ paths:
       - v1
   /api/v1/cars/{CarID}/charges/{ChargeID}:
     get:
-      description: Returns one charge session along with every per-sample row.
+      description: Returns one charge session with charge samples. Use sample/include_details
+        query parameters to control detail density.
       parameters:
       - description: TeslaMate cars.id
         in: path
@@ -2163,6 +2164,23 @@ paths:
         name: ChargeID
         required: true
         type: integer
+      - description: 充电明细下采样：auto（默认）、full、every_5s、every_30s
+        enum:
+        - auto
+        - full
+        - every_5s
+        - every_30s
+        in: query
+        name: sample
+        type: string
+      - description: auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留
+        in: query
+        name: max_points
+        type: integer
+      - description: 设为 false 可在响应中省略 charge_details
+        in: query
+        name: include_details
+        type: boolean
       produces:
       - application/json
       responses:
@@ -2360,8 +2378,8 @@ paths:
       - v1
   /api/v1/cars/{CarID}/drives/{DriveID}:
     get:
-      description: Returns one drive along with every position sample recorded for
-        it.
+      description: Returns one drive with position samples. Use sample/include_route
+        query parameters to control detail density.
       parameters:
       - description: TeslaMate cars.id
         in: path
@@ -2373,6 +2391,23 @@ paths:
         name: DriveID
         required: true
         type: integer
+      - description: 行程明细下采样：full、every_5s（默认）、every_30s、auto
+        enum:
+        - full
+        - every_5s
+        - every_30s
+        - auto
+        in: query
+        name: sample
+        type: string
+      - description: auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留
+        in: query
+        name: max_points
+        type: integer
+      - description: 设为 false 可在响应中省略 drive_details（行程轨迹）
+        in: query
+        name: include_route
+        type: boolean
       produces:
       - application/json
       responses:
