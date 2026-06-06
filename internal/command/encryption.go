@@ -81,7 +81,7 @@ func GetCarRegionAPI(accessToken string) CarRegionAPI {
 	if len(payload) != 3 {
 		return GlobalAPI
 	}
-	decodedStr, err := base64.RawStdEncoding.DecodeString(payload[1])
+	decodedStr, err := base64.RawURLEncoding.DecodeString(payload[1])
 	if err != nil {
 		return GlobalAPI
 	}

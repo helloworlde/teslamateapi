@@ -72,7 +72,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 			COALESCE(cost, 0) AS cost,
 	        (SELECT rated_battery_range_km FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id ASC LIMIT 1) AS start_rated_range,
 			(SELECT rated_battery_range_km FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS current_rated_range,
-			(SELECT battery_level FROM charges WHERE charging_process_id = charging_processes.id ORDER BY date ASC LIMIT 1) AS start_battery_level,
+			(SELECT battery_level FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id ASC LIMIT 1) AS start_battery_level,
 			(SELECT battery_level FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS current_battery_level,
 			EXTRACT(EPOCH FROM (COALESCE(end_date, NOW()) - start_date))/60 AS duration_min,
 			TO_CHAR((EXTRACT(EPOCH FROM (COALESCE(end_date, NOW()) - start_date))/60 * INTERVAL '1 minute'), 'HH24:MI') as duration_str,

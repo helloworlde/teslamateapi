@@ -82,7 +82,6 @@ func (h *Handler) ChargesDetails(c *gin.Context) {
 		LEFT JOIN addresses address ON address_id = address.id
 		LEFT JOIN positions position ON position_id = position.id
 		LEFT JOIN geofences geofence ON geofence_id = geofence.id
-		LEFT JOIN charges ON charging_processes.id = charges.id
 		WHERE charging_processes.car_id=$1 AND charging_processes.id=$2 AND charging_processes.end_date IS NOT NULL
 		ORDER BY start_date DESC;`
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, ChargeID)
@@ -207,6 +206,12 @@ func (h *Handler) ChargesDetails(c *gin.Context) {
 			&chargedetails.FastChargerInfo.FastChargerType,
 			&chargedetails.OutsideTemp,
 		)
+		// Bail before any unit conversion: a Scan error leaves chargedetails
+		// half-populated, and computing on those values silently produces garbage.
+		if err != nil {
+			respond.HandleError(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError2, err.Error())
+			return
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {
@@ -220,12 +225,6 @@ func (h *Handler) ChargesDetails(c *gin.Context) {
 		}
 		// adjusting to timezone differences from UTC to be userspecific
 		chargedetails.Date = h.timeInTZ(chargedetails.Date)
-
-		// checking for errors after scanning
-		if err != nil {
-			respond.HandleError(c, "TeslaMateAPICarsChargesDetailsV1", CarsChargesDetailsError2, err.Error())
-			return
-		}
 
 		// appending drive to ChargeData
 		ChargeDetailsData = append(ChargeDetailsData, chargedetails)

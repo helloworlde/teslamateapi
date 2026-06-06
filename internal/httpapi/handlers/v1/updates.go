@@ -46,6 +46,9 @@ func (h *Handler) Updates(c *gin.Context) {
 		UpdatesData []dto.V1Update
 		CarData     dto.Car
 	)
+	// Set CarID up front so a car with zero updates still reports its id
+	// (CarName is filled from the first row, if any).
+	CarData.CarID = CarID
 
 	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
 	if ResultPage > 0 {
@@ -107,7 +110,6 @@ func (h *Handler) Updates(c *gin.Context) {
 
 		// appending update to UpdatesData
 		UpdatesData = append(UpdatesData, update)
-		CarData.CarID = CarID
 	}
 
 	// checking for errors in the rows result

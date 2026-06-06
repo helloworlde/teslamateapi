@@ -250,6 +250,12 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 			&drivedetails.BatteryInfo.BatteryHeaterOn,
 			&drivedetails.BatteryInfo.BatteryHeaterNoPower,
 		)
+		// Bail before any unit conversion: a Scan error leaves drivedetails
+		// half-populated, and computing on those values silently produces garbage.
+		if err != nil {
+			respond.HandleError(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError2, err.Error())
+			return
+		}
 
 		// converting values based of settings UnitsLength
 		if UnitsLength == "mi" {
@@ -268,12 +274,6 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 		}
 		// adjusting to timezone differences from UTC to be userspecific
 		drivedetails.Date = h.timeInTZ(drivedetails.Date)
-
-		// checking for errors after scanning
-		if err != nil {
-			respond.HandleError(c, "TeslaMateAPICarsDrivesDetailsV1", CarsDrivesDetailsError2, err.Error())
-			return
-		}
 
 		// appending drive to drive
 		DriveDetailsData = append(DriveDetailsData, drivedetails)
