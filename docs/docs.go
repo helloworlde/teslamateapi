@@ -1672,11 +1672,11 @@ const docTemplate = `{
                 },
                 "model": {
                     "type": "string",
-                    "example": "S"
+                    "example": "Y"
                 },
                 "trim_badging": {
                     "type": "string",
-                    "example": "P100D"
+                    "example": "LR"
                 },
                 "vid": {
                     "type": "integer",
@@ -1684,7 +1684,7 @@ const docTemplate = `{
                 },
                 "vin": {
                     "type": "string",
-                    "example": "5YJSA1E26KF000000"
+                    "example": "LRWYGCEKXMC000001"
                 },
                 "vin_details": {
                     "$ref": "#/definitions/dto.V1CarVINDetails"

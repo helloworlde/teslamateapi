@@ -6,26 +6,26 @@ import "github.com/tobiasehlert/teslamateapi/pkg/nullable"
 type V1CarDetails struct {
 	EID         int64            `json:"eid" example:"123456789012345"`
 	VID         int64            `json:"vid" example:"987654321098765"`
-	Vin         string           `json:"vin" example:"5YJSA1E26KF000000"`
+	Vin         string           `json:"vin" example:"LRWYGCEKXMC000001"`
 	VINDetails  *V1CarVINDetails `json:"vin_details,omitempty"`
-	Model       nullable.String  `json:"model" swaggertype:"string" example:"S"`
-	TrimBadging nullable.String  `json:"trim_badging" swaggertype:"string" example:"P100D"`
+	Model       nullable.String  `json:"model" swaggertype:"string" example:"Y"`
+	TrimBadging nullable.String  `json:"trim_badging" swaggertype:"string" example:"LR"`
 	Efficiency  nullable.Float64 `json:"efficiency" swaggertype:"number" example:"0.184"`
 }
 
-// V1CarVINDetails carries Tesla Model Y VIN-decoded static metadata.
+// V1CarVINDetails carries Tesla VIN-decoded static metadata.
 type V1CarVINDetails struct {
 	WMI             string `json:"wmi" example:"LRW"`
-	Manufacturer    string `json:"manufacturer" example:"Tesla China (Giga Shanghai)"`
-	LineSeries      string `json:"line_series" example:"Model Y"`
-	BodyType        string `json:"body_type" example:"MPV 5 DR / LHD"`
-	RestraintSystem string `json:"restraint_system" example:"Type 2 Manual seatbelts with front Airbags, PODS, side Inflatable restraints"`
-	FuelType        string `json:"fuel_type" example:"Ternary System Li-ion battery"`
-	MotorDriveUnit  string `json:"motor_drive_unit" example:"Dual Motor Standard"`
+	Manufacturer    string `json:"manufacturer,omitempty" example:"Tesla China (Giga Shanghai)"`
+	LineSeries      string `json:"line_series,omitempty" example:"Model Y"`
+	BodyType        string `json:"body_type,omitempty" example:"MPV 5 DR / LHD"`
+	RestraintSystem string `json:"restraint_system,omitempty" example:"Type 2 Manual seatbelts with front Airbags, PODS, side Inflatable restraints"`
+	FuelType        string `json:"fuel_type,omitempty" example:"Ternary System Li-ion battery"`
+	MotorDriveUnit  string `json:"motor_drive_unit,omitempty" example:"Dual Motor Standard"`
 	CheckDigit      string `json:"check_digit" example:"X"`
-	ProductionYear  int    `json:"production_year" example:"2021"`
-	YearType        string `json:"year_type" example:"calendar_year"`
-	Plant           string `json:"plant" example:"Tesla China (Giga Shanghai)"`
+	ProductionYear  int    `json:"production_year,omitempty" example:"2021"`
+	YearType        string `json:"year_type,omitempty" example:"calendar_year"`
+	Plant           string `json:"plant,omitempty" example:"Tesla China (Giga Shanghai)"`
 	SequenceNumber  string `json:"sequence_number" example:"000001"`
 }
 

@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS settings (
     id                  smallint PRIMARY KEY,
     unit_of_length      text NOT NULL DEFAULT 'km',
     unit_of_temperature text NOT NULL DEFAULT 'C',
-    preferred_range     text NOT NULL DEFAULT 'rated'
+    preferred_range     text NOT NULL DEFAULT 'rated',
+    language            text NOT NULL DEFAULT 'en'
 );
 
 CREATE TABLE IF NOT EXISTS addresses (

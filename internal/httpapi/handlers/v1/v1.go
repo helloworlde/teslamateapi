@@ -46,6 +46,7 @@ type Config struct {
 	TeslaMateHost string
 	TeslaMatePort string
 	TeslaMateSSL  bool
+	Language      string
 
 	// CommandsEnabled mirrors ENABLE_COMMANDS. Handler bodies still
 	// re-check this so legacy callers see identical 403 behaviour.

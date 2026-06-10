@@ -165,16 +165,16 @@ definitions:
         example: 123456789012345
         type: integer
       model:
-        example: S
+        example: "Y"
         type: string
       trim_badging:
-        example: P100D
+        example: LR
         type: string
       vid:
         example: 987654321098765
         type: integer
       vin:
-        example: 5YJSA1E26KF000000
+        example: LRWYGCEKXMC000001
         type: string
       vin_details:
         $ref: '#/definitions/dto.V1CarVINDetails'

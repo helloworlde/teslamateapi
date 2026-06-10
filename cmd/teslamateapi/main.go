@@ -127,6 +127,7 @@ func main() {
 			TeslaMateHost:   cfg.TeslaMateHost,
 			TeslaMatePort:   cfg.TeslaMatePort,
 			TeslaMateSSL:    cfg.TeslaMateSSL,
+			Language:        cfg.Language,
 			CommandsEnabled: cfg.CommandsEnabled,
 		},
 	})

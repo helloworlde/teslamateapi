@@ -102,6 +102,7 @@ Basically the same environment variables for the database, mqqt and timezone nee
 | **ENCRYPTION_KEY** | string |                 |
 | **MQTT_HOST**      | string | _mosquitto_     |
 | **TZ**             | string | _Europe/Berlin_ |
+| **LANGUAGE**       | string | _LANG or en_    |
 
 **Optional** environment variables
 

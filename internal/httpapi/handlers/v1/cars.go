@@ -66,6 +66,7 @@ func (h *Handler) Cars(c *gin.Context) {
 			req_not_unlocked,
 			free_supercharging,
 			use_streaming_api,
+			COALESCE(NULLIF((SELECT language FROM settings LIMIT 1), ''), $1) as language,
 			COALESCE(cp.cnt, 0) as total_charges,
 			COALESCE(d.cnt, 0)  as total_drives,
 			COALESCE(u.cnt, 0)  as total_updates
@@ -75,7 +76,7 @@ func (h *Handler) Cars(c *gin.Context) {
 		LEFT JOIN (SELECT car_id, COUNT(*) AS cnt FROM drives             GROUP BY car_id) d  ON d.car_id  = cars.id
 		LEFT JOIN (SELECT car_id, COUNT(*) AS cnt FROM updates            GROUP BY car_id) u  ON u.car_id  = cars.id
 		ORDER BY cars.id;`
-	rows, err := h.db.QueryContext(c.Request.Context(), query)
+	rows, err := h.db.QueryContext(c.Request.Context(), query, h.cfg.Language)
 
 	// checking for errors in query
 	if err != nil {
@@ -91,6 +92,7 @@ func (h *Handler) Cars(c *gin.Context) {
 
 		// creating car object based on struct
 		car := dto.V1Car{}
+		vinLanguage := h.cfg.Language
 
 		// scanning row and putting values into the car
 		err = rows.Scan(
@@ -112,6 +114,7 @@ func (h *Handler) Cars(c *gin.Context) {
 			&car.CarSettings.ReqNotUnlocked,
 			&car.CarSettings.FreeSupercharging,
 			&car.CarSettings.UseStreamingAPI,
+			&vinLanguage,
 			&car.TeslaMateStats.TotalCharges,
 			&car.TeslaMateStats.TotalDrives,
 			&car.TeslaMateStats.TotalUpdates,
@@ -129,7 +132,7 @@ func (h *Handler) Cars(c *gin.Context) {
 			// adjusting to timezone differences from UTC to be userspecific
 			car.TeslaMateDetails.InsertedAt = h.timeInTZ(car.TeslaMateDetails.InsertedAt)
 			car.TeslaMateDetails.UpdatedAt = h.timeInTZ(car.TeslaMateDetails.UpdatedAt)
-			car.CarDetails.VINDetails = decodeTeslaModelYVIN(car.CarDetails.Vin)
+			car.CarDetails.VINDetails = decodeTeslaVIN(car.CarDetails.Vin, vinLanguage)
 
 			CarsData = append(CarsData, car)
 		}

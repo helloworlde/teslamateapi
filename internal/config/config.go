@@ -14,6 +14,7 @@ type Config struct {
 	// Process / runtime
 	DebugMode bool
 	TZName    string
+	Language  string
 
 	// Database
 	DBHost        string
@@ -82,6 +83,7 @@ func Load() Config {
 	return Config{
 		DebugMode: getEnvAsBool("DEBUG_MODE", false),
 		TZName:    getEnv("TZ", "Europe/Berlin"),
+		Language:  getEnv("LANGUAGE", getEnv("LANG", "en")),
 
 		DBHost:        getEnv("DATABASE_HOST", "database"),
 		DBPort:        getEnvAsInt("DATABASE_PORT", 5432),
