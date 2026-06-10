@@ -16,8 +16,7 @@ COPY pkg/ ./pkg/
 COPY docs/ ./docs/
 
 # docs/swagger.{go,yaml,json} are committed and embedded by docs/embed.go,
-# so the build stage just needs `go build`. Skipping `swag init` here keeps
-# the QEMU-emulated arm/v7 image build from blowing past CI memory limits.
+# so the build stage just needs `go build`.
 RUN go mod download && \
   CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
