@@ -7,9 +7,26 @@ type V1CarDetails struct {
 	EID         int64            `json:"eid" example:"123456789012345"`
 	VID         int64            `json:"vid" example:"987654321098765"`
 	Vin         string           `json:"vin" example:"5YJSA1E26KF000000"`
+	VINDetails  *V1CarVINDetails `json:"vin_details,omitempty"`
 	Model       nullable.String  `json:"model" swaggertype:"string" example:"S"`
 	TrimBadging nullable.String  `json:"trim_badging" swaggertype:"string" example:"P100D"`
 	Efficiency  nullable.Float64 `json:"efficiency" swaggertype:"number" example:"0.184"`
+}
+
+// V1CarVINDetails carries Tesla Model Y VIN-decoded static metadata.
+type V1CarVINDetails struct {
+	WMI             string `json:"wmi" example:"LRW"`
+	Manufacturer    string `json:"manufacturer" example:"Tesla China (Giga Shanghai)"`
+	LineSeries      string `json:"line_series" example:"Model Y"`
+	BodyType        string `json:"body_type" example:"MPV 5 DR / LHD"`
+	RestraintSystem string `json:"restraint_system" example:"Type 2 Manual seatbelts with front Airbags, PODS, side Inflatable restraints"`
+	FuelType        string `json:"fuel_type" example:"Ternary System Li-ion battery"`
+	MotorDriveUnit  string `json:"motor_drive_unit" example:"Dual Motor Standard"`
+	CheckDigit      string `json:"check_digit" example:"X"`
+	ProductionYear  int    `json:"production_year" example:"2021"`
+	YearType        string `json:"year_type" example:"calendar_year"`
+	Plant           string `json:"plant" example:"Tesla China (Giga Shanghai)"`
+	SequenceNumber  string `json:"sequence_number" example:"000001"`
 }
 
 // V1CarExterior captures exterior config fields surfaced by the /cars list.

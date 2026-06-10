@@ -1682,6 +1682,9 @@
                 "vin": {
                     "type": "string",
                     "example": "5YJSA1E26KF000000"
+                },
+                "vin_details": {
+                    "$ref": "#/definitions/dto.V1CarVINDetails"
                 }
             }
         },
@@ -1754,6 +1757,59 @@
                 "total_updates": {
                     "type": "integer",
                     "example": 38
+                }
+            }
+        },
+        "dto.V1CarVINDetails": {
+            "type": "object",
+            "properties": {
+                "body_type": {
+                    "type": "string",
+                    "example": "MPV 5 DR / LHD"
+                },
+                "check_digit": {
+                    "type": "string",
+                    "example": "X"
+                },
+                "fuel_type": {
+                    "type": "string",
+                    "example": "Ternary System Li-ion battery"
+                },
+                "line_series": {
+                    "type": "string",
+                    "example": "Model Y"
+                },
+                "manufacturer": {
+                    "type": "string",
+                    "example": "Tesla China (Giga Shanghai)"
+                },
+                "motor_drive_unit": {
+                    "type": "string",
+                    "example": "Dual Motor Standard"
+                },
+                "plant": {
+                    "type": "string",
+                    "example": "Tesla China (Giga Shanghai)"
+                },
+                "production_year": {
+                    "type": "integer",
+                    "example": 2021
+                },
+                "restraint_system": {
+                    "type": "string",
+                    "example": "Type 2 Manual seatbelts with front Airbags, PODS, side Inflatable restraints"
+                },
+                "sequence_number": {
+                    "type": "string",
+                    "example": "000001"
+                },
+                "wmi": {
+                    "type": "string",
+                    "example": "LRW"
+                },
+                "year_type": {
+                    "type": "string",
+                    "example": "calendar_year"
                 }
             }
         },

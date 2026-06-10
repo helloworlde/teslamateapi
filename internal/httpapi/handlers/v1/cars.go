@@ -129,6 +129,7 @@ func (h *Handler) Cars(c *gin.Context) {
 			// adjusting to timezone differences from UTC to be userspecific
 			car.TeslaMateDetails.InsertedAt = h.timeInTZ(car.TeslaMateDetails.InsertedAt)
 			car.TeslaMateDetails.UpdatedAt = h.timeInTZ(car.TeslaMateDetails.UpdatedAt)
+			car.CarDetails.VINDetails = decodeTeslaModelYVIN(car.CarDetails.Vin)
 
 			CarsData = append(CarsData, car)
 		}
