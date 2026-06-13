@@ -190,8 +190,8 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
   - Supported parameters:
-    - `sample` (optional, `every_5s` by default for backward compatibility; supported values: `full`, `every_5s`, `every_30s`, `auto`)
-    - `max_points` (optional, target detail points for `auto`; valid range `100`-`3000`, default `800`; state-change points are always preserved)
+    - `sample` (optional, `auto` by default; supported values: `auto`, `full`, `every_5s`, `every_30s`)
+    - `max_points` (optional, target detail points for `auto`; valid range `100`-`3000`, default `800`; state-change points and route extrema are always preserved)
     - `include_route` (optional, set to `false` or `0` to omit `drive_details`)
 - PUT `/api/v1/cars/:CarID/logging/:Command`
 - GET `/api/v1/cars/:CarID/logging`

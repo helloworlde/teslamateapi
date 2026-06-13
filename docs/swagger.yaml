@@ -2433,16 +2433,16 @@ paths:
         name: DriveID
         required: true
         type: integer
-      - description: 行程明细下采样：full、every_5s（默认）、every_30s、auto
+      - description: 行程明细下采样：auto（默认）、full、every_5s、every_30s
         enum:
+        - auto
         - full
         - every_5s
         - every_30s
-        - auto
         in: query
         name: sample
         type: string
-      - description: auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留
+      - description: auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点和路线边界点会强制保留
         in: query
         name: max_points
         type: integer

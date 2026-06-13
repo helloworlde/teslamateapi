@@ -19,8 +19,8 @@ import (
 // @Produce      json
 // @Param        CarID    path      int  true  "TeslaMate cars.id"
 // @Param        DriveID  path      int  true  "drives.id"
-// @Param        sample      query     string  false  "行程明细下采样：full、every_5s（默认）、every_30s、auto"  Enums(full, every_5s, every_30s, auto)
-// @Param        max_points  query     int     false  "auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点会强制保留"
+// @Param        sample      query     string  false  "行程明细下采样：auto（默认）、full、every_5s、every_30s"  Enums(auto, full, every_5s, every_30s)
+// @Param        max_points  query     int     false  "auto 模式目标返回的明细点数，范围 100-3000，默认 800；状态变化点和路线边界点会强制保留"
 // @Param        include_route  query  bool    false  "设为 false 可在响应中省略 drive_details（行程轨迹）"
 // @Success      200      {object}  dto.V1DriveDetailResponse
 // @Failure      401      {object}  dto.ErrorEnvelope
@@ -205,7 +205,7 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 	}
 
 	// getting detailed drive data from database
-	query, detailArgs := driveDetailsQuery(DriveID, c.DefaultQuery("sample", "every_5s"), detailMaxPoints(c.Query("max_points")))
+	query, detailArgs := driveDetailsQuery(DriveID, c.DefaultQuery("sample", "auto"), detailMaxPoints(c.Query("max_points")))
 	rows, err := h.db.QueryContext(c.Request.Context(), query, detailArgs...)
 
 	// checking for errors in query

@@ -51,7 +51,7 @@ func normalizedDetailSampleMode(mode, fallback string) string {
 }
 
 func driveDetailsQuery(driveID int, sampleMode string, maxPoints int) (string, []interface{}) {
-	switch normalizedDetailSampleMode(sampleMode, "every_5s") {
+	switch normalizedDetailSampleMode(sampleMode, "auto") {
 	case "full":
 		return fullDriveDetailsQuery, []interface{}{driveID}
 	case "every_30s":
@@ -82,14 +82,67 @@ func chargeDetailsQuery(chargeID int, sampleMode string, maxPoints int) (string,
 
 func timeBucketDriveDetailsQuery(bucketSeconds int) string {
 	return fmt.Sprintf(`
-            SELECT * FROM (
-                SELECT DISTINCT ON (date_trunc('minute', date) + (FLOOR(EXTRACT(SECOND FROM date) / %d) * %d) * INTERVAL '1 second')
-                    %s
-                FROM positions
-                WHERE drive_id = $1
-                ORDER BY date_trunc('minute', date) + (FLOOR(EXTRACT(SECOND FROM date) / %d) * %d) * INTERVAL '1 second', id ASC
-            ) bucketed
-            ORDER BY detail_id ASC;`, bucketSeconds, bucketSeconds, driveDetailsSelectList, bucketSeconds, bucketSeconds)
+			WITH raw AS (
+				SELECT
+					%s
+				FROM positions
+				WHERE drive_id = $1
+			),
+			bucketed_ids AS (
+				SELECT DISTINCT ON (bucket)
+					detail_id
+				FROM (
+					SELECT
+						detail_id,
+						date_trunc('minute', date) + (FLOOR(EXTRACT(SECOND FROM date) / %d) * %d) * INTERVAL '1 second' AS bucket
+					FROM raw
+				) bucketed
+				ORDER BY bucket, detail_id ASC
+			),
+			route_extrema_ids AS (
+				SELECT DISTINCT unnest(array_remove(array[
+					(array_agg(detail_id ORDER BY date ASC))[1],
+					(array_agg(detail_id ORDER BY date DESC))[1],
+					(array_agg(detail_id ORDER BY latitude ASC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY latitude DESC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY longitude ASC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY longitude DESC NULLS LAST))[1]
+				], NULL)) AS detail_id
+				FROM raw
+			),
+			sampled_ids AS (
+				SELECT detail_id FROM bucketed_ids
+				UNION
+				SELECT detail_id FROM route_extrema_ids
+			)
+			SELECT
+				raw.detail_id,
+				raw.date,
+				raw.latitude,
+				raw.longitude,
+				raw.speed,
+				raw.power,
+				raw.odometer,
+				raw.battery_level,
+				raw.usable_battery_level,
+				raw.elevation,
+				raw.inside_temp,
+				raw.outside_temp,
+				raw.is_climate_on,
+				raw.fan_status,
+				raw.driver_temp_setting,
+				raw.passenger_temp_setting,
+				raw.is_rear_defroster_on,
+				raw.is_front_defroster_on,
+				raw.est_battery_range_km,
+				raw.ideal_battery_range_km,
+				raw.rated_battery_range_km,
+				raw.battery_heater,
+				raw.battery_heater_on,
+				raw.battery_heater_no_power
+			FROM raw
+			JOIN sampled_ids USING (detail_id)
+			ORDER BY raw.detail_id ASC;`, driveDetailsSelectList, bucketSeconds, bucketSeconds)
 }
 
 func timeBucketChargeDetailsQuery(bucketSeconds int) string {
@@ -183,6 +236,16 @@ const autoDriveDetailsQuery = `
 				], NULL))
 				FROM bucketed
 				GROUP BY bucket
+				UNION
+				SELECT DISTINCT unnest(array_remove(array[
+					(array_agg(detail_id ORDER BY date ASC))[1],
+					(array_agg(detail_id ORDER BY date DESC))[1],
+					(array_agg(detail_id ORDER BY latitude ASC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY latitude DESC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY longitude ASC NULLS LAST))[1],
+					(array_agg(detail_id ORDER BY longitude DESC NULLS LAST))[1]
+				], NULL))
+				FROM bucketed
 				UNION
 				SELECT detail_id
 				FROM bucketed
