@@ -170,6 +170,9 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
 - GET `/api/v1/cars`
 - GET `/api/v1/cars/:CarID`
 - GET `/api/v1/cars/:CarID/battery-health`
+  - Returns max/current range and capacity plus a derived health %. Also
+    surfaces `current_battery_level` (latest usable SOC) and `predicted_range`
+    (currently drivable range = `current_range × level / 100`). Both objective.
 - GET `/api/v1/cars/:CarID/charges`
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
@@ -188,11 +191,17 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `minDistance` (optional, filter by minimum trip distance, units based on TeslaMate settings)
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
+  - Each drive also carries `range_achievement_pct` (`distance / rated-range
+    drop × 100`, objective; null when the drop is non-positive) and
+    `estimated_usage_cost` (`lifetime charging cost / lifetime distance ×` this
+    drive's distance; semi-objective, in the charging-cost currency).
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
   - Supported parameters:
     - `sample` (optional, `auto` by default; supported values: `auto`, `full`, `every_5s`, `every_30s`)
     - `max_points` (optional, target detail points for `auto`; valid range `100`-`3000`, default `800`; state-change points and route extrema are always preserved)
     - `include_route` (optional, set to `false` or `0` to omit `drive_details`)
+  - Same per-drive `range_achievement_pct` / `estimated_usage_cost` fields as
+    the list endpoint above.
 - PUT `/api/v1/cars/:CarID/logging/:Command`
 - GET `/api/v1/cars/:CarID/logging`
 - GET `/api/v1/cars/:CarID/status`
@@ -236,7 +245,9 @@ adjacent drives.
     `best_consumption`, `longest_distance`, `max_speed`,
     `total_energy_added_kwh`, `total_cost`, `fast_charge_count`,
     `fast_charge_energy_kwh`, `peak_power_max_kw`,
-    `total_vampire_drain_kwh`.
+    `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
+    (`Σ distance / Σ rated-range drop × 100`) and charges carry
+    `cost_per_distance` (`total_cost / total_distance`, per km/mile).
 - GET `/api/v2/cars/:CarID/stats/summary`
   - Aggregates bucketed by `period=day|week|month|year` (default `month`),
     bucket boundaries land in the user's timezone. Each bucket carries
@@ -249,6 +260,20 @@ adjacent drives.
     `charges_cost`, `parkings_count`, `parkings_total_duration_min`. Sorted
     by total activity.
   - Supported parameters: `startDate`, `endDate`.
+- GET `/api/v2/cars/:CarID/stats/consumption`
+  - Energy consumption (Wh/distance) broken down along one objective
+    dimension: `group_by=temperature|version|season` (default `temperature`).
+    Each group returns `key`, `consumption`, `trips_count`, `distance`,
+    `energy_kwh`, `delta_vs_avg_pct`; temperature groups add `temp_low` /
+    `temp_high`. Single SQL over `drives` (+ tiny `updates` for `version`); no
+    `positions` scan.
+  - Supported parameters: `group_by`.
+- GET `/api/v2/cars/:CarID/stats/behavior`
+  - Behaviour profile in one response, three objective distributions:
+    `heatmap` (weekday×hour drive/charge activity in the user's timezone),
+    `charge_levels` (10-point histogram of charge start/end SOC), and
+    `trip_types` (distance-band histogram with `trips_count`, `distance`,
+    `energy_kwh`). Scans only `drives` / `charging_processes`; no `positions`.
 
 > [!TIP]
 > Canonical UTC format in RFC3339, e.g. `2006-01-02T15:04:05Z` or `2006-01-02T15:04:05+07:00`

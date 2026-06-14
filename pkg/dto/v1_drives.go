@@ -46,6 +46,15 @@ type V1DriveListItem struct {
 	InsideTempAvg     float64                 `json:"inside_temp_avg" example:"21.0"`
 	EnergyConsumedNet *float64                `json:"energy_consumed_net" example:"22.5"`
 	ConsumptionNet    *float64                `json:"consumption_net" example:"225.0"`
+	// RangeAchievementPct = distance / rated-range drop × 100 (objective).
+	// Null when the rated-range drop is non-positive (charging mid-drive,
+	// missing range readings). Unit-independent: a ratio of two distances.
+	RangeAchievementPct *float64 `json:"range_achievement_pct" example:"92.5"`
+	// EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this
+	// drive's distance. Semi-objective: amortises a global per-distance rate
+	// onto one trip. 0 when no charging cost is configured; null when there is
+	// no lifetime distance yet. In the same currency as charging_processes.cost.
+	EstimatedUsageCost *float64 `json:"estimated_usage_cost" example:"3.42"`
 }
 
 // V1DrivesData is the `data` field of V1DrivesResponse.

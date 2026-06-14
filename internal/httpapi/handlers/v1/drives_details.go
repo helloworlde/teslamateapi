@@ -91,8 +91,20 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 			CASE 
 				WHEN (duration_min > 1 AND distance > 1 AND ( start_position.usable_battery_level IS NULL OR end_position.usable_battery_level IS NULL OR ( end_position.battery_level - end_position.usable_battery_level ) = 0 )) AND NULLIF(distance, 0) IS NOT NULL
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000
-				ELSE NULL 
+				ELSE NULL
 			END as consumption_net,
+			CASE
+				WHEN (start_rated_range_km - end_rated_range_km) > 0 AND distance > 0
+				THEN distance / (start_rated_range_km - end_rated_range_km) * 100
+				ELSE NULL
+			END as range_achievement_pct,
+			CASE
+				WHEN distance > 0
+				THEN (SELECT COALESCE(SUM(cp.cost), 0) FROM charging_processes cp WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL)
+					/ NULLIF((SELECT SUM(dr.distance) FROM drives dr WHERE dr.car_id = $1 AND dr.end_date IS NOT NULL), 0)
+					* distance
+				ELSE NULL
+			END as estimated_usage_cost,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
 			cars.name
@@ -139,6 +151,8 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 		&drive.InsideTempAvg,
 		&drive.EnergyConsumedNet,
 		&drive.ConsumptionNet,
+		&drive.RangeAchievementPct,
+		&drive.EstimatedUsageCost,
 		&UnitsLength,
 		&UnitsTemperature,
 		&CarName,

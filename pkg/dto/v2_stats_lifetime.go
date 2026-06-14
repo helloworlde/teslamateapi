@@ -24,6 +24,10 @@ type V2DrivesAgg struct {
 	AvgConsumption         float64         `json:"avg_consumption" example:"184.0"`
 	BestConsumption        float64         `json:"best_consumption" example:"120.0"`
 	WorstConsumption       float64         `json:"worst_consumption" example:"285.4"`
+	// RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all
+	// drives (objective). 100 = rated and real distance match; >100 beats
+	// rated, <100 falls short. Unit-independent (a ratio of distances).
+	RangeAchievementPct    float64         `json:"range_achievement_pct" example:"94.2"`
 	LongestDistance        float64         `json:"longest_distance" example:"800.0"`
 	ShortestDistance       float64         `json:"shortest_distance" example:"0.5"`
 	LongestDurationMin     int             `json:"longest_duration_min" example:"420"`
@@ -47,6 +51,10 @@ type V2ChargesAgg struct {
 	TotalEnergyUsedKWh      float64         `json:"total_energy_used_kwh" example:"17200.0"`
 	TotalCost               float64         `json:"total_cost" example:"4321.50"`
 	AvgCostPerKWh           float64         `json:"avg_cost_per_kwh" example:"0.26"`
+	// CostPerKm = total charging cost / total drive distance — the amortised
+	// per-distance rate behind "estimated usage cost". Converted to per-mile
+	// when unit_of_length is mi. Currency matches charging_processes.cost.
+	CostPerKm               float64         `json:"cost_per_distance" example:"0.05"`
 	AvgEnergyPerSession     float64         `json:"avg_energy_per_session_kwh" example:"38.6"`
 	AvgDurationMin          float64         `json:"avg_duration_min" example:"42.3"`
 	FastChargeCount         int             `json:"fast_charge_count" example:"73"`

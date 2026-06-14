@@ -108,7 +108,10 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
 					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
 					ELSE NULL END
-				) AS worst_consumption
+				) AS worst_consumption,
+				CASE WHEN SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) > 0
+					THEN SUM(distance) / SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) * 100
+					ELSE 0 END AS range_achievement_pct
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
 			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
@@ -240,6 +243,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				ELSE 0 END AS avg_monthly_distance,
 			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
 			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
+			COALESCE(d.range_achievement_pct, 0),
 			COALESCE(d.longest_km, 0), COALESCE(d.shortest_km, 0),
 			COALESCE(d.longest_dur, 0),
 			COALESCE(d.max_speed, 0), COALESCE(d.avg_speed, 0),
@@ -249,7 +253,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			d.avg_outside_temp, d.avg_inside_temp,
 			COALESCE(d.active_days, 0), d.last_drive_date, COALESCE(d.current_odometer, 0),
 			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
-			COALESCE(ch.avg_cost_per_kwh, 0), COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.avg_duration_min, 0),
+			COALESCE(ch.avg_cost_per_kwh, 0),
+			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
+			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.avg_duration_min, 0),
 			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0),
 			COALESCE(ch.ac_count, 0), COALESCE(ch.ac_energy, 0),
 			COALESCE(ch.geofenced_energy, 0), COALESCE(ch.non_geofenced_energy, 0),
@@ -283,6 +289,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		// drives
 		&drives.Count, &drives.TotalDistance, &drives.TotalDurationMin, &drives.TotalEnergyConsumedKWh,
 		&drives.AvgConsumption, &drives.BestConsumption, &drives.WorstConsumption,
+		&drives.RangeAchievementPct,
 		&drives.LongestDistance, &drives.ShortestDistance,
 		&drives.LongestDurationMin,
 		&drives.MaxSpeed, &drives.AvgSpeed,
@@ -293,7 +300,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.ActiveDays, &drives.LastDriveDate, &drives.CurrentOdometer,
 		// charges
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
-		&charges.AvgCostPerKWh, &charges.AvgEnergyPerSession, &charges.AvgDurationMin,
+		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.AvgDurationMin,
 		&charges.FastChargeCount, &charges.FastChargeEnergyKWh,
 		&charges.ACChargeCount, &charges.ACChargeEnergyKWh,
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
@@ -337,6 +344,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		drives.WorstConsumption = drives.WorstConsumption / 0.62137119223733
 		avgDailyDistance = convert.KilometersToMiles(avgDailyDistance)
 		avgMonthlyDistance = convert.KilometersToMiles(avgMonthlyDistance)
+		// cost-per-distance: a mile spans 1.609344 km, so it costs that much more.
+		charges.CostPerKm = charges.CostPerKm * 1.609344
 	}
 	if UnitsTemperature == "F" {
 		if drives.AvgOutsideTemp.Valid {

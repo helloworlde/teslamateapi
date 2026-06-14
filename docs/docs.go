@@ -1257,6 +1257,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/cars/{CarID}/stats/behavior": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Weekday×hour heatmap, charge-level histogram, and trip-length histogram. Objective data only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Behaviour profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2BehaviorResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/cars/{CarID}/stats/by-geofence": {
             "get": {
                 "security": [
@@ -1298,6 +1344,64 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.V2ByGeofenceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/cars/{CarID}/stats/consumption": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Wh/distance broken down by temperature band, firmware version, or season. Objective data only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Consumption analysis",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "temperature",
+                            "version",
+                            "season"
+                        ],
+                        "type": "string",
+                        "default": "temperature",
+                        "description": "grouping dimension",
+                        "name": "group_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2ConsumptionResponse"
                         }
                     },
                     "400": {
@@ -1587,6 +1691,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 96.24
                 },
+                "current_battery_level": {
+                    "description": "CurrentBatteryLevel is the most recent usable state-of-charge (%), and\nPredictedRange is the range actually drivable at that level\n(current_range × level / 100). Both are objective readings, not estimates.",
+                    "type": "number",
+                    "example": 62
+                },
                 "current_capacity": {
                     "type": "number",
                     "example": 79.4
@@ -1602,6 +1711,10 @@ const docTemplate = `{
                 "max_range": {
                     "type": "number",
                     "example": 450.2
+                },
+                "predicted_range": {
+                    "type": "number",
+                    "example": 268.3
                 },
                 "rated_efficiency": {
                     "type": "number",
@@ -2503,6 +2616,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 22.5
                 },
+                "estimated_usage_cost": {
+                    "description": "EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this\ndrive's distance. Semi-objective: amortises a global per-distance rate\nonto one trip. 0 when no charging cost is configured; null when there is\nno lifetime distance yet. In the same currency as charging_processes.cost.",
+                    "type": "number",
+                    "example": 3.42
+                },
                 "inside_temp_avg": {
                     "type": "number",
                     "example": 21
@@ -2521,6 +2639,11 @@ const docTemplate = `{
                 "power_min": {
                     "type": "integer",
                     "example": -50
+                },
+                "range_achievement_pct": {
+                    "description": "RangeAchievementPct = distance / rated-range drop × 100 (objective).\nNull when the rated-range drop is non-positive (charging mid-drive,\nmissing range readings). Unit-independent: a ratio of two distances.",
+                    "type": "number",
+                    "example": 92.5
                 },
                 "range_ideal": {
                     "$ref": "#/definitions/dto.V1DrivesPreferredRange"
@@ -2713,6 +2836,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 22.5
                 },
+                "estimated_usage_cost": {
+                    "description": "EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this\ndrive's distance. Semi-objective: amortises a global per-distance rate\nonto one trip. 0 when no charging cost is configured; null when there is\nno lifetime distance yet. In the same currency as charging_processes.cost.",
+                    "type": "number",
+                    "example": 3.42
+                },
                 "inside_temp_avg": {
                     "type": "number",
                     "example": 21
@@ -2731,6 +2859,11 @@ const docTemplate = `{
                 "power_min": {
                     "type": "integer",
                     "example": -50
+                },
+                "range_achievement_pct": {
+                    "description": "RangeAchievementPct = distance / rated-range drop × 100 (objective).\nNull when the rated-range drop is non-positive (charging mid-drive,\nmissing range readings). Unit-independent: a ratio of two distances.",
+                    "type": "number",
+                    "example": 92.5
                 },
                 "range_ideal": {
                     "$ref": "#/definitions/dto.V1DrivesPreferredRange"
@@ -3429,6 +3562,118 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.V2BehaviorChargeLevelBucket": {
+            "type": "object",
+            "properties": {
+                "bucket_high": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "bucket_low": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "end_count": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "start_count": {
+                    "type": "integer",
+                    "example": 58
+                }
+            }
+        },
+        "dto.V2BehaviorData": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "charge_levels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2BehaviorChargeLevelBucket"
+                    }
+                },
+                "heatmap": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2BehaviorHeatmapCell"
+                    }
+                },
+                "trip_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2BehaviorTripTypeBucket"
+                    }
+                },
+                "units": {
+                    "$ref": "#/definitions/dto.TeslaMateUnits"
+                }
+            }
+        },
+        "dto.V2BehaviorHeatmapCell": {
+            "type": "object",
+            "properties": {
+                "charges_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "drives_count": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "drives_distance": {
+                    "type": "number",
+                    "example": 512.4
+                },
+                "hour": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "weekday": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.V2BehaviorResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2BehaviorData"
+                }
+            }
+        },
+        "dto.V2BehaviorTripTypeBucket": {
+            "type": "object",
+            "properties": {
+                "dist_high": {
+                    "type": "number",
+                    "example": 20
+                },
+                "dist_low": {
+                    "type": "number",
+                    "example": 5
+                },
+                "distance": {
+                    "type": "number",
+                    "example": 3840
+                },
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 690
+                },
+                "key": {
+                    "type": "string",
+                    "example": "5"
+                },
+                "trips_count": {
+                    "type": "integer",
+                    "example": 312
+                }
+            }
+        },
         "dto.V2ByGeofenceData": {
             "type": "object",
             "properties": {
@@ -3526,6 +3771,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 12.3
                 },
+                "cost_per_distance": {
+                    "description": "CostPerKm = total charging cost / total drive distance — the amortised\nper-distance rate behind \"estimated usage cost\". Converted to per-mile\nwhen unit_of_length is mi. Currency matches charging_processes.cost.",
+                    "type": "number",
+                    "example": 0.05
+                },
                 "count": {
                     "type": "integer",
                     "example": 427
@@ -3612,6 +3862,81 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.V2ConsumptionData": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "group_by": {
+                    "type": "string",
+                    "enum": [
+                        "temperature",
+                        "version",
+                        "season"
+                    ],
+                    "example": "temperature"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2ConsumptionGroup"
+                    }
+                },
+                "overall_consumption": {
+                    "type": "number",
+                    "example": 174
+                },
+                "units": {
+                    "$ref": "#/definitions/dto.TeslaMateUnits"
+                }
+            }
+        },
+        "dto.V2ConsumptionGroup": {
+            "type": "object",
+            "properties": {
+                "consumption": {
+                    "type": "number",
+                    "example": 135
+                },
+                "delta_vs_avg_pct": {
+                    "type": "number",
+                    "example": -22.4
+                },
+                "distance": {
+                    "type": "number",
+                    "example": 3200.5
+                },
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 432
+                },
+                "key": {
+                    "type": "string",
+                    "example": "20"
+                },
+                "temp_high": {
+                    "type": "number",
+                    "example": 30
+                },
+                "temp_low": {
+                    "type": "number",
+                    "example": 20
+                },
+                "trips_count": {
+                    "type": "integer",
+                    "example": 166
+                }
+            }
+        },
+        "dto.V2ConsumptionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2ConsumptionData"
+                }
+            }
+        },
         "dto.V2DrivesAgg": {
             "type": "object",
             "properties": {
@@ -3678,6 +4003,11 @@ const docTemplate = `{
                 "peak_drive_power_kw": {
                     "type": "integer",
                     "example": 380
+                },
+                "range_achievement_pct": {
+                    "description": "RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all\ndrives (objective). 100 = rated and real distance match; \u003e100 beats\nrated, \u003c100 falls short. Unit-independent (a ratio of distances).",
+                    "type": "number",
+                    "example": 94.2
                 },
                 "shortest_distance": {
                     "type": "number",

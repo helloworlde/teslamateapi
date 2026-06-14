@@ -107,6 +107,13 @@ definitions:
       battery_health_percentage:
         example: 96.24
         type: number
+      current_battery_level:
+        description: |-
+          CurrentBatteryLevel is the most recent usable state-of-charge (%), and
+          PredictedRange is the range actually drivable at that level
+          (current_range × level / 100). Both are objective readings, not estimates.
+        example: 62
+        type: number
       current_capacity:
         example: 79.4
         type: number
@@ -118,6 +125,9 @@ definitions:
         type: number
       max_range:
         example: 450.2
+        type: number
+      predicted_range:
+        example: 268.3
         type: number
       rated_efficiency:
         example: 18.4
@@ -755,6 +765,14 @@ definitions:
       energy_consumed_net:
         example: 22.5
         type: number
+      estimated_usage_cost:
+        description: |-
+          EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this
+          drive's distance. Semi-objective: amortises a global per-distance rate
+          onto one trip. 0 when no charging cost is configured; null when there is
+          no lifetime distance yet. In the same currency as charging_processes.cost.
+        example: 3.42
+        type: number
       inside_temp_avg:
         example: 21
         type: number
@@ -769,6 +787,13 @@ definitions:
       power_min:
         example: -50
         type: integer
+      range_achievement_pct:
+        description: |-
+          RangeAchievementPct = distance / rated-range drop × 100 (objective).
+          Null when the rated-range drop is non-positive (charging mid-drive,
+          missing range readings). Unit-independent: a ratio of two distances.
+        example: 92.5
+        type: number
       range_ideal:
         $ref: '#/definitions/dto.V1DrivesPreferredRange'
       range_rated:
@@ -904,6 +929,14 @@ definitions:
       energy_consumed_net:
         example: 22.5
         type: number
+      estimated_usage_cost:
+        description: |-
+          EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this
+          drive's distance. Semi-objective: amortises a global per-distance rate
+          onto one trip. 0 when no charging cost is configured; null when there is
+          no lifetime distance yet. In the same currency as charging_processes.cost.
+        example: 3.42
+        type: number
       inside_temp_avg:
         example: 21
         type: number
@@ -918,6 +951,13 @@ definitions:
       power_min:
         example: -50
         type: integer
+      range_achievement_pct:
+        description: |-
+          RangeAchievementPct = distance / rated-range drop × 100 (objective).
+          Null when the rated-range drop is non-positive (charging mid-drive,
+          missing range readings). Unit-independent: a ratio of two distances.
+        example: 92.5
+        type: number
       range_ideal:
         $ref: '#/definitions/dto.V1DrivesPreferredRange'
       range_rated:
@@ -1408,6 +1448,84 @@ definitions:
       data:
         $ref: '#/definitions/dto.V1UpdatesData'
     type: object
+  dto.V2BehaviorChargeLevelBucket:
+    properties:
+      bucket_high:
+        example: 30
+        type: integer
+      bucket_low:
+        example: 20
+        type: integer
+      end_count:
+        example: 4
+        type: integer
+      start_count:
+        example: 58
+        type: integer
+    type: object
+  dto.V2BehaviorData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      charge_levels:
+        items:
+          $ref: '#/definitions/dto.V2BehaviorChargeLevelBucket'
+        type: array
+      heatmap:
+        items:
+          $ref: '#/definitions/dto.V2BehaviorHeatmapCell'
+        type: array
+      trip_types:
+        items:
+          $ref: '#/definitions/dto.V2BehaviorTripTypeBucket'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2BehaviorHeatmapCell:
+    properties:
+      charges_count:
+        example: 3
+        type: integer
+      drives_count:
+        example: 42
+        type: integer
+      drives_distance:
+        example: 512.4
+        type: number
+      hour:
+        example: 8
+        type: integer
+      weekday:
+        example: 1
+        type: integer
+    type: object
+  dto.V2BehaviorResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2BehaviorData'
+    type: object
+  dto.V2BehaviorTripTypeBucket:
+    properties:
+      dist_high:
+        example: 20
+        type: number
+      dist_low:
+        example: 5
+        type: number
+      distance:
+        example: 3840
+        type: number
+      energy_kwh:
+        example: 690
+        type: number
+      key:
+        example: "5"
+        type: string
+      trips_count:
+        example: 312
+        type: integer
+    type: object
   dto.V2ByGeofenceData:
     properties:
       car:
@@ -1477,6 +1595,13 @@ definitions:
       avg_session_cost:
         example: 12.3
         type: number
+      cost_per_distance:
+        description: |-
+          CostPerKm = total charging cost / total drive distance — the amortised
+          per-distance rate behind "estimated usage cost". Converted to per-mile
+          when unit_of_length is mi. Currency matches charging_processes.cost.
+        example: 0.05
+        type: number
       count:
         example: 427
         type: integer
@@ -1541,6 +1666,59 @@ definitions:
         example: 17200
         type: number
     type: object
+  dto.V2ConsumptionData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      group_by:
+        enum:
+        - temperature
+        - version
+        - season
+        example: temperature
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/dto.V2ConsumptionGroup'
+        type: array
+      overall_consumption:
+        example: 174
+        type: number
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2ConsumptionGroup:
+    properties:
+      consumption:
+        example: 135
+        type: number
+      delta_vs_avg_pct:
+        example: -22.4
+        type: number
+      distance:
+        example: 3200.5
+        type: number
+      energy_kwh:
+        example: 432
+        type: number
+      key:
+        example: "20"
+        type: string
+      temp_high:
+        example: 30
+        type: number
+      temp_low:
+        example: 20
+        type: number
+      trips_count:
+        example: 166
+        type: integer
+    type: object
+  dto.V2ConsumptionResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2ConsumptionData'
+    type: object
   dto.V2DrivesAgg:
     properties:
       active_days:
@@ -1591,6 +1769,13 @@ definitions:
       peak_drive_power_kw:
         example: 380
         type: integer
+      range_achievement_pct:
+        description: |-
+          RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all
+          drives (objective). 100 = rated and real distance match; >100 beats
+          rated, <100 falls short. Unit-independent (a ratio of distances).
+        example: 94.2
+        type: number
       shortest_distance:
         example: 0.5
         type: number
@@ -2775,6 +2960,36 @@ paths:
       summary: Parking session detail
       tags:
       - v2
+  /api/v2/cars/{CarID}/stats/behavior:
+    get:
+      description: Weekday×hour heatmap, charge-level histogram, and trip-length histogram.
+        Objective data only.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2BehaviorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Behaviour profile
+      tags:
+      - v2
   /api/v2/cars/{CarID}/stats/by-geofence:
     get:
       description: Aggregates drives, charges, and parking sessions grouped by geofence.
@@ -2810,6 +3025,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Stats by geofence
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/consumption:
+    get:
+      description: Wh/distance broken down by temperature band, firmware version,
+        or season. Objective data only.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - default: temperature
+        description: grouping dimension
+        enum:
+        - temperature
+        - version
+        - season
+        in: query
+        name: group_by
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2ConsumptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Consumption analysis
       tags:
       - v2
   /api/v2/cars/{CarID}/stats/lifetime:

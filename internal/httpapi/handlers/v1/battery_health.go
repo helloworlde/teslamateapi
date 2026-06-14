@@ -37,6 +37,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		CurrentRangeIdeal             float64
 		MaxCapacity                   float64
 		CurrentCapacity               float64
+		CurrentBatteryLevel           float64
 		PreferredRange                string
 		UnitsLength, UnitsTemperature string
 	)
@@ -214,6 +215,29 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		GROUP BY date_trunc('day', date)
 		ORDER BY range DESC
 		LIMIT 1
+	),
+	CurrentBatteryLevel AS (
+		SELECT usable_battery_level
+		FROM (
+			(
+				SELECT date, usable_battery_level
+				FROM positions
+				WHERE car_id = $1 AND usable_battery_level > 0
+				ORDER BY date DESC
+				LIMIT 1
+			)
+			UNION ALL
+			(
+				SELECT c.date, c.usable_battery_level
+				FROM charges c
+					INNER JOIN charging_processes p ON p.id = c.charging_process_id
+				WHERE p.car_id = $1 AND c.usable_battery_level > 0
+				ORDER BY c.date DESC
+				LIMIT 1
+			)
+		) AS data
+		ORDER BY date DESC
+		LIMIT 1
 	)
 	SELECT
 		COALESCE(MaxRangeRated.range, 0) as max_range_rated,
@@ -223,6 +247,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		COALESCE(MaxCapacity.Capacity, 0) as max_capacity,
 		COALESCE(CurrentCapacity.Capacity, 0) as current_capacity,
 		COALESCE(aux.efficiency, 0) as efficiency,
+		COALESCE(CurrentBatteryLevel.usable_battery_level, 0) as current_battery_level,
 		(SELECT preferred_range FROM settings LIMIT 1) as preferred_range,
 		(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 		(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
@@ -235,6 +260,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		LEFT JOIN Aux ON cars.id = aux.car_id
 		LEFT JOIN MaxCapacity ON true
 		LEFT JOIN CurrentCapacity ON true
+		LEFT JOIN CurrentBatteryLevel ON true
 	WHERE cars.id = $1;`
 
 	// execute query
@@ -246,6 +272,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		&MaxCapacity,
 		&CurrentCapacity,
 		&Efficiency,
+		&CurrentBatteryLevel,
 		&PreferredRange,
 		&UnitsLength,
 		&UnitsTemperature,
@@ -264,6 +291,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		MaxCapacity:             MaxCapacity,
 		RatedEfficiency:         Efficiency,
 		BatteryHealthPercentage: 0,
+		CurrentBatteryLevel:     CurrentBatteryLevel,
 	}
 
 	// Select the correct range based on preferred_range setting
@@ -285,6 +313,11 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		batteryHealth.MaxRange = convert.KilometersToMiles(batteryHealth.MaxRange)
 		batteryHealth.CurrentRange = convert.KilometersToMiles(batteryHealth.CurrentRange)
 	}
+
+	// Predicted (currently drivable) range is the SOC-normalised current range
+	// scaled back down to the latest battery level. Computed after unit
+	// conversion so it inherits CurrentRange's units.
+	batteryHealth.PredictedRange = batteryHealth.CurrentRange * CurrentBatteryLevel / 100
 
 	jsonData := dto.V1BatteryHealthResponse{
 		Data: dto.V1BatteryHealthData{

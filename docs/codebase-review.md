@@ -50,12 +50,12 @@
 | 通用响应与解析 | `internal/respond/respond.go`, `internal/convert/convert.go`, `internal/timefmt/timefmt.go`, `pkg/nullable` | legacy/v2 响应包裹、v2 严格校验 helper、v1 兼容解析 helper、时间转换、nullable JSON 类型。 | 已补充 v1 严格解析 wrapper、日志 URI 脱敏、时间解析失败保护，以及距离和单位能耗的独立转换 helper。 |
 | Metrics | `internal/metrics/metrics.go` | Prometheus registry、HTTP 指标、审计计数器、MQTT gauge、DB stats collector。 | route label 基数受控；`/metrics` 按设计公开。 |
 | MQTT 状态缓存 | `internal/status/status.go`, `internal/httpapi/handlers/v1/status.go`, `pkg/dto/v1_status.go` | MQTT 订阅和 `/api/v1/cars/:CarID/status` 实时状态响应。 | 状态读取已改为快照返回，避免 handler 读取内部可变指针。 |
-| v1 车辆与设置读取 | `internal/httpapi/handlers/v1/cars.go`, `globalsettings.go`, `battery_health.go` | legacy 车辆列表/详情、全局设置、电池健康聚合。 | 已补充严格参数解析；`cars/:CarID` SQL 层过滤和 battery health SQL 拆分仍可后续优化。 |
-| v1 行程历史与详情 | `internal/httpapi/handlers/v1/drives.go`, `drives_details.go`, `v1_detail_sampling.go` | 行程列表/详情、路线采样、下采样模式。 | 已修正英里制能耗换算并收紧分页/过滤参数；列表和详情之间仍有重复查询与转换逻辑。 |
+| v1 车辆与设置读取 | `internal/httpapi/handlers/v1/cars.go`, `globalsettings.go`, `battery_health.go` | legacy 车辆列表/详情、全局设置、电池健康聚合（含 `current_battery_level` / `predicted_range` 客观字段）。 | 已补充严格参数解析；`cars/:CarID` SQL 层过滤和 battery health SQL 拆分仍可后续优化。 |
+| v1 行程历史与详情 | `internal/httpapi/handlers/v1/drives.go`, `drives_details.go`, `v1_detail_sampling.go` | 行程列表/详情、路线采样、下采样模式（含每条 drive 的 `range_achievement_pct` / `estimated_usage_cost` 派生字段）。 | 已修正英里制能耗换算并收紧分页/过滤参数；列表和详情之间仍有重复查询与转换逻辑。 |
 | v1 充电历史与详情 | `internal/httpapi/handlers/v1/charges.go`, `charges_details.go`, `charges_current.go`, `v1_detail_sampling.go` | 充电列表/详情/当前充电，以及下采样充电遥测。 | 当前充电已先判断最新 detail 是否过期；主动采样/明细开关和充电聚合 SQL 收敛仍待处理。 |
 | v1 命令与 logging 代理 | `internal/httpapi/handlers/v1/command.go`, `logging.go`, `internal/command` | Tesla owner-api 命令、TeslaMate logging 命令、allow-list、token 解密、区域选择。 | 代理已复用 HTTP client 并限制请求/响应 body 大小；两个代理流程仍可抽象成共享 service。 |
 | v1 更新历史 | `internal/httpapi/handlers/v1/updates.go`, `pkg/dto/v1_updates.go` | 分页固件更新历史。 | 已补充分页参数严格解析，legacy 响应 envelope 保持兼容。 |
-| v2 派生统计 | `internal/httpapi/handlers/v2/parkings.go`, `stats_lifetime.go`, `stats_summary.go`, `stats_by_geofence.go` | additive v2 统计、停车会话、地理围栏聚合。 | 参数校验优于 v1，但 parking window 和聚合 CTE 在多个 handler 中重复。 |
+| v2 派生统计 | `internal/httpapi/handlers/v2/parkings.go`, `stats_lifetime.go`, `stats_summary.go`, `stats_by_geofence.go`, `stats_consumption.go`, `stats_behavior.go` | additive v2 统计、停车会话、地理围栏聚合、能耗分析（温度/版本/季节）、行为画像（热力图/充电电量/行程类型）。 | 参数校验优于 v1；consumption/behavior 仅扫小表无 positions 扫描；parking window 和聚合 CTE 在多个 handler 中仍重复。 |
 | DTO 合约 | `pkg/dto/*.go` | JSON 响应结构与 Swagger 元数据。 | DTO 层清晰，有助于 handler 保持 scan-oriented；部分 v2 匿名本地响应类型后续可迁移到 DTO 保持一致。 |
 
 ## 优先级结论

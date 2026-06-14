@@ -9,6 +9,11 @@ type V1BatteryHealth struct {
 	CurrentCapacity         float64 `json:"current_capacity" example:"79.4"`
 	RatedEfficiency         float64 `json:"rated_efficiency" example:"18.4"`
 	BatteryHealthPercentage float64 `json:"battery_health_percentage" example:"96.24"`
+	// CurrentBatteryLevel is the most recent usable state-of-charge (%), and
+	// PredictedRange is the range actually drivable at that level
+	// (current_range × level / 100). Both are objective readings, not estimates.
+	CurrentBatteryLevel float64 `json:"current_battery_level" example:"62"`
+	PredictedRange      float64 `json:"predicted_range" example:"268.3"`
 }
 
 // V1BatteryHealthData is the `data` field of V1BatteryHealthResponse.
