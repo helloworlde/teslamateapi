@@ -1675,6 +1675,7 @@ definitions:
         - temperature
         - version
         - season
+        - month
         example: temperature
         type: string
       groups:
@@ -3030,7 +3031,7 @@ paths:
   /api/v2/cars/{CarID}/stats/consumption:
     get:
       description: Wh/distance broken down by temperature band, firmware version,
-        or season. Objective data only.
+        season, or month. Objective data only.
       parameters:
       - description: TeslaMate cars.id
         in: path
@@ -3043,6 +3044,7 @@ paths:
         - temperature
         - version
         - season
+        - month
         in: query
         name: group_by
         type: string

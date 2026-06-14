@@ -1368,7 +1368,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Wh/distance broken down by temperature band, firmware version, or season. Objective data only.",
+                "description": "Wh/distance broken down by temperature band, firmware version, season, or month. Objective data only.",
                 "produces": [
                     "application/json"
                 ],
@@ -1388,7 +1388,8 @@ const docTemplate = `{
                         "enum": [
                             "temperature",
                             "version",
-                            "season"
+                            "season",
+                            "month"
                         ],
                         "type": "string",
                         "default": "temperature",
@@ -3873,7 +3874,8 @@ const docTemplate = `{
                     "enum": [
                         "temperature",
                         "version",
-                        "season"
+                        "season",
+                        "month"
                     ],
                     "example": "temperature"
                 },

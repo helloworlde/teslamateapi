@@ -262,7 +262,8 @@ adjacent drives.
   - Supported parameters: `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/consumption`
   - Energy consumption (Wh/distance) broken down along one objective
-    dimension: `group_by=temperature|version|season` (default `temperature`).
+    dimension: `group_by=temperature|version|season|month` (default
+    `temperature`).
     Each group returns `key`, `consumption`, `trips_count`, `distance`,
     `energy_kwh`, `delta_vs_avg_pct`; temperature groups add `temp_low` /
     `temp_high`. Single SQL over `drives` (+ tiny `updates` for `version`); no

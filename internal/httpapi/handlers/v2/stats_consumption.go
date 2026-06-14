@@ -26,15 +26,15 @@ import (
 //
 // Query params:
 //
-//	group_by   temperature | version | season   (default: temperature)
+//	group_by   temperature | version | season | month   (default: temperature)
 //
 // @Summary      Consumption analysis
-// @Description  Wh/distance broken down by temperature band, firmware version, or season. Objective data only.
+// @Description  Wh/distance broken down by temperature band, firmware version, season, or month. Objective data only.
 // @Tags         v2
 // @Security     BearerAuth
 // @Produce      json
 // @Param        CarID     path   int     true   "TeslaMate cars.id"
-// @Param        group_by  query  string  false  "grouping dimension"  Enums(temperature,version,season)  default(temperature)
+// @Param        group_by  query  string  false  "grouping dimension"  Enums(temperature,version,season,month)  default(temperature)
 // @Success      200  {object}  dto.V2ConsumptionResponse
 // @Failure      400  {object}  dto.ErrorEnvelope
 // @Failure      500  {object}  dto.ErrorEnvelope
@@ -86,9 +86,15 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 			WHEN 6 THEN 2 WHEN 7 THEN 2 WHEN 8 THEN 2
 			WHEN 9 THEN 3 WHEN 10 THEN 3 WHEN 11 THEN 3
 			ELSE 4 END)`
+	case "month":
+		// Calendar months in the user's timezone, keyed "YYYY-MM" (chronological
+		// order == lexical order). Objective: just bucketing drives by start date.
+		needTZ = true
+		keyExpr = `to_char(d.start_date AT TIME ZONE $2, 'YYYY-MM')`
+		ordExpr = `MIN(d.start_date)`
 	default:
 		respond.HandleErrorV2(c, handler, http.StatusBadRequest, "Invalid group_by.",
-			"group_by must be one of: temperature, version, season")
+			"group_by must be one of: temperature, version, season, month")
 		return
 	}
 

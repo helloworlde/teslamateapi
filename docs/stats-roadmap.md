@@ -79,12 +79,13 @@
 
 能耗分析三个 tab 合一，纯客观数据，只扫 `drives`（+小表 `updates`）。
 
-参数：`group_by = temperature | version | season`（默认 temperature）
+参数：`group_by = temperature | version | season | month`（默认 temperature）
 
 响应（`data`）：
 - `car`, `group_by`, `overall_consumption`（全局 Wh/km）, `units`
 - `groups[]`：每组 `key` / `consumption`（Wh/km）/ `trips_count` / `distance` / `energy_kwh` / `delta_vs_avg_pct`（客观算术）
 - temperature 组额外带 `temp_low` / `temp_high`（按用户单位换算）
+- month 组 `key` 为用户时区下的 `YYYY-MM`（按 `start_date` 截断，字典序即时间序）
 
 性能：单 SQL、GROUP BY 在 `drives`；version 用 `updates` 的 `LEAD` 窗口建版本区间再范围 JOIN（updates 仅几十行）。无 positions 扫描。
 

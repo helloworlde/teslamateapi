@@ -20,7 +20,7 @@ type V2ConsumptionGroup struct {
 // V2ConsumptionData is the `data` field of V2ConsumptionResponse.
 type V2ConsumptionData struct {
 	Car                Car                  `json:"car"`
-	GroupBy            string               `json:"group_by" example:"temperature" enums:"temperature,version,season"`
+	GroupBy            string               `json:"group_by" example:"temperature" enums:"temperature,version,season,month"`
 	OverallConsumption float64              `json:"overall_consumption" example:"174.0"`
 	Groups             []V2ConsumptionGroup `json:"groups"`
 	Units              TeslaMateUnits       `json:"units"`
