@@ -2142,6 +2142,53 @@ definitions:
       data:
         $ref: '#/definitions/dto.V2SummaryData'
     type: object
+  dto.V2TimeDistributionData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      range:
+        $ref: '#/definitions/dto.V2TimeDistributionRange'
+      segments:
+        items:
+          $ref: '#/definitions/dto.V2TimeDistributionSegment'
+        type: array
+      total_duration_min:
+        example: 22680
+        type: integer
+    type: object
+  dto.V2TimeDistributionRange:
+    properties:
+      end:
+        example: "2026-06-01T00:00:00+01:00"
+        type: string
+      start:
+        example: "2026-01-01T00:00:00+01:00"
+        type: string
+    type: object
+  dto.V2TimeDistributionResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2TimeDistributionData'
+    type: object
+  dto.V2TimeDistributionSegment:
+    properties:
+      duration_min:
+        example: 4200
+        type: integer
+      key:
+        enum:
+        - driving
+        - parked
+        - charging
+        example: driving
+        type: string
+      label:
+        example: Driving
+        type: string
+      percent:
+        example: 18.5
+        type: number
+    type: object
   dto.V2UpdatesAgg:
     properties:
       count:
@@ -3156,6 +3203,44 @@ paths:
       security:
       - BearerAuth: []
       summary: Period summary stats
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/time-distribution:
+    get:
+      description: Aggregates driving, parked, and charging time for a car. Parked
+        excludes charging overlap.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: RFC3339 lower bound
+        in: query
+        name: start_date
+        type: string
+      - description: RFC3339 upper bound
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2TimeDistributionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Vehicle time distribution
       tags:
       - v2
 schemes:

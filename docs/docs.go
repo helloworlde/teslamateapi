@@ -1536,6 +1536,64 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v2/cars/{CarID}/stats/time-distribution": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Aggregates driving, parked, and charging time for a car. Parked excludes charging overlap.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Vehicle time distribution",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 lower bound",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 upper bound",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2TimeDistributionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4517,6 +4575,74 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/dto.V2SummaryData"
+                }
+            }
+        },
+        "dto.V2TimeDistributionData": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "range": {
+                    "$ref": "#/definitions/dto.V2TimeDistributionRange"
+                },
+                "segments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2TimeDistributionSegment"
+                    }
+                },
+                "total_duration_min": {
+                    "type": "integer",
+                    "example": 22680
+                }
+            }
+        },
+        "dto.V2TimeDistributionRange": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "string",
+                    "example": "2026-06-01T00:00:00+01:00"
+                },
+                "start": {
+                    "type": "string",
+                    "example": "2026-01-01T00:00:00+01:00"
+                }
+            }
+        },
+        "dto.V2TimeDistributionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2TimeDistributionData"
+                }
+            }
+        },
+        "dto.V2TimeDistributionSegment": {
+            "type": "object",
+            "properties": {
+                "duration_min": {
+                    "type": "integer",
+                    "example": 4200
+                },
+                "key": {
+                    "type": "string",
+                    "enum": [
+                        "driving",
+                        "parked",
+                        "charging"
+                    ],
+                    "example": "driving"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Driving"
+                },
+                "percent": {
+                    "type": "number",
+                    "example": 18.5
                 }
             }
         },

@@ -115,6 +115,7 @@ func NewRouter(d Deps) *gin.Engine {
 
 			v2g.GET("/cars/:CarID/stats/lifetime", d.V2.StatsLifetime)
 			v2g.GET("/cars/:CarID/stats/summary", d.V2.StatsSummary)
+			v2g.GET("/cars/:CarID/stats/time-distribution", d.V2.StatsTimeDistribution)
 			v2g.GET("/cars/:CarID/stats/by-geofence", d.V2.StatsByGeofence)
 			v2g.GET("/cars/:CarID/stats/consumption", d.V2.StatsConsumption)
 			v2g.GET("/cars/:CarID/stats/behavior", d.V2.StatsBehavior)
