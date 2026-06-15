@@ -25,6 +25,14 @@ import (
 // omitted — clients that need a dense series should fill in zero buckets
 // from the timeline they want to display.
 //
+// Drives and charges are bucketed by their `start_date`. Parkings are time
+// intervals: each parking is sliced across every bucket it overlaps with,
+// and duration + vampire-drain energy are allocated pro-rata. Buckets that
+// only carry parking activity still appear in the response (drives_count /
+// charges_count = 0). The `start_date` / `end_date` filter clamps both the
+// drive/charge events and the parking bucket series, so a parking that
+// straddles the window edge only contributes inside the requested range.
+//
 // @Summary      Period summary stats
 // @Description  Aggregates bucketed by day / week / month / year in the user's timezone.
 // @Tags         v2
@@ -130,8 +138,11 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 	//
 	// Parameters: $1=car_id, $2=period_unit, $3=tz_name, $4=startDate?, $5=endDate?
 	//
-	// Bucket key uses date_trunc(unit, date AT TIME ZONE tz). We coalesce
-	// drive timestamps into the start_date for bucketing.
+	// Bucket key uses date_trunc(unit, ts_local), where ts_local converts the
+	// stored UTC timestamp into the user's timezone. Drives/charges are
+	// single-point events bucketed by start; parkings are intervals sliced
+	// across every bucket they overlap, with duration and rated-range drop
+	// allocated pro-rata.
 	tzName := h.tz.String()
 
 	var args []any
@@ -141,25 +152,50 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 	dateFilterDrives := ""
 	dateFilterCharges := ""
 	dateFilterParkings := ""
+	startIdx, endIdx := 0, 0
 	if parsedStartDate != "" {
+		startIdx = paramIdx
 		dateFilterDrives += fmt.Sprintf(" AND d.start_date >= $%d", paramIdx)
 		dateFilterCharges += fmt.Sprintf(" AND cp.start_date >= $%d", paramIdx)
-		dateFilterParkings += fmt.Sprintf(" AND park.park_start >= $%d", paramIdx)
+		dateFilterParkings += fmt.Sprintf(" AND COALESCE(dp.park_end, %s) > $%d::timestamp", utcNowTimestampSQL(), paramIdx)
 		args = append(args, parsedStartDate)
 		paramIdx++
 	}
 	if parsedEndDate != "" {
+		endIdx = paramIdx
 		dateFilterDrives += fmt.Sprintf(" AND d.start_date <= $%d", paramIdx)
 		dateFilterCharges += fmt.Sprintf(" AND cp.start_date <= $%d", paramIdx)
-		dateFilterParkings += fmt.Sprintf(" AND park.park_start <= $%d", paramIdx)
+		dateFilterParkings += fmt.Sprintf(" AND dp.park_start <= $%d::timestamp", paramIdx)
 		args = append(args, parsedEndDate)
 		paramIdx++
 	}
 
+	localDriveStart := localTimestampSQL("d.start_date", "$3")
+	localChargeStart := localTimestampSQL("cp.start_date", "$3")
+	localParkStart := localTimestampSQL("p.park_start", "$3")
+	localParkEndExclusive := localTimestampSQL("(p.park_end - INTERVAL '1 microsecond')", "$3")
+	step := bucketStepSQL("$2")
+	utcNow := utcNowTimestampSQL()
+
+	// Clamp the parking bucket series to the requested [startDate, endDate]
+	// window. Without this clamp, a parking that straddles the window edge
+	// (e.g. started before startDate, ends after endDate) would generate `pk`
+	// rows for every bucket it touches — including buckets outside the
+	// requested range — and they would leak into the final UNION-of-keys.
+	seriesStart := fmt.Sprintf("date_trunc($2, %s)", localParkStart)
+	seriesEnd := fmt.Sprintf("date_trunc($2, %s)", localParkEndExclusive)
+	if startIdx > 0 {
+		startLocal := localTimestampSQL(fmt.Sprintf("$%d::timestamp", startIdx), "$3")
+		seriesStart = fmt.Sprintf("GREATEST(%s, date_trunc($2, %s))", seriesStart, startLocal)
+	}
+	if endIdx > 0 {
+		endLocal := localTimestampSQL(fmt.Sprintf("$%d::timestamp", endIdx), "$3")
+		seriesEnd = fmt.Sprintf("LEAST(%s, date_trunc($2, %s))", seriesEnd, endLocal)
+	}
 	query := fmt.Sprintf(`
 		WITH drv AS (
 			SELECT
-				date_trunc($2, d.start_date AT TIME ZONE $3) AS bk,
+				date_trunc($2, %[1]s) AS bk,
 				COUNT(*) AS cnt,
 				SUM(distance) AS dist,
 				SUM(duration_min) AS dur,
@@ -188,7 +224,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				) AS worst_consumption
 			FROM drives d
 			LEFT JOIN cars ON cars.id = d.car_id
-			WHERE d.car_id = $1 AND d.end_date IS NOT NULL %s
+			WHERE d.car_id = $1 AND d.end_date IS NOT NULL %[7]s
 			GROUP BY 1
 		),
 		ch AS (
@@ -212,7 +248,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				COALESCE(AVG(peak_pw) FILTER (WHERE fast_present), 0) AS avg_power_dc
 			FROM (
 				SELECT
-					date_trunc($2, cp.start_date AT TIME ZONE $3) AS bk,
+					date_trunc($2, %[2]s) AS bk,
 					cp.charge_energy_added,
 					cp.charge_energy_used,
 					cp.duration_min,
@@ -220,7 +256,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 					EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present) AS fast_present,
 					(SELECT MAX(charger_power) FROM charges c WHERE c.charging_process_id = cp.id) AS peak_pw
 				FROM charging_processes cp
-				WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %s
+				WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %[8]s
 			) sub
 			GROUP BY bk
 		),
@@ -235,13 +271,12 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			WHERE d.car_id = $1 AND d.end_date IS NOT NULL
 			WINDOW w AS (PARTITION BY d.car_id ORDER BY d.start_date ASC)
 		),
-		park AS (
+		park_intervals AS (
 			SELECT
 				dp.park_start,
-				dp.park_end,
+				COALESCE(dp.park_end, %[6]s) AS park_end,
 				dp.end_position_id,
 				dp.next_start_position_id,
-				COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS dur,
 				CASE
 					WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
 					AND NOT EXISTS(SELECT 1 FROM charging_processes cp
@@ -254,14 +289,33 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			LEFT JOIN cars ON cars.id = $1
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id
 			LEFT JOIN positions ep ON ep.id = dp.next_start_position_id
+			WHERE COALESCE(dp.park_end, %[6]s) > dp.park_start %[9]s
+		),
+		park_slices AS (
+			SELECT
+				bucket.bk,
+				GREATEST(p.park_start, ((bucket.bk AT TIME ZONE $3) AT TIME ZONE 'UTC')) AS slice_start,
+				LEAST(p.park_end, (((bucket.bk + %[5]s) AT TIME ZONE $3) AT TIME ZONE 'UTC')) AS slice_end,
+				p.drop_kwh,
+				EXTRACT(EPOCH FROM (p.park_end - p.park_start)) AS total_seconds
+			FROM park_intervals p
+			CROSS JOIN LATERAL generate_series(
+				%[3]s,
+				%[4]s,
+				%[5]s
+			) AS bucket(bk)
 		),
 		pk AS (
 			SELECT
-				date_trunc($2, park.park_start AT TIME ZONE $3) AS bk,
-				SUM(park.dur) AS dur,
-				SUM(park.drop_kwh) AS drop_kwh
-			FROM park
-			WHERE 1=1 %s
+				bk,
+				SUM(EXTRACT(EPOCH FROM (slice_end - slice_start)) / 60)::int AS dur,
+				SUM(
+					CASE WHEN total_seconds > 0
+					THEN drop_kwh * EXTRACT(EPOCH FROM (slice_end - slice_start)) / total_seconds
+					ELSE 0 END
+				) AS drop_kwh
+			FROM park_slices
+			WHERE slice_end > slice_start
 			GROUP BY 1
 		),
 		keys AS (
@@ -316,7 +370,15 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		LEFT JOIN ch  ON ch.bk  = k.bk
 		LEFT JOIN pk  ON pk.bk  = k.bk
 		ORDER BY k.bk ASC;`,
-		dateFilterDrives, dateFilterCharges, dateFilterParkings,
+		localDriveStart,
+		localChargeStart,
+		seriesStart,
+		seriesEnd,
+		step,
+		utcNow,
+		dateFilterDrives,
+		dateFilterCharges,
+		dateFilterParkings,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)

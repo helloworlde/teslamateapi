@@ -2,6 +2,7 @@ package v2
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -54,40 +55,68 @@ func (h *Handler) StatsBehavior(c *gin.Context) {
 	tzName := h.tz.String()
 
 	// --- Heatmap: weekday × hour activity, drives and charges combined ---
-	// DOW/HOUR are extracted in the user's timezone so cells reflect local
-	// wall-clock. Drives contribute count + distance; charges contribute count.
+	// DOW/HOUR are extracted after converting TeslaMate's UTC timestamp columns
+	// into the user's local wall-clock. Drives contribute count, distance, and
+	// duration; charges contribute count, energy, and duration.
 	heatmap := make([]dto.V2BehaviorHeatmapCell, 0, 24)
-	heatRows, err := h.db.QueryContext(ctx, `
+	localStart := localTimestampSQL("start_date", "$2")
+	heatRows, err := h.db.QueryContext(ctx, fmt.Sprintf(`
 		WITH cells AS (
 			SELECT
-				EXTRACT(DOW  FROM start_date AT TIME ZONE $2)::int AS wd,
-				EXTRACT(HOUR FROM start_date AT TIME ZONE $2)::int AS hr,
-				1 AS is_drive, 0 AS is_charge, COALESCE(distance, 0) AS dist
+				EXTRACT(DOW  FROM %[1]s)::int AS wd,
+				EXTRACT(HOUR FROM %[1]s)::int AS hr,
+				1 AS is_drive,
+				0 AS is_charge,
+				COALESCE(distance, 0) AS drive_dist,
+				COALESCE(duration_min, 0) AS drive_dur,
+				0::double precision AS charge_added,
+				0::double precision AS charge_used,
+				0 AS charge_dur
 			FROM drives
 			WHERE car_id = $1 AND end_date IS NOT NULL
 			UNION ALL
 			SELECT
-				EXTRACT(DOW  FROM start_date AT TIME ZONE $2)::int,
-				EXTRACT(HOUR FROM start_date AT TIME ZONE $2)::int,
-				0, 1, 0
+				EXTRACT(DOW  FROM %[1]s)::int,
+				EXTRACT(HOUR FROM %[1]s)::int,
+				0,
+				1,
+				0,
+				0,
+				COALESCE(charge_energy_added, 0),
+				COALESCE(GREATEST(charge_energy_used, charge_energy_added), 0),
+				COALESCE(duration_min, 0)
 			FROM charging_processes
 			WHERE car_id = $1 AND end_date IS NOT NULL
 		)
 		SELECT
 			wd, hr,
 			SUM(is_drive)::int AS drives_count,
-			COALESCE(SUM(dist) FILTER (WHERE is_drive = 1), 0) AS drives_distance,
-			SUM(is_charge)::int AS charges_count
+			COALESCE(SUM(drive_dist), 0) AS drives_distance,
+			COALESCE(SUM(drive_dur), 0)::int AS drives_duration_min,
+			SUM(is_charge)::int AS charges_count,
+			COALESCE(SUM(charge_added), 0) AS charges_energy_added_kwh,
+			COALESCE(SUM(charge_used), 0) AS charges_energy_used_kwh,
+			COALESCE(SUM(charge_dur), 0)::int AS charges_duration_min
 		FROM cells
 		GROUP BY wd, hr
-		ORDER BY wd, hr`, CarID, tzName)
+		ORDER BY wd, hr`, localStart), CarID, tzName)
 	if err != nil {
 		respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
 	}
 	for heatRows.Next() {
 		var cell dto.V2BehaviorHeatmapCell
-		if err = heatRows.Scan(&cell.Weekday, &cell.Hour, &cell.DrivesCount, &cell.DrivesDistance, &cell.ChargesCount); err != nil {
+		if err = heatRows.Scan(
+			&cell.Weekday,
+			&cell.Hour,
+			&cell.DrivesCount,
+			&cell.DrivesDistance,
+			&cell.DrivesDurationMin,
+			&cell.ChargesCount,
+			&cell.ChargesEnergyAddedKWh,
+			&cell.ChargesEnergyUsedKWh,
+			&cell.ChargesDurationMin,
+		); err != nil {
 			heatRows.Close()
 			respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 			return

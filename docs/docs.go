@@ -3620,6 +3620,18 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 3
                 },
+                "charges_duration_min": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "charges_energy_added_kwh": {
+                    "type": "number",
+                    "example": 52.1
+                },
+                "charges_energy_used_kwh": {
+                    "type": "number",
+                    "example": 54
+                },
                 "drives_count": {
                     "type": "integer",
                     "example": 42
@@ -3627,6 +3639,10 @@ const docTemplate = `{
                 "drives_distance": {
                     "type": "number",
                     "example": 512.4
+                },
+                "drives_duration_min": {
+                    "type": "integer",
+                    "example": 780
                 },
                 "hour": {
                     "type": "integer",

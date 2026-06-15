@@ -75,13 +75,14 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	case "season":
 		// Meteorological seasons by calendar month in the user's timezone.
 		// Semi-objective: assumes the northern-hemisphere convention.
+		localDriveStart := localTimestampSQL("d.start_date", "$2")
 		needTZ = true
-		keyExpr = `CASE EXTRACT(MONTH FROM d.start_date AT TIME ZONE $2)::int
+		keyExpr = `CASE EXTRACT(MONTH FROM ` + localDriveStart + `)::int
 			WHEN 12 THEN 'winter' WHEN 1 THEN 'winter' WHEN 2 THEN 'winter'
 			WHEN 3 THEN 'spring' WHEN 4 THEN 'spring' WHEN 5 THEN 'spring'
 			WHEN 6 THEN 'summer' WHEN 7 THEN 'summer' WHEN 8 THEN 'summer'
 			ELSE 'autumn' END`
-		ordExpr = `MIN(CASE EXTRACT(MONTH FROM d.start_date AT TIME ZONE $2)::int
+		ordExpr = `MIN(CASE EXTRACT(MONTH FROM ` + localDriveStart + `)::int
 			WHEN 3 THEN 1 WHEN 4 THEN 1 WHEN 5 THEN 1
 			WHEN 6 THEN 2 WHEN 7 THEN 2 WHEN 8 THEN 2
 			WHEN 9 THEN 3 WHEN 10 THEN 3 WHEN 11 THEN 3
@@ -89,8 +90,9 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	case "month":
 		// Calendar months in the user's timezone, keyed "YYYY-MM" (chronological
 		// order == lexical order). Objective: just bucketing drives by start date.
+		localDriveStart := localTimestampSQL("d.start_date", "$2")
 		needTZ = true
-		keyExpr = `to_char(d.start_date AT TIME ZONE $2, 'YYYY-MM')`
+		keyExpr = `to_char(` + localDriveStart + `, 'YYYY-MM')`
 		ordExpr = `MIN(d.start_date)`
 	default:
 		respond.HandleErrorV2(c, handler, http.StatusBadRequest, "Invalid group_by.",

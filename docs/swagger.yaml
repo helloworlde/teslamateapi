@@ -1487,12 +1487,24 @@ definitions:
       charges_count:
         example: 3
         type: integer
+      charges_duration_min:
+        example: 180
+        type: integer
+      charges_energy_added_kwh:
+        example: 52.1
+        type: number
+      charges_energy_used_kwh:
+        example: 54
+        type: number
       drives_count:
         example: 42
         type: integer
       drives_distance:
         example: 512.4
         type: number
+      drives_duration_min:
+        example: 780
+        type: integer
       hour:
         example: 8
         type: integer

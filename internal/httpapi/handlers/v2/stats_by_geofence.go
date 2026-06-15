@@ -134,7 +134,7 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 			SELECT dp.park_geofence_id AS gid,
 				COUNT(*) AS cnt,
 				COALESCE(SUM(
-					COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)
+					COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)
 				)::int, 0) AS dur
 			FROM dp
 			WHERE dp.park_geofence_id IS NOT NULL %s

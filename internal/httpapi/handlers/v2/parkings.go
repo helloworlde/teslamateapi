@@ -159,8 +159,8 @@ func (h *Handler) Parkings(c *gin.Context) {
 			dp.drive_id AS parking_id,
 			dp.park_start,
 			dp.park_end,
-			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS duration_min,
-			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)::int AS duration_min,
+			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
 			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(addr.name, nullif(CONCAT_WS(' ', addr.road, addr.house_number), '')), addr.city)) AS address,
 			dp.park_geofence_id AS geofence_id,
 			start_pos.latitude,
@@ -210,7 +210,7 @@ func (h *Handler) Parkings(c *gin.Context) {
 		paramIndex++
 	}
 	if minDuration > 0 {
-		filterClauses += fmt.Sprintf(` AND COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int >= $%d`, paramIndex)
+		filterClauses += fmt.Sprintf(` AND COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)::int >= $%d`, paramIndex)
 		filterParams = append(filterParams, minDuration)
 		paramIndex++
 	}
@@ -407,8 +407,8 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 			dp.drive_id,
 			dp.park_start,
 			dp.park_end,
-			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS duration_min,
-			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)::int AS duration_min,
+			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM ((CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
 			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(addr.name, nullif(CONCAT_WS(' ', addr.road, addr.house_number), '')), addr.city)) AS address,
 			dp.park_geofence_id,
 			start_pos.latitude,

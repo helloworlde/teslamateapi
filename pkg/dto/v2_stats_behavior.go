@@ -7,11 +7,15 @@ import "github.com/tobiasehlert/teslamateapi/pkg/nullable"
 // Weekday follows Postgres DOW (0=Sunday … 6=Saturday); hour is 0–23. The
 // timestamps are bucketed in the user's timezone so "8am" is local wall-clock.
 type V2BehaviorHeatmapCell struct {
-	Weekday        int     `json:"weekday" example:"1"`
-	Hour           int     `json:"hour" example:"8"`
-	DrivesCount    int     `json:"drives_count" example:"42"`
-	DrivesDistance float64 `json:"drives_distance" example:"512.4"`
-	ChargesCount   int     `json:"charges_count" example:"3"`
+	Weekday               int     `json:"weekday" example:"1"`
+	Hour                  int     `json:"hour" example:"8"`
+	DrivesCount           int     `json:"drives_count" example:"42"`
+	DrivesDistance        float64 `json:"drives_distance" example:"512.4"`
+	DrivesDurationMin     int     `json:"drives_duration_min" example:"780"`
+	ChargesCount          int     `json:"charges_count" example:"3"`
+	ChargesEnergyAddedKWh float64 `json:"charges_energy_added_kwh" example:"52.1"`
+	ChargesEnergyUsedKWh  float64 `json:"charges_energy_used_kwh" example:"54.0"`
+	ChargesDurationMin    int     `json:"charges_duration_min" example:"180"`
 }
 
 // V2BehaviorChargeLevelBucket is one 10-point state-of-charge band. StartCount

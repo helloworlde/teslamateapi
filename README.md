@@ -271,7 +271,10 @@ adjacent drives.
   - Supported parameters: `group_by`.
 - GET `/api/v2/cars/:CarID/stats/behavior`
   - Behaviour profile in one response, three objective distributions:
-    `heatmap` (weekday×hour drive/charge activity in the user's timezone),
+    `heatmap` (weekday×hour drive/charge activity in the user's timezone — each
+    cell carries `drives_count`, `drives_distance`, `drives_duration_min`,
+    `charges_count`, `charges_energy_added_kwh`, `charges_energy_used_kwh`,
+    `charges_duration_min`),
     `charge_levels` (10-point histogram of charge start/end SOC), and
     `trip_types` (distance-band histogram with `trips_count`, `distance`,
     `energy_kwh`). Scans only `drives` / `charging_processes`; no `positions`.
