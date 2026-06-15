@@ -123,8 +123,8 @@ func (h *Handler) Drives(c *gin.Context) {
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency 
 				ELSE NULL 
 			END as energy_consumed_net,
-			CASE 
-				WHEN (duration_min > 1 AND distance > 1 AND ( start_position.usable_battery_level IS NULL OR end_position.usable_battery_level IS NULL OR ( end_position.battery_level - end_position.usable_battery_level ) = 0 )) AND NULLIF(distance, 0) IS NOT NULL
+			CASE
+				WHEN (start_rated_range_km - end_rated_range_km) > 0 AND NULLIF(distance, 0) IS NOT NULL
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000
 				ELSE NULL
 			END as consumption_net,
