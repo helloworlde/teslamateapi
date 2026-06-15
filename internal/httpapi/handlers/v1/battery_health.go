@@ -1,13 +1,10 @@
 package v1
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
@@ -45,8 +42,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	localChargeDate := timefmt.UTCTimestampToLocalSQL("date", "$2")
-	query := fmt.Sprintf(`
+	query := `
 	WITH Aux as (
 		SELECT 
 			car_id,
@@ -194,7 +190,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 				p.car_id = $1
 				AND usable_battery_level IS NOT NULL
 		) AS data
-		GROUP BY date_trunc('day', %[1]s)
+		GROUP BY date_trunc('day', date)
 		ORDER BY range DESC
 		LIMIT 1
 	),
@@ -216,7 +212,7 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 				p.car_id = $1
 				AND usable_battery_level IS NOT NULL
 		) AS data
-		GROUP BY date_trunc('day', %[1]s)
+		GROUP BY date_trunc('day', date)
 		ORDER BY range DESC
 		LIMIT 1
 	),
@@ -265,10 +261,10 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		LEFT JOIN MaxCapacity ON true
 		LEFT JOIN CurrentCapacity ON true
 		LEFT JOIN CurrentBatteryLevel ON true
-	WHERE cars.id = $1;`, localChargeDate)
+	WHERE cars.id = $1;`
 
 	// execute query
-	err := h.db.QueryRowContext(c.Request.Context(), query, CarID, h.tz.String()).Scan(
+	err := h.db.QueryRowContext(c.Request.Context(), query, CarID).Scan(
 		&MaxRangeRated,
 		&MaxRangeIdeal,
 		&CurrentRangeRated,

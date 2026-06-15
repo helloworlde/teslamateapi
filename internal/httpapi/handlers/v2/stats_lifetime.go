@@ -1,13 +1,11 @@
 package v2
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
@@ -48,34 +46,32 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 	}
 
 	var (
-		CarName                              NullString
-		Since                                NullString
-		recordedDays                         int
-		avgDailyDistance, avgMonthlyDistance float64
-		drives                               dto.V2DrivesAgg
-		charges                              dto.V2ChargesAgg
-		parkings                             dto.V2ParkingsAgg
-		updates                              dto.V2UpdatesAgg
-		carMeta                              dto.V2CarMeta
-		UnitsLength, UnitsTemperature        string
+		CarName                                   NullString
+		Since                                     NullString
+		recordedDays                              int
+		avgDailyDistance, avgMonthlyDistance      float64
+		drives                                    dto.V2DrivesAgg
+		charges                                   dto.V2ChargesAgg
+		parkings                                  dto.V2ParkingsAgg
+		updates                                   dto.V2UpdatesAgg
+		carMeta                                   dto.V2CarMeta
+		UnitsLength, UnitsTemperature             string
 	)
 
 	tzName := h.tz.String()
-	localStartDate := timefmt.UTCTimestampToLocalSQL("start_date", "$2")
-	utcNow := timefmt.UTCNowSQL()
 
 	// One CTE per source table — Postgres flattens trivial CTEs since v12.
 	// Anchored on a single-row VALUES so empty cars still produce a well-formed
 	// response (otherwise the empty `d` CTE would yield zero rows and the
 	// handler would surface ErrNoRows).
-	query := fmt.Sprintf(`
+	query := `
 		WITH d AS (
 			SELECT
 				MIN(start_date) AS since,
 				MAX(start_date) AS last_drive_date,
 				MAX(end_km) AS current_odometer,
 				COUNT(*) AS cnt,
-				COUNT(DISTINCT date_trunc('day', %[1]s)) AS active_days,
+				COUNT(DISTINCT date_trunc('day', start_date AT TIME ZONE $2)) AS active_days,
 				COALESCE(SUM(distance), 0) AS total_km,
 				COALESCE(SUM(duration_min), 0) AS total_dur,
 				COALESCE(MAX(speed_max), 0) AS max_speed,
@@ -204,7 +200,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			FROM dp
 			CROSS JOIN LATERAL (
 				SELECT COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60,
-				                EXTRACT(EPOCH FROM (%[2]s - dp.park_start))/60) AS park_dur
+				                EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60) AS park_dur
 			) durs
 			LEFT JOIN cars ON cars.id = $1
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id
@@ -228,10 +224,10 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COUNT(DISTINCT day) AS recorded_days,
 				COUNT(DISTINCT date_trunc('month', day)) AS recorded_months
 			FROM (
-				SELECT date_trunc('day', %[1]s) AS day
+				SELECT date_trunc('day', start_date AT TIME ZONE $2) AS day
 				FROM drives WHERE car_id = $1 AND end_date IS NOT NULL
 				UNION
-				SELECT date_trunc('day', %[1]s)
+				SELECT date_trunc('day', start_date AT TIME ZONE $2)
 				FROM charging_processes WHERE car_id = $1 AND end_date IS NOT NULL
 			) days
 		)
@@ -283,7 +279,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		LEFT JOIN pk ON true
 		LEFT JOIN up ON true
 		LEFT JOIN cm ON true
-		LEFT JOIN rd ON true;`, localStartDate, utcNow)
+		LEFT JOIN rd ON true;`
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, tzName)
 	err := row.Scan(

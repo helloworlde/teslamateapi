@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 )
 
 // TeslaMateAPICarsStatsByGeofenceV2 aggregates drives / charges / parkings
@@ -99,11 +98,6 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 		paramIdx++
 	}
 
-	parkDurationExpr := fmt.Sprintf(
-		"COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (%s - dp.park_start))/60)",
-		timefmt.UTCNowSQL(),
-	)
-
 	query := fmt.Sprintf(`
 		WITH dep AS (
 			SELECT d.start_geofence_id AS gid, COUNT(*) AS cnt
@@ -140,7 +134,7 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 			SELECT dp.park_geofence_id AS gid,
 				COUNT(*) AS cnt,
 				COALESCE(SUM(
-					%s
+					COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)
 				)::int, 0) AS dur
 			FROM dp
 			WHERE dp.park_geofence_id IS NOT NULL %s
@@ -173,7 +167,7 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 		LEFT JOIN geofences g ON g.id = k.gid
 		WHERE k.gid IS NOT NULL
 		ORDER BY (COALESCE(arr.cnt, 0) + COALESCE(dep.cnt, 0) + COALESCE(ch.cnt, 0) + COALESCE(pk.cnt, 0)) DESC;`,
-		drvFilter, drvFilter, chFilter, parkDurationExpr, pkFilter,
+		drvFilter, drvFilter, chFilter, pkFilter,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)

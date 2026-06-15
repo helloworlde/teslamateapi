@@ -2,14 +2,12 @@ package v1
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
@@ -65,8 +63,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 	)
 
 	// Construct the query with the preferred range setting
-	utcNow := timefmt.UTCNowSQL()
-	query := fmt.Sprintf(`
+	query := `
 		SELECT
 			charging_processes.id AS charge_id,
 			start_date,
@@ -77,8 +74,8 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 			(SELECT rated_battery_range_km FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS current_rated_range,
 			(SELECT battery_level FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id ASC LIMIT 1) AS start_battery_level,
 			(SELECT battery_level FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS current_battery_level,
-			EXTRACT(EPOCH FROM (COALESCE(end_date, %[1]s) - start_date))/60 AS duration_min,
-			TO_CHAR((EXTRACT(EPOCH FROM (COALESCE(end_date, %[1]s) - start_date))/60 * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			EXTRACT(EPOCH FROM (COALESCE(end_date, NOW()) - start_date))/60 AS duration_min,
+			TO_CHAR((EXTRACT(EPOCH FROM (COALESCE(end_date, NOW()) - start_date))/60 * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
 			(SELECT outside_temp FROM charges WHERE charging_process_id = charging_processes.id ORDER BY id DESC LIMIT 1) AS outside_temp_avg,
 			position.odometer as odometer,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
@@ -93,7 +90,7 @@ func (h *Handler) ChargesCurrent(c *gin.Context) {
 		LEFT JOIN geofences geofence ON geofence_id = geofence.id
 		WHERE charging_processes.car_id=$1
 		ORDER BY end_date IS NULL DESC, start_date DESC
-		LIMIT 1;`, utcNow)
+		LIMIT 1;`
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID)
 

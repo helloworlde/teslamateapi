@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 )
 
 // TeslaMateAPICarsStatsSummaryV2 returns aggregates bucketed by day / week
@@ -131,9 +130,8 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 	//
 	// Parameters: $1=car_id, $2=period_unit, $3=tz_name, $4=startDate?, $5=endDate?
 	//
-	// Bucket key uses UTC timestamp columns converted to user-local wall-clock
-	// before date_trunc. TeslaMate stores UTC instants in timestamp-without-zone
-	// columns, so the UTC hop is required before applying the user's timezone.
+	// Bucket key uses date_trunc(unit, date AT TIME ZONE tz). We coalesce
+	// drive timestamps into the start_date for bucketing.
 	tzName := h.tz.String()
 
 	var args []any
@@ -158,18 +156,10 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		paramIdx++
 	}
 
-	localDriveStart := timefmt.UTCTimestampToLocalSQL("d.start_date", "$3")
-	localChargeStart := timefmt.UTCTimestampToLocalSQL("cp.start_date", "$3")
-	localParkStart := timefmt.UTCTimestampToLocalSQL("park.park_start", "$3")
-	parkDurationExpr := fmt.Sprintf(
-		"COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (%s - dp.park_start))/60)",
-		timefmt.UTCNowSQL(),
-	)
-
 	query := fmt.Sprintf(`
 		WITH drv AS (
 			SELECT
-				date_trunc($2, %s) AS bk,
+				date_trunc($2, d.start_date AT TIME ZONE $3) AS bk,
 				COUNT(*) AS cnt,
 				SUM(distance) AS dist,
 				SUM(duration_min) AS dur,
@@ -222,7 +212,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				COALESCE(AVG(peak_pw) FILTER (WHERE fast_present), 0) AS avg_power_dc
 			FROM (
 				SELECT
-					date_trunc($2, %s) AS bk,
+					date_trunc($2, cp.start_date AT TIME ZONE $3) AS bk,
 					cp.charge_energy_added,
 					cp.charge_energy_used,
 					cp.duration_min,
@@ -251,7 +241,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				dp.park_end,
 				dp.end_position_id,
 				dp.next_start_position_id,
-				%s::int AS dur,
+				COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS dur,
 				CASE
 					WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
 					AND NOT EXISTS(SELECT 1 FROM charging_processes cp
@@ -267,7 +257,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		),
 		pk AS (
 			SELECT
-				date_trunc($2, %s) AS bk,
+				date_trunc($2, park.park_start AT TIME ZONE $3) AS bk,
 				SUM(park.dur) AS dur,
 				SUM(park.drop_kwh) AS drop_kwh
 			FROM park
@@ -282,9 +272,9 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			SELECT bk FROM pk
 		)
 		SELECT
-			-- date_trunc on the local wall-clock expression returns a tz-naive
-			-- timestamp; cast back AT TIME ZONE tz so pq scans a real UTC instant.
-			-- h.timeInTZ then formats it in user tz exactly once.
+			-- date_trunc on (timestamptz AT TIME ZONE tz) returns a tz-naive timestamp
+			-- representing wall-clock in user tz; cast back AT TIME ZONE tz so pq scans
+			-- a real UTC instant. h.timeInTZ then formats it in user tz exactly once.
 			(k.bk AT TIME ZONE $3) AS bucket_start,
 			((k.bk + (CASE $2
 				WHEN 'day' THEN INTERVAL '1 day'
@@ -326,7 +316,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		LEFT JOIN ch  ON ch.bk  = k.bk
 		LEFT JOIN pk  ON pk.bk  = k.bk
 		ORDER BY k.bk ASC;`,
-		localDriveStart, dateFilterDrives, localChargeStart, dateFilterCharges, parkDurationExpr, localParkStart, dateFilterParkings,
+		dateFilterDrives, dateFilterCharges, dateFilterParkings,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)

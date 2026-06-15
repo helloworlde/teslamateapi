@@ -2,13 +2,11 @@ package v2
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
-	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
@@ -60,7 +58,6 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		keyExpr, ordExpr, joinClause, whereExtra string
 		needTZ                                   bool
 	)
-	localDriveStart := timefmt.UTCTimestampToLocalSQL("d.start_date", "$2")
 	switch groupBy {
 	case "temperature":
 		// 10°C-wide bands keyed by their Celsius lower bound; drives without a
@@ -79,21 +76,21 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		// Meteorological seasons by calendar month in the user's timezone.
 		// Semi-objective: assumes the northern-hemisphere convention.
 		needTZ = true
-		keyExpr = fmt.Sprintf(`CASE EXTRACT(MONTH FROM %s)::int
+		keyExpr = `CASE EXTRACT(MONTH FROM d.start_date AT TIME ZONE $2)::int
 			WHEN 12 THEN 'winter' WHEN 1 THEN 'winter' WHEN 2 THEN 'winter'
 			WHEN 3 THEN 'spring' WHEN 4 THEN 'spring' WHEN 5 THEN 'spring'
 			WHEN 6 THEN 'summer' WHEN 7 THEN 'summer' WHEN 8 THEN 'summer'
-			ELSE 'autumn' END`, localDriveStart)
-		ordExpr = fmt.Sprintf(`MIN(CASE EXTRACT(MONTH FROM %s)::int
+			ELSE 'autumn' END`
+		ordExpr = `MIN(CASE EXTRACT(MONTH FROM d.start_date AT TIME ZONE $2)::int
 			WHEN 3 THEN 1 WHEN 4 THEN 1 WHEN 5 THEN 1
 			WHEN 6 THEN 2 WHEN 7 THEN 2 WHEN 8 THEN 2
 			WHEN 9 THEN 3 WHEN 10 THEN 3 WHEN 11 THEN 3
-			ELSE 4 END)`, localDriveStart)
+			ELSE 4 END)`
 	case "month":
 		// Calendar months in the user's timezone, keyed "YYYY-MM" (chronological
 		// order == lexical order). Objective: just bucketing drives by start date.
 		needTZ = true
-		keyExpr = fmt.Sprintf(`to_char(%s, 'YYYY-MM')`, localDriveStart)
+		keyExpr = `to_char(d.start_date AT TIME ZONE $2, 'YYYY-MM')`
 		ordExpr = `MIN(d.start_date)`
 	default:
 		respond.HandleErrorV2(c, handler, http.StatusBadRequest, "Invalid group_by.",
