@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
+	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 )
 
 // TeslaMateAPICarsParkingsV2 derives parking sessions from gaps between
@@ -140,7 +141,11 @@ func (h *Handler) Parkings(c *gin.Context) {
 	// start SOC (the drop during parking). When `next_start` is null
 	// (the last drive), parking is in-progress: end_date / end_battery / etc.
 	// stay null.
-	query := `
+	durationExpr := fmt.Sprintf(
+		"COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (%s - dp.park_start))/60)",
+		timefmt.UTCNowSQL(),
+	)
+	query := fmt.Sprintf(`
 		WITH drive_pairs AS (
 			SELECT
 				d.id AS drive_id,
@@ -159,8 +164,8 @@ func (h *Handler) Parkings(c *gin.Context) {
 			dp.drive_id AS parking_id,
 			dp.park_start,
 			dp.park_end,
-			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS duration_min,
-			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			%[1]s::int AS duration_min,
+			TO_CHAR((%[1]s::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
 			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(addr.name, nullif(CONCAT_WS(' ', addr.road, addr.house_number), '')), addr.city)) AS address,
 			dp.park_geofence_id AS geofence_id,
 			start_pos.latitude,
@@ -190,7 +195,7 @@ func (h *Handler) Parkings(c *gin.Context) {
 		LEFT JOIN positions end_pos ON end_pos.id = dp.next_start_position_id
 		LEFT JOIN addresses addr ON addr.id = dp.park_address_id
 		LEFT JOIN geofences geofence ON geofence.id = dp.park_geofence_id
-		WHERE 1=1`
+		WHERE 1=1`, durationExpr)
 
 	// Build a single filter clause shared by both the page query and the
 	// total_count query so the row count exactly matches what would appear if
@@ -210,7 +215,7 @@ func (h *Handler) Parkings(c *gin.Context) {
 		paramIndex++
 	}
 	if minDuration > 0 {
-		filterClauses += fmt.Sprintf(` AND COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int >= $%d`, paramIndex)
+		filterClauses += fmt.Sprintf(` AND %s::int >= $%d`, durationExpr, paramIndex)
 		filterParams = append(filterParams, minDuration)
 		paramIndex++
 	}
@@ -388,7 +393,11 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	headQuery := `
+	detailDurationExpr := fmt.Sprintf(
+		"COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (%s - dp.park_start))/60)",
+		timefmt.UTCNowSQL(),
+	)
+	headQuery := fmt.Sprintf(`
 		WITH drive_pairs AS (
 			SELECT
 				d.id AS drive_id,
@@ -407,8 +416,8 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 			dp.drive_id,
 			dp.park_start,
 			dp.park_end,
-			COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int AS duration_min,
-			TO_CHAR((COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60, EXTRACT(EPOCH FROM (NOW() - dp.park_start))/60)::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
+			%[1]s::int AS duration_min,
+			TO_CHAR((%[1]s::int * INTERVAL '1 minute'), 'HH24:MI') as duration_str,
 			COALESCE(geofence.name, CONCAT_WS(', ', COALESCE(addr.name, nullif(CONCAT_WS(' ', addr.road, addr.house_number), '')), addr.city)) AS address,
 			dp.park_geofence_id,
 			start_pos.latitude,
@@ -441,7 +450,7 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 		LEFT JOIN positions end_pos ON end_pos.id = dp.next_start_position_id
 		LEFT JOIN addresses addr ON addr.id = dp.park_address_id
 		LEFT JOIN geofences geofence ON geofence.id = dp.park_geofence_id
-		WHERE dp.drive_id = $2`
+		WHERE dp.drive_id = $2`, detailDurationExpr)
 
 	row := h.db.QueryRowContext(c.Request.Context(), headQuery, CarID, PrecedingDriveID)
 	err := row.Scan(

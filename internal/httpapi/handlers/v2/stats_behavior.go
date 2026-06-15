@@ -2,12 +2,14 @@ package v2
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
+	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
@@ -52,23 +54,24 @@ func (h *Handler) StatsBehavior(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	tzName := h.tz.String()
+	localStartDate := timefmt.UTCTimestampToLocalSQL("start_date", "$2")
 
 	// --- Heatmap: weekday × hour activity, drives and charges combined ---
 	// DOW/HOUR are extracted in the user's timezone so cells reflect local
 	// wall-clock. Drives contribute count + distance; charges contribute count.
 	heatmap := make([]dto.V2BehaviorHeatmapCell, 0, 24)
-	heatRows, err := h.db.QueryContext(ctx, `
+	heatRows, err := h.db.QueryContext(ctx, fmt.Sprintf(`
 		WITH cells AS (
 			SELECT
-				EXTRACT(DOW  FROM start_date AT TIME ZONE $2)::int AS wd,
-				EXTRACT(HOUR FROM start_date AT TIME ZONE $2)::int AS hr,
+				EXTRACT(DOW  FROM %[1]s)::int AS wd,
+				EXTRACT(HOUR FROM %[1]s)::int AS hr,
 				1 AS is_drive, 0 AS is_charge, COALESCE(distance, 0) AS dist
 			FROM drives
 			WHERE car_id = $1 AND end_date IS NOT NULL
 			UNION ALL
 			SELECT
-				EXTRACT(DOW  FROM start_date AT TIME ZONE $2)::int,
-				EXTRACT(HOUR FROM start_date AT TIME ZONE $2)::int,
+				EXTRACT(DOW  FROM %[1]s)::int,
+				EXTRACT(HOUR FROM %[1]s)::int,
 				0, 1, 0
 			FROM charging_processes
 			WHERE car_id = $1 AND end_date IS NOT NULL
@@ -80,7 +83,7 @@ func (h *Handler) StatsBehavior(c *gin.Context) {
 			SUM(is_charge)::int AS charges_count
 		FROM cells
 		GROUP BY wd, hr
-		ORDER BY wd, hr`, CarID, tzName)
+		ORDER BY wd, hr`, localStartDate), CarID, tzName)
 	if err != nil {
 		respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 		return
