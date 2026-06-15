@@ -193,10 +193,22 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(SUM(
 					CASE
 						WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
+						AND sp.rated_battery_range_km > ep.rated_battery_range_km
 						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
 							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
 							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN GREATEST(sp.rated_battery_range_km - ep.rated_battery_range_km, 0) * cars.efficiency
+						THEN (sp.rated_battery_range_km - ep.rated_battery_range_km) * cars.efficiency
+						WHEN sp.rated_battery_range_km IS NOT NULL
+						AND COALESCE(sp.usable_battery_level, sp.battery_level) > 0
+						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
+							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
+							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
+						THEN GREATEST(
+							COALESCE(sp.usable_battery_level, sp.battery_level)
+							- COALESCE(ep.usable_battery_level, ep.battery_level),
+							0
+						) * sp.rated_battery_range_km * cars.efficiency
+							/ COALESCE(sp.usable_battery_level, sp.battery_level)
 						ELSE 0
 					END
 				), 0) AS total_drop

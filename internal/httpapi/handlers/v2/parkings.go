@@ -173,7 +173,16 @@ func (h *Handler) Parkings(c *gin.Context) {
 			) AS usable_battery_drop,
 			CASE
 				WHEN start_pos.rated_battery_range_km IS NOT NULL AND end_pos.rated_battery_range_km IS NOT NULL
-				THEN GREATEST(start_pos.rated_battery_range_km - end_pos.rated_battery_range_km, 0) * cars.efficiency
+					AND start_pos.rated_battery_range_km > end_pos.rated_battery_range_km
+				THEN (start_pos.rated_battery_range_km - end_pos.rated_battery_range_km) * cars.efficiency
+				WHEN start_pos.rated_battery_range_km IS NOT NULL
+					AND COALESCE(start_pos.usable_battery_level, start_pos.battery_level) > 0
+				THEN GREATEST(
+					COALESCE(start_pos.usable_battery_level, start_pos.battery_level)
+					- COALESCE(end_pos.usable_battery_level, end_pos.battery_level),
+					0
+				) * start_pos.rated_battery_range_km * cars.efficiency
+					/ COALESCE(start_pos.usable_battery_level, start_pos.battery_level)
 				ELSE NULL
 			END AS energy_consumed_kwh,
 			EXISTS(
@@ -418,7 +427,16 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 			GREATEST(COALESCE(start_pos.usable_battery_level, start_pos.battery_level) - COALESCE(end_pos.usable_battery_level, end_pos.battery_level), 0) AS usable_battery_drop,
 			CASE
 				WHEN start_pos.rated_battery_range_km IS NOT NULL AND end_pos.rated_battery_range_km IS NOT NULL
-				THEN GREATEST(start_pos.rated_battery_range_km - end_pos.rated_battery_range_km, 0) * cars.efficiency
+					AND start_pos.rated_battery_range_km > end_pos.rated_battery_range_km
+				THEN (start_pos.rated_battery_range_km - end_pos.rated_battery_range_km) * cars.efficiency
+				WHEN start_pos.rated_battery_range_km IS NOT NULL
+					AND COALESCE(start_pos.usable_battery_level, start_pos.battery_level) > 0
+				THEN GREATEST(
+					COALESCE(start_pos.usable_battery_level, start_pos.battery_level)
+					- COALESCE(end_pos.usable_battery_level, end_pos.battery_level),
+					0
+				) * start_pos.rated_battery_range_km * cars.efficiency
+					/ COALESCE(start_pos.usable_battery_level, start_pos.battery_level)
 				ELSE NULL
 			END,
 			EXISTS(
