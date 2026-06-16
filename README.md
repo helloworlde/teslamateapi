@@ -256,11 +256,11 @@ adjacent drives.
   - Supported parameters: `period`, `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/energy-flow`
   - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side
-    charging input, splits into vehicle-added energy and charging loss, combines
-    vehicle-added energy with the first recorded battery inventory, then splits
-    vehicle-side available energy into driving, parking, ending battery
-    inventory, and unmetered residual loss. Each node and link carries both
-    `energy_kwh` and `cost`.
+    charging input, splits into vehicle-added energy and charging loss, then
+    splits vehicle-added energy into driving, parking, ending battery inventory,
+    and unmetered residual loss. The first recorded battery inventory is exposed
+    as context, but it does not reduce recorded charging cost allocation. Each
+    node and link carries both `energy_kwh` and `cost`.
   - Metrics include actual driving usage rate, actual loss rate, charging
     efficiency, driving cost, driving cost per distance, total charging cost,
     wall-side cost per kWh, charge-added cost per kWh, vehicle-side accounting

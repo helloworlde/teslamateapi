@@ -4282,11 +4282,11 @@
                 },
                 "vehicle_accounting_cost_per_kwh": {
                     "type": "number",
-                    "example": 0.2497
+                    "example": 0.25125
                 },
                 "vehicle_available_energy_kwh": {
                     "type": "number",
-                    "example": 16620
+                    "example": 16500
                 },
                 "vehicle_driving_share_pct": {
                     "type": "number",

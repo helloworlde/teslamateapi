@@ -1900,10 +1900,10 @@ definitions:
         example: 0
         type: number
       vehicle_accounting_cost_per_kwh:
-        example: 0.2497
+        example: 0.25125
         type: number
       vehicle_available_energy_kwh:
-        example: 16620
+        example: 16500
         type: number
       vehicle_driving_share_pct:
         example: 47.42

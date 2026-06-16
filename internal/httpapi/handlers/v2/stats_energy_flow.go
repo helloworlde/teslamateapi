@@ -27,9 +27,10 @@ type energyFlowInputs struct {
 // TeslaMateAPICarsStatsEnergyFlowV2 returns a canonical energy/cost flow for
 // client Sankey visualisations. It starts from wall-side charging input, splits
 // that into vehicle-added energy and charging loss, then splits vehicle energy
-// into vehicle-side availability. Vehicle-side availability combines starting
-// battery inventory and recorded vehicle-added energy, then splits into driving,
-// parking, ending battery inventory, and unmetered residual loss.
+// into vehicle-side availability. Vehicle-side availability is the recorded
+// vehicle-added energy and is split into driving, parking, ending battery
+// inventory, and unmetered residual loss. Starting battery inventory is exposed
+// as context but does not reduce recorded charging cost allocation.
 //
 // Cost allocation uses the wall-side average price
 // (charging_processes.cost / wall energy used), so flow costs reconcile to the
@@ -190,14 +191,14 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 	startBatteryEnergy := nonNegative(in.startBatteryKWh)
 	endBatteryEnergy := nonNegative(in.endBatteryKWh)
 	chargingLossEnergy := nonNegative(wallEnergy - vehicleEnergy)
-	vehicleSupplyEnergy := startBatteryEnergy + vehicleEnergy
+	vehicleSupplyEnergy := vehicleEnergy
 	vehicleAccountedEnergy := drivingEnergy + parkingEnergy + endBatteryEnergy
 	unattributedEnergy := nonNegative(vehicleSupplyEnergy - vehicleAccountedEnergy)
 	unmatchedUsageEnergy := nonNegative(vehicleAccountedEnergy - vehicleSupplyEnergy)
 	wallCostPerKWh := ratio(chargingCost, wallEnergy)
 	chargingCostPerKWh := ratio(chargingCost, vehicleEnergy)
 	vehicleAddedCost := vehicleEnergy * wallCostPerKWh
-	vehicleAccountingCostPerKWh := ratio(vehicleAddedCost, vehicleSupplyEnergy)
+	vehicleAccountingCostPerKWh := wallCostPerKWh
 	drivingCost := drivingEnergy * vehicleAccountingCostPerKWh
 	parkingCost := parkingEnergy * vehicleAccountingCostPerKWh
 	lossCost := chargingLossEnergy * wallCostPerKWh
@@ -222,7 +223,6 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		{ID: "wall_input", Label: "Wall input", EnergyKWh: wallEnergy, Cost: chargingCost},
 		{ID: "vehicle_added", Label: "Added to vehicle", EnergyKWh: vehicleEnergy, Cost: vehicleAddedCost},
 		{ID: "charging_loss", Label: "Charging loss", EnergyKWh: chargingLossEnergy, Cost: lossCost},
-		{ID: "start_battery_inventory", Label: "Starting battery inventory", EnergyKWh: startBatteryEnergy, Cost: 0},
 		{ID: "vehicle_available", Label: "Vehicle-side available energy", EnergyKWh: vehicleSupplyEnergy, Cost: vehicleAddedCost},
 		{ID: "driving_usage", Label: "Driving use", EnergyKWh: drivingEnergy, Cost: drivingCost},
 		{ID: "parking_usage", Label: "Parking use", EnergyKWh: parkingEnergy, Cost: parkingCost},
@@ -249,7 +249,6 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		makeEnergyFlowLink("wall_input", "vehicle_added", vehicleEnergy, vehicleAddedCost, wallEnergy),
 		makeEnergyFlowLink("wall_input", "charging_loss", chargingLossEnergy, lossCost, wallEnergy),
 		makeEnergyFlowLink("vehicle_added", "vehicle_available", vehicleEnergy, vehicleAddedCost, vehicleEnergy),
-		makeEnergyFlowLink("start_battery_inventory", "vehicle_available", startBatteryEnergy, 0, startBatteryEnergy),
 		makeEnergyFlowLink("vehicle_available", "driving_usage", vehicleDrivingEnergy, vehicleDrivingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
 		makeEnergyFlowLink("vehicle_available", "parking_usage", vehicleParkingEnergy, vehicleParkingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
 		makeEnergyFlowLink("vehicle_available", "end_battery_inventory", vehicleEndBatteryEnergy, vehicleEndBatteryEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),

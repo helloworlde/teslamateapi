@@ -23,7 +23,7 @@ type V2EnergyFlowLink struct {
 type V2EnergyFlowMetrics struct {
 	WallEnergyKWh                float64 `json:"wall_energy_kwh" example:"17200.0"`
 	VehicleEnergyAddedKWh        float64 `json:"vehicle_energy_added_kwh" example:"16500.0"`
-	VehicleAvailableEnergyKWh    float64 `json:"vehicle_available_energy_kwh" example:"16620.0"`
+	VehicleAvailableEnergyKWh    float64 `json:"vehicle_available_energy_kwh" example:"16500.0"`
 	StartBatteryEnergyKWh        float64 `json:"start_battery_energy_kwh" example:"120.0"`
 	EndBatteryEnergyKWh          float64 `json:"end_battery_energy_kwh" example:"95.0"`
 	BatteryInventoryDeltaKWh     float64 `json:"battery_inventory_delta_kwh" example:"-25.0"`
@@ -35,7 +35,7 @@ type V2EnergyFlowMetrics struct {
 	TotalChargingCost            float64 `json:"total_charging_cost" example:"4321.50"`
 	WallCostPerKWh               float64 `json:"wall_cost_per_kwh" example:"0.25125"`
 	ChargingCostPerKWh           float64 `json:"charging_cost_per_kwh" example:"0.26191"`
-	VehicleAccountingCostPerKWh  float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.2497"`
+	VehicleAccountingCostPerKWh  float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.25125"`
 	DrivingCost                  float64 `json:"driving_cost" example:"1965.0"`
 	DrivingCostPerDistance       float64 `json:"driving_cost_per_distance" example:"0.04624"`
 	ParkingCost                  float64 `json:"parking_cost" example:"31.41"`
