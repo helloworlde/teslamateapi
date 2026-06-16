@@ -1417,6 +1417,52 @@
                 }
             }
         },
+        "/api/v2/cars/{CarID}/stats/energy-flow": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lifetime energy and cost accounting model for Sankey charts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Energy and cost flow stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2EnergyFlowResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/cars/{CarID}/stats/lifetime": {
             "get": {
                 "security": [
@@ -4101,6 +4147,167 @@
                 "worst_consumption": {
                     "type": "number",
                     "example": 285.4
+                }
+            }
+        },
+        "dto.V2EnergyFlowData": {
+            "type": "object",
+            "properties": {
+                "balance_status": {
+                    "type": "string",
+                    "example": "balanced"
+                },
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2EnergyFlowLink"
+                    }
+                },
+                "metrics": {
+                    "$ref": "#/definitions/dto.V2EnergyFlowMetrics"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2EnergyFlowNode"
+                    }
+                },
+                "units": {
+                    "$ref": "#/definitions/dto.TeslaMateUnits"
+                }
+            }
+        },
+        "dto.V2EnergyFlowLink": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number",
+                    "example": 4145.74
+                },
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 16500
+                },
+                "percent_of_source": {
+                    "type": "number",
+                    "example": 95.93
+                },
+                "source": {
+                    "type": "string",
+                    "example": "wall_input"
+                },
+                "target": {
+                    "type": "string",
+                    "example": "vehicle_added"
+                }
+            }
+        },
+        "dto.V2EnergyFlowMetrics": {
+            "type": "object",
+            "properties": {
+                "actual_driving_usage_rate_pct": {
+                    "type": "number",
+                    "example": 45.49
+                },
+                "actual_loss_rate_pct": {
+                    "type": "number",
+                    "example": 4.07
+                },
+                "charging_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.26191
+                },
+                "charging_efficiency_pct": {
+                    "type": "number",
+                    "example": 95.93
+                },
+                "charging_loss_cost": {
+                    "type": "number",
+                    "example": 175.87
+                },
+                "charging_loss_energy_kwh": {
+                    "type": "number",
+                    "example": 700
+                },
+                "driving_cost": {
+                    "type": "number",
+                    "example": 1965
+                },
+                "driving_cost_per_distance": {
+                    "type": "number",
+                    "example": 0.04624
+                },
+                "driving_energy_kwh": {
+                    "type": "number",
+                    "example": 7825
+                },
+                "parking_cost": {
+                    "type": "number",
+                    "example": 31.41
+                },
+                "parking_energy_kwh": {
+                    "type": "number",
+                    "example": 125
+                },
+                "total_charging_cost": {
+                    "type": "number",
+                    "example": 4321.5
+                },
+                "unattributed_vehicle_energy_kwh": {
+                    "type": "number",
+                    "example": 8550
+                },
+                "unmatched_vehicle_usage_kwh": {
+                    "type": "number",
+                    "example": 0
+                },
+                "vehicle_driving_share_pct": {
+                    "type": "number",
+                    "example": 47.42
+                },
+                "vehicle_energy_added_kwh": {
+                    "type": "number",
+                    "example": 16500
+                },
+                "wall_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.25125
+                },
+                "wall_energy_kwh": {
+                    "type": "number",
+                    "example": 17200
+                }
+            }
+        },
+        "dto.V2EnergyFlowNode": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number",
+                    "example": 4321.5
+                },
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 17200
+                },
+                "id": {
+                    "type": "string",
+                    "example": "wall_input"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Wall input"
+                }
+            }
+        },
+        "dto.V2EnergyFlowResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2EnergyFlowData"
                 }
             }
         },

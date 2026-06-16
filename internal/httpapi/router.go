@@ -119,6 +119,7 @@ func NewRouter(d Deps) *gin.Engine {
 			v2g.GET("/cars/:CarID/stats/by-geofence", d.V2.StatsByGeofence)
 			v2g.GET("/cars/:CarID/stats/consumption", d.V2.StatsConsumption)
 			v2g.GET("/cars/:CarID/stats/behavior", d.V2.StatsBehavior)
+			v2g.GET("/cars/:CarID/stats/energy-flow", d.V2.StatsEnergyFlow)
 		}
 
 		api.GET("/ping", system.Ping)

@@ -1805,6 +1805,121 @@ definitions:
         example: 285.4
         type: number
     type: object
+  dto.V2EnergyFlowData:
+    properties:
+      balance_status:
+        example: balanced
+        type: string
+      car:
+        $ref: '#/definitions/dto.Car'
+      links:
+        items:
+          $ref: '#/definitions/dto.V2EnergyFlowLink'
+        type: array
+      metrics:
+        $ref: '#/definitions/dto.V2EnergyFlowMetrics'
+      nodes:
+        items:
+          $ref: '#/definitions/dto.V2EnergyFlowNode'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2EnergyFlowLink:
+    properties:
+      cost:
+        example: 4145.74
+        type: number
+      energy_kwh:
+        example: 16500
+        type: number
+      percent_of_source:
+        example: 95.93
+        type: number
+      source:
+        example: wall_input
+        type: string
+      target:
+        example: vehicle_added
+        type: string
+    type: object
+  dto.V2EnergyFlowMetrics:
+    properties:
+      actual_driving_usage_rate_pct:
+        example: 45.49
+        type: number
+      actual_loss_rate_pct:
+        example: 4.07
+        type: number
+      charging_cost_per_kwh:
+        example: 0.26191
+        type: number
+      charging_efficiency_pct:
+        example: 95.93
+        type: number
+      charging_loss_cost:
+        example: 175.87
+        type: number
+      charging_loss_energy_kwh:
+        example: 700
+        type: number
+      driving_cost:
+        example: 1965
+        type: number
+      driving_cost_per_distance:
+        example: 0.04624
+        type: number
+      driving_energy_kwh:
+        example: 7825
+        type: number
+      parking_cost:
+        example: 31.41
+        type: number
+      parking_energy_kwh:
+        example: 125
+        type: number
+      total_charging_cost:
+        example: 4321.5
+        type: number
+      unattributed_vehicle_energy_kwh:
+        example: 8550
+        type: number
+      unmatched_vehicle_usage_kwh:
+        example: 0
+        type: number
+      vehicle_driving_share_pct:
+        example: 47.42
+        type: number
+      vehicle_energy_added_kwh:
+        example: 16500
+        type: number
+      wall_cost_per_kwh:
+        example: 0.25125
+        type: number
+      wall_energy_kwh:
+        example: 17200
+        type: number
+    type: object
+  dto.V2EnergyFlowNode:
+    properties:
+      cost:
+        example: 4321.5
+        type: number
+      energy_kwh:
+        example: 17200
+        type: number
+      id:
+        example: wall_input
+        type: string
+      label:
+        example: Wall input
+        type: string
+    type: object
+  dto.V2EnergyFlowResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2EnergyFlowData'
+    type: object
   dto.V2GeofenceRow:
     properties:
       charges_cost:
@@ -3125,6 +3240,35 @@ paths:
       security:
       - BearerAuth: []
       summary: Consumption analysis
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/stats/energy-flow:
+    get:
+      description: Lifetime energy and cost accounting model for Sankey charts.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2EnergyFlowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Energy and cost flow stats
       tags:
       - v2
   /api/v2/cars/{CarID}/stats/lifetime:

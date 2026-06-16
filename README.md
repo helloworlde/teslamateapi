@@ -254,6 +254,14 @@ adjacent drives.
     drive / charge / parking aggregates so a single response feeds a bar
     or line chart directly. Empty buckets are omitted.
   - Supported parameters: `period`, `startDate`, `endDate`.
+- GET `/api/v2/cars/:CarID/stats/energy-flow`
+  - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side
+    charging input, splits into vehicle-added energy and charging loss, then
+    splits vehicle-added energy into driving, parking, and any unattributed
+    residual. Each node and link carries both `energy_kwh` and `cost`.
+  - Metrics include actual driving usage rate, actual loss rate, charging
+    efficiency, driving cost, driving cost per distance, total charging cost,
+    wall-side cost per kWh, and charge-added cost per kWh.
 - GET `/api/v2/cars/:CarID/stats/by-geofence`
   - For each geofence the car has touched: `drives_arrived`,
     `drives_departed`, `charges_count`, `charges_energy_added_kwh`,
