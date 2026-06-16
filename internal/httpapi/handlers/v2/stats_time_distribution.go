@@ -64,7 +64,7 @@ func (h *Handler) StatsTimeDistribution(c *gin.Context) {
 				NULLIF($3, '')::timestamp AS requested_end_at,
 				%[1]s AS now_at
 		),
-		window AS (
+		time_window AS (
 			SELECT
 				start_at,
 				COALESCE(requested_end_at, now_at) AS end_at,
@@ -76,7 +76,7 @@ func (h *Handler) StatsTimeDistribution(c *gin.Context) {
 				GREATEST(d.start_date, COALESCE(w.start_at, d.start_date)) AS slice_start,
 				LEAST(d.end_date, w.end_at) AS slice_end
 			FROM drives d
-			CROSS JOIN window w
+			CROSS JOIN time_window w
 			WHERE d.car_id = $1
 				AND d.end_date IS NOT NULL
 				AND d.end_date > COALESCE(w.start_at, d.start_date)
@@ -87,7 +87,7 @@ func (h *Handler) StatsTimeDistribution(c *gin.Context) {
 				GREATEST(cp.start_date, COALESCE(w.start_at, cp.start_date)) AS slice_start,
 				LEAST(cp.end_date, w.end_at) AS slice_end
 			FROM charging_processes cp
-			CROSS JOIN window w
+			CROSS JOIN time_window w
 			WHERE cp.car_id = $1
 				AND cp.end_date IS NOT NULL
 				AND cp.end_date > COALESCE(w.start_at, cp.start_date)
@@ -105,7 +105,7 @@ func (h *Handler) StatsTimeDistribution(c *gin.Context) {
 				GREATEST(dp.park_start, COALESCE(w.start_at, dp.park_start)) AS slice_start,
 				LEAST(COALESCE(dp.next_drive_start, w.now_at), w.end_at) AS slice_end
 			FROM drive_pairs dp
-			CROSS JOIN window w
+			CROSS JOIN time_window w
 			WHERE COALESCE(dp.next_drive_start, w.now_at) > COALESCE(w.start_at, dp.park_start)
 				AND dp.park_start < w.end_at
 		),
