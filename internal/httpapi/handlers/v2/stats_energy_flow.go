@@ -18,6 +18,8 @@ type energyFlowInputs struct {
 	totalChargingCost float64
 	drivingEnergyKWh  float64
 	parkingEnergyKWh  float64
+	startBatteryKWh   float64
+	endBatteryKWh     float64
 	unitsLength       string
 	unitsTemperature  string
 }
@@ -25,7 +27,9 @@ type energyFlowInputs struct {
 // TeslaMateAPICarsStatsEnergyFlowV2 returns a canonical energy/cost flow for
 // client Sankey visualisations. It starts from wall-side charging input, splits
 // that into vehicle-added energy and charging loss, then splits vehicle energy
-// into driving, parking, and unattributed residual usage.
+// into vehicle-side availability. Vehicle-side availability combines starting
+// battery inventory and recorded vehicle-added energy, then splits into driving,
+// parking, ending battery inventory, and unmetered residual loss.
 //
 // Cost allocation uses the wall-side average price
 // (charging_processes.cost / wall energy used), so flow costs reconcile to the
@@ -115,6 +119,22 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			LEFT JOIN cars ON cars.id = $1
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id
 			LEFT JOIN positions ep ON ep.id = dp.next_start_position_id
+		),
+		battery_samples AS (
+			SELECT
+				p.date,
+				p.rated_battery_range_km * cars.efficiency AS energy_kwh
+			FROM positions p
+			LEFT JOIN cars ON cars.id = p.car_id
+			WHERE p.car_id = $1
+				AND p.date IS NOT NULL
+				AND p.rated_battery_range_km IS NOT NULL
+		),
+		bat AS (
+			SELECT
+				COALESCE((array_agg(energy_kwh ORDER BY date ASC))[1], 0) AS start_energy_kwh,
+				COALESCE((array_agg(energy_kwh ORDER BY date DESC))[1], 0) AS end_energy_kwh
+			FROM battery_samples
 		)
 		SELECT
 			(SELECT name FROM cars WHERE id = $1),
@@ -124,12 +144,15 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			COALESCE(ch.total_cost, 0),
 			COALESCE(d.total_kwh, 0),
 			COALESCE(pk.total_drop, 0),
+			COALESCE(bat.start_energy_kwh, 0),
+			COALESCE(bat.end_energy_kwh, 0),
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
 		FROM (VALUES (1)) anchor(_)
 		LEFT JOIN d ON true
 		LEFT JOIN ch ON true
-		LEFT JOIN pk ON true;`
+		LEFT JOIN pk ON true
+		LEFT JOIN bat ON true;`
 
 	err := h.db.QueryRowContext(c.Request.Context(), query, CarID).Scan(
 		&in.carName,
@@ -139,6 +162,8 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 		&in.totalChargingCost,
 		&in.drivingEnergyKWh,
 		&in.parkingEnergyKWh,
+		&in.startBatteryKWh,
+		&in.endBatteryKWh,
 		&in.unitsLength,
 		&in.unitsTemperature,
 	)
@@ -162,38 +187,51 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 	chargingCost := nonNegative(in.totalChargingCost)
 	drivingEnergy := nonNegative(in.drivingEnergyKWh)
 	parkingEnergy := nonNegative(in.parkingEnergyKWh)
+	startBatteryEnergy := nonNegative(in.startBatteryKWh)
+	endBatteryEnergy := nonNegative(in.endBatteryKWh)
 	chargingLossEnergy := nonNegative(wallEnergy - vehicleEnergy)
-	vehicleUsageEnergy := drivingEnergy + parkingEnergy
-	unattributedEnergy := nonNegative(vehicleEnergy - vehicleUsageEnergy)
-	unmatchedUsageEnergy := nonNegative(vehicleUsageEnergy - vehicleEnergy)
+	vehicleSupplyEnergy := startBatteryEnergy + vehicleEnergy
+	vehicleAccountedEnergy := drivingEnergy + parkingEnergy + endBatteryEnergy
+	unattributedEnergy := nonNegative(vehicleSupplyEnergy - vehicleAccountedEnergy)
+	unmatchedUsageEnergy := nonNegative(vehicleAccountedEnergy - vehicleSupplyEnergy)
 	wallCostPerKWh := ratio(chargingCost, wallEnergy)
 	chargingCostPerKWh := ratio(chargingCost, vehicleEnergy)
-	drivingCost := drivingEnergy * wallCostPerKWh
-	parkingCost := parkingEnergy * wallCostPerKWh
+	vehicleAddedCost := vehicleEnergy * wallCostPerKWh
+	vehicleAccountingCostPerKWh := ratio(vehicleAddedCost, vehicleSupplyEnergy)
+	drivingCost := drivingEnergy * vehicleAccountingCostPerKWh
+	parkingCost := parkingEnergy * vehicleAccountingCostPerKWh
 	lossCost := chargingLossEnergy * wallCostPerKWh
-	unattributedCost := unattributedEnergy * wallCostPerKWh
+	endBatteryCost := endBatteryEnergy * vehicleAccountingCostPerKWh
+	unattributedCost := unattributedEnergy * vehicleAccountingCostPerKWh
 	vehicleDrivingEnergy := drivingEnergy
 	vehicleParkingEnergy := parkingEnergy
+	vehicleEndBatteryEnergy := endBatteryEnergy
 	unmatchedDrivingEnergy := 0.0
 	unmatchedParkingEnergy := 0.0
-	if unmatchedUsageEnergy > 0 && vehicleUsageEnergy > 0 {
-		vehicleDrivingEnergy = drivingEnergy * ratio(vehicleEnergy, vehicleUsageEnergy)
-		vehicleParkingEnergy = parkingEnergy * ratio(vehicleEnergy, vehicleUsageEnergy)
+	unmatchedEndBatteryEnergy := 0.0
+	if unmatchedUsageEnergy > 0 && vehicleAccountedEnergy > 0 {
+		vehicleDrivingEnergy = drivingEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
+		vehicleParkingEnergy = parkingEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
+		vehicleEndBatteryEnergy = endBatteryEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
 		unmatchedDrivingEnergy = drivingEnergy - vehicleDrivingEnergy
 		unmatchedParkingEnergy = parkingEnergy - vehicleParkingEnergy
+		unmatchedEndBatteryEnergy = endBatteryEnergy - vehicleEndBatteryEnergy
 	}
 
 	nodes := []dto.V2EnergyFlowNode{
 		{ID: "wall_input", Label: "Wall input", EnergyKWh: wallEnergy, Cost: chargingCost},
-		{ID: "vehicle_added", Label: "Added to vehicle", EnergyKWh: vehicleEnergy, Cost: vehicleEnergy * wallCostPerKWh},
+		{ID: "vehicle_added", Label: "Added to vehicle", EnergyKWh: vehicleEnergy, Cost: vehicleAddedCost},
 		{ID: "charging_loss", Label: "Charging loss", EnergyKWh: chargingLossEnergy, Cost: lossCost},
+		{ID: "start_battery_inventory", Label: "Starting battery inventory", EnergyKWh: startBatteryEnergy, Cost: 0},
+		{ID: "vehicle_available", Label: "Vehicle-side available energy", EnergyKWh: vehicleSupplyEnergy, Cost: vehicleAddedCost},
 		{ID: "driving_usage", Label: "Driving use", EnergyKWh: drivingEnergy, Cost: drivingCost},
 		{ID: "parking_usage", Label: "Parking use", EnergyKWh: parkingEnergy, Cost: parkingCost},
+		{ID: "end_battery_inventory", Label: "Ending battery inventory", EnergyKWh: endBatteryEnergy, Cost: endBatteryCost},
 	}
 	if unattributedEnergy > 0 {
 		nodes = append(nodes, dto.V2EnergyFlowNode{
 			ID:        "unattributed_vehicle_energy",
-			Label:     "Unattributed vehicle energy",
+			Label:     "Unmetered vehicle loss",
 			EnergyKWh: unattributedEnergy,
 			Cost:      unattributedCost,
 		})
@@ -208,18 +246,21 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 	}
 
 	links := []dto.V2EnergyFlowLink{
-		makeEnergyFlowLink("wall_input", "vehicle_added", vehicleEnergy, vehicleEnergy*wallCostPerKWh, wallEnergy),
+		makeEnergyFlowLink("wall_input", "vehicle_added", vehicleEnergy, vehicleAddedCost, wallEnergy),
 		makeEnergyFlowLink("wall_input", "charging_loss", chargingLossEnergy, lossCost, wallEnergy),
-		makeEnergyFlowLink("vehicle_added", "driving_usage", vehicleDrivingEnergy, vehicleDrivingEnergy*wallCostPerKWh, vehicleEnergy),
-		makeEnergyFlowLink("vehicle_added", "parking_usage", vehicleParkingEnergy, vehicleParkingEnergy*wallCostPerKWh, vehicleEnergy),
+		makeEnergyFlowLink("vehicle_added", "vehicle_available", vehicleEnergy, vehicleAddedCost, vehicleEnergy),
+		makeEnergyFlowLink("start_battery_inventory", "vehicle_available", startBatteryEnergy, 0, startBatteryEnergy),
+		makeEnergyFlowLink("vehicle_available", "driving_usage", vehicleDrivingEnergy, vehicleDrivingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
+		makeEnergyFlowLink("vehicle_available", "parking_usage", vehicleParkingEnergy, vehicleParkingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
+		makeEnergyFlowLink("vehicle_available", "end_battery_inventory", vehicleEndBatteryEnergy, vehicleEndBatteryEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
 	}
 	if unattributedEnergy > 0 {
 		links = append(links, makeEnergyFlowLink(
-			"vehicle_added",
+			"vehicle_available",
 			"unattributed_vehicle_energy",
 			unattributedEnergy,
 			unattributedCost,
-			vehicleEnergy,
+			vehicleSupplyEnergy,
 		))
 	}
 	if unmatchedDrivingEnergy > 0 {
@@ -237,6 +278,15 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 			"parking_usage",
 			unmatchedParkingEnergy,
 			unmatchedParkingEnergy*wallCostPerKWh,
+			unmatchedUsageEnergy,
+		))
+	}
+	if unmatchedEndBatteryEnergy > 0 {
+		links = append(links, makeEnergyFlowLink(
+			"unmatched_vehicle_usage",
+			"end_battery_inventory",
+			unmatchedEndBatteryEnergy,
+			unmatchedEndBatteryEnergy*vehicleAccountingCostPerKWh,
 			unmatchedUsageEnergy,
 		))
 	}
@@ -258,6 +308,10 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		Metrics: dto.V2EnergyFlowMetrics{
 			WallEnergyKWh:                wallEnergy,
 			VehicleEnergyAddedKWh:        vehicleEnergy,
+			VehicleAvailableEnergyKWh:    vehicleSupplyEnergy,
+			StartBatteryEnergyKWh:        startBatteryEnergy,
+			EndBatteryEnergyKWh:          endBatteryEnergy,
+			BatteryInventoryDeltaKWh:     endBatteryEnergy - startBatteryEnergy,
 			ChargingLossEnergyKWh:        chargingLossEnergy,
 			DrivingEnergyKWh:             drivingEnergy,
 			ParkingEnergyKWh:             parkingEnergy,
@@ -266,14 +320,16 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 			TotalChargingCost:            chargingCost,
 			WallCostPerKWh:               wallCostPerKWh,
 			ChargingCostPerKWh:           chargingCostPerKWh,
+			VehicleAccountingCostPerKWh:  vehicleAccountingCostPerKWh,
 			DrivingCost:                  drivingCost,
 			DrivingCostPerDistance:       ratio(drivingCost, nonNegative(in.totalDistance)),
 			ParkingCost:                  parkingCost,
 			ChargingLossCost:             lossCost,
+			EndBatteryCost:               endBatteryCost,
 			ActualDrivingUsageRatePct:    pct(drivingEnergy, wallEnergy),
 			ActualLossRatePct:            pct(chargingLossEnergy, wallEnergy),
 			ChargingEfficiencyPct:        pct(vehicleEnergy, wallEnergy),
-			VehicleDrivingSharePct:       pct(drivingEnergy, vehicleEnergy),
+			VehicleDrivingSharePct:       pct(drivingEnergy, vehicleSupplyEnergy),
 		},
 		Units: dto.TeslaMateUnits{
 			UnitsLength:      in.unitsLength,

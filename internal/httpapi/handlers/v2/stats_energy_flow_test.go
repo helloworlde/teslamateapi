@@ -15,6 +15,9 @@ func TestBuildEnergyFlowData(t *testing.T) {
 		wantLossKWh             float64
 		wantUnattributedKWh     float64
 		wantUnmatchedUsageKWh   float64
+		wantVehicleAvailableKWh float64
+		wantEndBatteryKWh       float64
+		wantEndBatteryCost      float64
 		wantDrivingCost         float64
 		wantDrivingCostPerKm    float64
 		wantDrivingUsageRatePct float64
@@ -37,10 +40,34 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			wantStatus:              "has_unattributed_vehicle_energy",
 			wantLossKWh:             10,
 			wantUnattributedKWh:     20,
+			wantVehicleAvailableKWh: 100,
 			wantDrivingCost:         35,
 			wantDrivingCostPerKm:    0.35,
 			wantDrivingUsageRatePct: 63.6363636364,
 			wantLossRatePct:         9.0909090909,
+		},
+		{
+			name: "ending battery inventory is not treated as unattributed loss",
+			input: energyFlowInputs{
+				totalDistance:     100,
+				wallEnergyKWh:     120,
+				vehicleAddedKWh:   100,
+				totalChargingCost: 60,
+				drivingEnergyKWh:  70,
+				parkingEnergyKWh:  10,
+				startBatteryKWh:   10,
+				endBatteryKWh:     25,
+			},
+			wantStatus:              "has_unattributed_vehicle_energy",
+			wantLossKWh:             20,
+			wantUnattributedKWh:     5,
+			wantVehicleAvailableKWh: 110,
+			wantEndBatteryKWh:       25,
+			wantEndBatteryCost:      11.3636363636,
+			wantDrivingCost:         31.8181818182,
+			wantDrivingCostPerKm:    0.3181818182,
+			wantDrivingUsageRatePct: 58.3333333333,
+			wantLossRatePct:         16.6666666667,
 		},
 		{
 			name: "usage can exceed vehicle-added energy when historical data is incomplete",
@@ -55,6 +82,7 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			wantStatus:              "usage_exceeds_vehicle_added",
 			wantLossKWh:             10,
 			wantUnmatchedUsageKWh:   10,
+			wantVehicleAvailableKWh: 80,
 			wantDrivingCost:         35,
 			wantDrivingCostPerKm:    0.7,
 			wantDrivingUsageRatePct: 77.7777777778,
@@ -79,6 +107,9 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			assertClose(t, got.Metrics.ChargingLossEnergyKWh, tt.wantLossKWh)
 			assertClose(t, got.Metrics.UnattributedVehicleEnergyKWh, tt.wantUnattributedKWh)
 			assertClose(t, got.Metrics.UnmatchedVehicleUsageKWh, tt.wantUnmatchedUsageKWh)
+			assertClose(t, got.Metrics.VehicleAvailableEnergyKWh, tt.wantVehicleAvailableKWh)
+			assertClose(t, got.Metrics.EndBatteryEnergyKWh, tt.wantEndBatteryKWh)
+			assertClose(t, got.Metrics.EndBatteryCost, tt.wantEndBatteryCost)
 			assertClose(t, got.Metrics.DrivingCost, tt.wantDrivingCost)
 			assertClose(t, got.Metrics.DrivingCostPerDistance, tt.wantDrivingCostPerKm)
 			assertClose(t, got.Metrics.ActualDrivingUsageRatePct, tt.wantDrivingUsageRatePct)
@@ -87,8 +118,10 @@ func TestBuildEnergyFlowData(t *testing.T) {
 				t.Fatalf("BalanceStatus = %q; want %q", got.BalanceStatus, tt.wantStatus)
 			}
 			assertClose(t, outboundEnergy(got.Links, "vehicle_added"), got.Metrics.VehicleEnergyAddedKWh)
+			assertClose(t, outboundEnergy(got.Links, "vehicle_available"), got.Metrics.VehicleAvailableEnergyKWh)
 			assertClose(t, inboundEnergy(got.Links, "driving_usage"), got.Metrics.DrivingEnergyKWh)
 			assertClose(t, inboundEnergy(got.Links, "parking_usage"), got.Metrics.ParkingEnergyKWh)
+			assertClose(t, inboundEnergy(got.Links, "end_battery_inventory"), got.Metrics.EndBatteryEnergyKWh)
 			assertClose(t, outboundEnergy(got.Links, "unmatched_vehicle_usage"), got.Metrics.UnmatchedVehicleUsageKWh)
 		})
 	}

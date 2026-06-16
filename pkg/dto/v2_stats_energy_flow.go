@@ -23,18 +23,24 @@ type V2EnergyFlowLink struct {
 type V2EnergyFlowMetrics struct {
 	WallEnergyKWh                float64 `json:"wall_energy_kwh" example:"17200.0"`
 	VehicleEnergyAddedKWh        float64 `json:"vehicle_energy_added_kwh" example:"16500.0"`
+	VehicleAvailableEnergyKWh    float64 `json:"vehicle_available_energy_kwh" example:"16620.0"`
+	StartBatteryEnergyKWh        float64 `json:"start_battery_energy_kwh" example:"120.0"`
+	EndBatteryEnergyKWh          float64 `json:"end_battery_energy_kwh" example:"95.0"`
+	BatteryInventoryDeltaKWh     float64 `json:"battery_inventory_delta_kwh" example:"-25.0"`
 	ChargingLossEnergyKWh        float64 `json:"charging_loss_energy_kwh" example:"700.0"`
 	DrivingEnergyKWh             float64 `json:"driving_energy_kwh" example:"7825.0"`
 	ParkingEnergyKWh             float64 `json:"parking_energy_kwh" example:"125.0"`
-	UnattributedVehicleEnergyKWh float64 `json:"unattributed_vehicle_energy_kwh" example:"8550.0"`
+	UnattributedVehicleEnergyKWh float64 `json:"unattributed_vehicle_energy_kwh" example:"8455.0"`
 	UnmatchedVehicleUsageKWh     float64 `json:"unmatched_vehicle_usage_kwh" example:"0"`
 	TotalChargingCost            float64 `json:"total_charging_cost" example:"4321.50"`
 	WallCostPerKWh               float64 `json:"wall_cost_per_kwh" example:"0.25125"`
 	ChargingCostPerKWh           float64 `json:"charging_cost_per_kwh" example:"0.26191"`
+	VehicleAccountingCostPerKWh  float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.2497"`
 	DrivingCost                  float64 `json:"driving_cost" example:"1965.0"`
 	DrivingCostPerDistance       float64 `json:"driving_cost_per_distance" example:"0.04624"`
 	ParkingCost                  float64 `json:"parking_cost" example:"31.41"`
 	ChargingLossCost             float64 `json:"charging_loss_cost" example:"175.87"`
+	EndBatteryCost               float64 `json:"end_battery_cost" example:"23.72"`
 	ActualDrivingUsageRatePct    float64 `json:"actual_driving_usage_rate_pct" example:"45.49"`
 	ActualLossRatePct            float64 `json:"actual_loss_rate_pct" example:"4.07"`
 	ChargingEfficiencyPct        float64 `json:"charging_efficiency_pct" example:"95.93"`

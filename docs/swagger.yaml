@@ -1851,6 +1851,9 @@ definitions:
       actual_loss_rate_pct:
         example: 4.07
         type: number
+      battery_inventory_delta_kwh:
+        example: -25
+        type: number
       charging_cost_per_kwh:
         example: 0.26191
         type: number
@@ -1872,20 +1875,35 @@ definitions:
       driving_energy_kwh:
         example: 7825
         type: number
+      end_battery_cost:
+        example: 23.72
+        type: number
+      end_battery_energy_kwh:
+        example: 95
+        type: number
       parking_cost:
         example: 31.41
         type: number
       parking_energy_kwh:
         example: 125
         type: number
+      start_battery_energy_kwh:
+        example: 120
+        type: number
       total_charging_cost:
         example: 4321.5
         type: number
       unattributed_vehicle_energy_kwh:
-        example: 8550
+        example: 8455
         type: number
       unmatched_vehicle_usage_kwh:
         example: 0
+        type: number
+      vehicle_accounting_cost_per_kwh:
+        example: 0.2497
+        type: number
+      vehicle_available_energy_kwh:
+        example: 16620
         type: number
       vehicle_driving_share_pct:
         example: 47.42

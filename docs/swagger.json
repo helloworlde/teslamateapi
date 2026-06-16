@@ -4216,6 +4216,10 @@
                     "type": "number",
                     "example": 4.07
                 },
+                "battery_inventory_delta_kwh": {
+                    "type": "number",
+                    "example": -25
+                },
                 "charging_cost_per_kwh": {
                     "type": "number",
                     "example": 0.26191
@@ -4244,6 +4248,14 @@
                     "type": "number",
                     "example": 7825
                 },
+                "end_battery_cost": {
+                    "type": "number",
+                    "example": 23.72
+                },
+                "end_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 95
+                },
                 "parking_cost": {
                     "type": "number",
                     "example": 31.41
@@ -4252,17 +4264,29 @@
                     "type": "number",
                     "example": 125
                 },
+                "start_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 120
+                },
                 "total_charging_cost": {
                     "type": "number",
                     "example": 4321.5
                 },
                 "unattributed_vehicle_energy_kwh": {
                     "type": "number",
-                    "example": 8550
+                    "example": 8455
                 },
                 "unmatched_vehicle_usage_kwh": {
                     "type": "number",
                     "example": 0
+                },
+                "vehicle_accounting_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.2497
+                },
+                "vehicle_available_energy_kwh": {
+                    "type": "number",
+                    "example": 16620
                 },
                 "vehicle_driving_share_pct": {
                     "type": "number",
