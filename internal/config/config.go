@@ -25,6 +25,7 @@ type Config struct {
 	DBTimeoutMS   int
 	DBSSLMode     string
 	DBSSLRootCert string
+	DBDisableJIT  bool
 
 	// Auth
 	APIToken        string
@@ -93,6 +94,7 @@ func Load() Config {
 		DBTimeoutMS:   getEnvAsInt("DATABASE_TIMEOUT", 60000),
 		DBSSLMode:     getEnv("DATABASE_SSL", "disable"),
 		DBSSLRootCert: getEnv("DATABASE_SSL_CA_CERT_FILE", ""),
+		DBDisableJIT:  getEnvAsBool("TM_DB_DISABLE_JIT", true),
 
 		APIToken:        getEnv("API_TOKEN", ""),
 		APITokenDisable: getEnvAsBool("API_TOKEN_DISABLE", false),

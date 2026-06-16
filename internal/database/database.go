@@ -42,6 +42,22 @@ func New(cfg config.Config) (*sql.DB, error) {
 		pqQuote(cfg.DBName), pqQuote(dbsslmode), dbtimeout,
 	)
 
+	// Disable JIT on every connection from this API (TM_DB_DISABLE_JIT, default on).
+	//
+	// The v2 stats endpoints (summary, energy-flow, time-distribution, …) build
+	// large multi-CTE queries whose *estimated* cost easily clears jit_above_cost
+	// (and often jit_optimize/inline_above_cost). Postgres then JIT-compiles the
+	// many CASE / timezone expressions on every call. Compilation cost depends on
+	// query complexity, not row count, so it is a roughly fixed multi-second tax
+	// that dwarfs the actual work — e.g. the period-summary query measures ~85ms
+	// of execution behind ~550ms+ of JIT compilation (multiple seconds on slower
+	// hosts that also run the LLVM optimize/inline passes). None of these queries
+	// run long enough for JIT to pay off, so it is off by default; set
+	// TM_DB_DISABLE_JIT=false to restore Postgres' own jit setting.
+	if cfg.DBDisableJIT {
+		psqlInfo += " options=" + pqQuote("-c jit=off")
+	}
+
 	if cfg.DBSSLRootCert != "" {
 		psqlInfo += " sslrootcert=" + pqQuote(cfg.DBSSLRootCert)
 	}

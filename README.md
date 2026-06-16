@@ -117,6 +117,7 @@ Basically the same environment variables for the database, mqqt and timezone nee
 | **DATABASE_TIMEOUT**          | integer | _60000_                       |
 | **DATABASE_SSL**              | string  | _disable_                     |
 | **DATABASE_SSL_CA_CERT_FILE** | string  |                               |
+| **TM_DB_DISABLE_JIT**         | boolean | _true_                        |
 | **DEBUG_MODE**                | boolean | _false_                       |
 | **DISABLE_MQTT**              | boolean | _false_                       |
 | **MQTT_TLS**                  | boolean | _false_                       |
