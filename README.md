@@ -239,6 +239,19 @@ adjacent drives.
   - Single parking session plus a `parking_details` SOC + outside-temp
     time-series sampled from `positions` during the window (capped at 500
     rows).
+- GET `/api/v2/cars/:CarID/charges/:ChargeID/usage`
+  - Per-charge battery accounting from the selected charge to the next charge:
+    charge energy added, analysis-start battery inventory (the battery
+    inventory when charging ended), driving use, parking use, ending battery
+    inventory, and untracked residual energy. Also returns SOC snapshots,
+    battery-used rate, tracked-use rate, data-quality flags, and node/link data
+    for simple flow visualisation.
+  - Closed cycles end at the next charging session's start. If no next charge
+    exists yet, the cycle is marked `is_complete=false` and uses the latest
+    known position sample as the current end snapshot.
+  - Range-derived kWh/rate fields are `null` when the required rated-range
+    snapshots are missing; `data_quality.partial_fields` lists the affected
+    fields and `balance_status=partial` avoids presenting a fake balance.
 - GET `/api/v2/cars/:CarID/stats/lifetime`
   - Single roundtrip with since-ownership totals over drives, charges, and
     derived parking sessions: `count`, `total_distance`,

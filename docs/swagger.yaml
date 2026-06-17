@@ -1581,6 +1581,235 @@ definitions:
         example: Pinwheel18
         type: string
     type: object
+  dto.V2ChargeUsageBattery:
+    properties:
+      added_battery_level:
+        example: 54
+        type: integer
+      end_battery_energy_kwh:
+        example: 22.8
+        type: number
+      end_battery_level:
+        example: 35
+        type: integer
+      post_charge_battery_energy_kwh:
+        example: 53.3
+        type: number
+      post_charge_battery_level:
+        example: 82
+        type: integer
+      start_battery_energy_kwh:
+        example: 18.2
+        type: number
+      start_battery_level:
+        example: 28
+        type: integer
+      used_battery_level:
+        example: 47
+        type: integer
+    type: object
+  dto.V2ChargeUsageCycle:
+    properties:
+      analysis_end_date:
+        example: "2024-01-05T08:15:00+01:00"
+        type: string
+      analysis_start_date:
+        example: "2024-01-01T22:30:00+01:00"
+        type: string
+      charge_end_date:
+        example: "2024-01-01T22:30:00+01:00"
+        type: string
+      charge_id:
+        example: 1234
+        type: integer
+      charge_start_date:
+        example: "2024-01-01T20:00:00+01:00"
+        type: string
+      duration_min:
+        example: 4890
+        type: integer
+      duration_str:
+        example: "81:30"
+        type: string
+      is_complete:
+        example: true
+        type: boolean
+      next_charge_id:
+        example: 1235
+        type: integer
+    type: object
+  dto.V2ChargeUsageData:
+    properties:
+      balance_status:
+        example: balanced
+        type: string
+      battery:
+        $ref: '#/definitions/dto.V2ChargeUsageBattery'
+      car:
+        $ref: '#/definitions/dto.Car'
+      cycle:
+        $ref: '#/definitions/dto.V2ChargeUsageCycle'
+      data_quality:
+        $ref: '#/definitions/dto.V2ChargeUsageDataQuality'
+      links:
+        items:
+          $ref: '#/definitions/dto.V2ChargeUsageLink'
+        type: array
+      metrics:
+        $ref: '#/definitions/dto.V2ChargeUsageMetrics'
+      nodes:
+        items:
+          $ref: '#/definitions/dto.V2ChargeUsageNode'
+        type: array
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2ChargeUsageDataQuality:
+    properties:
+      accounting_status:
+        enum:
+        - complete
+        - partial
+        example: complete
+        type: string
+      drives_range_data_complete:
+        example: true
+        type: boolean
+      has_end_range_data:
+        example: true
+        type: boolean
+      has_post_charge_range_data:
+        example: true
+        type: boolean
+      has_pre_charge_range_data:
+        example: true
+        type: boolean
+      partial_fields:
+        example:
+        - start_battery_energy_kwh
+        items:
+          type: string
+        type: array
+      range_data_complete:
+        example: true
+        type: boolean
+      reconciliation_data_complete:
+        example: true
+        type: boolean
+    type: object
+  dto.V2ChargeUsageLink:
+    properties:
+      energy_kwh:
+        example: 22.4
+        type: number
+      percent_of_source:
+        example: 39.58
+        type: number
+      source:
+        example: cycle_available
+        type: string
+      target:
+        example: driving_usage
+        type: string
+    type: object
+  dto.V2ChargeUsageMetrics:
+    properties:
+      battery_used_energy_kwh:
+        example: 33.8
+        type: number
+      battery_used_rate_pct:
+        example: 59.72
+        type: number
+      charge_cost:
+        example: 12.35
+        type: number
+      charge_cost_per_kwh:
+        example: 0.32161
+        type: number
+      charge_energy_added_kwh:
+        example: 38.4
+        type: number
+      charging_loss_energy_kwh:
+        example: 1.7
+        type: number
+      drive_count:
+        example: 5
+        type: integer
+      drive_duration_min:
+        example: 260
+        type: integer
+      driving_energy_kwh:
+        example: 22.4
+        type: number
+      driving_energy_per_distance_wh:
+        example: 120.95
+        type: number
+      driving_share_of_available_pct:
+        example: 39.58
+        type: number
+      end_battery_energy_kwh:
+        example: 22.8
+        type: number
+      inventory_expected_energy_kwh:
+        example: 56.6
+        type: number
+      inventory_reconciliation_kwh:
+        example: -1.2
+        type: number
+      parking_energy_kwh:
+        example: 2.1
+        type: number
+      parking_share_of_available_pct:
+        example: 3.71
+        type: number
+      remaining_share_of_available_pct:
+        example: 40.28
+        type: number
+      total_distance:
+        example: 185.2
+        type: number
+      tracked_usage_rate_pct:
+        example: 43.29
+        type: number
+      unmatched_usage_kwh:
+        example: 0
+        type: number
+      untracked_energy_kwh:
+        example: 9.3
+        type: number
+      untracked_share_of_available_pct:
+        example: 16.43
+        type: number
+      vehicle_available_energy_kwh:
+        example: 56.6
+        type: number
+      wall_cost_per_kwh:
+        example: 0.30798
+        type: number
+      wall_energy_kwh:
+        example: 40.1
+        type: number
+    type: object
+  dto.V2ChargeUsageNode:
+    properties:
+      energy_kwh:
+        example: 38.4
+        type: number
+      id:
+        example: charge_added
+        type: string
+      label:
+        example: Charge added
+        type: string
+      percent_of_available:
+        example: 67.84
+        type: number
+    type: object
+  dto.V2ChargeUsageResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2ChargeUsageData'
+    type: object
   dto.V2ChargesAgg:
     properties:
       ac_charge_count:
@@ -3061,6 +3290,44 @@ paths:
       summary: /api/v2 banner
       tags:
       - system
+  /api/v2/cars/{CarID}/charges/{ChargeID}/usage:
+    get:
+      description: Battery accounting for one charge and usage until the next charge.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: charging_processes.id
+        in: path
+        name: ChargeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2ChargeUsageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Charge usage stats
+      tags:
+      - v2
   /api/v2/cars/{CarID}/parkings:
     get:
       description: Returns parking sessions derived from gaps between adjacent drives.

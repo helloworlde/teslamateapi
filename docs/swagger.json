@@ -1116,6 +1116,65 @@
                 }
             }
         },
+        "/api/v2/cars/{CarID}/charges/{ChargeID}/usage": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Battery accounting for one charge and usage until the next charge.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Charge usage stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "charging_processes.id",
+                        "name": "ChargeID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2ChargeUsageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/cars/{CarID}/parkings": {
             "get": {
                 "security": [
@@ -3851,6 +3910,324 @@
                 "wheel_type": {
                     "type": "string",
                     "example": "Pinwheel18"
+                }
+            }
+        },
+        "dto.V2ChargeUsageBattery": {
+            "type": "object",
+            "properties": {
+                "added_battery_level": {
+                    "type": "integer",
+                    "example": 54
+                },
+                "end_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 22.8
+                },
+                "end_battery_level": {
+                    "type": "integer",
+                    "example": 35
+                },
+                "post_charge_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 53.3
+                },
+                "post_charge_battery_level": {
+                    "type": "integer",
+                    "example": 82
+                },
+                "start_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 18.2
+                },
+                "start_battery_level": {
+                    "type": "integer",
+                    "example": 28
+                },
+                "used_battery_level": {
+                    "type": "integer",
+                    "example": 47
+                }
+            }
+        },
+        "dto.V2ChargeUsageCycle": {
+            "type": "object",
+            "properties": {
+                "analysis_end_date": {
+                    "type": "string",
+                    "example": "2024-01-05T08:15:00+01:00"
+                },
+                "analysis_start_date": {
+                    "type": "string",
+                    "example": "2024-01-01T22:30:00+01:00"
+                },
+                "charge_end_date": {
+                    "type": "string",
+                    "example": "2024-01-01T22:30:00+01:00"
+                },
+                "charge_id": {
+                    "type": "integer",
+                    "example": 1234
+                },
+                "charge_start_date": {
+                    "type": "string",
+                    "example": "2024-01-01T20:00:00+01:00"
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 4890
+                },
+                "duration_str": {
+                    "type": "string",
+                    "example": "81:30"
+                },
+                "is_complete": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "next_charge_id": {
+                    "type": "integer",
+                    "example": 1235
+                }
+            }
+        },
+        "dto.V2ChargeUsageData": {
+            "type": "object",
+            "properties": {
+                "balance_status": {
+                    "type": "string",
+                    "example": "balanced"
+                },
+                "battery": {
+                    "$ref": "#/definitions/dto.V2ChargeUsageBattery"
+                },
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "cycle": {
+                    "$ref": "#/definitions/dto.V2ChargeUsageCycle"
+                },
+                "data_quality": {
+                    "$ref": "#/definitions/dto.V2ChargeUsageDataQuality"
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2ChargeUsageLink"
+                    }
+                },
+                "metrics": {
+                    "$ref": "#/definitions/dto.V2ChargeUsageMetrics"
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.V2ChargeUsageNode"
+                    }
+                },
+                "units": {
+                    "$ref": "#/definitions/dto.TeslaMateUnits"
+                }
+            }
+        },
+        "dto.V2ChargeUsageDataQuality": {
+            "type": "object",
+            "properties": {
+                "accounting_status": {
+                    "type": "string",
+                    "enum": [
+                        "complete",
+                        "partial"
+                    ],
+                    "example": "complete"
+                },
+                "drives_range_data_complete": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "has_end_range_data": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "has_post_charge_range_data": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "has_pre_charge_range_data": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "partial_fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "start_battery_energy_kwh"
+                    ]
+                },
+                "range_data_complete": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "reconciliation_data_complete": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "dto.V2ChargeUsageLink": {
+            "type": "object",
+            "properties": {
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 22.4
+                },
+                "percent_of_source": {
+                    "type": "number",
+                    "example": 39.58
+                },
+                "source": {
+                    "type": "string",
+                    "example": "cycle_available"
+                },
+                "target": {
+                    "type": "string",
+                    "example": "driving_usage"
+                }
+            }
+        },
+        "dto.V2ChargeUsageMetrics": {
+            "type": "object",
+            "properties": {
+                "battery_used_energy_kwh": {
+                    "type": "number",
+                    "example": 33.8
+                },
+                "battery_used_rate_pct": {
+                    "type": "number",
+                    "example": 59.72
+                },
+                "charge_cost": {
+                    "type": "number",
+                    "example": 12.35
+                },
+                "charge_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.32161
+                },
+                "charge_energy_added_kwh": {
+                    "type": "number",
+                    "example": 38.4
+                },
+                "charging_loss_energy_kwh": {
+                    "type": "number",
+                    "example": 1.7
+                },
+                "drive_count": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "drive_duration_min": {
+                    "type": "integer",
+                    "example": 260
+                },
+                "driving_energy_kwh": {
+                    "type": "number",
+                    "example": 22.4
+                },
+                "driving_energy_per_distance_wh": {
+                    "type": "number",
+                    "example": 120.95
+                },
+                "driving_share_of_available_pct": {
+                    "type": "number",
+                    "example": 39.58
+                },
+                "end_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 22.8
+                },
+                "inventory_expected_energy_kwh": {
+                    "type": "number",
+                    "example": 56.6
+                },
+                "inventory_reconciliation_kwh": {
+                    "type": "number",
+                    "example": -1.2
+                },
+                "parking_energy_kwh": {
+                    "type": "number",
+                    "example": 2.1
+                },
+                "parking_share_of_available_pct": {
+                    "type": "number",
+                    "example": 3.71
+                },
+                "remaining_share_of_available_pct": {
+                    "type": "number",
+                    "example": 40.28
+                },
+                "total_distance": {
+                    "type": "number",
+                    "example": 185.2
+                },
+                "tracked_usage_rate_pct": {
+                    "type": "number",
+                    "example": 43.29
+                },
+                "unmatched_usage_kwh": {
+                    "type": "number",
+                    "example": 0
+                },
+                "untracked_energy_kwh": {
+                    "type": "number",
+                    "example": 9.3
+                },
+                "untracked_share_of_available_pct": {
+                    "type": "number",
+                    "example": 16.43
+                },
+                "vehicle_available_energy_kwh": {
+                    "type": "number",
+                    "example": 56.6
+                },
+                "wall_cost_per_kwh": {
+                    "type": "number",
+                    "example": 0.30798
+                },
+                "wall_energy_kwh": {
+                    "type": "number",
+                    "example": 40.1
+                }
+            }
+        },
+        "dto.V2ChargeUsageNode": {
+            "type": "object",
+            "properties": {
+                "energy_kwh": {
+                    "type": "number",
+                    "example": 38.4
+                },
+                "id": {
+                    "type": "string",
+                    "example": "charge_added"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Charge added"
+                },
+                "percent_of_available": {
+                    "type": "number",
+                    "example": 67.84
+                }
+            }
+        },
+        "dto.V2ChargeUsageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2ChargeUsageData"
                 }
             }
         },
