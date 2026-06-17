@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
+	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
@@ -79,13 +80,7 @@ func (h *Handler) Drives(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
-	if ResultPage > 0 {
-		ResultPage--
-	} else {
-		ResultPage = 0
-	}
-	ResultPage = (ResultPage * ResultShow)
+	ResultOffset := httpparams.PageOffset(ResultPage, ResultShow)
 
 	// getting data from database
 	query := `
@@ -208,7 +203,7 @@ func (h *Handler) Drives(c *gin.Context) {
         ORDER BY start_date DESC
         LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
 
-	queryParams = append(queryParams, ResultShow, ResultPage)
+	queryParams = append(queryParams, ResultShow, ResultOffset)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, queryParams...)
 

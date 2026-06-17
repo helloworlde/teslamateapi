@@ -21,7 +21,7 @@ var tripDistEdgesKm = []float64{0, 5, 20, 50, 100, 200}
 // TeslaMateAPICarsStatsBehaviorV2 returns three objective usage distributions
 // in one response: a weekday×hour activity heatmap, a charge-level histogram,
 // and a trip-length histogram. It is the behaviour-profile screen's data
-// source (docs/stats-roadmap.md, Phase 3).
+// source.
 //
 // Everything here is a direct count or a sum over per-session rows — no
 // thresholds, estimates, or assumptions. Energy in the trip-type section uses

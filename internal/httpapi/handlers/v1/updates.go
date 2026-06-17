@@ -3,6 +3,7 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
@@ -50,13 +51,7 @@ func (h *Handler) Updates(c *gin.Context) {
 	// (CarName is filled from the first row, if any).
 	CarData.CarID = CarID
 
-	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
-	if ResultPage > 0 {
-		ResultPage--
-	} else {
-		ResultPage = 0
-	}
-	ResultPage = (ResultPage * ResultShow)
+	ResultOffset := httpparams.PageOffset(ResultPage, ResultShow)
 
 	// getting data from database
 	query := `
@@ -71,7 +66,7 @@ func (h *Handler) Updates(c *gin.Context) {
 		WHERE car_id = $1 AND end_date IS NOT NULL AND version IS NOT NULL
 		ORDER BY start_date DESC
 		LIMIT $2 OFFSET $3;`
-	rows, err := h.db.QueryContext(c.Request.Context(), query, CarID, ResultShow, ResultPage)
+	rows, err := h.db.QueryContext(c.Request.Context(), query, CarID, ResultShow, ResultOffset)
 
 	// checking for errors in query
 	if err != nil {

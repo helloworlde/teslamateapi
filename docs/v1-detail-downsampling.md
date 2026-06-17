@@ -87,5 +87,5 @@ GET /api/v1/cars/1/charges/123?sample=full
 
 生成的 Swagger/OpenAPI 文件已经包含新参数：
 
-- `internal/docs/generated/swagger.json`
-- `internal/docs/generated/swagger.yaml`
+- `docs/swagger.json`
+- `docs/swagger.yaml`

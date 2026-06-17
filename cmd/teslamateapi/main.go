@@ -135,9 +135,6 @@ func main() {
 	v2Handler := v2.New(v2.Deps{
 		DB: db,
 		TZ: tz,
-		Cfg: v2.Config{
-			APIVersion: apiVersion,
-		},
 	})
 
 	systemHandler := system.New(ready)

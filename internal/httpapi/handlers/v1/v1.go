@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/tobiasehlert/teslamateapi/internal/auth"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
+	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/internal/status"
 	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
@@ -132,8 +132,8 @@ const (
 var errBodyTooLarge = errors.New("body exceeds configured limit")
 
 func requirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bool) {
-	v, err := strconv.Atoi(raw)
-	if err != nil || v < 1 {
+	v, err := httpparams.PositiveInt(raw)
+	if err != nil {
 		respond.HandleError(c, handler, name+" must be a positive integer.", "got: "+raw)
 		return 0, false
 	}
@@ -141,8 +141,8 @@ func requirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bo
 }
 
 func requirePositiveIntParamStatus(c *gin.Context, handler, name, raw string) (int, bool) {
-	v, err := strconv.Atoi(raw)
-	if err != nil || v < 1 {
+	v, err := httpparams.PositiveInt(raw)
+	if err != nil {
 		respond.HandleOther(c, http.StatusBadRequest, handler, gin.H{"error": name + " invalid"})
 		return 0, false
 	}
@@ -150,11 +150,8 @@ func requirePositiveIntParamStatus(c *gin.Context, handler, name, raw string) (i
 }
 
 func optionalIntInRange(c *gin.Context, handler, name, raw string, def, min, max int) (int, bool) {
-	if raw == "" {
-		return def, true
-	}
-	v, err := strconv.Atoi(raw)
-	if err != nil || v < min || v > max {
+	v, err := httpparams.OptionalIntInRange(raw, def, min, max)
+	if err != nil {
 		respond.HandleError(c, handler, fmt.Sprintf("%s must be an integer in [%d, %d].", name, min, max), "got: "+raw)
 		return 0, false
 	}
@@ -162,11 +159,8 @@ func optionalIntInRange(c *gin.Context, handler, name, raw string, def, min, max
 }
 
 func optionalFloatMin(c *gin.Context, handler, name, raw string, min float64) (float64, bool) {
-	if raw == "" {
-		return 0, true
-	}
-	v, err := strconv.ParseFloat(raw, 64)
-	if err != nil || v < min {
+	v, err := httpparams.OptionalFloatMin(raw, min)
+	if err != nil {
 		respond.HandleError(c, handler, fmt.Sprintf("%s must be a number >= %.0f.", name, min), "got: "+raw)
 		return 0, false
 	}

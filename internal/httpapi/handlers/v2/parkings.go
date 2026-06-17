@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
+	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 )
 
@@ -131,8 +132,7 @@ func (h *Handler) Parkings(c *gin.Context) {
 		UnitsLength, UnitsTemperature string
 	)
 
-	// 1-indexed page → 0-indexed offset. Validation guarantees ResultPage >= 1.
-	offset := (ResultPage - 1) * ResultShow
+	offset := httpparams.PageOffset(ResultPage, ResultShow)
 
 	// Window functions on drives give us each drive's "next start" — that pair
 	// (end_date, next_start) is the parking window. The end_position of the

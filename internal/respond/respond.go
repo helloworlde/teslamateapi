@@ -9,10 +9,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 )
 
 // HandleSuccess emits a 200 with j and logs the request URI. Mirrors the
@@ -79,8 +80,8 @@ func SafeRequestURIFromURL(rawURL *url.URL) string {
 // ok=false. Used by every v2 handler to avoid silently coercing garbage to
 // 0.
 func RequirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bool) {
-	v, err := strconv.Atoi(raw)
-	if err != nil || v < 1 {
+	v, err := httpparams.PositiveInt(raw)
+	if err != nil {
 		HandleErrorV2(c, handler, http.StatusBadRequest, name+" is required and must be a positive integer.", "got: "+raw)
 		return 0, false
 	}
@@ -91,11 +92,8 @@ func RequirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bo
 // clamp. Empty string yields the default. Non-numeric or out-of-range
 // values respond 400.
 func OptionalIntInRange(c *gin.Context, handler, name, raw string, def, min, max int) (int, bool) {
-	if raw == "" {
-		return def, true
-	}
-	v, err := strconv.Atoi(raw)
-	if err != nil || v < min || v > max {
+	v, err := httpparams.OptionalIntInRange(raw, def, min, max)
+	if err != nil {
 		HandleErrorV2(c, handler, http.StatusBadRequest,
 			fmt.Sprintf("%s must be an integer in [%d, %d].", name, min, max), "got: "+raw)
 		return 0, false

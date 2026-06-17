@@ -26,30 +26,21 @@ type (
 	NullString = nullable.String
 )
 
-// Config holds the narrow slice of runtime config that v2 handlers need.
-// Currently empty — v2 handlers are pure DB readers — but kept for parity
-// with v1 so the wiring layer can grow without churn.
-type Config struct {
-	APIVersion string
-}
-
 // Deps is the set of inputs Handler needs to serve every v2 route.
 type Deps struct {
-	DB  *sql.DB
-	TZ  *time.Location
-	Cfg Config
+	DB *sql.DB
+	TZ *time.Location
 }
 
 // Handler is the v2 HTTP handler registered onto the /api/v2 gin group.
 type Handler struct {
-	db  *sql.DB
-	tz  *time.Location
-	cfg Config
+	db *sql.DB
+	tz *time.Location
 }
 
 // New returns a Handler wired with the supplied deps.
 func New(d Deps) *Handler {
-	return &Handler{db: d.DB, tz: d.TZ, cfg: d.Cfg}
+	return &Handler{db: d.DB, tz: d.TZ}
 }
 
 // timeInTZ formats a Postgres timestamp string in the user's timezone.

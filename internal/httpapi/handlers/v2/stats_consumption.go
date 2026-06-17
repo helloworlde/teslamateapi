@@ -16,8 +16,7 @@ import (
 // Everything here is measured, not estimated: consumption is derived from the
 // rated-range drop * car efficiency over distance, the same energy model used
 // by lifetime / summary. There are no thresholds, gas-price assumptions, or
-// per-point heuristics — see docs/stats-roadmap.md for the objective/subjective
-// split.
+// per-point heuristics.
 //
 // Performance: a single round-trip that aggregates over `drives` only (one row
 // per drive). The `version` grouping range-joins against `updates` (a few dozen
