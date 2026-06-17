@@ -179,7 +179,7 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 					sc.efficiency IS NOT NULL
 					AND d.start_rated_range_km IS NOT NULL
 					AND d.end_rated_range_km IS NOT NULL
-				), sc.efficiency IS NOT NULL) AS range_data_complete
+				), (SELECT efficiency IS NOT NULL FROM selected_charge)) AS range_data_complete
 			FROM drives_in_window d
 			CROSS JOIN selected_charge sc
 		),
