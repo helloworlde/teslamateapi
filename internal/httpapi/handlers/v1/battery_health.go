@@ -172,48 +172,41 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 		ORDER BY date DESC
 		LIMIT 1
 	),
-	MaxRangeRated AS (
+	MaxRangeDaily AS (
+		-- Per-day SOC-normalised rated and ideal range, computed in a single
+		-- pass over this car's charges. MaxRangeRated and MaxRangeIdeal used to
+		-- scan this (large) charges ⋈ charging_processes join twice; they now
+		-- share one scan and each picks its own maximum from the tiny per-day
+		-- result. Result-identical: same WHERE/GROUP BY, and each maximum is
+		-- still "ORDER BY <range> DESC LIMIT 1" over the same per-day values
+		-- (preserving NULLS-FIRST ordering, so edge-case NULL days behave as
+		-- before). Referenced twice, so Postgres materialises it once.
 		SELECT
 			CASE
 				WHEN sum(usable_battery_level) = 0 THEN sum(rated_battery_range_km) * 100
 				ELSE sum(rated_battery_range_km) / sum(usable_battery_level) * 100
-			END AS range
-		FROM (
-			SELECT
-				battery_level,
-				usable_battery_level,
-				date,
-				rated_battery_range_km
-			FROM charges c 
-				INNER JOIN charging_processes p ON p.id = c.charging_process_id 
-			WHERE
-				p.car_id = $1
-				AND usable_battery_level IS NOT NULL
-		) AS data
-		GROUP BY date_trunc('day', date)
-		ORDER BY range DESC
-		LIMIT 1
-	),
-	MaxRangeIdeal AS (
-		SELECT
+			END AS rated_range,
 			CASE
 				WHEN sum(usable_battery_level) = 0 THEN sum(ideal_battery_range_km) * 100
 				ELSE sum(ideal_battery_range_km) / sum(usable_battery_level) * 100
-			END AS range
-		FROM (
-			SELECT
-				battery_level,
-				usable_battery_level,
-				date,
-				ideal_battery_range_km
-			FROM charges c 
-				INNER JOIN charging_processes p ON p.id = c.charging_process_id 
-			WHERE
-				p.car_id = $1
-				AND usable_battery_level IS NOT NULL
-		) AS data
+			END AS ideal_range
+		FROM charges c
+			INNER JOIN charging_processes p ON p.id = c.charging_process_id
+		WHERE
+			p.car_id = $1
+			AND usable_battery_level IS NOT NULL
 		GROUP BY date_trunc('day', date)
-		ORDER BY range DESC
+	),
+	MaxRangeRated AS (
+		SELECT rated_range AS range
+		FROM MaxRangeDaily
+		ORDER BY rated_range DESC
+		LIMIT 1
+	),
+	MaxRangeIdeal AS (
+		SELECT ideal_range AS range
+		FROM MaxRangeDaily
+		ORDER BY ideal_range DESC
 		LIMIT 1
 	),
 	CurrentBatteryLevel AS (

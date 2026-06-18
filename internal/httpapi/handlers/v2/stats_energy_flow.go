@@ -131,20 +131,31 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id
 			LEFT JOIN positions ep ON ep.id = dp.next_start_position_id
 		),
-		battery_samples AS (
-			SELECT
-				p.date,
-				COALESCE(p.usable_battery_level, p.battery_level) AS soc
-			FROM positions p
-			WHERE p.car_id = $1
-				AND p.date IS NOT NULL
-				AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
-		),
 		bat AS (
+			-- First and last known SOC for this car. Two single-row lookups
+			-- (ORDER BY date ... LIMIT 1) backed by the positions(car_id, date)
+			-- index, instead of array_agg over every position row — which would
+			-- full-scan and sort the whole (huge) positions table just to read
+			-- its endpoints.
 			SELECT
-				COALESCE((array_agg(soc ORDER BY date ASC))[1], 0) AS start_soc,
-				COALESCE((array_agg(soc ORDER BY date DESC))[1], 0) AS end_soc
-			FROM battery_samples
+				COALESCE((
+					SELECT COALESCE(p.usable_battery_level, p.battery_level)
+					FROM positions p
+					WHERE p.car_id = $1
+						AND p.date IS NOT NULL
+						AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
+					ORDER BY p.date ASC
+					LIMIT 1
+				), 0) AS start_soc,
+				COALESCE((
+					SELECT COALESCE(p.usable_battery_level, p.battery_level)
+					FROM positions p
+					WHERE p.car_id = $1
+						AND p.date IS NOT NULL
+						AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
+					ORDER BY p.date DESC
+					LIMIT 1
+				), 0) AS end_soc
 		)
 		SELECT
 			(SELECT name FROM cars WHERE id = $1),
