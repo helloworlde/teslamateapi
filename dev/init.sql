@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS charges (
     fast_charger_brand       text,
     fast_charger_type        text,
     rated_battery_range_km   double precision,
+    ideal_battery_range_km   double precision,
     outside_temp             double precision,
     not_enough_power_to_heat boolean
 );
@@ -219,15 +220,15 @@ INSERT INTO charging_processes (id, car_id, start_date, end_date, position_id, a
     (2, 1, '2026-05-26 22:00:00', '2026-05-27 06:00:00', 6, 1, 1, 20.0, 21.0, 8.0, 470, 580, 440, 540, 88, 99, 480, 18.0);
 
 -- charges (time-series): a few rows per process, indicating fast / slow
-INSERT INTO charges (charging_process_id, date, battery_level, usable_battery_level, charge_energy_added, charger_actual_current, charger_voltage, charger_phases, charger_power, charger_pilot_current, conn_charge_cable, fast_charger_present, fast_charger_brand, fast_charger_type, rated_battery_range_km, outside_temp) VALUES
-    (1, '2026-05-26 18:26:00', 56, 56,  1.0, 350, 480, NULL, 168, NULL, '<invalid>', true,  'Tesla', 'Combo', 285, 24.0),
-    (1, '2026-05-26 18:35:00', 70, 70, 10.0, 320, 480, NULL, 154, NULL, '<invalid>', true,  'Tesla', 'Combo', 350, 24.2),
-    (1, '2026-05-26 18:45:00', 85, 85, 22.0, 200, 480, NULL,  96, NULL, '<invalid>', true,  'Tesla', 'Combo', 425, 24.5),
-    (1, '2026-05-26 18:55:00', 95, 95, 30.0, 100, 480, NULL,  48, NULL, '<invalid>', true,  'Tesla', 'Combo', 475, 24.5),
+INSERT INTO charges (charging_process_id, date, battery_level, usable_battery_level, charge_energy_added, charger_actual_current, charger_voltage, charger_phases, charger_power, charger_pilot_current, conn_charge_cable, fast_charger_present, fast_charger_brand, fast_charger_type, rated_battery_range_km, ideal_battery_range_km, outside_temp) VALUES
+    (1, '2026-05-26 18:26:00', 56, 56,  1.0, 350, 480, NULL, 168, NULL, '<invalid>', true,  'Tesla', 'Combo', 285, 300, 24.0),
+    (1, '2026-05-26 18:35:00', 70, 70, 10.0, 320, 480, NULL, 154, NULL, '<invalid>', true,  'Tesla', 'Combo', 350, 368, 24.2),
+    (1, '2026-05-26 18:45:00', 85, 85, 22.0, 200, 480, NULL,  96, NULL, '<invalid>', true,  'Tesla', 'Combo', 425, 446, 24.5),
+    (1, '2026-05-26 18:55:00', 95, 95, 30.0, 100, 480, NULL,  48, NULL, '<invalid>', true,  'Tesla', 'Combo', 475, 499, 24.5),
 
-    (2, '2026-05-26 22:30:00', 90, 90,  2.5,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    480, 18.0),
-    (2, '2026-05-27 02:00:00', 95, 95, 12.0,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    520, 17.0),
-    (2, '2026-05-27 06:00:00', 99, 99, 20.0,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    540, 16.0);
+    (2, '2026-05-26 22:30:00', 90, 90,  2.5,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    480, 504, 18.0),
+    (2, '2026-05-27 02:00:00', 95, 95, 12.0,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    520, 546, 17.0),
+    (2, '2026-05-27 06:00:00', 99, 99, 20.0,  16, 230,    3,  11,   32, 'IEC',       false, NULL,    NULL,    540, 567, 16.0);
 
 -- Bring sequences past the manually-inserted ids so subsequent inserts don't collide.
 SELECT setval('addresses_id_seq',          (SELECT MAX(id) FROM addresses));

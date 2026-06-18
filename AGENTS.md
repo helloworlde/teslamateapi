@@ -92,3 +92,42 @@ stats".
 Go unit tests exercise the aggregation logic, not the SQL. The SQL energy basis
 is only validated against a live database. There is no local Postgres in CI;
 verify query changes against a real TeslaMate DB before trusting absolute kWh.
+
+## Query performance — how to not write a full-table scan
+
+Correctness is not enough: this is a time-series DB and the wrong query shape is
+invisible on seed data but multi-second in production. The slow-query logger
+(`>100ms` warn) is the backstop, not the first line of defence.
+
+### Know the table magnitudes
+
+- **`positions`** — *largest*. One row every few seconds while driving; millions
+  of rows after a few months. Anything that scans or sorts all of a car's
+  positions is a multi-second query.
+- **`charges`** — *second largest*. One row every few seconds while charging;
+  tens to hundreds of thousands of rows.
+- **`drives` / `charging_processes`** — small (hundreds–thousands), `car_id`
+  indexed. Joining these by primary key is cheap.
+
+### Antipatterns that have already bitten us
+
+- **Aggregating a whole table to read its endpoints.** To get the first/last row
+  use `ORDER BY date ASC|DESC LIMIT 1`, never `array_agg(x ORDER BY date)[1]` —
+  that reads and sorts the entire relation just to take one element.
+- **Scanning the same big table twice in one query.** If two CTEs differ only in
+  a projected column (e.g. `rated_` vs `ideal_battery_range_km`), compute both in
+  one pass and pick each result from the small shared CTE. Merging is only valid
+  when their `JOIN`/`WHERE`/`GROUP BY` are byte-identical.
+- **Filtering a big table by something other than `(car_id, date)`** when an
+  endpoint is per-car — it forces a sort or seq scan. Endpoint tail-lookups
+  (`ORDER BY date DESC LIMIT 1`) want a `positions (car_id, date)` index.
+
+### Before committing any SQL that touches `positions` or `charges`
+
+1. Run it through `EXPLAIN` against the dev DB (`dev/docker-compose.yml`). Seed
+   data is tiny so *timings* are meaningless, but the **plan shape** (Seq Scan +
+   Sort, or an aggregate building an array over a full relation) reveals the
+   antipattern.
+2. Keep the dev seed schema (`dev/init.sql`) complete enough that the query
+   actually *runs* locally — a missing column means it was never executed before
+   shipping.
