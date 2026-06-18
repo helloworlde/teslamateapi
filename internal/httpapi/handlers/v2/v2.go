@@ -5,9 +5,9 @@
 package v2
 
 import (
-	"database/sql"
 	"time"
 
+	"github.com/tobiasehlert/teslamateapi/internal/database"
 	"github.com/tobiasehlert/teslamateapi/internal/timefmt"
 	"github.com/tobiasehlert/teslamateapi/pkg/nullable"
 )
@@ -28,13 +28,13 @@ type (
 
 // Deps is the set of inputs Handler needs to serve every v2 route.
 type Deps struct {
-	DB *sql.DB
+	DB *database.DB
 	TZ *time.Location
 }
 
 // Handler is the v2 HTTP handler registered onto the /api/v2 gin group.
 type Handler struct {
-	db *sql.DB
+	db *database.DB
 	tz *time.Location
 }
 

@@ -24,7 +24,6 @@ func HandleSuccess(c *gin.Context, handler string, j any) {
 		js, _ := json.Marshal(j)
 		log.Printf("[debug] %s\n", js)
 	}
-	log.Println("[info] " + handler + " - (" + SafeRequestURI(c) + ") executed successfully.")
 	c.JSON(http.StatusOK, j)
 }
 
@@ -32,7 +31,6 @@ func HandleSuccess(c *gin.Context, handler string, j any) {
 // pass-through and for the legacy 200+error envelope variants. Mirrors
 // TeslaMateAPIHandleOtherResponse.
 func HandleOther(c *gin.Context, httpCode int, handler string, j any) {
-	log.Println("[info] " + handler + " - (" + SafeRequestURI(c) + ") executed successfully.")
 	c.JSON(httpCode, j)
 }
 

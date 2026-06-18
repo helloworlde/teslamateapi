@@ -6,7 +6,6 @@
 package v1
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/tobiasehlert/teslamateapi/internal/auth"
 	"github.com/tobiasehlert/teslamateapi/internal/command"
+	"github.com/tobiasehlert/teslamateapi/internal/database"
 	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/internal/status"
@@ -55,7 +55,7 @@ type Config struct {
 
 // Deps is the set of inputs Handler needs to serve every v1 route.
 type Deps struct {
-	DB          *sql.DB
+	DB          *database.DB
 	TZ          *time.Location
 	AllowList   *command.AllowList // nil when commands disabled
 	StatusCache *status.Cache      // nil when MQTT disabled
@@ -65,7 +65,7 @@ type Deps struct {
 
 // Handler is the v1 HTTP handler registered onto the /api/v1 gin group.
 type Handler struct {
-	db          *sql.DB
+	db          *database.DB
 	tz          *time.Location
 	allowList   *command.AllowList
 	statusCache *status.Cache

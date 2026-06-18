@@ -69,6 +69,10 @@ func main() {
 	defer db.Close()
 	metrics.RegisterDB(db)
 
+	// Hand the slow-query-logging wrapper to the handlers; metrics keeps the
+	// raw *sql.DB so connection-pool stats are unaffected.
+	loggingDB := database.Wrap(db)
+
 	// Audit hook → Prometheus counter. Wired here (rather than in the audit
 	// package's init) so internal/audit stays free of the prometheus
 	// dependency for environments that compile it out.
@@ -115,7 +119,7 @@ func main() {
 	}
 
 	v1Handler := v1.New(v1.Deps{
-		DB:          db,
+		DB:          loggingDB,
 		TZ:          tz,
 		AllowList:   allowList,
 		StatusCache: statusCache,
@@ -133,7 +137,7 @@ func main() {
 	})
 
 	v2Handler := v2.New(v2.Deps{
-		DB: db,
+		DB: loggingDB,
 		TZ: tz,
 	})
 
