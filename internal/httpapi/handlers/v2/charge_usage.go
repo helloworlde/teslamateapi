@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -55,10 +56,16 @@ type chargeUsageInputs struct {
 //	analysis-start battery inventory
 //	  -> driving use + parking use + ending battery inventory + untracked gap
 //
-// Driving energy comes from completed drives in the cycle. Parking energy is
-// estimated from rated-range drops between charge-end/drive-start and
-// drive-end/next-drive-start (or window-end) boundaries, so it avoids scanning
-// the full positions table for closed cycles.
+// All battery energy is expressed as state-of-charge (battery_level %) times the
+// measured battery capacity per percent for this charge
+// (charge_energy_added / SOC gained). It deliberately avoids the
+// rated_range_km * cars.efficiency conversion, which used a rounded efficiency
+// constant and made post-charge inventory exceed pre-charge inventory plus the
+// metered charge_energy_added. Driving energy comes from completed drives in the
+// cycle (start/end SOC of each drive's positions). Parking energy is estimated
+// from SOC drops between charge-end/drive-start and drive-end/next-drive-start
+// (or window-end) boundaries, so it avoids scanning the full positions table for
+// closed cycles.
 //
 // @Summary      Charge usage stats
 // @Description  Battery accounting for one charge and usage until the next charge.
@@ -98,13 +105,25 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 				cp.end_date,
 				cp.start_battery_level,
 				cp.end_battery_level,
-				cp.start_rated_range_km,
-				cp.end_rated_range_km,
 				COALESCE(cp.charge_energy_added, 0) AS charge_energy_added,
 				COALESCE(GREATEST(cp.charge_energy_used, cp.charge_energy_added), 0) AS wall_energy,
 				COALESCE(cp.cost, 0) AS cost,
 				cars.name AS car_name,
-				cars.efficiency
+				-- Measured battery capacity per 1% of state-of-charge for THIS charge,
+				-- derived purely from metered energy and SOC change. This replaces the
+				-- old rated_range_km * cars.efficiency conversion: efficiency is a
+				-- rounded constant, so range * efficiency systematically overstated
+				-- battery energy and made post-charge inventory exceed pre-charge
+				-- inventory plus the metered charge_energy_added (energy from nowhere).
+				-- Anchoring every inventory figure to charge_energy_added / SOC gain
+				-- keeps the accounting consistent with what was physically metered into
+				-- the pack. NULL when the charge has no usable SOC gain to calibrate on.
+				CASE
+					WHEN cp.charge_energy_added > 0
+						AND cp.end_battery_level > cp.start_battery_level
+					THEN cp.charge_energy_added::float / (cp.end_battery_level - cp.start_battery_level)
+					ELSE NULL
+				END AS kwh_per_pct
 			FROM charging_processes cp
 			JOIN cars ON cars.id = cp.car_id
 			WHERE cp.car_id = $1 AND cp.id = $2 AND cp.end_date IS NOT NULL
@@ -120,8 +139,7 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 		latest_position AS (
 			SELECT
 				p.date,
-				COALESCE(p.usable_battery_level, p.battery_level) AS battery_level,
-				p.rated_battery_range_km
+				COALESCE(p.usable_battery_level, p.battery_level) AS battery_level
 			FROM positions p
 			JOIN selected_charge sc ON sc.car_id = p.car_id
 			WHERE NOT EXISTS (SELECT 1 FROM next_charge)
@@ -133,32 +151,37 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			SELECT
 				nc.start_date AS snapshot_date,
 				nc.start_battery_level::bigint AS battery_level,
-				nc.start_rated_range_km AS rated_range_km,
-				(nc.start_rated_range_km IS NOT NULL) AS has_range_data
+				(nc.start_battery_level IS NOT NULL) AS has_soc
 			FROM next_charge nc
 			UNION ALL
 			SELECT
 				lp.date AS snapshot_date,
 				lp.battery_level::bigint AS battery_level,
-				lp.rated_battery_range_km AS rated_range_km,
-				(lp.rated_battery_range_km IS NOT NULL) AS has_range_data
+				(lp.battery_level IS NOT NULL) AS has_soc
 			FROM latest_position lp
 			WHERE NOT EXISTS (SELECT 1 FROM next_charge)
 			UNION ALL
 			SELECT
 				sc.end_date AS snapshot_date,
 				sc.end_battery_level::bigint AS battery_level,
-				sc.end_rated_range_km AS rated_range_km,
-				(sc.end_rated_range_km IS NOT NULL) AS has_range_data
+				(sc.end_battery_level IS NOT NULL) AS has_soc
 			FROM selected_charge sc
 			WHERE NOT EXISTS (SELECT 1 FROM next_charge)
 				AND NOT EXISTS (SELECT 1 FROM latest_position)
 		),
 		drives_in_window AS (
-			SELECT d.*
+			SELECT
+				d.start_date,
+				d.end_date,
+				d.distance,
+				d.duration_min,
+				COALESCE(sp.usable_battery_level, sp.battery_level) AS start_soc,
+				COALESCE(ep.usable_battery_level, ep.battery_level) AS end_soc
 			FROM drives d
 			JOIN selected_charge sc ON sc.car_id = d.car_id
 			LEFT JOIN next_charge nc ON true
+			LEFT JOIN positions sp ON sp.id = d.start_position_id
+			LEFT JOIN positions ep ON ep.id = d.end_position_id
 			WHERE d.end_date IS NOT NULL
 				AND d.start_date >= sc.end_date
 				AND (nc.start_date IS NULL OR d.start_date < nc.start_date)
@@ -169,17 +192,17 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 				COALESCE(SUM(distance), 0) AS total_distance,
 				COALESCE(SUM(duration_min), 0)::int AS drive_duration_min,
 				COALESCE(SUM(
-					CASE WHEN sc.efficiency IS NOT NULL
-						AND d.start_rated_range_km IS NOT NULL
-						AND d.end_rated_range_km IS NOT NULL
-					THEN GREATEST(d.start_rated_range_km - d.end_rated_range_km, 0) * sc.efficiency
+					CASE WHEN sc.kwh_per_pct IS NOT NULL
+						AND d.start_soc IS NOT NULL
+						AND d.end_soc IS NOT NULL
+					THEN GREATEST(d.start_soc - d.end_soc, 0) * sc.kwh_per_pct
 					ELSE 0 END
 				), 0) AS driving_energy,
 				COALESCE(bool_and(
-					sc.efficiency IS NOT NULL
-					AND d.start_rated_range_km IS NOT NULL
-					AND d.end_rated_range_km IS NOT NULL
-				), (SELECT efficiency IS NOT NULL FROM selected_charge)) AS range_data_complete
+					sc.kwh_per_pct IS NOT NULL
+					AND d.start_soc IS NOT NULL
+					AND d.end_soc IS NOT NULL
+				), (SELECT kwh_per_pct IS NOT NULL FROM selected_charge)) AS range_data_complete
 			FROM drives_in_window d
 			CROSS JOIN selected_charge sc
 		),
@@ -187,14 +210,14 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			SELECT
 				sc.end_date AS event_date,
 				'charge_end' AS event_kind,
-				sc.end_rated_range_km * sc.efficiency AS energy_kwh,
+				sc.end_battery_level * sc.kwh_per_pct AS energy_kwh,
 				0 AS event_order
 			FROM selected_charge sc
 			UNION ALL
 			SELECT
 				d.start_date,
 				'drive_start',
-				d.start_rated_range_km * sc.efficiency,
+				d.start_soc * sc.kwh_per_pct,
 				1
 			FROM drives_in_window d
 			CROSS JOIN selected_charge sc
@@ -202,7 +225,7 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			SELECT
 				d.end_date,
 				'drive_end',
-				d.end_rated_range_km * sc.efficiency,
+				d.end_soc * sc.kwh_per_pct,
 				2
 			FROM drives_in_window d
 			CROSS JOIN selected_charge sc
@@ -210,7 +233,7 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			SELECT
 				es.snapshot_date,
 				'window_end',
-				es.rated_range_km * sc.efficiency,
+				es.battery_level * sc.kwh_per_pct,
 				3
 			FROM end_snapshot es
 			CROSS JOIN selected_charge sc
@@ -247,9 +270,9 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			sc.start_battery_level::bigint,
 			sc.end_battery_level::bigint,
 			es.battery_level,
-			sc.start_rated_range_km * sc.efficiency AS start_battery_kwh,
-			sc.end_rated_range_km * sc.efficiency AS post_charge_battery_kwh,
-			es.rated_range_km * sc.efficiency AS end_battery_kwh,
+			sc.start_battery_level * sc.kwh_per_pct AS start_battery_kwh,
+			sc.end_battery_level * sc.kwh_per_pct AS post_charge_battery_kwh,
+			es.battery_level * sc.kwh_per_pct AS end_battery_kwh,
 			sc.wall_energy,
 			sc.charge_energy_added,
 			sc.cost,
@@ -258,9 +281,9 @@ func (h *Handler) ChargeUsage(c *gin.Context) {
 			COALESCE(da.total_distance, 0),
 			COALESCE(da.drive_count, 0),
 			COALESCE(da.drive_duration_min, 0),
-			(sc.start_rated_range_km IS NOT NULL AND sc.efficiency IS NOT NULL),
-			(sc.end_rated_range_km IS NOT NULL AND sc.efficiency IS NOT NULL),
-			(es.has_range_data AND sc.efficiency IS NOT NULL),
+			(sc.start_battery_level IS NOT NULL AND sc.kwh_per_pct IS NOT NULL),
+			(sc.end_battery_level IS NOT NULL AND sc.kwh_per_pct IS NOT NULL),
+			(es.has_soc AND sc.kwh_per_pct IS NOT NULL),
 			COALESCE(da.range_data_complete, true),
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
@@ -468,7 +491,9 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 	balanceStatus := "partial"
 	if hasCycleAccounting {
 		balanceStatus = "balanced"
-		if unmatchedUsageEnergy > 0 {
+		if chargeUsageHasInventoryMismatch(inventoryReconciliationDelta, reconciliationDataComplete) {
+			balanceStatus = "inventory_reconciliation_mismatch"
+		} else if unmatchedUsageEnergy > 0 {
 			balanceStatus = "usage_exceeds_available_energy"
 		} else if untrackedEnergy > 0 {
 			balanceStatus = "has_untracked_energy"
@@ -614,6 +639,11 @@ func nonNegativeNullable(value NullFloat64) float64 {
 		return 0
 	}
 	return value.Float64
+}
+
+func chargeUsageHasInventoryMismatch(delta float64, valid bool) bool {
+	const toleranceKWh = 0.5
+	return valid && math.Abs(delta) > toleranceKWh
 }
 
 func nullableFloat64(value float64, valid bool) NullFloat64 {

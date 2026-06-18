@@ -61,18 +61,38 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 	in.carID = CarID
 
 	query := `
-		WITH d AS (
+		WITH cap AS (
+			-- Measured kWh per 1% of state-of-charge across this car's charging
+			-- history: metered charge_energy_added divided by the SOC actually
+			-- gained. Replaces rated_range_km * cars.efficiency, which used a
+			-- rounded efficiency constant and systematically overstated battery
+			-- energy. NULL when there is no calibratable charge.
+			SELECT CASE
+				WHEN SUM(end_battery_level - start_battery_level)
+					FILTER (WHERE end_battery_level > start_battery_level) > 0
+				THEN SUM(charge_energy_added)
+						FILTER (WHERE end_battery_level > start_battery_level)
+					/ SUM(end_battery_level - start_battery_level)
+						FILTER (WHERE end_battery_level > start_battery_level)
+				ELSE NULL
+			END AS kwh_per_pct
+			FROM charging_processes
+			WHERE car_id = $1 AND end_date IS NOT NULL
+		),
+		d AS (
 			SELECT
 				COALESCE(SUM(distance), 0) AS total_km,
 				COALESCE(SUM(
-					CASE WHEN start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency
+					CASE WHEN sp.id IS NOT NULL AND ep.id IS NOT NULL
+					THEN GREATEST(
+						COALESCE(sp.usable_battery_level, sp.battery_level)
+						- COALESCE(ep.usable_battery_level, ep.battery_level), 0)
 					ELSE 0 END
-				), 0) AS total_kwh
+				), 0) AS total_pct
 			FROM drives
-			LEFT JOIN cars ON cars.id = drives.car_id
+			LEFT JOIN positions sp ON sp.id = drives.start_position_id
+			LEFT JOIN positions ep ON ep.id = drives.end_position_id
 			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
-			GROUP BY cars.id
 		),
 		ch AS (
 			SELECT
@@ -96,45 +116,34 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			SELECT
 				COALESCE(SUM(
 					CASE
-						WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
-						AND sp.rated_battery_range_km > ep.rated_battery_range_km
+						WHEN sp.id IS NOT NULL AND ep.id IS NOT NULL
+						AND COALESCE(sp.usable_battery_level, sp.battery_level)
+							> COALESCE(ep.usable_battery_level, ep.battery_level)
 						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
 							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
 							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN (sp.rated_battery_range_km - ep.rated_battery_range_km) * cars.efficiency
-						WHEN sp.rated_battery_range_km IS NOT NULL
-						AND COALESCE(sp.usable_battery_level, sp.battery_level) > 0
-						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
-							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
-							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN GREATEST(
-							COALESCE(sp.usable_battery_level, sp.battery_level)
-							- COALESCE(ep.usable_battery_level, ep.battery_level),
-							0
-						) * sp.rated_battery_range_km * cars.efficiency
-							/ COALESCE(sp.usable_battery_level, sp.battery_level)
+						THEN COALESCE(sp.usable_battery_level, sp.battery_level)
+							- COALESCE(ep.usable_battery_level, ep.battery_level)
 						ELSE 0
 					END
-				), 0) AS total_drop
+				), 0) AS total_pct
 			FROM dp
-			LEFT JOIN cars ON cars.id = $1
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id
 			LEFT JOIN positions ep ON ep.id = dp.next_start_position_id
 		),
 		battery_samples AS (
 			SELECT
 				p.date,
-				p.rated_battery_range_km * cars.efficiency AS energy_kwh
+				COALESCE(p.usable_battery_level, p.battery_level) AS soc
 			FROM positions p
-			LEFT JOIN cars ON cars.id = p.car_id
 			WHERE p.car_id = $1
 				AND p.date IS NOT NULL
-				AND p.rated_battery_range_km IS NOT NULL
+				AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
 		),
 		bat AS (
 			SELECT
-				COALESCE((array_agg(energy_kwh ORDER BY date ASC))[1], 0) AS start_energy_kwh,
-				COALESCE((array_agg(energy_kwh ORDER BY date DESC))[1], 0) AS end_energy_kwh
+				COALESCE((array_agg(soc ORDER BY date ASC))[1], 0) AS start_soc,
+				COALESCE((array_agg(soc ORDER BY date DESC))[1], 0) AS end_soc
 			FROM battery_samples
 		)
 		SELECT
@@ -143,13 +152,14 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			COALESCE(ch.total_used, 0),
 			COALESCE(ch.total_added, 0),
 			COALESCE(ch.total_cost, 0),
-			COALESCE(d.total_kwh, 0),
-			COALESCE(pk.total_drop, 0),
-			COALESCE(bat.start_energy_kwh, 0),
-			COALESCE(bat.end_energy_kwh, 0),
+			COALESCE(d.total_pct * cap.kwh_per_pct, 0),
+			COALESCE(pk.total_pct * cap.kwh_per_pct, 0),
+			COALESCE(bat.start_soc * cap.kwh_per_pct, 0),
+			COALESCE(bat.end_soc * cap.kwh_per_pct, 0),
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
 		FROM (VALUES (1)) anchor(_)
+		LEFT JOIN cap ON true
 		LEFT JOIN d ON true
 		LEFT JOIN ch ON true
 		LEFT JOIN pk ON true

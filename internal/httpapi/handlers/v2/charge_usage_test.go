@@ -59,7 +59,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 				hasEndRangeData:         true,
 				drivesRangeDataComplete: true,
 			},
-			wantStatus:              "has_untracked_energy",
+			wantStatus:              "inventory_reconciliation_mismatch",
 			wantAvailableKWh:        48,
 			wantBatteryUsedKWh:      33,
 			wantBatteryUsedRatePct:  68.75,
@@ -205,6 +205,37 @@ func TestBuildChargeUsageDataOmitsUnknownCycleFlow(t *testing.T) {
 	}
 	assertClose(t, inboundChargeUsageEnergy(got.Links, "cycle_available"), 0)
 	assertClose(t, outboundChargeUsageEnergy(got.Links, "cycle_available"), 0)
+}
+
+func TestBuildChargeUsageDataFlagsInventoryReconciliationMismatch(t *testing.T) {
+	got := buildChargeUsageData(chargeUsageInputs{
+		startBatteryLevel:       nullInt64(9),
+		postChargeBatteryLevel:  nullInt64(100),
+		endBatteryLevel:         nullInt64(28),
+		startBatteryKWh:         nullFloat64(6.192),
+		postChargeBatteryKWh:    nullFloat64(63.916),
+		endBatteryKWh:           nullFloat64(17.791),
+		wallEnergyKWh:           58.05,
+		chargeEnergyAddedKWh:    54.64,
+		drivingEnergyKWh:        35.881,
+		parkingEnergyKWh:        10.244,
+		hasPreChargeRangeData:   true,
+		hasPostChargeRangeData:  true,
+		hasEndRangeData:         true,
+		drivesRangeDataComplete: true,
+	})
+
+	assertNullableClose(t, got.Battery.StartBatteryEnergyKWh, 6.192, true)
+	assertNullableClose(t, got.Battery.PostChargeEnergyKWh, 63.916, true)
+	assertNullableClose(t, got.Battery.EndBatteryEnergyKWh, 17.791, true)
+	assertNullableClose(t, got.Metrics.VehicleAvailableEnergyKWh, 63.916, true)
+	assertNullableClose(t, got.Metrics.InventoryExpectedEnergyKWh, 60.832, true)
+	assertNullableClose(t, got.Metrics.InventoryReconciliationKWh, 3.084, true)
+	assertNullableClose(t, got.Metrics.BatteryUsedEnergyKWh, 46.125, true)
+	assertNullableClose(t, got.Metrics.UnmatchedUsageKWh, 0, true)
+	if got.BalanceStatus != "inventory_reconciliation_mismatch" {
+		t.Fatalf("BalanceStatus = %q; want inventory_reconciliation_mismatch", got.BalanceStatus)
+	}
 }
 
 func TestChargeUsagePartialFieldsAreUnique(t *testing.T) {
