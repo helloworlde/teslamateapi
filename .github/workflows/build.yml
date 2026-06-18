@@ -24,6 +24,7 @@ permissions:
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -77,6 +78,27 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Go caches
+        id: go_cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae #v5.0.5
+        with:
+          path: |
+            go-mod-cache
+            go-build-cache
+          key: go-cache-${{ matrix.arch }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-cache-${{ matrix.arch }}-
+
+      - name: Inject Go caches into buildx
+        uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723 #v3.4.0
+        with:
+          cache-map: |
+            {
+              "go-mod-cache": "/go/pkg/mod",
+              "go-build-cache": "/root/.cache/go-build"
+            }
+          skip-extraction: ${{ steps.go_cache.outputs.cache-hit }}
 
       - name: Build and push (${{ matrix.platform }})
         id: docker_build

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # get golang container
 FROM golang:1.26.0 AS builder
 
@@ -7,9 +9,13 @@ ARG apiVersion=unknown
 # create and set workingfolder
 WORKDIR /go/src/teslamateapi
 
-# copy go mod files and full source tree (cmd/, internal/, pkg/, docs/).
+# download modules first so this layer stays cached unless go.mod/go.sum change.
 # Module path stays github.com/tobiasehlert/teslamateapi.
 COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+  go mod download
+
+# copy the full source tree (cmd/, internal/, pkg/, docs/).
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 COPY pkg/ ./pkg/
@@ -17,9 +23,12 @@ COPY docs/ ./docs/
 
 # docs/swagger.{go,yaml,json} are committed and embedded by docs/embed.go,
 # so the build stage just needs `go build`.
-RUN go mod download && \
+# cache mounts persist the module + build caches; dropping `-a -installsuffix cgo`
+# lets Go reuse compiled stdlib/deps instead of rebuilding everything each time.
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
   CGO_ENABLED=0 GOOS=linux go build \
-  -a -installsuffix cgo -ldflags="-w -s \
+  -trimpath -ldflags="-w -s \
   -X 'main.apiVersion=${apiVersion}' \
   " -o /go/src/app ./cmd/teslamateapi
 
