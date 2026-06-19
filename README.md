@@ -255,6 +255,15 @@ adjacent drives.
   - Range-derived kWh/rate fields are `null` when the required rated-range
     snapshots are missing; `data_quality.partial_fields` lists the affected
     fields and `balance_status=partial` avoids presenting a fake balance.
+- GET `/api/v2/cars/:CarID/drives/:DriveID/power`
+  - Per-drive observed power statistics from full-resolution `positions.power`
+    samples: battery output energy, regenerative braking energy, net observed
+    battery energy, regen share, peak output power, peak regen power, and
+    average output / regen power.
+  - Energy values are estimates from power integration, not BMS-metered battery
+    accounting. `data_quality.sample_coverage_pct`, `confidence`,
+    `valid_sample_seconds`, and gap/sample counts are returned so clients can
+    hide or de-emphasise kWh values when Streaming API coverage is poor.
 - GET `/api/v2/cars/:CarID/stats/lifetime`
   - Single roundtrip with since-ownership totals over drives, charges, and
     derived parking sessions: `count`, `total_distance`,
