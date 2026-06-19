@@ -242,6 +242,12 @@ adjacent drives.
     inventory, and untracked residual energy. Also returns SOC snapshots,
     battery-used rate, tracked-use rate, data-quality flags, and node/link data
     for simple flow visualisation.
+  - `metrics.untracked_energy_kwh` is the aggregate residual bucket clients
+    should display for "untracked" or "other loss" energy. It includes all
+    cycle energy that cannot be cleanly assigned to driving, parking, or ending
+    battery inventory, including over-accounted usage gaps. The separate
+    `metrics.unmatched_usage_kwh` field is diagnostic only and must not be
+    added again by clients.
   - Closed cycles end at the next charging session's start. If no next charge
     exists yet, the cycle is marked `is_complete=false` and uses the latest
     known position sample as the current end snapshot.

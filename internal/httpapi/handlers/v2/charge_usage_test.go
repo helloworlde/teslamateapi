@@ -17,6 +17,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 		wantBatteryUsedRatePct  float64
 		wantUntrackedKWh        float64
 		wantUnmatchedKWh        float64
+		wantUntrackedSharePct   float64
 		wantExpectedKWh         float64
 		wantReconciliationKWh   float64
 		wantTrackedRatePct      float64
@@ -64,6 +65,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 			wantBatteryUsedKWh:      33,
 			wantBatteryUsedRatePct:  68.75,
 			wantUntrackedKWh:        10,
+			wantUntrackedSharePct:   20.8333333333,
 			wantExpectedKWh:         50,
 			wantReconciliationKWh:   -2,
 			wantTrackedRatePct:      47.9166666667,
@@ -96,7 +98,9 @@ func TestBuildChargeUsageData(t *testing.T) {
 			wantAvailableKWh:       15,
 			wantBatteryUsedKWh:     11,
 			wantBatteryUsedRatePct: 73.3333333333,
+			wantUntrackedKWh:       5,
 			wantUnmatchedKWh:       5,
+			wantUntrackedSharePct:  33.3333333333,
 			wantExpectedKWh:        15,
 			wantTrackedRatePct:     106.6666666667,
 			wantAccountingStatus:   "complete",
@@ -120,6 +124,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 			wantBatteryUsedKWh:     15,
 			wantBatteryUsedRatePct: 37.5,
 			wantUntrackedKWh:       3,
+			wantUntrackedSharePct:  7.5,
 			wantTrackedRatePct:     30,
 			wantRangeDataComplete:  true,
 			wantAccountingStatus:   "complete",
@@ -143,6 +148,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 			assertNullableClose(t, got.Metrics.BatteryUsedRatePct, tt.wantBatteryUsedRatePct, tt.input.hasPostChargeRangeData && tt.input.hasEndRangeData)
 			assertNullableClose(t, got.Metrics.UntrackedEnergyKWh, tt.wantUntrackedKWh, tt.wantCycleMetricsOK)
 			assertNullableClose(t, got.Metrics.UnmatchedUsageKWh, tt.wantUnmatchedKWh, tt.wantCycleMetricsOK)
+			assertNullableClose(t, got.Metrics.UntrackedShareOfAvailablePct, tt.wantUntrackedSharePct, tt.wantCycleMetricsOK)
 			if got.Metrics.InventoryExpectedEnergyKWh.Valid != tt.wantReconciliationOK {
 				t.Fatalf("InventoryExpectedEnergyKWh.Valid = %v; want %v", got.Metrics.InventoryExpectedEnergyKWh.Valid, tt.wantReconciliationOK)
 			}

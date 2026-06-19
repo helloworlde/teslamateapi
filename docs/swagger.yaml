@@ -1772,12 +1772,23 @@ definitions:
         example: 43.29
         type: number
       unmatched_usage_kwh:
+        description: |-
+          UnmatchedUsageKWh is a diagnostic subset of UntrackedEnergyKWh for
+          over-accounted cycles. Clients should not add it to UntrackedEnergyKWh.
         example: 0
         type: number
       untracked_energy_kwh:
+        description: |-
+          UntrackedEnergyKWh is the aggregate residual energy that cannot be
+          assigned cleanly to driving, parking, or ending battery inventory. It also
+          includes unmatched over-accounted usage when tracked usage plus ending
+          inventory exceeds analysis-start available energy.
         example: 9.3
         type: number
       untracked_share_of_available_pct:
+        description: |-
+          UntrackedShareOfAvailablePct is UntrackedEnergyKWh divided by
+          VehicleAvailableEnergyKWh.
         example: 16.43
         type: number
       vehicle_available_energy_kwh:
@@ -3293,6 +3304,10 @@ paths:
   /api/v2/cars/{CarID}/charges/{ChargeID}/usage:
     get:
       description: Battery accounting for one charge and usage until the next charge.
+        `metrics.untracked_energy_kwh` is the aggregate residual bucket for all cycle
+        energy that cannot be assigned cleanly to driving, parking, or ending battery
+        inventory. `metrics.unmatched_usage_kwh` is diagnostic only and is already
+        included in `metrics.untracked_energy_kwh` when present.
       parameters:
       - description: TeslaMate cars.id
         in: path

@@ -30,21 +30,31 @@ type V2ChargeUsageBattery struct {
 
 // V2ChargeUsageMetrics contains the accounting numbers for one charge usage
 // cycle. "Available" means battery inventory at analysis start, i.e. when the
-// selected charging session ended.
+// selected charging session ended. UntrackedEnergyKWh is the client-facing
+// residual bucket and includes all cycle energy that cannot be assigned cleanly
+// to driving, parking, or ending battery inventory. UnmatchedUsageKWh is kept as
+// a diagnostic subset for over-accounted cycles and should not be added again
+// by clients.
 type V2ChargeUsageMetrics struct {
-	WallEnergyKWh                float64          `json:"wall_energy_kwh" example:"40.1"`
-	ChargeEnergyAddedKWh         float64          `json:"charge_energy_added_kwh" example:"38.4"`
-	ChargingLossEnergyKWh        float64          `json:"charging_loss_energy_kwh" example:"1.7"`
-	ChargeCost                   float64          `json:"charge_cost" example:"12.35"`
-	WallCostPerKWh               float64          `json:"wall_cost_per_kwh" example:"0.30798"`
-	ChargeCostPerKWh             float64          `json:"charge_cost_per_kwh" example:"0.32161"`
-	InventoryExpectedEnergyKWh   nullable.Float64 `json:"inventory_expected_energy_kwh" swaggertype:"number" example:"56.6"`
-	InventoryReconciliationKWh   nullable.Float64 `json:"inventory_reconciliation_kwh" swaggertype:"number" example:"-1.2"`
-	VehicleAvailableEnergyKWh    nullable.Float64 `json:"vehicle_available_energy_kwh" swaggertype:"number" example:"56.6"`
-	DrivingEnergyKWh             nullable.Float64 `json:"driving_energy_kwh" swaggertype:"number" example:"22.4"`
-	ParkingEnergyKWh             nullable.Float64 `json:"parking_energy_kwh" swaggertype:"number" example:"2.1"`
-	EndBatteryEnergyKWh          nullable.Float64 `json:"end_battery_energy_kwh" swaggertype:"number" example:"22.8"`
-	UntrackedEnergyKWh           nullable.Float64 `json:"untracked_energy_kwh" swaggertype:"number" example:"9.3"`
+	WallEnergyKWh              float64          `json:"wall_energy_kwh" example:"40.1"`
+	ChargeEnergyAddedKWh       float64          `json:"charge_energy_added_kwh" example:"38.4"`
+	ChargingLossEnergyKWh      float64          `json:"charging_loss_energy_kwh" example:"1.7"`
+	ChargeCost                 float64          `json:"charge_cost" example:"12.35"`
+	WallCostPerKWh             float64          `json:"wall_cost_per_kwh" example:"0.30798"`
+	ChargeCostPerKWh           float64          `json:"charge_cost_per_kwh" example:"0.32161"`
+	InventoryExpectedEnergyKWh nullable.Float64 `json:"inventory_expected_energy_kwh" swaggertype:"number" example:"56.6"`
+	InventoryReconciliationKWh nullable.Float64 `json:"inventory_reconciliation_kwh" swaggertype:"number" example:"-1.2"`
+	VehicleAvailableEnergyKWh  nullable.Float64 `json:"vehicle_available_energy_kwh" swaggertype:"number" example:"56.6"`
+	DrivingEnergyKWh           nullable.Float64 `json:"driving_energy_kwh" swaggertype:"number" example:"22.4"`
+	ParkingEnergyKWh           nullable.Float64 `json:"parking_energy_kwh" swaggertype:"number" example:"2.1"`
+	EndBatteryEnergyKWh        nullable.Float64 `json:"end_battery_energy_kwh" swaggertype:"number" example:"22.8"`
+	// UntrackedEnergyKWh is the aggregate residual energy that cannot be
+	// assigned cleanly to driving, parking, or ending battery inventory. It also
+	// includes unmatched over-accounted usage when tracked usage plus ending
+	// inventory exceeds analysis-start available energy.
+	UntrackedEnergyKWh nullable.Float64 `json:"untracked_energy_kwh" swaggertype:"number" example:"9.3"`
+	// UnmatchedUsageKWh is a diagnostic subset of UntrackedEnergyKWh for
+	// over-accounted cycles. Clients should not add it to UntrackedEnergyKWh.
 	UnmatchedUsageKWh            nullable.Float64 `json:"unmatched_usage_kwh" swaggertype:"number" example:"0"`
 	BatteryUsedEnergyKWh         nullable.Float64 `json:"battery_used_energy_kwh" swaggertype:"number" example:"33.8"`
 	BatteryUsedRatePct           nullable.Float64 `json:"battery_used_rate_pct" swaggertype:"number" example:"59.72"`
@@ -52,6 +62,8 @@ type V2ChargeUsageMetrics struct {
 	DrivingShareOfAvailablePct   nullable.Float64 `json:"driving_share_of_available_pct" swaggertype:"number" example:"39.58"`
 	ParkingShareOfAvailablePct   nullable.Float64 `json:"parking_share_of_available_pct" swaggertype:"number" example:"3.71"`
 	RemainingShareOfAvailablePct nullable.Float64 `json:"remaining_share_of_available_pct" swaggertype:"number" example:"40.28"`
+	// UntrackedShareOfAvailablePct is UntrackedEnergyKWh divided by
+	// VehicleAvailableEnergyKWh.
 	UntrackedShareOfAvailablePct nullable.Float64 `json:"untracked_share_of_available_pct" swaggertype:"number" example:"16.43"`
 	TotalDistance                float64          `json:"total_distance" example:"185.2"`
 	DriveCount                   int              `json:"drive_count" example:"5"`

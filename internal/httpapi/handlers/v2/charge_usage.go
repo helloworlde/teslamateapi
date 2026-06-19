@@ -68,7 +68,7 @@ type chargeUsageInputs struct {
 // closed cycles.
 //
 // @Summary      Charge usage stats
-// @Description  Battery accounting for one charge and usage until the next charge.
+// @Description  Battery accounting for one charge and usage until the next charge. `metrics.untracked_energy_kwh` is the aggregate residual bucket for all cycle energy that cannot be assigned cleanly to driving, parking, or ending battery inventory. `metrics.unmatched_usage_kwh` is diagnostic only and is already included in `metrics.untracked_energy_kwh` when present.
 // @Tags         v2
 // @Security     BearerAuth
 // @Produce      json
@@ -373,6 +373,7 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 	batteryUsedEnergy := nonNegative(availableEnergy - endBatteryEnergy)
 	untrackedEnergy := nonNegative(availableEnergy - trackedUsageEnergy - endBatteryEnergy)
 	unmatchedUsageEnergy := nonNegative(trackedUsageEnergy + endBatteryEnergy - availableEnergy)
+	residualEnergy := untrackedEnergy + unmatchedUsageEnergy
 	chargingLossEnergy := nonNegative(wallEnergy - chargeAddedEnergy)
 	accountedEnergy := trackedUsageEnergy + endBatteryEnergy
 	hasAvailableEnergy := in.hasPostChargeRangeData
@@ -539,7 +540,7 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 			DrivingEnergyKWh:             nullableFloat64(drivingEnergy, hasDriveEnergy),
 			ParkingEnergyKWh:             nullableFloat64(parkingEnergy, hasCycleAccounting),
 			EndBatteryEnergyKWh:          nullableFloat64(endBatteryEnergy, hasEndEnergy),
-			UntrackedEnergyKWh:           nullableFloat64(untrackedEnergy, hasCycleAccounting),
+			UntrackedEnergyKWh:           nullableFloat64(residualEnergy, hasCycleAccounting),
 			UnmatchedUsageKWh:            nullableFloat64(unmatchedUsageEnergy, hasCycleAccounting),
 			BatteryUsedEnergyKWh:         nullableFloat64(batteryUsedEnergy, hasBatteryUsedEnergy),
 			BatteryUsedRatePct:           nullableFloat64(pct(batteryUsedEnergy, availableEnergy), hasBatteryUsedEnergy),
@@ -547,7 +548,7 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 			DrivingShareOfAvailablePct:   nullableFloat64(pct(drivingEnergy, availableEnergy), hasAvailableEnergy && hasDriveEnergy),
 			ParkingShareOfAvailablePct:   nullableFloat64(pct(parkingEnergy, availableEnergy), hasCycleAccounting),
 			RemainingShareOfAvailablePct: nullableFloat64(pct(endBatteryEnergy, availableEnergy), hasBatteryUsedEnergy),
-			UntrackedShareOfAvailablePct: nullableFloat64(pct(untrackedEnergy, availableEnergy), hasCycleAccounting),
+			UntrackedShareOfAvailablePct: nullableFloat64(pct(residualEnergy, availableEnergy), hasCycleAccounting),
 			TotalDistance:                nonNegative(in.totalDistance),
 			DriveCount:                   in.driveCount,
 			DriveDurationMin:             in.driveDurationMin,

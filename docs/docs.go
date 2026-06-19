@@ -1126,7 +1126,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Battery accounting for one charge and usage until the next charge.",
+                "description": "Battery accounting for one charge and usage until the next charge. ` + "`" + `metrics.untracked_energy_kwh` + "`" + ` is the aggregate residual bucket for all cycle energy that cannot be assigned cleanly to driving, parking, or ending battery inventory. ` + "`" + `metrics.unmatched_usage_kwh` + "`" + ` is diagnostic only and is already included in ` + "`" + `metrics.untracked_energy_kwh` + "`" + ` when present.",
                 "produces": [
                     "application/json"
                 ],
@@ -4180,14 +4180,17 @@ const docTemplate = `{
                     "example": 43.29
                 },
                 "unmatched_usage_kwh": {
+                    "description": "UnmatchedUsageKWh is a diagnostic subset of UntrackedEnergyKWh for\nover-accounted cycles. Clients should not add it to UntrackedEnergyKWh.",
                     "type": "number",
                     "example": 0
                 },
                 "untracked_energy_kwh": {
+                    "description": "UntrackedEnergyKWh is the aggregate residual energy that cannot be\nassigned cleanly to driving, parking, or ending battery inventory. It also\nincludes unmatched over-accounted usage when tracked usage plus ending\ninventory exceeds analysis-start available energy.",
                     "type": "number",
                     "example": 9.3
                 },
                 "untracked_share_of_available_pct": {
+                    "description": "UntrackedShareOfAvailablePct is UntrackedEnergyKWh divided by\nVehicleAvailableEnergyKWh.",
                     "type": "number",
                     "example": 16.43
                 },
