@@ -246,8 +246,9 @@ adjacent drives.
     should display for "untracked" or "other loss" energy. It includes all
     cycle energy that cannot be cleanly assigned to driving, parking, or ending
     battery inventory, including over-accounted usage gaps. The separate
-    `metrics.unmatched_usage_kwh` field is diagnostic only and must not be
-    added again by clients.
+    `metrics.unmatched_usage_kwh` and
+    `metrics.unmatched_usage_share_of_available_pct` fields are diagnostic only
+    and must not be added again by clients.
   - Closed cycles end at the next charging session's start. If no next charge
     exists yet, the cycle is marked `is_complete=false` and uses the latest
     known position sample as the current end snapshot.

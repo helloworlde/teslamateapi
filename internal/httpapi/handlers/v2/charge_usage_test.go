@@ -18,6 +18,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 		wantUntrackedKWh        float64
 		wantUnmatchedKWh        float64
 		wantUntrackedSharePct   float64
+		wantUnmatchedSharePct   float64
 		wantExpectedKWh         float64
 		wantReconciliationKWh   float64
 		wantTrackedRatePct      float64
@@ -101,6 +102,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 			wantUntrackedKWh:       5,
 			wantUnmatchedKWh:       5,
 			wantUntrackedSharePct:  33.3333333333,
+			wantUnmatchedSharePct:  33.3333333333,
 			wantExpectedKWh:        15,
 			wantTrackedRatePct:     106.6666666667,
 			wantAccountingStatus:   "complete",
@@ -149,6 +151,7 @@ func TestBuildChargeUsageData(t *testing.T) {
 			assertNullableClose(t, got.Metrics.UntrackedEnergyKWh, tt.wantUntrackedKWh, tt.wantCycleMetricsOK)
 			assertNullableClose(t, got.Metrics.UnmatchedUsageKWh, tt.wantUnmatchedKWh, tt.wantCycleMetricsOK)
 			assertNullableClose(t, got.Metrics.UntrackedShareOfAvailablePct, tt.wantUntrackedSharePct, tt.wantCycleMetricsOK)
+			assertNullableClose(t, got.Metrics.UnmatchedUsageShareOfAvailablePct, tt.wantUnmatchedSharePct, tt.wantCycleMetricsOK)
 			if got.Metrics.InventoryExpectedEnergyKWh.Valid != tt.wantReconciliationOK {
 				t.Fatalf("InventoryExpectedEnergyKWh.Valid = %v; want %v", got.Metrics.InventoryExpectedEnergyKWh.Valid, tt.wantReconciliationOK)
 			}
