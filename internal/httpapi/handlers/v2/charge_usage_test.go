@@ -258,6 +258,17 @@ func TestChargeUsagePartialFieldsAreUnique(t *testing.T) {
 	}
 }
 
+func TestChargeUsagePartialFieldsIncludesUnmatchedShareWhenAvailableEnergyMissing(t *testing.T) {
+	fields := chargeUsagePartialFields(chargeUsageInputs{
+		hasEndRangeData:         true,
+		drivesRangeDataComplete: true,
+	})
+
+	if !containsString(fields, "unmatched_usage_share_of_available_pct") {
+		t.Fatalf("partial fields missing unmatched_usage_share_of_available_pct: %#v", fields)
+	}
+}
+
 func nullInt64(v int64) NullInt64 {
 	return NullInt64{NullInt64: sql.NullInt64{Int64: v, Valid: true}}
 }
@@ -294,4 +305,13 @@ func outboundChargeUsageEnergy(links []dto.V2ChargeUsageLink, source string) flo
 		}
 	}
 	return total
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }

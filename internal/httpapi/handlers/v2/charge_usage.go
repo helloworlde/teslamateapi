@@ -599,6 +599,7 @@ func chargeUsagePartialFields(in chargeUsageInputs) []string {
 			"driving_share_of_available_pct",
 			"parking_share_of_available_pct",
 			"remaining_share_of_available_pct",
+			"unmatched_usage_share_of_available_pct",
 			"untracked_share_of_available_pct",
 		)
 	}
