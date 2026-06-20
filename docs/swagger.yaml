@@ -1897,9 +1897,15 @@ definitions:
       peak_voltage_max:
         example: 480
         type: integer
+      shortest_session_duration_min:
+        example: 12
+        type: integer
       total_cost:
         example: 4321.5
         type: number
+      total_duration_min:
+        example: 18000
+        type: integer
       total_energy_added_kwh:
         example: 16500
         type: number
@@ -2029,6 +2035,9 @@ definitions:
         type: integer
       total_energy_consumed_kwh:
         example: 7825
+        type: number
+      tracking_rate_pct:
+        example: 98.7
         type: number
       worst_consumption:
         example: 285.4
@@ -2565,6 +2574,12 @@ definitions:
       latest_version:
         example: 2026.20.1
         type: string
+      longest_interval_days:
+        example: 180
+        type: integer
+      shortest_interval_days:
+        example: 14
+        type: integer
     type: object
 info:
   contact: {}

@@ -4346,9 +4346,17 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 480
                 },
+                "shortest_session_duration_min": {
+                    "type": "integer",
+                    "example": 12
+                },
                 "total_cost": {
                     "type": "number",
                     "example": 4321.5
+                },
+                "total_duration_min": {
+                    "type": "integer",
+                    "example": 18000
                 },
                 "total_energy_added_kwh": {
                     "type": "number",
@@ -4523,6 +4531,10 @@ const docTemplate = `{
                 "total_energy_consumed_kwh": {
                     "type": "number",
                     "example": 7825
+                },
+                "tracking_rate_pct": {
+                    "type": "number",
+                    "example": 98.7
                 },
                 "worst_consumption": {
                     "type": "number",
@@ -5272,6 +5284,14 @@ const docTemplate = `{
                 "latest_version": {
                     "type": "string",
                     "example": "2026.20.1"
+                },
+                "longest_interval_days": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "shortest_interval_days": {
+                    "type": "integer",
+                    "example": 14
                 }
             }
         }

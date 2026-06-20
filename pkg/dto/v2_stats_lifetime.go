@@ -17,68 +17,71 @@ type V2CarMeta struct {
 
 // V2DrivesAgg is the drives section of the lifetime stats response.
 type V2DrivesAgg struct {
-	Count                  int             `json:"count" example:"1893"`
-	TotalDistance          float64         `json:"total_distance" example:"42500.5"`
-	TotalDurationMin       int             `json:"total_duration_min" example:"38000"`
-	TotalEnergyConsumedKWh float64         `json:"total_energy_consumed_kwh" example:"7825.0"`
-	AvgConsumption         float64         `json:"avg_consumption" example:"184.0"`
-	BestConsumption        float64         `json:"best_consumption" example:"120.0"`
-	WorstConsumption       float64         `json:"worst_consumption" example:"285.4"`
+	Count                  int     `json:"count" example:"1893"`
+	TotalDistance          float64 `json:"total_distance" example:"42500.5"`
+	TotalDurationMin       int     `json:"total_duration_min" example:"38000"`
+	TotalEnergyConsumedKWh float64 `json:"total_energy_consumed_kwh" example:"7825.0"`
+	AvgConsumption         float64 `json:"avg_consumption" example:"184.0"`
+	BestConsumption        float64 `json:"best_consumption" example:"120.0"`
+	WorstConsumption       float64 `json:"worst_consumption" example:"285.4"`
 	// RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all
 	// drives (objective). 100 = rated and real distance match; >100 beats
 	// rated, <100 falls short. Unit-independent (a ratio of distances).
-	RangeAchievementPct    float64         `json:"range_achievement_pct" example:"94.2"`
-	LongestDistance        float64         `json:"longest_distance" example:"800.0"`
-	ShortestDistance       float64         `json:"shortest_distance" example:"0.5"`
-	LongestDurationMin     int             `json:"longest_duration_min" example:"420"`
-	MaxSpeed               int             `json:"max_speed" example:"180"`
-	PeakDrivePowerKW       int             `json:"peak_drive_power_kw" example:"380"`
-	AvgSpeed               float64         `json:"avg_speed" example:"58.5"`
-	AvgDistancePerDrive    float64         `json:"avg_distance_per_drive" example:"22.4"`
-	AvgDurationPerDrive    float64         `json:"avg_duration_per_drive_min" example:"20.1"`
-	MaxRegenPower          int             `json:"max_regen_power_kw" example:"60"`
-	AvgOutsideTemp         nullable.Float64 `json:"avg_outside_temp" swaggertype:"number" example:"14.5"`
-	AvgInsideTemp          nullable.Float64 `json:"avg_inside_temp" swaggertype:"number" example:"21.0"`
-	ActiveDays             int             `json:"active_days" example:"612"`
-	LastDriveDate          nullable.String `json:"last_drive_date" swaggertype:"string" example:"2026-05-30T18:42:00+01:00"`
-	CurrentOdometer        float64         `json:"current_odometer" example:"42500.0"`
+	RangeAchievementPct float64          `json:"range_achievement_pct" example:"94.2"`
+	TrackingRatePct     nullable.Float64 `json:"tracking_rate_pct" swaggertype:"number" example:"98.7"`
+	LongestDistance     float64          `json:"longest_distance" example:"800.0"`
+	ShortestDistance    float64          `json:"shortest_distance" example:"0.5"`
+	LongestDurationMin  int              `json:"longest_duration_min" example:"420"`
+	MaxSpeed            int              `json:"max_speed" example:"180"`
+	PeakDrivePowerKW    int              `json:"peak_drive_power_kw" example:"380"`
+	AvgSpeed            float64          `json:"avg_speed" example:"58.5"`
+	AvgDistancePerDrive float64          `json:"avg_distance_per_drive" example:"22.4"`
+	AvgDurationPerDrive float64          `json:"avg_duration_per_drive_min" example:"20.1"`
+	MaxRegenPower       int              `json:"max_regen_power_kw" example:"60"`
+	AvgOutsideTemp      nullable.Float64 `json:"avg_outside_temp" swaggertype:"number" example:"14.5"`
+	AvgInsideTemp       nullable.Float64 `json:"avg_inside_temp" swaggertype:"number" example:"21.0"`
+	ActiveDays          int              `json:"active_days" example:"612"`
+	LastDriveDate       nullable.String  `json:"last_drive_date" swaggertype:"string" example:"2026-05-30T18:42:00+01:00"`
+	CurrentOdometer     float64          `json:"current_odometer" example:"42500.0"`
 }
 
 // V2ChargesAgg is the charges section of the lifetime stats response.
 type V2ChargesAgg struct {
-	Count                   int             `json:"count" example:"427"`
-	TotalEnergyAddedKWh     float64         `json:"total_energy_added_kwh" example:"16500.0"`
-	TotalEnergyUsedKWh      float64         `json:"total_energy_used_kwh" example:"17200.0"`
-	TotalCost               float64         `json:"total_cost" example:"4321.50"`
-	AvgCostPerKWh           float64         `json:"avg_cost_per_kwh" example:"0.26"`
+	Count               int     `json:"count" example:"427"`
+	TotalEnergyAddedKWh float64 `json:"total_energy_added_kwh" example:"16500.0"`
+	TotalEnergyUsedKWh  float64 `json:"total_energy_used_kwh" example:"17200.0"`
+	TotalCost           float64 `json:"total_cost" example:"4321.50"`
+	AvgCostPerKWh       float64 `json:"avg_cost_per_kwh" example:"0.26"`
 	// CostPerKm = total charging cost / total drive distance — the amortised
 	// per-distance rate behind "estimated usage cost". Converted to per-mile
 	// when unit_of_length is mi. Currency matches charging_processes.cost.
-	CostPerKm               float64         `json:"cost_per_distance" example:"0.05"`
-	AvgEnergyPerSession     float64         `json:"avg_energy_per_session_kwh" example:"38.6"`
-	AvgDurationMin          float64         `json:"avg_duration_min" example:"42.3"`
-	FastChargeCount         int             `json:"fast_charge_count" example:"73"`
-	FastChargeEnergyKWh     float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
-	ACChargeCount           int             `json:"ac_charge_count" example:"354"`
-	ACChargeEnergyKWh       float64         `json:"ac_charge_energy_kwh" example:"13300.0"`
-	GeofencedChargeEnergyKWh    float64     `json:"geofenced_charge_energy_kwh" example:"9800.0"`
-	NonGeofencedChargeEnergyKWh float64     `json:"non_geofenced_charge_energy_kwh" example:"6700.0"`
-	FreeSuperchargingKWh    float64         `json:"free_supercharging_kwh" example:"125.0"`
-	PeakPowerMaxKW              int         `json:"peak_power_max_kw" example:"250"`
-	PeakVoltageMax              int         `json:"peak_voltage_max" example:"480"`
-	LongestSessionDurationMin   int         `json:"longest_session_duration_min" example:"180"`
-	LargestSessionEnergyKWh     float64     `json:"largest_session_energy_kwh" example:"78.4"`
-	MaxSessionCost              float64     `json:"max_session_cost" example:"220.5"`
-	AvgSessionCost              float64     `json:"avg_session_cost" example:"12.3"`
-	AvgPowerACKW                float64     `json:"avg_power_ac_kw" example:"7.2"`
-	AvgPowerDCKW                float64     `json:"avg_power_dc_kw" example:"120.5"`
-	MaxPowerACKW                int         `json:"max_power_ac_kw" example:"11"`
-	MaxPowerDCKW                int         `json:"max_power_dc_kw" example:"250"`
-	MinStartBatteryLevel    nullable.Int64  `json:"min_start_battery_level" swaggertype:"integer" example:"3"`
-	MaxEndBatteryLevel      nullable.Int64  `json:"max_end_battery_level" swaggertype:"integer" example:"100"`
-	DistinctChargeLocations int             `json:"distinct_charge_locations" example:"42"`
-	FirstChargeDate         nullable.String `json:"first_charge_date" swaggertype:"string" example:"2020-01-05T19:30:00+01:00"`
-	LastChargeDate          nullable.String `json:"last_charge_date" swaggertype:"string" example:"2026-05-30T22:00:00+01:00"`
+	CostPerKm                   float64         `json:"cost_per_distance" example:"0.05"`
+	AvgEnergyPerSession         float64         `json:"avg_energy_per_session_kwh" example:"38.6"`
+	TotalDurationMin            int             `json:"total_duration_min" example:"18000"`
+	AvgDurationMin              float64         `json:"avg_duration_min" example:"42.3"`
+	FastChargeCount             int             `json:"fast_charge_count" example:"73"`
+	FastChargeEnergyKWh         float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
+	ACChargeCount               int             `json:"ac_charge_count" example:"354"`
+	ACChargeEnergyKWh           float64         `json:"ac_charge_energy_kwh" example:"13300.0"`
+	GeofencedChargeEnergyKWh    float64         `json:"geofenced_charge_energy_kwh" example:"9800.0"`
+	NonGeofencedChargeEnergyKWh float64         `json:"non_geofenced_charge_energy_kwh" example:"6700.0"`
+	FreeSuperchargingKWh        float64         `json:"free_supercharging_kwh" example:"125.0"`
+	PeakPowerMaxKW              int             `json:"peak_power_max_kw" example:"250"`
+	PeakVoltageMax              int             `json:"peak_voltage_max" example:"480"`
+	ShortestSessionDurationMin  int             `json:"shortest_session_duration_min" example:"12"`
+	LongestSessionDurationMin   int             `json:"longest_session_duration_min" example:"180"`
+	LargestSessionEnergyKWh     float64         `json:"largest_session_energy_kwh" example:"78.4"`
+	MaxSessionCost              float64         `json:"max_session_cost" example:"220.5"`
+	AvgSessionCost              float64         `json:"avg_session_cost" example:"12.3"`
+	AvgPowerACKW                float64         `json:"avg_power_ac_kw" example:"7.2"`
+	AvgPowerDCKW                float64         `json:"avg_power_dc_kw" example:"120.5"`
+	MaxPowerACKW                int             `json:"max_power_ac_kw" example:"11"`
+	MaxPowerDCKW                int             `json:"max_power_dc_kw" example:"250"`
+	MinStartBatteryLevel        nullable.Int64  `json:"min_start_battery_level" swaggertype:"integer" example:"3"`
+	MaxEndBatteryLevel          nullable.Int64  `json:"max_end_battery_level" swaggertype:"integer" example:"100"`
+	DistinctChargeLocations     int             `json:"distinct_charge_locations" example:"42"`
+	FirstChargeDate             nullable.String `json:"first_charge_date" swaggertype:"string" example:"2020-01-05T19:30:00+01:00"`
+	LastChargeDate              nullable.String `json:"last_charge_date" swaggertype:"string" example:"2026-05-30T22:00:00+01:00"`
 }
 
 // V2ParkingsAgg is the parkings section of the lifetime stats response.
@@ -92,10 +95,12 @@ type V2ParkingsAgg struct {
 
 // V2UpdatesAgg is the firmware-updates section of the lifetime stats response.
 type V2UpdatesAgg struct {
-	Count            int             `json:"count" example:"58"`
-	FirstVersion     nullable.String `json:"first_version" swaggertype:"string" example:"2020.4.10"`
-	LatestVersion    nullable.String `json:"latest_version" swaggertype:"string" example:"2026.20.1"`
-	LatestUpdateDate nullable.String `json:"latest_update_date" swaggertype:"string" example:"2026-05-15T03:00:00+01:00"`
+	Count                int             `json:"count" example:"58"`
+	FirstVersion         nullable.String `json:"first_version" swaggertype:"string" example:"2020.4.10"`
+	LatestVersion        nullable.String `json:"latest_version" swaggertype:"string" example:"2026.20.1"`
+	LatestUpdateDate     nullable.String `json:"latest_update_date" swaggertype:"string" example:"2026-05-15T03:00:00+01:00"`
+	LongestIntervalDays  nullable.Int64  `json:"longest_interval_days" swaggertype:"integer" example:"180"`
+	ShortestIntervalDays nullable.Int64  `json:"shortest_interval_days" swaggertype:"integer" example:"14"`
 }
 
 // V2Lifetime is the `data` field of V2LifetimeResponse.

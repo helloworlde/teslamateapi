@@ -61,6 +61,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 
 	tzName := h.tz.String()
 	localDriveStart := localTimestampSQL("start_date", "$2")
+	localUpdateStart := localTimestampSQL("start_date", "$2")
+	localPreviousUpdateStart := localTimestampSQL("previous_start_date", "$2")
 	utcNow := utcNowTimestampSQL()
 
 	// One CTE per source table — Postgres flattens trivial CTEs since v12.
@@ -130,6 +132,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					THEN SUM(cost) / NULLIF(SUM(charge_energy_added), 0)
 					ELSE 0 END AS avg_cost_per_kwh,
 				COALESCE(AVG(charge_energy_added), 0) AS avg_energy_per_session,
+				COALESCE(SUM(duration_min), 0)::int AS total_duration_min,
 				COALESCE(AVG(duration_min), 0) AS avg_duration_min,
 				COUNT(*) FILTER (WHERE fast_present) AS fast_count,
 				COUNT(*) FILTER (WHERE NOT fast_present) AS ac_count,
@@ -140,6 +143,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present AND has_free_supercharging), 0) AS free_sc_energy,
 				COALESCE(MAX(peak_power), 0) AS peak_power,
 				COALESCE(MAX(peak_voltage), 0) AS peak_voltage,
+				COALESCE(MIN(duration_min) FILTER (WHERE duration_min > 0), 0) AS shortest_session_dur,
 				COALESCE(MAX(duration_min), 0) AS longest_session_dur,
 				COALESCE(MAX(charge_energy_added), 0) AS largest_session_energy,
 				COALESCE(MAX(cost), 0) AS max_session_cost,
@@ -226,9 +230,31 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COUNT(*) AS cnt,
 				(array_agg(version ORDER BY start_date ASC) FILTER (WHERE version IS NOT NULL))[1] AS first_version,
 				(array_agg(version ORDER BY start_date DESC) FILTER (WHERE version IS NOT NULL))[1] AS latest_version,
-				MAX(start_date) AS latest_update_date
-			FROM updates
-			WHERE car_id = $1 AND end_date IS NOT NULL
+				MAX(start_date) AS latest_update_date,
+				MAX(interval_days) AS longest_interval_days,
+				MIN(interval_days) AS shortest_interval_days
+			FROM (
+				SELECT
+					version,
+					start_date,
+					CASE WHEN previous_start_date IS NULL THEN NULL ELSE
+						GREATEST(
+							EXTRACT(DAY FROM (
+								date_trunc('day', %[3]s)
+								- date_trunc('day', %[4]s)
+							))::int,
+							0
+						)
+					END AS interval_days
+				FROM (
+					SELECT
+						version,
+						start_date,
+						LAG(start_date) OVER (ORDER BY start_date ASC) AS previous_start_date
+					FROM updates
+					WHERE car_id = $1 AND end_date IS NOT NULL
+				) ordered
+			) intervals
 		),
 		cm AS (
 			SELECT vin, model, trim_badging, exterior_color, wheel_type, spoiler_type, efficiency, inserted_at
@@ -259,6 +285,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
 			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
 			COALESCE(d.range_achievement_pct, 0),
+			CASE WHEN COALESCE(d.current_odometer, 0) > 0 AND COALESCE(d.total_km, 0) > 0
+				THEN LEAST(d.total_km / d.current_odometer, 1) * 100
+				ELSE NULL END AS tracking_rate_pct,
 			COALESCE(d.longest_km, 0), COALESCE(d.shortest_km, 0),
 			COALESCE(d.longest_dur, 0),
 			COALESCE(d.max_speed, 0), COALESCE(d.avg_speed, 0),
@@ -270,12 +299,13 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
 			COALESCE(ch.avg_cost_per_kwh, 0),
 			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
-			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.avg_duration_min, 0),
+			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.total_duration_min, 0), COALESCE(ch.avg_duration_min, 0),
 			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0),
 			COALESCE(ch.ac_count, 0), COALESCE(ch.ac_energy, 0),
 			COALESCE(ch.geofenced_energy, 0), COALESCE(ch.non_geofenced_energy, 0),
 			COALESCE(ch.free_sc_energy, 0),
 			COALESCE(ch.peak_power, 0), COALESCE(ch.peak_voltage, 0),
+			COALESCE(ch.shortest_session_dur, 0),
 			COALESCE(ch.longest_session_dur, 0), COALESCE(ch.largest_session_energy, 0),
 			COALESCE(ch.max_session_cost, 0), COALESCE(ch.avg_session_cost, 0),
 			COALESCE(ch.avg_power_ac, 0), COALESCE(ch.avg_power_dc, 0),
@@ -285,6 +315,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			ch.first_charge_date, ch.last_charge_date,
 			COALESCE(pk.cnt, 0), COALESCE(pk.total_dur, 0), COALESCE(pk.avg_dur, 0), COALESCE(pk.longest_dur, 0), COALESCE(pk.total_drop, 0),
 			COALESCE(up.cnt, 0), up.first_version, up.latest_version, up.latest_update_date,
+			up.longest_interval_days, up.shortest_interval_days,
 			cm.vin, cm.model, cm.trim_badging, cm.exterior_color, cm.wheel_type, cm.spoiler_type, cm.efficiency, cm.inserted_at,
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
@@ -294,7 +325,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		LEFT JOIN pk ON true
 		LEFT JOIN up ON true
 		LEFT JOIN cm ON true
-		LEFT JOIN rd ON true;`, localDriveStart, utcNow)
+		LEFT JOIN rd ON true;`, localDriveStart, utcNow, localUpdateStart, localPreviousUpdateStart)
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, tzName)
 	err := row.Scan(
@@ -305,6 +336,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.Count, &drives.TotalDistance, &drives.TotalDurationMin, &drives.TotalEnergyConsumedKWh,
 		&drives.AvgConsumption, &drives.BestConsumption, &drives.WorstConsumption,
 		&drives.RangeAchievementPct,
+		&drives.TrackingRatePct,
 		&drives.LongestDistance, &drives.ShortestDistance,
 		&drives.LongestDurationMin,
 		&drives.MaxSpeed, &drives.AvgSpeed,
@@ -315,12 +347,13 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.ActiveDays, &drives.LastDriveDate, &drives.CurrentOdometer,
 		// charges
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
-		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.AvgDurationMin,
+		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
 		&charges.FastChargeCount, &charges.FastChargeEnergyKWh,
 		&charges.ACChargeCount, &charges.ACChargeEnergyKWh,
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
 		&charges.FreeSuperchargingKWh,
 		&charges.PeakPowerMaxKW, &charges.PeakVoltageMax,
+		&charges.ShortestSessionDurationMin,
 		&charges.LongestSessionDurationMin, &charges.LargestSessionEnergyKWh,
 		&charges.MaxSessionCost, &charges.AvgSessionCost,
 		&charges.AvgPowerACKW, &charges.AvgPowerDCKW,
@@ -332,6 +365,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&parkings.Count, &parkings.TotalDurationMin, &parkings.AvgDurationMin, &parkings.LongestParkingMin, &parkings.TotalEnergyDropKWh,
 		// updates
 		&updates.Count, &updates.FirstVersion, &updates.LatestVersion, &updates.LatestUpdateDate,
+		&updates.LongestIntervalDays, &updates.ShortestIntervalDays,
 		// car meta
 		&carMeta.Vin, &carMeta.Model, &carMeta.TrimBadging, &carMeta.ExteriorColor, &carMeta.WheelType, &carMeta.SpoilerType, &carMeta.Efficiency, &carMeta.InsertedAt,
 		// units
