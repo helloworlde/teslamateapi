@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS positions (
     odometer                double precision,
     speed                   int,
     power                   int,
+    drive_id                bigint,
     address_id              bigint REFERENCES addresses(id),
     geofence_id             bigint REFERENCES geofences(id)
 );
@@ -181,24 +182,32 @@ INSERT INTO addresses (id, name, road, house_number, city) VALUES
 -- positions: pair (start, end) for each drive; also serve as parking endpoints
 -- ----------------------------------------------------------------------------
 -- Drive 1: 家 → 公司, 2026-05-26 08:00 → 08:30
-INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, address_id, geofence_id) VALUES
-    (1, 1, '2026-05-26 08:00:00', 31.2300, 121.4700, 90, 90, 450, 480, 22.0, 12000.0, 1, 1),
-    (2, 1, '2026-05-26 08:30:00', 31.2400, 121.5000, 85, 85, 425, 455, 22.5, 12015.0, 2, 2);
+INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, speed, power, drive_id, address_id, geofence_id) VALUES
+    (1, 1, '2026-05-26 08:00:00', 31.2300, 121.4700, 90, 90, 450, 480, 22.0, 12000.0, 0, 0, 1, 1, 1),
+    (2, 1, '2026-05-26 08:30:00', 31.2400, 121.5000, 85, 85, 425, 455, 22.5, 12015.0, 0, 0, 1, 2, 2);
+
+-- High-rate power samples for drive 1, used by /api/v2/cars/{CarID}/drives/{DriveID}/power.
+INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, speed, power, drive_id) VALUES
+    (11, 1, '2026-05-26 08:00:01', 31.2301, 121.4701, 90, 90, 449.9, 479.9, 22.0, 12000.1, 15,  40, 1),
+    (12, 1, '2026-05-26 08:00:02', 31.2302, 121.4702, 90, 90, 449.8, 479.8, 22.0, 12000.2, 25,  80, 1),
+    (13, 1, '2026-05-26 08:00:03', 31.2303, 121.4703, 90, 90, 449.7, 479.7, 22.0, 12000.3, 20, -20, 1),
+    (14, 1, '2026-05-26 08:00:04', 31.2304, 121.4704, 90, 90, 449.6, 479.6, 22.0, 12000.4, 10, -10, 1),
+    (15, 1, '2026-05-26 08:00:05', 31.2305, 121.4705, 90, 90, 449.5, 479.5, 22.0, 12000.5, 30, 120, 1);
 
 -- Drive 2: 公司 → 超充站, 2026-05-26 18:00 → 18:20
-INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, address_id, geofence_id) VALUES
-    (3, 1, '2026-05-26 18:00:00', 31.2400, 121.5000, 60, 60, 300, 320, 24.0, 12030.0, 2, 2),
-    (4, 1, '2026-05-26 18:20:00', 31.2500, 121.5200, 55, 55, 275, 295, 24.5, 12042.0, 3, 3);
+INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, speed, power, drive_id, address_id, geofence_id) VALUES
+    (3, 1, '2026-05-26 18:00:00', 31.2400, 121.5000, 60, 60, 300, 320, 24.0, 12030.0, 0, 0, 2, 2, 2),
+    (4, 1, '2026-05-26 18:20:00', 31.2500, 121.5200, 55, 55, 275, 295, 24.5, 12042.0, 0, 0, 2, 3, 3);
 
 -- Drive 3: 超充站 → 家, 2026-05-26 19:00 → 19:30 (after charging)
-INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, address_id, geofence_id) VALUES
-    (5, 1, '2026-05-26 19:00:00', 31.2500, 121.5200, 95, 95, 475, 505, 23.0, 12042.0, 3, 3),
-    (6, 1, '2026-05-26 19:30:00', 31.2300, 121.4700, 88, 88, 440, 470, 22.5, 12057.0, 1, 1);
+INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, speed, power, drive_id, address_id, geofence_id) VALUES
+    (5, 1, '2026-05-26 19:00:00', 31.2500, 121.5200, 95, 95, 475, 505, 23.0, 12042.0, 0, 0, 3, 3, 3),
+    (6, 1, '2026-05-26 19:30:00', 31.2300, 121.4700, 88, 88, 440, 470, 22.5, 12057.0, 0, 0, 3, 1, 1);
 
 -- Drive 4: cross-month — 家 → 公司, 2026-06-02 08:00 → 08:30
-INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, address_id, geofence_id) VALUES
-    (7, 1, '2026-06-02 08:00:00', 31.2300, 121.4700, 80, 80, 400, 425, 26.0, 12057.0, 1, 1),
-    (8, 1, '2026-06-02 08:30:00', 31.2400, 121.5000, 76, 76, 380, 405, 26.5, 12072.0, 2, 2);
+INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, outside_temp, odometer, speed, power, drive_id, address_id, geofence_id) VALUES
+    (7, 1, '2026-06-02 08:00:00', 31.2300, 121.4700, 80, 80, 400, 425, 26.0, 12057.0, 0, 0, 4, 1, 1),
+    (8, 1, '2026-06-02 08:30:00', 31.2400, 121.5000, 76, 76, 380, 405, 26.5, 12072.0, 0, 0, 4, 2, 2);
 
 -- Mid-parking samples (for parking details endpoint sampling)
 INSERT INTO positions (id, car_id, date, latitude, longitude, battery_level, usable_battery_level, rated_battery_range_km, outside_temp, odometer) VALUES

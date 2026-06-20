@@ -1126,7 +1126,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Battery accounting for one charge and usage until the next charge.",
+                "description": "Battery accounting for one charge and usage until the next charge. ` + "`" + `metrics.untracked_energy_kwh` + "`" + ` is the aggregate residual bucket for all cycle energy that cannot be assigned cleanly to driving, parking, or ending battery inventory. ` + "`" + `metrics.unmatched_usage_kwh` + "`" + ` and ` + "`" + `metrics.unmatched_usage_share_of_available_pct` + "`" + ` are diagnostic only; unmatched usage is already included in ` + "`" + `metrics.untracked_energy_kwh` + "`" + ` when present.",
                 "produces": [
                     "application/json"
                 ],
@@ -1155,6 +1155,65 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.V2ChargeUsageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/cars/{CarID}/drives/{DriveID}/power": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Observed battery output and regenerative braking statistics for one drive. Energy is estimated from full positions.power samples and includes data-quality fields so clients can decide whether to show kWh values.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2"
+                ],
+                "summary": "Drive power stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "TeslaMate cars.id",
+                        "name": "CarID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "drives.id",
+                        "name": "DriveID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.V2DrivePowerResponse"
                         }
                     },
                     "400": {
@@ -4180,14 +4239,22 @@ const docTemplate = `{
                     "example": 43.29
                 },
                 "unmatched_usage_kwh": {
+                    "description": "UnmatchedUsageKWh is a diagnostic subset of UntrackedEnergyKWh for\nover-accounted cycles. Clients should not add it to UntrackedEnergyKWh.",
+                    "type": "number",
+                    "example": 0
+                },
+                "unmatched_usage_share_of_available_pct": {
+                    "description": "UnmatchedUsageShareOfAvailablePct is UnmatchedUsageKWh divided by\nVehicleAvailableEnergyKWh.",
                     "type": "number",
                     "example": 0
                 },
                 "untracked_energy_kwh": {
+                    "description": "UntrackedEnergyKWh is the aggregate residual energy that cannot be\nassigned cleanly to driving, parking, or ending battery inventory. It also\nincludes unmatched over-accounted usage when tracked usage plus ending\ninventory exceeds analysis-start available energy.",
                     "type": "number",
                     "example": 9.3
                 },
                 "untracked_share_of_available_pct": {
+                    "description": "UntrackedShareOfAvailablePct is UntrackedEnergyKWh divided by\nVehicleAvailableEnergyKWh.",
                     "type": "number",
                     "example": 16.43
                 },
@@ -4441,6 +4508,159 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/dto.V2ConsumptionData"
+                }
+            }
+        },
+        "dto.V2DrivePowerData": {
+            "type": "object",
+            "properties": {
+                "car": {
+                    "$ref": "#/definitions/dto.Car"
+                },
+                "data_quality": {
+                    "$ref": "#/definitions/dto.V2DrivePowerDataQuality"
+                },
+                "drive": {
+                    "$ref": "#/definitions/dto.V2DrivePowerDrive"
+                },
+                "metrics": {
+                    "$ref": "#/definitions/dto.V2DrivePowerMetrics"
+                },
+                "units": {
+                    "$ref": "#/definitions/dto.TeslaMateUnits"
+                }
+            }
+        },
+        "dto.V2DrivePowerDataQuality": {
+            "type": "object",
+            "properties": {
+                "confidence": {
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low",
+                        "unavailable"
+                    ],
+                    "example": "high"
+                },
+                "drive_duration_seconds": {
+                    "type": "number",
+                    "example": 1800
+                },
+                "has_power_samples": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "ignored_gap_count": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "max_valid_interval_seconds": {
+                    "type": "number",
+                    "example": 1.5
+                },
+                "power_sample_count": {
+                    "type": "integer",
+                    "example": 1790
+                },
+                "sample_coverage_pct": {
+                    "type": "number",
+                    "example": 96.4
+                },
+                "valid_interval_count": {
+                    "type": "integer",
+                    "example": 1725
+                },
+                "valid_sample_seconds": {
+                    "type": "number",
+                    "example": 1735.2
+                }
+            }
+        },
+        "dto.V2DrivePowerDrive": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number",
+                    "example": 18.4
+                },
+                "drive_id": {
+                    "type": "integer",
+                    "example": 1234
+                },
+                "duration_min": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "duration_seconds": {
+                    "type": "number",
+                    "example": 1800
+                },
+                "end_date": {
+                    "type": "string",
+                    "example": "2024-01-01T08:30:00+01:00"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2024-01-01T08:00:00+01:00"
+                }
+            }
+        },
+        "dto.V2DrivePowerMetrics": {
+            "type": "object",
+            "properties": {
+                "avg_output_power_kw": {
+                    "type": "number",
+                    "example": 38.2
+                },
+                "avg_regen_power_kw": {
+                    "type": "number",
+                    "example": 18.4
+                },
+                "observed_battery_output_energy_kwh": {
+                    "type": "number",
+                    "example": 3.42
+                },
+                "observed_net_battery_energy_kwh": {
+                    "type": "number",
+                    "example": 2.84
+                },
+                "observed_regen_recovered_kwh": {
+                    "type": "number",
+                    "example": 0.58
+                },
+                "output_duration_seconds": {
+                    "type": "number",
+                    "example": 322.4
+                },
+                "peak_output_power_kw": {
+                    "type": "integer",
+                    "example": 220
+                },
+                "peak_regen_power_kw": {
+                    "type": "integer",
+                    "example": 64
+                },
+                "regen_duration_seconds": {
+                    "type": "number",
+                    "example": 113.5
+                },
+                "regen_share_of_output_pct": {
+                    "type": "number",
+                    "example": 16.96
+                },
+                "regen_share_of_power_activity_pct": {
+                    "type": "number",
+                    "example": 14.5
+                }
+            }
+        },
+        "dto.V2DrivePowerResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/dto.V2DrivePowerData"
                 }
             }
         },

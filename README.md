@@ -242,12 +242,28 @@ adjacent drives.
     inventory, and untracked residual energy. Also returns SOC snapshots,
     battery-used rate, tracked-use rate, data-quality flags, and node/link data
     for simple flow visualisation.
+  - `metrics.untracked_energy_kwh` is the aggregate residual bucket clients
+    should display for "untracked" or "other loss" energy. It includes all
+    cycle energy that cannot be cleanly assigned to driving, parking, or ending
+    battery inventory, including over-accounted usage gaps. The separate
+    `metrics.unmatched_usage_kwh` and
+    `metrics.unmatched_usage_share_of_available_pct` fields are diagnostic only
+    and must not be added again by clients.
   - Closed cycles end at the next charging session's start. If no next charge
     exists yet, the cycle is marked `is_complete=false` and uses the latest
     known position sample as the current end snapshot.
   - Range-derived kWh/rate fields are `null` when the required rated-range
     snapshots are missing; `data_quality.partial_fields` lists the affected
     fields and `balance_status=partial` avoids presenting a fake balance.
+- GET `/api/v2/cars/:CarID/drives/:DriveID/power`
+  - Per-drive observed power statistics from full-resolution `positions.power`
+    samples: battery output energy, regenerative braking energy, net observed
+    battery energy, regen share, peak output power, peak regen power, and
+    average output / regen power.
+  - Energy values are estimates from power integration, not BMS-metered battery
+    accounting. `data_quality.sample_coverage_pct`, `confidence`,
+    `valid_sample_seconds`, and gap/sample counts are returned so clients can
+    hide or de-emphasise kWh values when Streaming API coverage is poor.
 - GET `/api/v2/cars/:CarID/stats/lifetime`
   - Single roundtrip with since-ownership totals over drives, charges, and
     derived parking sessions: `count`, `total_distance`,

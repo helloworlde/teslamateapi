@@ -68,7 +68,7 @@ type chargeUsageInputs struct {
 // closed cycles.
 //
 // @Summary      Charge usage stats
-// @Description  Battery accounting for one charge and usage until the next charge.
+// @Description  Battery accounting for one charge and usage until the next charge. `metrics.untracked_energy_kwh` is the aggregate residual bucket for all cycle energy that cannot be assigned cleanly to driving, parking, or ending battery inventory. `metrics.unmatched_usage_kwh` and `metrics.unmatched_usage_share_of_available_pct` are diagnostic only; unmatched usage is already included in `metrics.untracked_energy_kwh` when present.
 // @Tags         v2
 // @Security     BearerAuth
 // @Produce      json
@@ -373,6 +373,7 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 	batteryUsedEnergy := nonNegative(availableEnergy - endBatteryEnergy)
 	untrackedEnergy := nonNegative(availableEnergy - trackedUsageEnergy - endBatteryEnergy)
 	unmatchedUsageEnergy := nonNegative(trackedUsageEnergy + endBatteryEnergy - availableEnergy)
+	residualEnergy := untrackedEnergy + unmatchedUsageEnergy
 	chargingLossEnergy := nonNegative(wallEnergy - chargeAddedEnergy)
 	accountedEnergy := trackedUsageEnergy + endBatteryEnergy
 	hasAvailableEnergy := in.hasPostChargeRangeData
@@ -527,31 +528,32 @@ func buildChargeUsageData(in chargeUsageInputs) dto.V2ChargeUsageData {
 			EndBatteryEnergyKWh:    in.endBatteryKWh,
 		},
 		Metrics: dto.V2ChargeUsageMetrics{
-			WallEnergyKWh:                wallEnergy,
-			ChargeEnergyAddedKWh:         chargeAddedEnergy,
-			ChargingLossEnergyKWh:        chargingLossEnergy,
-			ChargeCost:                   chargeCost,
-			WallCostPerKWh:               ratio(chargeCost, wallEnergy),
-			ChargeCostPerKWh:             ratio(chargeCost, chargeAddedEnergy),
-			InventoryExpectedEnergyKWh:   nullableFloat64(expectedPostChargeEnergy, reconciliationDataComplete),
-			InventoryReconciliationKWh:   nullableFloat64(inventoryReconciliationDelta, reconciliationDataComplete),
-			VehicleAvailableEnergyKWh:    nullableFloat64(availableEnergy, hasAvailableEnergy),
-			DrivingEnergyKWh:             nullableFloat64(drivingEnergy, hasDriveEnergy),
-			ParkingEnergyKWh:             nullableFloat64(parkingEnergy, hasCycleAccounting),
-			EndBatteryEnergyKWh:          nullableFloat64(endBatteryEnergy, hasEndEnergy),
-			UntrackedEnergyKWh:           nullableFloat64(untrackedEnergy, hasCycleAccounting),
-			UnmatchedUsageKWh:            nullableFloat64(unmatchedUsageEnergy, hasCycleAccounting),
-			BatteryUsedEnergyKWh:         nullableFloat64(batteryUsedEnergy, hasBatteryUsedEnergy),
-			BatteryUsedRatePct:           nullableFloat64(pct(batteryUsedEnergy, availableEnergy), hasBatteryUsedEnergy),
-			TrackedUsageRatePct:          nullableFloat64(pct(trackedUsageEnergy, availableEnergy), hasCycleAccounting),
-			DrivingShareOfAvailablePct:   nullableFloat64(pct(drivingEnergy, availableEnergy), hasAvailableEnergy && hasDriveEnergy),
-			ParkingShareOfAvailablePct:   nullableFloat64(pct(parkingEnergy, availableEnergy), hasCycleAccounting),
-			RemainingShareOfAvailablePct: nullableFloat64(pct(endBatteryEnergy, availableEnergy), hasBatteryUsedEnergy),
-			UntrackedShareOfAvailablePct: nullableFloat64(pct(untrackedEnergy, availableEnergy), hasCycleAccounting),
-			TotalDistance:                nonNegative(in.totalDistance),
-			DriveCount:                   in.driveCount,
-			DriveDurationMin:             in.driveDurationMin,
-			DrivingEnergyPerDistanceWh:   nullableFloat64(ratio(drivingEnergy*1000, nonNegative(in.totalDistance)), hasDriveEnergy),
+			WallEnergyKWh:                     wallEnergy,
+			ChargeEnergyAddedKWh:              chargeAddedEnergy,
+			ChargingLossEnergyKWh:             chargingLossEnergy,
+			ChargeCost:                        chargeCost,
+			WallCostPerKWh:                    ratio(chargeCost, wallEnergy),
+			ChargeCostPerKWh:                  ratio(chargeCost, chargeAddedEnergy),
+			InventoryExpectedEnergyKWh:        nullableFloat64(expectedPostChargeEnergy, reconciliationDataComplete),
+			InventoryReconciliationKWh:        nullableFloat64(inventoryReconciliationDelta, reconciliationDataComplete),
+			VehicleAvailableEnergyKWh:         nullableFloat64(availableEnergy, hasAvailableEnergy),
+			DrivingEnergyKWh:                  nullableFloat64(drivingEnergy, hasDriveEnergy),
+			ParkingEnergyKWh:                  nullableFloat64(parkingEnergy, hasCycleAccounting),
+			EndBatteryEnergyKWh:               nullableFloat64(endBatteryEnergy, hasEndEnergy),
+			UntrackedEnergyKWh:                nullableFloat64(residualEnergy, hasCycleAccounting),
+			UnmatchedUsageKWh:                 nullableFloat64(unmatchedUsageEnergy, hasCycleAccounting),
+			UnmatchedUsageShareOfAvailablePct: nullableFloat64(pct(unmatchedUsageEnergy, availableEnergy), hasCycleAccounting),
+			BatteryUsedEnergyKWh:              nullableFloat64(batteryUsedEnergy, hasBatteryUsedEnergy),
+			BatteryUsedRatePct:                nullableFloat64(pct(batteryUsedEnergy, availableEnergy), hasBatteryUsedEnergy),
+			TrackedUsageRatePct:               nullableFloat64(pct(trackedUsageEnergy, availableEnergy), hasCycleAccounting),
+			DrivingShareOfAvailablePct:        nullableFloat64(pct(drivingEnergy, availableEnergy), hasAvailableEnergy && hasDriveEnergy),
+			ParkingShareOfAvailablePct:        nullableFloat64(pct(parkingEnergy, availableEnergy), hasCycleAccounting),
+			RemainingShareOfAvailablePct:      nullableFloat64(pct(endBatteryEnergy, availableEnergy), hasBatteryUsedEnergy),
+			UntrackedShareOfAvailablePct:      nullableFloat64(pct(residualEnergy, availableEnergy), hasCycleAccounting),
+			TotalDistance:                     nonNegative(in.totalDistance),
+			DriveCount:                        in.driveCount,
+			DriveDurationMin:                  in.driveDurationMin,
+			DrivingEnergyPerDistanceWh:        nullableFloat64(ratio(drivingEnergy*1000, nonNegative(in.totalDistance)), hasDriveEnergy),
 		},
 		Nodes: nodes,
 		Links: links,
@@ -597,14 +599,15 @@ func chargeUsagePartialFields(in chargeUsageInputs) []string {
 			"driving_share_of_available_pct",
 			"parking_share_of_available_pct",
 			"remaining_share_of_available_pct",
+			"unmatched_usage_share_of_available_pct",
 			"untracked_share_of_available_pct",
 		)
 	}
 	if !in.hasEndRangeData {
-		appendFields("end_battery_energy_kwh", "battery_used_energy_kwh", "battery_used_rate_pct", "remaining_share_of_available_pct", "parking_energy_kwh", "untracked_energy_kwh", "unmatched_usage_kwh")
+		appendFields("end_battery_energy_kwh", "battery_used_energy_kwh", "battery_used_rate_pct", "remaining_share_of_available_pct", "parking_energy_kwh", "untracked_energy_kwh", "unmatched_usage_kwh", "unmatched_usage_share_of_available_pct")
 	}
 	if !in.drivesRangeDataComplete {
-		appendFields("driving_energy_kwh", "parking_energy_kwh", "untracked_energy_kwh", "unmatched_usage_kwh", "tracked_usage_rate_pct", "driving_share_of_available_pct", "driving_energy_per_distance_wh")
+		appendFields("driving_energy_kwh", "parking_energy_kwh", "untracked_energy_kwh", "unmatched_usage_kwh", "unmatched_usage_share_of_available_pct", "tracked_usage_rate_pct", "driving_share_of_available_pct", "driving_energy_per_distance_wh")
 	}
 	return fields
 }

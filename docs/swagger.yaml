@@ -1772,12 +1772,29 @@ definitions:
         example: 43.29
         type: number
       unmatched_usage_kwh:
+        description: |-
+          UnmatchedUsageKWh is a diagnostic subset of UntrackedEnergyKWh for
+          over-accounted cycles. Clients should not add it to UntrackedEnergyKWh.
+        example: 0
+        type: number
+      unmatched_usage_share_of_available_pct:
+        description: |-
+          UnmatchedUsageShareOfAvailablePct is UnmatchedUsageKWh divided by
+          VehicleAvailableEnergyKWh.
         example: 0
         type: number
       untracked_energy_kwh:
+        description: |-
+          UntrackedEnergyKWh is the aggregate residual energy that cannot be
+          assigned cleanly to driving, parking, or ending battery inventory. It also
+          includes unmatched over-accounted usage when tracked usage plus ending
+          inventory exceeds analysis-start available energy.
         example: 9.3
         type: number
       untracked_share_of_available_pct:
+        description: |-
+          UntrackedShareOfAvailablePct is UntrackedEnergyKWh divided by
+          VehicleAvailableEnergyKWh.
         example: 16.43
         type: number
       vehicle_available_energy_kwh:
@@ -1966,6 +1983,116 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/dto.V2ConsumptionData'
+    type: object
+  dto.V2DrivePowerData:
+    properties:
+      car:
+        $ref: '#/definitions/dto.Car'
+      data_quality:
+        $ref: '#/definitions/dto.V2DrivePowerDataQuality'
+      drive:
+        $ref: '#/definitions/dto.V2DrivePowerDrive'
+      metrics:
+        $ref: '#/definitions/dto.V2DrivePowerMetrics'
+      units:
+        $ref: '#/definitions/dto.TeslaMateUnits'
+    type: object
+  dto.V2DrivePowerDataQuality:
+    properties:
+      confidence:
+        enum:
+        - high
+        - medium
+        - low
+        - unavailable
+        example: high
+        type: string
+      drive_duration_seconds:
+        example: 1800
+        type: number
+      has_power_samples:
+        example: true
+        type: boolean
+      ignored_gap_count:
+        example: 8
+        type: integer
+      max_valid_interval_seconds:
+        example: 1.5
+        type: number
+      power_sample_count:
+        example: 1790
+        type: integer
+      sample_coverage_pct:
+        example: 96.4
+        type: number
+      valid_interval_count:
+        example: 1725
+        type: integer
+      valid_sample_seconds:
+        example: 1735.2
+        type: number
+    type: object
+  dto.V2DrivePowerDrive:
+    properties:
+      distance:
+        example: 18.4
+        type: number
+      drive_id:
+        example: 1234
+        type: integer
+      duration_min:
+        example: 30
+        type: integer
+      duration_seconds:
+        example: 1800
+        type: number
+      end_date:
+        example: "2024-01-01T08:30:00+01:00"
+        type: string
+      start_date:
+        example: "2024-01-01T08:00:00+01:00"
+        type: string
+    type: object
+  dto.V2DrivePowerMetrics:
+    properties:
+      avg_output_power_kw:
+        example: 38.2
+        type: number
+      avg_regen_power_kw:
+        example: 18.4
+        type: number
+      observed_battery_output_energy_kwh:
+        example: 3.42
+        type: number
+      observed_net_battery_energy_kwh:
+        example: 2.84
+        type: number
+      observed_regen_recovered_kwh:
+        example: 0.58
+        type: number
+      output_duration_seconds:
+        example: 322.4
+        type: number
+      peak_output_power_kw:
+        example: 220
+        type: integer
+      peak_regen_power_kw:
+        example: 64
+        type: integer
+      regen_duration_seconds:
+        example: 113.5
+        type: number
+      regen_share_of_output_pct:
+        example: 16.96
+        type: number
+      regen_share_of_power_activity_pct:
+        example: 14.5
+        type: number
+    type: object
+  dto.V2DrivePowerResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.V2DrivePowerData'
     type: object
   dto.V2DrivesAgg:
     properties:
@@ -3308,6 +3435,11 @@ paths:
   /api/v2/cars/{CarID}/charges/{ChargeID}/usage:
     get:
       description: Battery accounting for one charge and usage until the next charge.
+        `metrics.untracked_energy_kwh` is the aggregate residual bucket for all cycle
+        energy that cannot be assigned cleanly to driving, parking, or ending battery
+        inventory. `metrics.unmatched_usage_kwh` and `metrics.unmatched_usage_share_of_available_pct`
+        are diagnostic only; unmatched usage is already included in `metrics.untracked_energy_kwh`
+        when present.
       parameters:
       - description: TeslaMate cars.id
         in: path
@@ -3341,6 +3473,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Charge usage stats
+      tags:
+      - v2
+  /api/v2/cars/{CarID}/drives/{DriveID}/power:
+    get:
+      description: Observed battery output and regenerative braking statistics for
+        one drive. Energy is estimated from full positions.power samples and includes
+        data-quality fields so clients can decide whether to show kWh values.
+      parameters:
+      - description: TeslaMate cars.id
+        in: path
+        name: CarID
+        required: true
+        type: integer
+      - description: drives.id
+        in: path
+        name: DriveID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.V2DrivePowerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Drive power stats
       tags:
       - v2
   /api/v2/cars/{CarID}/parkings:
