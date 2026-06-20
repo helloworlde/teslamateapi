@@ -90,9 +90,21 @@ func (h *Handler) BatteryHealth(c *gin.Context) {
 			MAX(c.rated_battery_range_km * aux.efficiency / c.usable_battery_level) AS Capacity
 		FROM charging_processes cp
 			INNER JOIN (
+				-- Last charge sample (max date) per charging process, restricted to
+				-- THIS car. The car filter must live inside the aggregate: charges has
+				-- no car_id, so an unscoped "GROUP BY charging_process_id over all
+				-- charges" sequentially scans and groups the entire (second-largest)
+				-- charges table on every request, regardless of which car is queried.
+				-- Joining charging_processes (car_id indexed) bounds the scan to one
+				-- car. Result-identical because the outer cp.car_id = $1 already
+				-- discards every other car's charging_process_id.
 				SELECT
-					charging_process_id,
-					MAX(date) as date FROM charges WHERE usable_battery_level > 0 GROUP BY charging_process_id
+					ch.charging_process_id,
+					MAX(ch.date) as date
+				FROM charges ch
+					INNER JOIN charging_processes cp2 ON cp2.id = ch.charging_process_id
+				WHERE cp2.car_id = $1 AND ch.usable_battery_level > 0
+				GROUP BY ch.charging_process_id
 			) AS gcharges ON
 				cp.id = gcharges.charging_process_id
 			INNER JOIN charges c ON
