@@ -4378,9 +4378,17 @@ const docTemplate = `{
                     "type": "number",
                     "example": 9800
                 },
+                "largest_session_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
                 "largest_session_energy_kwh": {
                     "type": "number",
                     "example": 78.4
+                },
+                "largest_session_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T19:30:00+01:00"
                 },
                 "last_charge_date": {
                     "type": "string",
@@ -4390,13 +4398,29 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 180
                 },
+                "longest_session_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "longest_session_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T19:30:00+01:00"
+                },
                 "max_end_battery_level": {
                     "type": "integer",
                     "example": 100
                 },
+                "max_power_ac_date": {
+                    "type": "string",
+                    "example": "2026-05-30T20:15:00+01:00"
+                },
                 "max_power_ac_kw": {
                     "type": "integer",
                     "example": 11
+                },
+                "max_power_dc_date": {
+                    "type": "string",
+                    "example": "2026-05-30T20:15:00+01:00"
                 },
                 "max_power_dc_kw": {
                     "type": "integer",
@@ -4406,6 +4430,14 @@ const docTemplate = `{
                     "type": "number",
                     "example": 220.5
                 },
+                "max_session_cost_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "max_session_cost_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T19:30:00+01:00"
+                },
                 "min_start_battery_level": {
                     "type": "integer",
                     "example": 3
@@ -4414,9 +4446,17 @@ const docTemplate = `{
                     "type": "number",
                     "example": 6700
                 },
+                "peak_power_date": {
+                    "type": "string",
+                    "example": "2026-05-30T20:15:00+01:00"
+                },
                 "peak_power_max_kw": {
                     "type": "integer",
                     "example": 250
+                },
+                "peak_voltage_date": {
+                    "type": "string",
+                    "example": "2026-05-30T20:15:00+01:00"
                 },
                 "peak_voltage_max": {
                     "type": "integer",
@@ -4713,6 +4753,14 @@ const docTemplate = `{
                     "type": "number",
                     "example": 120
                 },
+                "best_consumption_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "best_consumption_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
                 "count": {
                     "type": "integer",
                     "example": 1893
@@ -4729,21 +4777,61 @@ const docTemplate = `{
                     "type": "number",
                     "example": 800
                 },
+                "longest_distance_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "longest_distance_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
+                "longest_duration_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
                 "longest_duration_min": {
                     "type": "integer",
                     "example": 420
+                },
+                "longest_duration_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
+                "max_regen_power_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
                 },
                 "max_regen_power_kw": {
                     "type": "integer",
                     "example": 60
                 },
+                "max_regen_power_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
                 "max_speed": {
                     "type": "integer",
                     "example": 180
                 },
+                "max_speed_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "max_speed_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
+                "peak_drive_power_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
                 "peak_drive_power_kw": {
                     "type": "integer",
                     "example": 380
+                },
+                "peak_drive_power_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
                 },
                 "range_achievement_pct": {
                     "description": "RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all\ndrives (objective). 100 = rated and real distance match; \u003e100 beats\nrated, \u003c100 falls short. Unit-independent (a ratio of distances).",
@@ -4773,6 +4861,14 @@ const docTemplate = `{
                 "worst_consumption": {
                     "type": "number",
                     "example": 285.4
+                },
+                "worst_consumption_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T22:00:00+01:00"
+                },
+                "worst_consumption_start_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
                 }
             }
         },
@@ -5248,9 +5344,17 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1893
                 },
+                "longest_parking_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T18:00:00+01:00"
+                },
                 "longest_parking_min": {
                     "type": "integer",
                     "example": 43200
+                },
+                "longest_parking_start_date": {
+                    "type": "string",
+                    "example": "2026-05-01T18:00:00+01:00"
                 },
                 "total_duration_min": {
                     "type": "integer",
@@ -5329,13 +5433,33 @@ const docTemplate = `{
                     "type": "number",
                     "example": 445
                 },
+                "charges_largest_session_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T22:00:00+01:00"
+                },
                 "charges_largest_session_kwh": {
                     "type": "number",
                     "example": 78.4
                 },
+                "charges_largest_session_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T19:30:00+01:00"
+                },
                 "charges_longest_session_duration_min": {
                     "type": "integer",
                     "example": 180
+                },
+                "charges_longest_session_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T22:00:00+01:00"
+                },
+                "charges_longest_session_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T19:30:00+01:00"
+                },
+                "charges_max_power_date": {
+                    "type": "string",
+                    "example": "2024-01-10T20:15:00+01:00"
                 },
                 "charges_max_power_kw": {
                     "type": "integer",
@@ -5345,6 +5469,14 @@ const docTemplate = `{
                     "type": "number",
                     "example": 42.5
                 },
+                "charges_max_session_cost_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T22:00:00+01:00"
+                },
+                "charges_max_session_cost_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T19:30:00+01:00"
+                },
                 "drives_avg_consumption": {
                     "type": "number",
                     "example": 205.6
@@ -5352,6 +5484,14 @@ const docTemplate = `{
                 "drives_best_consumption": {
                     "type": "number",
                     "example": 120
+                },
+                "drives_best_consumption_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
+                "drives_best_consumption_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
                 },
                 "drives_count": {
                     "type": "integer",
@@ -5373,25 +5513,73 @@ const docTemplate = `{
                     "type": "number",
                     "example": 320.4
                 },
+                "drives_longest_distance_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
+                "drives_longest_distance_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
+                },
+                "drives_longest_duration_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
                 "drives_longest_duration_min": {
                     "type": "integer",
                     "example": 210
+                },
+                "drives_longest_duration_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
                 },
                 "drives_max_speed": {
                     "type": "integer",
                     "example": 180
                 },
+                "drives_max_speed_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
+                "drives_max_speed_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
+                },
+                "drives_peak_drive_power_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
                 "drives_peak_drive_power_kw": {
                     "type": "integer",
                     "example": 380
+                },
+                "drives_peak_drive_power_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
+                },
+                "drives_peak_regen_power_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
                 },
                 "drives_peak_regen_power_kw": {
                     "type": "integer",
                     "example": 60
                 },
+                "drives_peak_regen_power_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
+                },
                 "drives_worst_consumption": {
                     "type": "number",
                     "example": 285.4
+                },
+                "drives_worst_consumption_end_date": {
+                    "type": "string",
+                    "example": "2024-01-10T12:00:00+01:00"
+                },
+                "drives_worst_consumption_start_date": {
+                    "type": "string",
+                    "example": "2024-01-10T08:00:00+01:00"
                 },
                 "fast_charge_ratio": {
                     "type": "number",
@@ -5533,9 +5721,25 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 180
                 },
+                "longest_interval_end_date": {
+                    "type": "string",
+                    "example": "2026-05-30T03:00:00+01:00"
+                },
+                "longest_interval_start_date": {
+                    "type": "string",
+                    "example": "2025-12-01T03:00:00+01:00"
+                },
                 "shortest_interval_days": {
                     "type": "integer",
                     "example": 14
+                },
+                "shortest_interval_end_date": {
+                    "type": "string",
+                    "example": "2026-05-15T03:00:00+01:00"
+                },
+                "shortest_interval_start_date": {
+                    "type": "string",
+                    "example": "2026-05-01T03:00:00+01:00"
                 }
             }
         }

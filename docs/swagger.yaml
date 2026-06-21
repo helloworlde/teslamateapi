@@ -1904,36 +1904,66 @@ definitions:
       geofenced_charge_energy_kwh:
         example: 9800
         type: number
+      largest_session_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
       largest_session_energy_kwh:
         example: 78.4
         type: number
+      largest_session_start_date:
+        example: "2026-05-30T19:30:00+01:00"
+        type: string
       last_charge_date:
         example: "2026-05-30T22:00:00+01:00"
         type: string
       longest_session_duration_min:
         example: 180
         type: integer
+      longest_session_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      longest_session_start_date:
+        example: "2026-05-30T19:30:00+01:00"
+        type: string
       max_end_battery_level:
         example: 100
         type: integer
+      max_power_ac_date:
+        example: "2026-05-30T20:15:00+01:00"
+        type: string
       max_power_ac_kw:
         example: 11
         type: integer
+      max_power_dc_date:
+        example: "2026-05-30T20:15:00+01:00"
+        type: string
       max_power_dc_kw:
         example: 250
         type: integer
       max_session_cost:
         example: 220.5
         type: number
+      max_session_cost_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      max_session_cost_start_date:
+        example: "2026-05-30T19:30:00+01:00"
+        type: string
       min_start_battery_level:
         example: 3
         type: integer
       non_geofenced_charge_energy_kwh:
         example: 6700
         type: number
+      peak_power_date:
+        example: "2026-05-30T20:15:00+01:00"
+        type: string
       peak_power_max_kw:
         example: 250
         type: integer
+      peak_voltage_date:
+        example: "2026-05-30T20:15:00+01:00"
+        type: string
       peak_voltage_max:
         example: 480
         type: integer
@@ -2150,6 +2180,12 @@ definitions:
       best_consumption:
         example: 120
         type: number
+      best_consumption_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      best_consumption_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
       count:
         example: 1893
         type: integer
@@ -2162,18 +2198,48 @@ definitions:
       longest_distance:
         example: 800
         type: number
+      longest_distance_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      longest_distance_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
+      longest_duration_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
       longest_duration_min:
         example: 420
         type: integer
+      longest_duration_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
+      max_regen_power_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
       max_regen_power_kw:
         example: 60
         type: integer
+      max_regen_power_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
       max_speed:
         example: 180
         type: integer
+      max_speed_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      max_speed_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
+      peak_drive_power_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
       peak_drive_power_kw:
         example: 380
         type: integer
+      peak_drive_power_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
       range_achievement_pct:
         description: |-
           RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all
@@ -2199,6 +2265,12 @@ definitions:
       worst_consumption:
         example: 285.4
         type: number
+      worst_consumption_end_date:
+        example: "2026-05-30T22:00:00+01:00"
+        type: string
+      worst_consumption_start_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
     type: object
   dto.V2EnergyFlowData:
     properties:
@@ -2562,9 +2634,15 @@ definitions:
       count:
         example: 1893
         type: integer
+      longest_parking_end_date:
+        example: "2026-05-30T18:00:00+01:00"
+        type: string
       longest_parking_min:
         example: 43200
         type: integer
+      longest_parking_start_date:
+        example: "2026-05-01T18:00:00+01:00"
+        type: string
       total_duration_min:
         example: 500000
         type: integer
@@ -2619,24 +2697,51 @@ definitions:
       charges_energy_used_kwh:
         example: 445
         type: number
+      charges_largest_session_end_date:
+        example: "2024-01-10T22:00:00+01:00"
+        type: string
       charges_largest_session_kwh:
         example: 78.4
         type: number
+      charges_largest_session_start_date:
+        example: "2024-01-10T19:30:00+01:00"
+        type: string
       charges_longest_session_duration_min:
         example: 180
         type: integer
+      charges_longest_session_end_date:
+        example: "2024-01-10T22:00:00+01:00"
+        type: string
+      charges_longest_session_start_date:
+        example: "2024-01-10T19:30:00+01:00"
+        type: string
+      charges_max_power_date:
+        example: "2024-01-10T20:15:00+01:00"
+        type: string
       charges_max_power_kw:
         example: 250
         type: integer
       charges_max_session_cost:
         example: 42.5
         type: number
+      charges_max_session_cost_end_date:
+        example: "2024-01-10T22:00:00+01:00"
+        type: string
+      charges_max_session_cost_start_date:
+        example: "2024-01-10T19:30:00+01:00"
+        type: string
       drives_avg_consumption:
         example: 205.6
         type: number
       drives_best_consumption:
         example: 120
         type: number
+      drives_best_consumption_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
+      drives_best_consumption_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
       drives_count:
         example: 42
         type: integer
@@ -2652,21 +2757,57 @@ definitions:
       drives_longest_distance:
         example: 320.4
         type: number
+      drives_longest_distance_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
+      drives_longest_distance_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
+      drives_longest_duration_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
       drives_longest_duration_min:
         example: 210
         type: integer
+      drives_longest_duration_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
       drives_max_speed:
         example: 180
         type: integer
+      drives_max_speed_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
+      drives_max_speed_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
+      drives_peak_drive_power_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
       drives_peak_drive_power_kw:
         example: 380
         type: integer
+      drives_peak_drive_power_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
+      drives_peak_regen_power_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
       drives_peak_regen_power_kw:
         example: 60
         type: integer
+      drives_peak_regen_power_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
       drives_worst_consumption:
         example: 285.4
         type: number
+      drives_worst_consumption_end_date:
+        example: "2024-01-10T12:00:00+01:00"
+        type: string
+      drives_worst_consumption_start_date:
+        example: "2024-01-10T08:00:00+01:00"
+        type: string
       fast_charge_ratio:
         example: 0.32
         type: number
@@ -2765,9 +2906,21 @@ definitions:
       longest_interval_days:
         example: 180
         type: integer
+      longest_interval_end_date:
+        example: "2026-05-30T03:00:00+01:00"
+        type: string
+      longest_interval_start_date:
+        example: "2025-12-01T03:00:00+01:00"
+        type: string
       shortest_interval_days:
         example: 14
         type: integer
+      shortest_interval_end_date:
+        example: "2026-05-15T03:00:00+01:00"
+        type: string
+      shortest_interval_start_date:
+        example: "2026-05-01T03:00:00+01:00"
+        type: string
     type: object
 info:
   contact: {}

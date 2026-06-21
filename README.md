@@ -275,11 +275,16 @@ adjacent drives.
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
     (`Σ distance / Σ rated-range drop × 100`) and charges carry
     `cost_per_distance` (`total_cost / total_distance`, per km/mile).
+  - Extremum fields also include matching timestamp fields where available
+    (for example `max_speed_start_date`, `peak_power_date`,
+    `longest_parking_start_date`, and OTA interval start/end dates).
 - GET `/api/v2/cars/:CarID/stats/summary`
   - Aggregates bucketed by `period=day|week|month|year` (default `month`),
     bucket boundaries land in the user's timezone. Each bucket carries
     drive / charge / parking aggregates so a single response feeds a bar
     or line chart directly. Empty buckets are omitted.
+  - Bucket-level drive and charge extrema include matching timestamp fields
+    such as `drives_max_speed_start_date` and `charges_max_power_date`.
   - Supported parameters: `period`, `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/energy-flow`
   - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side

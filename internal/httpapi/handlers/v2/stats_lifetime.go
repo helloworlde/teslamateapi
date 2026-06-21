@@ -116,7 +116,53 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				) AS worst_consumption,
 				CASE WHEN SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) > 0
 					THEN SUM(distance) / SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) * 100
-					ELSE 0 END AS range_achievement_pct
+					ELSE 0 END AS range_achievement_pct,
+				(array_agg(start_date ORDER BY distance DESC NULLS LAST, start_date ASC) FILTER (WHERE distance IS NOT NULL))[1] AS longest_distance_start_date,
+				(array_agg(end_date ORDER BY distance DESC NULLS LAST, start_date ASC) FILTER (WHERE distance IS NOT NULL))[1] AS longest_distance_end_date,
+				(array_agg(start_date ORDER BY duration_min DESC NULLS LAST, start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_duration_start_date,
+				(array_agg(end_date ORDER BY duration_min DESC NULLS LAST, start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_duration_end_date,
+				(array_agg(start_date ORDER BY speed_max DESC NULLS LAST, start_date ASC) FILTER (WHERE speed_max IS NOT NULL))[1] AS max_speed_start_date,
+				(array_agg(end_date ORDER BY speed_max DESC NULLS LAST, start_date ASC) FILTER (WHERE speed_max IS NOT NULL))[1] AS max_speed_end_date,
+				(array_agg(start_date ORDER BY power_max DESC NULLS LAST, start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_start_date,
+				(array_agg(end_date ORDER BY power_max DESC NULLS LAST, start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_end_date,
+				(array_agg(start_date ORDER BY power_min ASC NULLS LAST, start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS max_regen_power_start_date,
+				(array_agg(end_date ORDER BY power_min ASC NULLS LAST, start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS max_regen_power_end_date,
+				(array_agg(start_date ORDER BY (
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) ASC NULLS LAST, start_date ASC) FILTER (
+					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				))[1] AS best_consumption_start_date,
+				(array_agg(end_date ORDER BY (
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) ASC NULLS LAST, start_date ASC) FILTER (
+					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				))[1] AS best_consumption_end_date,
+				(array_agg(start_date ORDER BY (
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) DESC NULLS LAST, start_date ASC) FILTER (
+					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				))[1] AS worst_consumption_start_date,
+				(array_agg(end_date ORDER BY (
+					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
+					ELSE NULL END
+				) DESC NULLS LAST, start_date ASC) FILTER (
+					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
+					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				))[1] AS worst_consumption_end_date
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
 			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
@@ -149,11 +195,21 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(MAX(duration_min), 0) AS longest_session_dur,
 				COALESCE(MAX(charge_energy_added), 0) AS largest_session_energy,
 				COALESCE(MAX(cost), 0) AS max_session_cost,
+				(array_agg(peak_power_date ORDER BY peak_power DESC NULLS LAST, start_date ASC) FILTER (WHERE peak_power IS NOT NULL))[1] AS peak_power_date,
+				(array_agg(peak_voltage_date ORDER BY peak_voltage DESC NULLS LAST, start_date ASC) FILTER (WHERE peak_voltage IS NOT NULL))[1] AS peak_voltage_date,
+				(array_agg(start_date ORDER BY duration_min DESC NULLS LAST, start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_session_start_date,
+				(array_agg(end_date ORDER BY duration_min DESC NULLS LAST, start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_session_end_date,
+				(array_agg(start_date ORDER BY charge_energy_added DESC NULLS LAST, start_date ASC) FILTER (WHERE charge_energy_added IS NOT NULL))[1] AS largest_session_start_date,
+				(array_agg(end_date ORDER BY charge_energy_added DESC NULLS LAST, start_date ASC) FILTER (WHERE charge_energy_added IS NOT NULL))[1] AS largest_session_end_date,
+				(array_agg(start_date ORDER BY cost DESC NULLS LAST, start_date ASC) FILTER (WHERE cost IS NOT NULL))[1] AS max_session_cost_start_date,
+				(array_agg(end_date ORDER BY cost DESC NULLS LAST, start_date ASC) FILTER (WHERE cost IS NOT NULL))[1] AS max_session_cost_end_date,
 				COALESCE(AVG(cost) FILTER (WHERE cost IS NOT NULL), 0) AS avg_session_cost,
 				COALESCE(AVG(peak_power) FILTER (WHERE NOT fast_present), 0) AS avg_power_ac,
 				COALESCE(AVG(peak_power) FILTER (WHERE fast_present), 0) AS avg_power_dc,
 				COALESCE(MAX(peak_power) FILTER (WHERE NOT fast_present), 0) AS max_power_ac,
 				COALESCE(MAX(peak_power) FILTER (WHERE fast_present), 0) AS max_power_dc,
+				(array_agg(peak_power_date ORDER BY peak_power DESC NULLS LAST, start_date ASC) FILTER (WHERE NOT fast_present AND peak_power IS NOT NULL))[1] AS max_power_ac_date,
+				(array_agg(peak_power_date ORDER BY peak_power DESC NULLS LAST, start_date ASC) FILTER (WHERE fast_present AND peak_power IS NOT NULL))[1] AS max_power_dc_date,
 				MIN(start_battery_level) AS min_start_lvl,
 				MAX(end_battery_level) AS max_end_lvl,
 				COUNT(DISTINCT COALESCE(geofence_id::text, address_id::text)) AS distinct_locations,
@@ -170,11 +226,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					cp.geofence_id,
 					cp.address_id,
 					cp.start_date,
+					cp.end_date,
 					COALESCE(cs.free_supercharging, false) AS has_free_supercharging,
 					COALESCE(chg.fast_present, false) AS fast_present,
 					COALESCE(chg.supercharger_present, false) AS supercharger_present,
 					chg.peak_power,
-					chg.peak_voltage
+					chg.peak_voltage,
+					chg.peak_power_date,
+					chg.peak_voltage_date
 				FROM charging_processes cp
 				LEFT JOIN car_settings cs ON cs.id = cp.car_id
 				LEFT JOIN LATERAL (
@@ -182,7 +241,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 						bool_or(fast_charger_present) AS fast_present,
 						bool_or(fast_charger_present AND fast_charger_brand = 'Tesla') AS supercharger_present,
 						MAX(charger_power) AS peak_power,
-						MAX(charger_voltage) AS peak_voltage
+						MAX(charger_voltage) AS peak_voltage,
+						(array_agg(date ORDER BY charger_power DESC NULLS LAST, date ASC) FILTER (WHERE charger_power IS NOT NULL))[1] AS peak_power_date,
+						(array_agg(date ORDER BY charger_voltage DESC NULLS LAST, date ASC) FILTER (WHERE charger_voltage IS NOT NULL))[1] AS peak_voltage_date
 					FROM charges c
 					WHERE c.charging_process_id = cp.id
 				) chg ON true
@@ -205,6 +266,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COUNT(*) AS cnt,
 				COALESCE(SUM(park_dur)::int, 0) AS total_dur,
 				COALESCE(MAX(park_dur)::int, 0) AS longest_dur,
+				(array_agg(dp.park_start ORDER BY park_dur DESC NULLS LAST, dp.park_start ASC) FILTER (WHERE park_dur IS NOT NULL))[1] AS longest_start_date,
+				(array_agg(COALESCE(dp.park_end, %[2]s) ORDER BY park_dur DESC NULLS LAST, dp.park_start ASC) FILTER (WHERE park_dur IS NOT NULL))[1] AS longest_end_date,
 				COALESCE(AVG(park_dur), 0) AS avg_dur,
 				COALESCE(SUM(
 					CASE
@@ -244,11 +307,16 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				(array_agg(version ORDER BY start_date DESC) FILTER (WHERE version IS NOT NULL))[1] AS latest_version,
 				MAX(start_date) AS latest_update_date,
 				MAX(interval_days) AS longest_interval_days,
-				MIN(interval_days) AS shortest_interval_days
+				MIN(interval_days) AS shortest_interval_days,
+				(array_agg(previous_start_date ORDER BY interval_days DESC NULLS LAST, start_date ASC) FILTER (WHERE interval_days IS NOT NULL))[1] AS longest_interval_start_date,
+				(array_agg(start_date ORDER BY interval_days DESC NULLS LAST, start_date ASC) FILTER (WHERE interval_days IS NOT NULL))[1] AS longest_interval_end_date,
+				(array_agg(previous_start_date ORDER BY interval_days ASC NULLS LAST, start_date ASC) FILTER (WHERE interval_days IS NOT NULL))[1] AS shortest_interval_start_date,
+				(array_agg(start_date ORDER BY interval_days ASC NULLS LAST, start_date ASC) FILTER (WHERE interval_days IS NOT NULL))[1] AS shortest_interval_end_date
 			FROM (
 				SELECT
 					version,
 					start_date,
+					previous_start_date,
 					CASE WHEN previous_start_date IS NULL THEN NULL ELSE
 						GREATEST(
 							EXTRACT(DAY FROM (
@@ -306,6 +374,13 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(d.peak_drive_power, 0)::int,
 			COALESCE(d.avg_dist_per_drive, 0), COALESCE(d.avg_dur_per_drive, 0),
 			COALESCE(d.max_regen_power, 0)::int,
+			d.longest_distance_start_date, d.longest_distance_end_date,
+			d.longest_duration_start_date, d.longest_duration_end_date,
+			d.max_speed_start_date, d.max_speed_end_date,
+			d.peak_drive_power_start_date, d.peak_drive_power_end_date,
+			d.max_regen_power_start_date, d.max_regen_power_end_date,
+			d.best_consumption_start_date, d.best_consumption_end_date,
+			d.worst_consumption_start_date, d.worst_consumption_end_date,
 			d.avg_outside_temp, d.avg_inside_temp,
 			COALESCE(d.active_days, 0), d.last_drive_date, COALESCE(d.current_odometer, 0),
 			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
@@ -321,14 +396,22 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(ch.shortest_session_dur, 0),
 			COALESCE(ch.longest_session_dur, 0), COALESCE(ch.largest_session_energy, 0),
 			COALESCE(ch.max_session_cost, 0), COALESCE(ch.avg_session_cost, 0),
+			ch.peak_power_date, ch.peak_voltage_date,
+			ch.longest_session_start_date, ch.longest_session_end_date,
+			ch.largest_session_start_date, ch.largest_session_end_date,
+			ch.max_session_cost_start_date, ch.max_session_cost_end_date,
 			COALESCE(ch.avg_power_ac, 0), COALESCE(ch.avg_power_dc, 0),
 			COALESCE(ch.max_power_ac, 0)::int, COALESCE(ch.max_power_dc, 0)::int,
+			ch.max_power_ac_date, ch.max_power_dc_date,
 			ch.min_start_lvl, ch.max_end_lvl,
 			COALESCE(ch.distinct_locations, 0),
 			ch.first_charge_date, ch.last_charge_date,
-			COALESCE(pk.cnt, 0), COALESCE(pk.total_dur, 0), COALESCE(pk.avg_dur, 0), COALESCE(pk.longest_dur, 0), COALESCE(pk.total_drop, 0),
+			COALESCE(pk.cnt, 0), COALESCE(pk.total_dur, 0), COALESCE(pk.avg_dur, 0), COALESCE(pk.longest_dur, 0),
+			pk.longest_start_date, pk.longest_end_date, COALESCE(pk.total_drop, 0),
 			COALESCE(up.cnt, 0), up.first_version, up.latest_version, up.latest_update_date,
 			up.longest_interval_days, up.shortest_interval_days,
+			up.longest_interval_start_date, up.longest_interval_end_date,
+			up.shortest_interval_start_date, up.shortest_interval_end_date,
 			cm.vin, cm.model, cm.trim_badging, cm.exterior_color, cm.wheel_type, cm.spoiler_type, cm.efficiency, cm.inserted_at,
 			(SELECT unit_of_length FROM settings LIMIT 1),
 			(SELECT unit_of_temperature FROM settings LIMIT 1)
@@ -356,6 +439,13 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.PeakDrivePowerKW,
 		&drives.AvgDistancePerDrive, &drives.AvgDurationPerDrive,
 		&drives.MaxRegenPower,
+		&drives.LongestDistanceStartDate, &drives.LongestDistanceEndDate,
+		&drives.LongestDurationStartDate, &drives.LongestDurationEndDate,
+		&drives.MaxSpeedStartDate, &drives.MaxSpeedEndDate,
+		&drives.PeakDrivePowerStartDate, &drives.PeakDrivePowerEndDate,
+		&drives.MaxRegenPowerStartDate, &drives.MaxRegenPowerEndDate,
+		&drives.BestConsumptionStartDate, &drives.BestConsumptionEndDate,
+		&drives.WorstConsumptionStartDate, &drives.WorstConsumptionEndDate,
 		&drives.AvgOutsideTemp, &drives.AvgInsideTemp,
 		&drives.ActiveDays, &drives.LastDriveDate, &drives.CurrentOdometer,
 		// charges
@@ -370,16 +460,24 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&charges.ShortestSessionDurationMin,
 		&charges.LongestSessionDurationMin, &charges.LargestSessionEnergyKWh,
 		&charges.MaxSessionCost, &charges.AvgSessionCost,
+		&charges.PeakPowerDate, &charges.PeakVoltageDate,
+		&charges.LongestSessionStartDate, &charges.LongestSessionEndDate,
+		&charges.LargestSessionStartDate, &charges.LargestSessionEndDate,
+		&charges.MaxSessionCostStartDate, &charges.MaxSessionCostEndDate,
 		&charges.AvgPowerACKW, &charges.AvgPowerDCKW,
 		&charges.MaxPowerACKW, &charges.MaxPowerDCKW,
+		&charges.MaxPowerACDate, &charges.MaxPowerDCDate,
 		&charges.MinStartBatteryLevel, &charges.MaxEndBatteryLevel,
 		&charges.DistinctChargeLocations,
 		&charges.FirstChargeDate, &charges.LastChargeDate,
 		// parkings
-		&parkings.Count, &parkings.TotalDurationMin, &parkings.AvgDurationMin, &parkings.LongestParkingMin, &parkings.TotalEnergyDropKWh,
+		&parkings.Count, &parkings.TotalDurationMin, &parkings.AvgDurationMin, &parkings.LongestParkingMin,
+		&parkings.LongestParkingStartDate, &parkings.LongestParkingEndDate, &parkings.TotalEnergyDropKWh,
 		// updates
 		&updates.Count, &updates.FirstVersion, &updates.LatestVersion, &updates.LatestUpdateDate,
 		&updates.LongestIntervalDays, &updates.ShortestIntervalDays,
+		&updates.LongestIntervalStartDate, &updates.LongestIntervalEndDate,
+		&updates.ShortestIntervalStartDate, &updates.ShortestIntervalEndDate,
 		// car meta
 		&carMeta.Vin, &carMeta.Model, &carMeta.TrimBadging, &carMeta.ExteriorColor, &carMeta.WheelType, &carMeta.SpoilerType, &carMeta.Efficiency, &carMeta.InsertedAt,
 		// units
@@ -419,24 +517,48 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		}
 	}
 
-	if len(Since) > 0 {
-		Since = NullString(h.timeInTZ(string(Since)))
+	localize := func(value *NullString) {
+		if len(*value) > 0 {
+			*value = NullString(h.timeInTZ(string(*value)))
+		}
 	}
-	if len(drives.LastDriveDate) > 0 {
-		drives.LastDriveDate = NullString(h.timeInTZ(string(drives.LastDriveDate)))
-	}
-	if len(charges.FirstChargeDate) > 0 {
-		charges.FirstChargeDate = NullString(h.timeInTZ(string(charges.FirstChargeDate)))
-	}
-	if len(charges.LastChargeDate) > 0 {
-		charges.LastChargeDate = NullString(h.timeInTZ(string(charges.LastChargeDate)))
-	}
-	if len(updates.LatestUpdateDate) > 0 {
-		updates.LatestUpdateDate = NullString(h.timeInTZ(string(updates.LatestUpdateDate)))
-	}
-	if len(carMeta.InsertedAt) > 0 {
-		carMeta.InsertedAt = NullString(h.timeInTZ(string(carMeta.InsertedAt)))
-	}
+
+	localize(&Since)
+	localize(&drives.LastDriveDate)
+	localize(&drives.LongestDistanceStartDate)
+	localize(&drives.LongestDistanceEndDate)
+	localize(&drives.LongestDurationStartDate)
+	localize(&drives.LongestDurationEndDate)
+	localize(&drives.MaxSpeedStartDate)
+	localize(&drives.MaxSpeedEndDate)
+	localize(&drives.PeakDrivePowerStartDate)
+	localize(&drives.PeakDrivePowerEndDate)
+	localize(&drives.MaxRegenPowerStartDate)
+	localize(&drives.MaxRegenPowerEndDate)
+	localize(&drives.BestConsumptionStartDate)
+	localize(&drives.BestConsumptionEndDate)
+	localize(&drives.WorstConsumptionStartDate)
+	localize(&drives.WorstConsumptionEndDate)
+	localize(&charges.FirstChargeDate)
+	localize(&charges.LastChargeDate)
+	localize(&charges.PeakPowerDate)
+	localize(&charges.PeakVoltageDate)
+	localize(&charges.LongestSessionStartDate)
+	localize(&charges.LongestSessionEndDate)
+	localize(&charges.LargestSessionStartDate)
+	localize(&charges.LargestSessionEndDate)
+	localize(&charges.MaxSessionCostStartDate)
+	localize(&charges.MaxSessionCostEndDate)
+	localize(&charges.MaxPowerACDate)
+	localize(&charges.MaxPowerDCDate)
+	localize(&parkings.LongestParkingStartDate)
+	localize(&parkings.LongestParkingEndDate)
+	localize(&updates.LatestUpdateDate)
+	localize(&updates.LongestIntervalStartDate)
+	localize(&updates.LongestIntervalEndDate)
+	localize(&updates.ShortestIntervalStartDate)
+	localize(&updates.ShortestIntervalEndDate)
+	localize(&carMeta.InsertedAt)
 
 	respond.HandleSuccess(c, handler, dto.V2LifetimeResponse{
 		Data: dto.V2Lifetime{
