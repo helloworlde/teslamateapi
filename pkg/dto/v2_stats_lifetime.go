@@ -50,11 +50,15 @@ type V2ChargesAgg struct {
 	Count               int     `json:"count" example:"427"`
 	TotalEnergyAddedKWh float64 `json:"total_energy_added_kwh" example:"16500.0"`
 	TotalEnergyUsedKWh  float64 `json:"total_energy_used_kwh" example:"17200.0"`
-	TotalCost           float64 `json:"total_cost" example:"4321.50"`
-	AvgCostPerKWh       float64 `json:"avg_cost_per_kwh" example:"0.26"`
-	// CostPerKm = total charging cost / total drive distance — the amortised
-	// per-distance rate behind "estimated usage cost". Converted to per-mile
-	// when unit_of_length is mi. Currency matches charging_processes.cost.
+	TotalCost float64 `json:"total_cost" example:"4321.50"`
+	// AvgCostPerKWh = SUM(cost) / SUM(charge_energy_added) over all charges
+	// (battery-side rate). Free/zero-cost charges still contribute energy to the
+	// denominator, so this is biased low versus the rate paid for billed energy.
+	AvgCostPerKWh float64 `json:"avg_cost_per_kwh" example:"0.26"`
+	// CostPerKm = total charging cost / total drive distance — the all-in,
+	// out-of-pocket per-distance rate (includes charging loss, parking drain, and
+	// net battery-inventory change). Converted to per-mile when unit_of_length is
+	// mi. Currency matches charging_processes.cost.
 	CostPerKm                   float64         `json:"cost_per_distance" example:"0.05"`
 	AvgEnergyPerSession         float64         `json:"avg_energy_per_session_kwh" example:"38.6"`
 	TotalDurationMin            int             `json:"total_duration_min" example:"18000"`

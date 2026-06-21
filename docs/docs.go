@@ -1428,7 +1428,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Aggregates drives, charges, and parking sessions grouped by geofence.",
+                "description": "Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an \"Other\" row with geofence_id = null.",
                 "produces": [
                     "application/json"
                 ],
@@ -4175,6 +4175,7 @@ const docTemplate = `{
                     "example": 12.35
                 },
                 "charge_cost_per_kwh": {
+                    "description": "ChargeCostPerKWh is this charge's cost / charge_energy_added (battery-side):\nthe cost of each kWh that entered the pack, with charging loss baked in, so\nit reads higher than wall_cost_per_kwh.",
                     "type": "number",
                     "example": 0.32161
                 },
@@ -4263,6 +4264,7 @@ const docTemplate = `{
                     "example": 56.6
                 },
                 "wall_cost_per_kwh": {
+                    "description": "WallCostPerKWh is this charge's cost / wall-side energy, where wall-side\nenergy is GREATEST(charge_energy_used, charge_energy_added). Plug-side price\n(charging loss in the denominator); collapses to the battery-side rate when\ncharge_energy_used is missing.",
                     "type": "number",
                     "example": 0.30798
                 },
@@ -4313,6 +4315,7 @@ const docTemplate = `{
                     "example": 13300
                 },
                 "avg_cost_per_kwh": {
+                    "description": "AvgCostPerKWh = SUM(cost) / SUM(charge_energy_added) over all charges\n(battery-side rate). Free/zero-cost charges still contribute energy to the\ndenominator, so this is biased low versus the rate paid for billed energy.",
                     "type": "number",
                     "example": 0.26
                 },
@@ -4337,7 +4340,7 @@ const docTemplate = `{
                     "example": 12.3
                 },
                 "cost_per_distance": {
-                    "description": "CostPerKm = total charging cost / total drive distance — the amortised\nper-distance rate behind \"estimated usage cost\". Converted to per-mile\nwhen unit_of_length is mi. Currency matches charging_processes.cost.",
+                    "description": "CostPerKm = total charging cost / total drive distance — the all-in,\nout-of-pocket per-distance rate (includes charging loss, parking drain, and\nnet battery-inventory change). Converted to per-mile when unit_of_length is\nmi. Currency matches charging_processes.cost.",
                     "type": "number",
                     "example": 0.05
                 },
@@ -4845,6 +4848,7 @@ const docTemplate = `{
                     "example": -25
                 },
                 "charging_cost_per_kwh": {
+                    "description": "ChargingCostPerKWh is total cost / charge_energy_added (battery-side): the\ncost of each kWh that actually entered the pack. Charging loss is baked in,\nso it reads higher than wall_cost_per_kwh.",
                     "type": "number",
                     "example": 0.26191
                 },
@@ -4853,6 +4857,7 @@ const docTemplate = `{
                     "example": 95.93
                 },
                 "charging_loss_cost": {
+                    "description": "ChargingLossCost is the charging-loss energy (wall − vehicle) valued at the\nwall price; carried separately so it is not amortised into driving_cost.",
                     "type": "number",
                     "example": 175.87
                 },
@@ -4861,10 +4866,12 @@ const docTemplate = `{
                     "example": 700
                 },
                 "driving_cost": {
+                    "description": "DrivingCost is driving energy valued at the wall price. It counts only the\nenergy that moved the car; charging loss is NOT included here (it is its own\nbucket, charging_loss_cost), so this is an optimistic lower bound on the\ntrue cost of driving.",
                     "type": "number",
                     "example": 1965
                 },
                 "driving_cost_per_distance": {
+                    "description": "DrivingCostPerDistance is driving_cost / distance (per km, or per mile when\nunit_of_length is mi). Same optimistic basis as driving_cost.",
                     "type": "number",
                     "example": 0.04624
                 },
@@ -4873,6 +4880,7 @@ const docTemplate = `{
                     "example": 7825
                 },
                 "end_battery_cost": {
+                    "description": "EndBatteryCost is the energy still stored in the pack at window end, valued\nat the wall price (paid for but not yet consumed).",
                     "type": "number",
                     "example": 23.72
                 },
@@ -4881,6 +4889,7 @@ const docTemplate = `{
                     "example": 95
                 },
                 "parking_cost": {
+                    "description": "ParkingCost is parking/idle drain energy valued at the wall price.",
                     "type": "number",
                     "example": 31.41
                 },
@@ -4893,6 +4902,7 @@ const docTemplate = `{
                     "example": 120
                 },
                 "total_charging_cost": {
+                    "description": "TotalChargingCost is the summed charging_processes.cost over all charges.",
                     "type": "number",
                     "example": 4321.5
                 },
@@ -4905,6 +4915,7 @@ const docTemplate = `{
                     "example": 0
                 },
                 "vehicle_accounting_cost_per_kwh": {
+                    "description": "VehicleAccountingCostPerKWh is the price used to value the vehicle-side\nenergy buckets below; it equals wall_cost_per_kwh.",
                     "type": "number",
                     "example": 0.25125
                 },
@@ -4921,6 +4932,7 @@ const docTemplate = `{
                     "example": 16500
                 },
                 "wall_cost_per_kwh": {
+                    "description": "WallCostPerKWh is total cost / wall-side energy, where wall-side energy is\nGREATEST(charge_energy_used, charge_energy_added). This is the plug-side\nprice (charging loss is in the denominator). Because TeslaMate's\ncharge_energy_used is often missing/unreliable, the GREATEST fallback can\nmake this collapse to the battery-side rate (charging_cost_per_kwh).",
                     "type": "number",
                     "example": 0.25125
                 },
@@ -4984,6 +4996,7 @@ const docTemplate = `{
                 },
                 "geofence_id": {
                     "type": "integer",
+                    "x-nullable": true,
                     "example": 3
                 },
                 "geofence_name": {

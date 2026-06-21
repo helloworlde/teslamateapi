@@ -297,7 +297,8 @@ adjacent drives.
   - For each geofence the car has touched: `drives_arrived`,
     `drives_departed`, `charges_count`, `charges_energy_added_kwh`,
     `charges_cost`, `parkings_count`, `parkings_total_duration_min`. Sorted
-    by total activity.
+    by total activity. Records without a geofence are grouped under an `Other`
+    row with `geofence_id: null`.
   - Supported parameters: `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/consumption`
   - Energy consumption (Wh/distance) broken down along one objective
@@ -317,6 +318,41 @@ adjacent drives.
     `charge_levels` (10-point histogram of charge start/end SOC), and
     `trip_types` (distance-band histogram with `trips_count`, `distance`,
     `energy_kwh`). Scans only `drives` / `charging_processes`; no `positions`.
+
+#### v2 cost field calibers
+
+The per-kWh and per-distance cost fields differ by which energy basis sits in
+the denominator and which costs are folded in. Read this before charting them.
+
+##### `/api/v2/cars/:CarID/stats/energy-flow`
+
+| Field | Caliber |
+|---|---|
+| `total_charging_cost` | Sum of `charging_processes.cost` over all charges. |
+| `wall_cost_per_kwh` | Total cost ÷ wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`). Plug-side price (charging loss in the denominator). TeslaMate's `charge_energy_used` is often missing/unreliable, so the GREATEST fallback can collapse this onto the battery-side rate (`charging_cost_per_kwh`). |
+| `charging_cost_per_kwh` | Total cost ÷ `charge_energy_added` (battery-side): cost per kWh that actually entered the pack. Charging loss is baked in, so it reads higher than `wall_cost_per_kwh`. |
+| `vehicle_accounting_cost_per_kwh` | Price used to value the vehicle-side energy buckets; equals `wall_cost_per_kwh`. |
+| `driving_cost` | Driving energy valued at the wall price. Counts only the energy that moved the car; charging loss is **not** folded in (it is its own bucket, `charging_loss_cost`), so this is an optimistic lower bound on the true cost of driving. |
+| `driving_cost_per_distance` | `driving_cost ÷ distance` (per km, or per mile when `unit_of_length` is `mi`). Same optimistic basis as `driving_cost`. |
+| `parking_cost` | Parking/idle drain energy valued at the wall price. |
+| `charging_loss_cost` | Charging-loss energy (wall − vehicle) valued at the wall price; carried separately so it is not amortised into `driving_cost`. |
+| `end_battery_cost` | Energy still stored in the pack at window end, valued at the wall price (paid for but not yet consumed). |
+
+##### `/api/v2/cars/:CarID/stats/lifetime`
+
+| Field | Caliber |
+|---|---|
+| `total_cost` | Sum of `charging_processes.cost` over all charges. |
+| `avg_cost_per_kwh` | `SUM(cost) ÷ SUM(charge_energy_added)` (battery-side). Free/zero-cost charges still contribute energy to the denominator, so this is biased low versus the rate paid for billed energy. |
+| `cost_per_distance` | Total charging cost ÷ total drive distance — the all-in, out-of-pocket per-distance rate (includes charging loss, parking drain, and net battery-inventory change). Per mile when `unit_of_length` is `mi`. |
+
+##### `/api/v2/cars/:CarID/charges/:ChargeID/usage` (single charge)
+
+| Field | Caliber |
+|---|---|
+| `charge_cost` | This charge's cost. |
+| `wall_cost_per_kwh` | Cost ÷ wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`). Plug-side price; collapses to the battery-side rate when `charge_energy_used` is missing. |
+| `charge_cost_per_kwh` | Cost ÷ `charge_energy_added` (battery-side): cost per kWh that entered the pack, with charging loss baked in, so it reads higher than `wall_cost_per_kwh`. |
 
 > [!TIP]
 > Canonical UTC format in RFC3339, e.g. `2006-01-02T15:04:05Z` or `2006-01-02T15:04:05+07:00`

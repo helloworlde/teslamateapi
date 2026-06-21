@@ -1724,6 +1724,10 @@ definitions:
         example: 12.35
         type: number
       charge_cost_per_kwh:
+        description: |-
+          ChargeCostPerKWh is this charge's cost / charge_energy_added (battery-side):
+          the cost of each kWh that entered the pack, with charging loss baked in, so
+          it reads higher than wall_cost_per_kwh.
         example: 0.32161
         type: number
       charge_energy_added_kwh:
@@ -1801,6 +1805,11 @@ definitions:
         example: 56.6
         type: number
       wall_cost_per_kwh:
+        description: |-
+          WallCostPerKWh is this charge's cost / wall-side energy, where wall-side
+          energy is GREATEST(charge_energy_used, charge_energy_added). Plug-side price
+          (charging loss in the denominator); collapses to the battery-side rate when
+          charge_energy_used is missing.
         example: 0.30798
         type: number
       wall_energy_kwh:
@@ -1836,6 +1845,10 @@ definitions:
         example: 13300
         type: number
       avg_cost_per_kwh:
+        description: |-
+          AvgCostPerKWh = SUM(cost) / SUM(charge_energy_added) over all charges
+          (battery-side rate). Free/zero-cost charges still contribute energy to the
+          denominator, so this is biased low versus the rate paid for billed energy.
         example: 0.26
         type: number
       avg_duration_min:
@@ -1855,9 +1868,10 @@ definitions:
         type: number
       cost_per_distance:
         description: |-
-          CostPerKm = total charging cost / total drive distance — the amortised
-          per-distance rate behind "estimated usage cost". Converted to per-mile
-          when unit_of_length is mi. Currency matches charging_processes.cost.
+          CostPerKm = total charging cost / total drive distance — the all-in,
+          out-of-pocket per-distance rate (includes charging loss, parking drain, and
+          net battery-inventory change). Converted to per-mile when unit_of_length is
+          mi. Currency matches charging_processes.cost.
         example: 0.05
         type: number
       count:
@@ -2229,33 +2243,52 @@ definitions:
         example: -25
         type: number
       charging_cost_per_kwh:
+        description: |-
+          ChargingCostPerKWh is total cost / charge_energy_added (battery-side): the
+          cost of each kWh that actually entered the pack. Charging loss is baked in,
+          so it reads higher than wall_cost_per_kwh.
         example: 0.26191
         type: number
       charging_efficiency_pct:
         example: 95.93
         type: number
       charging_loss_cost:
+        description: |-
+          ChargingLossCost is the charging-loss energy (wall − vehicle) valued at the
+          wall price; carried separately so it is not amortised into driving_cost.
         example: 175.87
         type: number
       charging_loss_energy_kwh:
         example: 700
         type: number
       driving_cost:
+        description: |-
+          DrivingCost is driving energy valued at the wall price. It counts only the
+          energy that moved the car; charging loss is NOT included here (it is its own
+          bucket, charging_loss_cost), so this is an optimistic lower bound on the
+          true cost of driving.
         example: 1965
         type: number
       driving_cost_per_distance:
+        description: |-
+          DrivingCostPerDistance is driving_cost / distance (per km, or per mile when
+          unit_of_length is mi). Same optimistic basis as driving_cost.
         example: 0.04624
         type: number
       driving_energy_kwh:
         example: 7825
         type: number
       end_battery_cost:
+        description: |-
+          EndBatteryCost is the energy still stored in the pack at window end, valued
+          at the wall price (paid for but not yet consumed).
         example: 23.72
         type: number
       end_battery_energy_kwh:
         example: 95
         type: number
       parking_cost:
+        description: ParkingCost is parking/idle drain energy valued at the wall price.
         example: 31.41
         type: number
       parking_energy_kwh:
@@ -2265,6 +2298,8 @@ definitions:
         example: 120
         type: number
       total_charging_cost:
+        description: TotalChargingCost is the summed charging_processes.cost over
+          all charges.
         example: 4321.5
         type: number
       unattributed_vehicle_energy_kwh:
@@ -2274,6 +2309,9 @@ definitions:
         example: 0
         type: number
       vehicle_accounting_cost_per_kwh:
+        description: |-
+          VehicleAccountingCostPerKWh is the price used to value the vehicle-side
+          energy buckets below; it equals wall_cost_per_kwh.
         example: 0.25125
         type: number
       vehicle_available_energy_kwh:
@@ -2286,6 +2324,12 @@ definitions:
         example: 16500
         type: number
       wall_cost_per_kwh:
+        description: |-
+          WallCostPerKWh is total cost / wall-side energy, where wall-side energy is
+          GREATEST(charge_energy_used, charge_energy_added). This is the plug-side
+          price (charging loss is in the denominator). Because TeslaMate's
+          charge_energy_used is often missing/unreliable, the GREATEST fallback can
+          make this collapse to the battery-side rate (charging_cost_per_kwh).
         example: 0.25125
         type: number
       wall_energy_kwh:
@@ -2332,6 +2376,7 @@ definitions:
       geofence_id:
         example: 3
         type: integer
+        x-nullable: true
       geofence_name:
         example: Home
         type: string
@@ -3649,6 +3694,8 @@ paths:
   /api/v2/cars/{CarID}/stats/by-geofence:
     get:
       description: Aggregates drives, charges, and parking sessions grouped by geofence.
+        Records without a geofence are grouped under an "Other" row with geofence_id
+        = null.
       parameters:
       - description: TeslaMate cars.id
         in: path

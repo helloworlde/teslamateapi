@@ -32,15 +32,37 @@ type V2EnergyFlowMetrics struct {
 	ParkingEnergyKWh             float64 `json:"parking_energy_kwh" example:"125.0"`
 	UnattributedVehicleEnergyKWh float64 `json:"unattributed_vehicle_energy_kwh" example:"8455.0"`
 	UnmatchedVehicleUsageKWh     float64 `json:"unmatched_vehicle_usage_kwh" example:"0"`
-	TotalChargingCost            float64 `json:"total_charging_cost" example:"4321.50"`
-	WallCostPerKWh               float64 `json:"wall_cost_per_kwh" example:"0.25125"`
-	ChargingCostPerKWh           float64 `json:"charging_cost_per_kwh" example:"0.26191"`
-	VehicleAccountingCostPerKWh  float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.25125"`
-	DrivingCost                  float64 `json:"driving_cost" example:"1965.0"`
-	DrivingCostPerDistance       float64 `json:"driving_cost_per_distance" example:"0.04624"`
-	ParkingCost                  float64 `json:"parking_cost" example:"31.41"`
-	ChargingLossCost             float64 `json:"charging_loss_cost" example:"175.87"`
-	EndBatteryCost               float64 `json:"end_battery_cost" example:"23.72"`
+	// TotalChargingCost is the summed charging_processes.cost over all charges.
+	TotalChargingCost float64 `json:"total_charging_cost" example:"4321.50"`
+	// WallCostPerKWh is total cost / wall-side energy, where wall-side energy is
+	// GREATEST(charge_energy_used, charge_energy_added). This is the plug-side
+	// price (charging loss is in the denominator). Because TeslaMate's
+	// charge_energy_used is often missing/unreliable, the GREATEST fallback can
+	// make this collapse to the battery-side rate (charging_cost_per_kwh).
+	WallCostPerKWh float64 `json:"wall_cost_per_kwh" example:"0.25125"`
+	// ChargingCostPerKWh is total cost / charge_energy_added (battery-side): the
+	// cost of each kWh that actually entered the pack. Charging loss is baked in,
+	// so it reads higher than wall_cost_per_kwh.
+	ChargingCostPerKWh float64 `json:"charging_cost_per_kwh" example:"0.26191"`
+	// VehicleAccountingCostPerKWh is the price used to value the vehicle-side
+	// energy buckets below; it equals wall_cost_per_kwh.
+	VehicleAccountingCostPerKWh float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.25125"`
+	// DrivingCost is driving energy valued at the wall price. It counts only the
+	// energy that moved the car; charging loss is NOT included here (it is its own
+	// bucket, charging_loss_cost), so this is an optimistic lower bound on the
+	// true cost of driving.
+	DrivingCost float64 `json:"driving_cost" example:"1965.0"`
+	// DrivingCostPerDistance is driving_cost / distance (per km, or per mile when
+	// unit_of_length is mi). Same optimistic basis as driving_cost.
+	DrivingCostPerDistance float64 `json:"driving_cost_per_distance" example:"0.04624"`
+	// ParkingCost is parking/idle drain energy valued at the wall price.
+	ParkingCost float64 `json:"parking_cost" example:"31.41"`
+	// ChargingLossCost is the charging-loss energy (wall − vehicle) valued at the
+	// wall price; carried separately so it is not amortised into driving_cost.
+	ChargingLossCost float64 `json:"charging_loss_cost" example:"175.87"`
+	// EndBatteryCost is the energy still stored in the pack at window end, valued
+	// at the wall price (paid for but not yet consumed).
+	EndBatteryCost float64 `json:"end_battery_cost" example:"23.72"`
 	ActualDrivingUsageRatePct    float64 `json:"actual_driving_usage_rate_pct" example:"45.49"`
 	ActualLossRatePct            float64 `json:"actual_loss_rate_pct" example:"4.07"`
 	ChargingEfficiencyPct        float64 `json:"charging_efficiency_pct" example:"95.93"`

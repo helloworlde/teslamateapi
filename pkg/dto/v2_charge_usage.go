@@ -39,9 +39,16 @@ type V2ChargeUsageMetrics struct {
 	WallEnergyKWh              float64          `json:"wall_energy_kwh" example:"40.1"`
 	ChargeEnergyAddedKWh       float64          `json:"charge_energy_added_kwh" example:"38.4"`
 	ChargingLossEnergyKWh      float64          `json:"charging_loss_energy_kwh" example:"1.7"`
-	ChargeCost                 float64          `json:"charge_cost" example:"12.35"`
-	WallCostPerKWh             float64          `json:"wall_cost_per_kwh" example:"0.30798"`
-	ChargeCostPerKWh           float64          `json:"charge_cost_per_kwh" example:"0.32161"`
+	ChargeCost float64 `json:"charge_cost" example:"12.35"`
+	// WallCostPerKWh is this charge's cost / wall-side energy, where wall-side
+	// energy is GREATEST(charge_energy_used, charge_energy_added). Plug-side price
+	// (charging loss in the denominator); collapses to the battery-side rate when
+	// charge_energy_used is missing.
+	WallCostPerKWh float64 `json:"wall_cost_per_kwh" example:"0.30798"`
+	// ChargeCostPerKWh is this charge's cost / charge_energy_added (battery-side):
+	// the cost of each kWh that entered the pack, with charging loss baked in, so
+	// it reads higher than wall_cost_per_kwh.
+	ChargeCostPerKWh float64 `json:"charge_cost_per_kwh" example:"0.32161"`
 	InventoryExpectedEnergyKWh nullable.Float64 `json:"inventory_expected_energy_kwh" swaggertype:"number" example:"56.6"`
 	InventoryReconciliationKWh nullable.Float64 `json:"inventory_reconciliation_kwh" swaggertype:"number" example:"-1.2"`
 	VehicleAvailableEnergyKWh  nullable.Float64 `json:"vehicle_available_energy_kwh" swaggertype:"number" example:"56.6"`
