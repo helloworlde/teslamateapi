@@ -61,7 +61,6 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 
 	tzName := h.tz.String()
 	localDriveStart := localTimestampSQL("start_date", "$2")
-	localUpdateStart := localTimestampSQL("start_date", "$2")
 	localPreviousUpdateStart := localTimestampSQL("previous_start_date", "$2")
 	utcNow := utcNowTimestampSQL()
 
@@ -90,30 +89,12 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(-MIN(power_min), 0) AS max_regen_power,
 				AVG(outside_temp_avg) AS avg_outside_temp,
 				AVG(inside_temp_avg) AS avg_inside_temp,
-				COALESCE(SUM(
-					CASE WHEN start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency
-					ELSE 0 END
-				), 0) AS total_kwh,
+				COALESCE(SUM(%[5]s), 0) AS total_kwh,
 				CASE WHEN SUM(distance) > 0 THEN
-					SUM(
-						CASE WHEN start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-						THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency
-						ELSE 0 END
-					) / NULLIF(SUM(distance), 0) * 1000
+					SUM(%[5]s) / NULLIF(SUM(distance), 0) * 1000
 				ELSE 0 END AS avg_consumption,
-				MIN(
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) AS best_consumption,
-				MAX(
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) AS worst_consumption,
+				MIN(%[6]s) AS best_consumption,
+				MAX(%[6]s) AS worst_consumption,
 				CASE WHEN SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) > 0
 					THEN SUM(distance) / SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) * 100
 					ELSE 0 END AS range_achievement_pct,
@@ -127,41 +108,17 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				(array_agg(end_date ORDER BY power_max DESC NULLS LAST, start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_end_date,
 				(array_agg(start_date ORDER BY power_min ASC NULLS LAST, start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS max_regen_power_start_date,
 				(array_agg(end_date ORDER BY power_min ASC NULLS LAST, start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS max_regen_power_end_date,
-				(array_agg(start_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) ASC NULLS LAST, start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(start_date ORDER BY (%[6]s) ASC NULLS LAST, start_date ASC) FILTER (
+					WHERE %[7]s
 				))[1] AS best_consumption_start_date,
-				(array_agg(end_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) ASC NULLS LAST, start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(end_date ORDER BY (%[6]s) ASC NULLS LAST, start_date ASC) FILTER (
+					WHERE %[7]s
 				))[1] AS best_consumption_end_date,
-				(array_agg(start_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) DESC NULLS LAST, start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(start_date ORDER BY (%[6]s) DESC NULLS LAST, start_date ASC) FILTER (
+					WHERE %[7]s
 				))[1] AS worst_consumption_start_date,
-				(array_agg(end_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) DESC NULLS LAST, start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(end_date ORDER BY (%[6]s) DESC NULLS LAST, start_date ASC) FILTER (
+					WHERE %[7]s
 				))[1] AS worst_consumption_end_date
 			FROM drives
 			LEFT JOIN cars ON cars.id = drives.car_id
@@ -439,7 +396,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		LEFT JOIN pk ON true
 		LEFT JOIN up ON true
 		LEFT JOIN cm ON true
-		LEFT JOIN rd ON true;`, localDriveStart, utcNow, localUpdateStart, localPreviousUpdateStart)
+		LEFT JOIN rd ON true;`, localDriveStart, utcNow, localDriveStart, localPreviousUpdateStart,
+		driveEnergyKWh, driveConsumptionWhPerKm, driveConsumptionFilter)
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, tzName)
 	err := row.Scan(

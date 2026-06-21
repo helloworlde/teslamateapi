@@ -238,70 +238,31 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				COUNT(*) AS cnt,
 				SUM(distance) AS dist,
 				SUM(duration_min) AS dur,
-				SUM(
-					CASE WHEN start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency
-					ELSE 0 END
-				) AS kwh,
-				SUM(distance) AS dist_for_avg,
+				SUM(%[10]s) AS kwh,
 				COALESCE(MAX(distance), 0) AS longest_dist,
 				COALESCE(MAX(duration_min), 0) AS longest_dur,
 				COALESCE(MAX(speed_max), 0) AS max_speed,
 				COALESCE(MAX(power_max), 0) AS peak_drive_power,
 				COALESCE(-MIN(power_min), 0) AS peak_regen_power,
-				MIN(
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) AS best_consumption,
-				MAX(
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) AS worst_consumption,
+				MIN(%[11]s) AS best_consumption,
+				MAX(%[11]s) AS worst_consumption,
 				(array_agg(d.start_date ORDER BY distance DESC NULLS LAST, d.start_date ASC) FILTER (WHERE distance IS NOT NULL))[1] AS longest_distance_start_date,
 				(array_agg(d.end_date ORDER BY distance DESC NULLS LAST, d.start_date ASC) FILTER (WHERE distance IS NOT NULL))[1] AS longest_distance_end_date,
 				(array_agg(d.start_date ORDER BY duration_min DESC NULLS LAST, d.start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_duration_start_date,
 				(array_agg(d.end_date ORDER BY duration_min DESC NULLS LAST, d.start_date ASC) FILTER (WHERE duration_min IS NOT NULL))[1] AS longest_duration_end_date,
 				(array_agg(d.start_date ORDER BY speed_max DESC NULLS LAST, d.start_date ASC) FILTER (WHERE speed_max IS NOT NULL))[1] AS max_speed_start_date,
 				(array_agg(d.end_date ORDER BY speed_max DESC NULLS LAST, d.start_date ASC) FILTER (WHERE speed_max IS NOT NULL))[1] AS max_speed_end_date,
-				(array_agg(d.start_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) ASC NULLS LAST, d.start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(d.start_date ORDER BY (%[11]s) ASC NULLS LAST, d.start_date ASC) FILTER (
+					WHERE %[12]s
 				))[1] AS best_consumption_start_date,
-				(array_agg(d.end_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) ASC NULLS LAST, d.start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(d.end_date ORDER BY (%[11]s) ASC NULLS LAST, d.start_date ASC) FILTER (
+					WHERE %[12]s
 				))[1] AS best_consumption_end_date,
-				(array_agg(d.start_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) DESC NULLS LAST, d.start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(d.start_date ORDER BY (%[11]s) DESC NULLS LAST, d.start_date ASC) FILTER (
+					WHERE %[12]s
 				))[1] AS worst_consumption_start_date,
-				(array_agg(d.end_date ORDER BY (
-					CASE WHEN distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
-					THEN GREATEST(start_rated_range_km - end_rated_range_km, 0) * cars.efficiency / distance * 1000
-					ELSE NULL END
-				) DESC NULLS LAST, d.start_date ASC) FILTER (
-					WHERE distance > 1 AND duration_min > 1 AND start_rated_range_km IS NOT NULL AND end_rated_range_km IS NOT NULL
-					AND GREATEST(start_rated_range_km - end_rated_range_km, 0) > 0
+				(array_agg(d.end_date ORDER BY (%[11]s) DESC NULLS LAST, d.start_date ASC) FILTER (
+					WHERE %[12]s
 				))[1] AS worst_consumption_end_date,
 				(array_agg(d.start_date ORDER BY power_max DESC NULLS LAST, d.start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_start_date,
 				(array_agg(d.end_date ORDER BY power_max DESC NULLS LAST, d.start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_end_date,
@@ -479,7 +440,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			COALESCE(drv.dist, 0),
 			COALESCE(drv.dur, 0),
 			COALESCE(drv.kwh, 0),
-			CASE WHEN COALESCE(drv.dist_for_avg, 0) > 0 THEN drv.kwh / drv.dist_for_avg * 1000 ELSE 0 END AS avg_consumption,
+			CASE WHEN COALESCE(drv.dist, 0) > 0 THEN drv.kwh / drv.dist * 1000 ELSE 0 END AS avg_consumption,
 			COALESCE(drv.longest_dist, 0),
 			COALESCE(drv.longest_dur, 0),
 			COALESCE(drv.max_speed, 0),
@@ -547,6 +508,9 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		dateFilterDrives,
 		dateFilterCharges,
 		dateFilterParkings,
+		driveEnergyKWh,
+		driveConsumptionWhPerKm,
+		driveConsumptionFilter,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)
