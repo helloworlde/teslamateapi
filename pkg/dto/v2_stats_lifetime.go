@@ -158,8 +158,9 @@ type V2UpdatesAgg struct {
 //
 // RecordedDays is distinct days observed across drives + charging_processes
 // — different from (now - since) because data may have gaps. AvgDaily /
-// AvgMonthly distance are server-computed against RecordedDays so clients
-// can render canonical figures without re-deriving them.
+// AvgMonthly distance are server-computed over *driving* days/months (days
+// and months in which the car actually drove), so charge-only days don't
+// dilute them; clients can render canonical figures without re-deriving them.
 type V2Lifetime struct {
 	Car                Car             `json:"car"`
 	CarMeta            V2CarMeta       `json:"car_meta"`

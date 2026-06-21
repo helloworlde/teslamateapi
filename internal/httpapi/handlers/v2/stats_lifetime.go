@@ -76,6 +76,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				MAX(end_km) AS current_odometer,
 				COUNT(*) AS cnt,
 				COUNT(DISTINCT date_trunc('day', %[1]s)) AS active_days,
+				COUNT(DISTINCT date_trunc('month', %[1]s)) AS active_months,
 				COALESCE(SUM(distance), 0) AS total_km,
 				COALESCE(SUM(duration_min), 0) AS total_dur,
 				COALESCE(MAX(speed_max), 0) AS max_speed,
@@ -313,8 +314,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		),
 		rd AS (
 			SELECT
-				COUNT(DISTINCT day) AS recorded_days,
-				COUNT(DISTINCT date_trunc('month', day)) AS recorded_months
+				COUNT(DISTINCT day) AS recorded_days
 			FROM (
 				SELECT date_trunc('day', %[1]s) AS day
 				FROM drives WHERE car_id = $1 AND end_date IS NOT NULL
@@ -327,11 +327,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			(SELECT name FROM cars WHERE id = $1),
 			d.since,
 			COALESCE(rd.recorded_days, 0),
-			CASE WHEN COALESCE(rd.recorded_days, 0) > 0
-				THEN COALESCE(d.total_km, 0) / rd.recorded_days
+			-- avg distance is per *driving* day/month (active_days/active_months),
+			-- not per recorded day: numerator is drive distance, so charge-only
+			-- days must not dilute the denominator.
+			CASE WHEN COALESCE(d.active_days, 0) > 0
+				THEN COALESCE(d.total_km, 0) / d.active_days
 				ELSE 0 END AS avg_daily_distance,
-			CASE WHEN COALESCE(rd.recorded_months, 0) > 0
-				THEN COALESCE(d.total_km, 0) / rd.recorded_months
+			CASE WHEN COALESCE(d.active_months, 0) > 0
+				THEN COALESCE(d.total_km, 0) / d.active_months
 				ELSE 0 END AS avg_monthly_distance,
 			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
 			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
