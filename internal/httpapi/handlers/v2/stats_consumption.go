@@ -3,12 +3,20 @@ package v2
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
 	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
+
+const temperatureConsumptionBucketCelsius = 5
+
+func temperatureConsumptionBucketExpr(column string) string {
+	width := strconv.Itoa(temperatureConsumptionBucketCelsius)
+	return "(floor(" + column + " / " + width + ") * " + width + ")"
+}
 
 // TeslaMateAPICarsStatsConsumptionV2 returns energy-consumption broken down by
 // one objective dimension — temperature band, firmware version, or season.
@@ -59,10 +67,10 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	)
 	switch groupBy {
 	case "temperature":
-		// 10°C-wide bands keyed by their Celsius lower bound; drives without a
+		// 5°C-wide bands keyed by their Celsius lower bound; drives without a
 		// recorded outside temperature can't be placed in a band.
-		keyExpr = "(floor(d.outside_temp_avg / 10) * 10)"
-		ordExpr = "(floor(d.outside_temp_avg / 10) * 10)"
+		keyExpr = temperatureConsumptionBucketExpr("d.outside_temp_avg")
+		ordExpr = temperatureConsumptionBucketExpr("d.outside_temp_avg")
 		whereExtra = "AND d.outside_temp_avg IS NOT NULL"
 	case "version":
 		// Each drive is attributed to the firmware version that was live when it
@@ -198,12 +206,12 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 			DeltaVsAvgPct: delta,
 		}
 		// Temperature bands carry their numeric edges so clients can render
-		// "20~30°C" without re-parsing the key.
+		// "20~25°C" without re-parsing the key.
 		if groupBy == "temperature" {
 			if g.key != "" {
 				low := convert.StrToFloat(g.key)
 				grp.TempLow = NullFloat64{NullFloat64: sql.NullFloat64{Float64: low, Valid: true}}
-				grp.TempHigh = NullFloat64{NullFloat64: sql.NullFloat64{Float64: low + 10, Valid: true}}
+				grp.TempHigh = NullFloat64{NullFloat64: sql.NullFloat64{Float64: low + temperatureConsumptionBucketCelsius, Valid: true}}
 			}
 		}
 		groups = append(groups, grp)

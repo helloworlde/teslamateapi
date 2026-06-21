@@ -2000,7 +2000,7 @@ definitions:
         example: "20"
         type: string
       temp_high:
-        example: 30
+        example: 25
         type: number
       temp_low:
         example: 20

@@ -4505,7 +4505,7 @@ const docTemplate = `{
                 },
                 "temp_high": {
                     "type": "number",
-                    "example": 30
+                    "example": 25
                 },
                 "temp_low": {
                     "type": "number",

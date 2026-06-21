@@ -14,7 +14,7 @@ type V2ConsumptionGroup struct {
 	EnergyKWh     float64          `json:"energy_kwh" example:"432.0"`
 	DeltaVsAvgPct float64          `json:"delta_vs_avg_pct" example:"-22.4"`
 	TempLow       nullable.Float64 `json:"temp_low" swaggertype:"number" example:"20"`
-	TempHigh      nullable.Float64 `json:"temp_high" swaggertype:"number" example:"30"`
+	TempHigh      nullable.Float64 `json:"temp_high" swaggertype:"number" example:"25"`
 }
 
 // V2ConsumptionData is the `data` field of V2ConsumptionResponse.
