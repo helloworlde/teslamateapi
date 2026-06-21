@@ -1875,6 +1875,9 @@ definitions:
       first_charge_date:
         example: "2020-01-05T19:30:00+01:00"
         type: string
+      free_supercharging_count:
+        example: 5
+        type: integer
       free_supercharging_kwh:
         example: 125
         type: number
@@ -1916,6 +1919,12 @@ definitions:
         type: integer
       shortest_session_duration_min:
         example: 12
+        type: integer
+      supercharger_count:
+        example: 73
+        type: integer
+      tesla_supercharger_count:
+        example: 68
         type: integer
       total_cost:
         example: 4321.5

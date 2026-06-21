@@ -4361,6 +4361,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2020-01-05T19:30:00+01:00"
                 },
+                "free_supercharging_count": {
+                    "type": "integer",
+                    "example": 5
+                },
                 "free_supercharging_kwh": {
                     "type": "number",
                     "example": 125
@@ -4416,6 +4420,14 @@ const docTemplate = `{
                 "shortest_session_duration_min": {
                     "type": "integer",
                     "example": 12
+                },
+                "supercharger_count": {
+                    "type": "integer",
+                    "example": 73
+                },
+                "tesla_supercharger_count": {
+                    "type": "integer",
+                    "example": 68
                 },
                 "total_cost": {
                     "type": "number",

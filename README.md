@@ -270,7 +270,8 @@ adjacent drives.
     `total_duration_min`, `total_energy_consumed_kwh`, `avg_consumption`,
     `best_consumption`, `longest_distance`, `max_speed`,
     `total_energy_added_kwh`, `total_cost`, `fast_charge_count`,
-    `fast_charge_energy_kwh`, `peak_power_max_kw`,
+    `supercharger_count`, `tesla_supercharger_count`,
+    `free_supercharging_count`, `fast_charge_energy_kwh`, `peak_power_max_kw`,
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
     (`Σ distance / Σ rated-range drop × 100`) and charges carry
     `cost_per_distance` (`total_cost / total_distance`, per km/mile).

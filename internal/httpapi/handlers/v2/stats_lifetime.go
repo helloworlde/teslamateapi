@@ -135,6 +135,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(SUM(duration_min), 0)::int AS total_duration_min,
 				COALESCE(AVG(duration_min), 0) AS avg_duration_min,
 				COUNT(*) FILTER (WHERE fast_present) AS fast_count,
+				COUNT(*) FILTER (WHERE fast_present) AS supercharger_count,
+				COUNT(*) FILTER (WHERE tesla_fast_present) AS tesla_supercharger_count,
+				COUNT(*) FILTER (WHERE fast_present AND has_free_supercharging) AS free_supercharging_count,
 				COUNT(*) FILTER (WHERE NOT fast_present) AS ac_count,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present), 0) AS fast_energy,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE NOT fast_present), 0) AS ac_energy,
@@ -169,11 +172,21 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					cp.address_id,
 					cp.start_date,
 					COALESCE(cs.free_supercharging, false) AS has_free_supercharging,
-					EXISTS(SELECT 1 FROM charges c WHERE c.charging_process_id = cp.id AND c.fast_charger_present) AS fast_present,
-					(SELECT MAX(charger_power) FROM charges c WHERE c.charging_process_id = cp.id) AS peak_power,
-					(SELECT MAX(charger_voltage) FROM charges c WHERE c.charging_process_id = cp.id) AS peak_voltage
+					COALESCE(chg.fast_present, false) AS fast_present,
+					COALESCE(chg.tesla_fast_present, false) AS tesla_fast_present,
+					chg.peak_power,
+					chg.peak_voltage
 				FROM charging_processes cp
 				LEFT JOIN car_settings cs ON cs.id = cp.car_id
+				LEFT JOIN LATERAL (
+					SELECT
+						bool_or(fast_charger_present) AS fast_present,
+						bool_or(fast_charger_present AND fast_charger_brand = 'Tesla') AS tesla_fast_present,
+						MAX(charger_power) AS peak_power,
+						MAX(charger_voltage) AS peak_voltage
+					FROM charges c
+					WHERE c.charging_process_id = cp.id
+				) chg ON true
 				WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL
 			) sub
 		),
@@ -301,6 +314,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
 			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.total_duration_min, 0), COALESCE(ch.avg_duration_min, 0),
 			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0),
+			COALESCE(ch.supercharger_count, 0), COALESCE(ch.tesla_supercharger_count, 0), COALESCE(ch.free_supercharging_count, 0),
 			COALESCE(ch.ac_count, 0), COALESCE(ch.ac_energy, 0),
 			COALESCE(ch.geofenced_energy, 0), COALESCE(ch.non_geofenced_energy, 0),
 			COALESCE(ch.free_sc_energy, 0),
@@ -349,6 +363,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
 		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
 		&charges.FastChargeCount, &charges.FastChargeEnergyKWh,
+		&charges.SuperchargerCount, &charges.TeslaSuperchargerCount, &charges.FreeSuperchargingCount,
 		&charges.ACChargeCount, &charges.ACChargeEnergyKWh,
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
 		&charges.FreeSuperchargingKWh,

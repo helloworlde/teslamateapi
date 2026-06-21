@@ -60,6 +60,9 @@ type V2ChargesAgg struct {
 	TotalDurationMin            int             `json:"total_duration_min" example:"18000"`
 	AvgDurationMin              float64         `json:"avg_duration_min" example:"42.3"`
 	FastChargeCount             int             `json:"fast_charge_count" example:"73"`
+	SuperchargerCount           int             `json:"supercharger_count" example:"73"`
+	TeslaSuperchargerCount      int             `json:"tesla_supercharger_count" example:"68"`
+	FreeSuperchargingCount      int             `json:"free_supercharging_count" example:"5"`
 	FastChargeEnergyKWh         float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
 	ACChargeCount               int             `json:"ac_charge_count" example:"354"`
 	ACChargeEnergyKWh           float64         `json:"ac_charge_energy_kwh" example:"13300.0"`
