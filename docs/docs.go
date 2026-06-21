@@ -4319,9 +4319,33 @@ const docTemplate = `{
                     "type": "number",
                     "example": 0.26
                 },
+                "avg_cost_per_kwh_ac": {
+                    "type": "number",
+                    "example": 0.18
+                },
+                "avg_cost_per_kwh_dc": {
+                    "type": "number",
+                    "example": 0.42
+                },
+                "avg_duration_ac_min": {
+                    "type": "number",
+                    "example": 180.4
+                },
+                "avg_duration_dc_min": {
+                    "type": "number",
+                    "example": 28.6
+                },
                 "avg_duration_min": {
                     "type": "number",
                     "example": 42.3
+                },
+                "avg_energy_per_ac_session_kwh": {
+                    "type": "number",
+                    "example": 22.1
+                },
+                "avg_energy_per_dc_session_kwh": {
+                    "type": "number",
+                    "example": 48.2
                 },
                 "avg_energy_per_session_kwh": {
                     "type": "number",
@@ -4338,6 +4362,14 @@ const docTemplate = `{
                 "avg_session_cost": {
                     "type": "number",
                     "example": 12.3
+                },
+                "avg_session_cost_ac": {
+                    "type": "number",
+                    "example": 4.5
+                },
+                "avg_session_cost_dc": {
+                    "type": "number",
+                    "example": 19.8
                 },
                 "cost_per_distance": {
                     "description": "CostPerKm = total charging cost / total drive distance — the all-in,\nout-of-pocket per-distance rate (includes charging loss, parking drain, and\nnet battery-inventory change). Converted to per-mile when unit_of_length is\nmi. Currency matches charging_processes.cost.",
@@ -5405,6 +5437,50 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01T00:00:00+01:00"
                 },
+                "charges_ac_cost": {
+                    "type": "number",
+                    "example": 40.2
+                },
+                "charges_ac_count": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "charges_ac_duration_min": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "charges_ac_energy_added_kwh": {
+                    "type": "number",
+                    "example": 221.4
+                },
+                "charges_ac_energy_used_kwh": {
+                    "type": "number",
+                    "example": 232
+                },
+                "charges_avg_cost_per_kwh_ac": {
+                    "type": "number",
+                    "example": 0.18
+                },
+                "charges_avg_cost_per_kwh_dc": {
+                    "type": "number",
+                    "example": 0.42
+                },
+                "charges_avg_duration_ac_min": {
+                    "type": "number",
+                    "example": 50
+                },
+                "charges_avg_duration_dc_min": {
+                    "type": "number",
+                    "example": 28
+                },
+                "charges_avg_energy_per_ac_session_kwh": {
+                    "type": "number",
+                    "example": 22.1
+                },
+                "charges_avg_energy_per_dc_session_kwh": {
+                    "type": "number",
+                    "example": 40.9
+                },
                 "charges_avg_power_ac_kw": {
                     "type": "number",
                     "example": 7.2
@@ -5413,6 +5489,14 @@ const docTemplate = `{
                     "type": "number",
                     "example": 120.5
                 },
+                "charges_avg_session_cost_ac": {
+                    "type": "number",
+                    "example": 4.02
+                },
+                "charges_avg_session_cost_dc": {
+                    "type": "number",
+                    "example": 17.04
+                },
                 "charges_cost": {
                     "type": "number",
                     "example": 125.4
@@ -5420,6 +5504,26 @@ const docTemplate = `{
                 "charges_count": {
                     "type": "integer",
                     "example": 15
+                },
+                "charges_dc_cost": {
+                    "type": "number",
+                    "example": 85.2
+                },
+                "charges_dc_count": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "charges_dc_duration_min": {
+                    "type": "integer",
+                    "example": 140
+                },
+                "charges_dc_energy_added_kwh": {
+                    "type": "number",
+                    "example": 204.3
+                },
+                "charges_dc_energy_used_kwh": {
+                    "type": "number",
+                    "example": 213
                 },
                 "charges_duration_min": {
                     "type": "integer",

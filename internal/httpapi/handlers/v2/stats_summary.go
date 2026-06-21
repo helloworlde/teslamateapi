@@ -119,6 +119,24 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		ChargesEnergyUsedKWh            float64    `json:"charges_energy_used_kwh"`
 		ChargesDurationMin              int        `json:"charges_duration_min"`
 		ChargesCost                     float64    `json:"charges_cost"`
+		ChargesACCount                  int        `json:"charges_ac_count"`
+		ChargesDCCount                  int        `json:"charges_dc_count"`
+		ChargesACEnergyAddedKWh         float64    `json:"charges_ac_energy_added_kwh"`
+		ChargesDCEnergyAddedKWh         float64    `json:"charges_dc_energy_added_kwh"`
+		ChargesACEnergyUsedKWh          float64    `json:"charges_ac_energy_used_kwh"`
+		ChargesDCEnergyUsedKWh          float64    `json:"charges_dc_energy_used_kwh"`
+		ChargesACDurationMin            int        `json:"charges_ac_duration_min"`
+		ChargesDCDurationMin            int        `json:"charges_dc_duration_min"`
+		ChargesACCost                   float64    `json:"charges_ac_cost"`
+		ChargesDCCost                   float64    `json:"charges_dc_cost"`
+		ChargesAvgDurationACMin         float64    `json:"charges_avg_duration_ac_min"`
+		ChargesAvgDurationDCMin         float64    `json:"charges_avg_duration_dc_min"`
+		ChargesAvgEnergyPerACSessionKWh float64    `json:"charges_avg_energy_per_ac_session_kwh"`
+		ChargesAvgEnergyPerDCSessionKWh float64    `json:"charges_avg_energy_per_dc_session_kwh"`
+		ChargesAvgSessionCostAC         float64    `json:"charges_avg_session_cost_ac"`
+		ChargesAvgSessionCostDC         float64    `json:"charges_avg_session_cost_dc"`
+		ChargesAvgCostPerKWhAC          float64    `json:"charges_avg_cost_per_kwh_ac"`
+		ChargesAvgCostPerKWhDC          float64    `json:"charges_avg_cost_per_kwh_dc"`
 		FastChargeRatio                 float64    `json:"fast_charge_ratio"`
 		ChargesLongestSessionMin        int        `json:"charges_longest_session_duration_min"`
 		ChargesLargestSessionKWh        float64    `json:"charges_largest_session_kwh"`
@@ -302,6 +320,30 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				SUM(GREATEST(charge_energy_used, charge_energy_added)) AS used,
 				SUM(duration_min)::int AS dur,
 				SUM(cost) AS cost,
+				COUNT(*) FILTER (WHERE NOT fast_present) AS ac_count,
+				COUNT(*) FILTER (WHERE fast_present) AS dc_count,
+				COALESCE(SUM(charge_energy_added) FILTER (WHERE NOT fast_present), 0) AS ac_added,
+				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present), 0) AS dc_added,
+				COALESCE(SUM(GREATEST(charge_energy_used, charge_energy_added)) FILTER (WHERE NOT fast_present), 0) AS ac_used,
+				COALESCE(SUM(GREATEST(charge_energy_used, charge_energy_added)) FILTER (WHERE fast_present), 0) AS dc_used,
+				COALESCE(SUM(duration_min) FILTER (WHERE NOT fast_present), 0)::int AS ac_dur,
+				COALESCE(SUM(duration_min) FILTER (WHERE fast_present), 0)::int AS dc_dur,
+				COALESCE(SUM(cost) FILTER (WHERE NOT fast_present), 0) AS ac_cost,
+				COALESCE(SUM(cost) FILTER (WHERE fast_present), 0) AS dc_cost,
+				COALESCE(AVG(duration_min) FILTER (WHERE NOT fast_present), 0) AS avg_duration_ac,
+				COALESCE(AVG(duration_min) FILTER (WHERE fast_present), 0) AS avg_duration_dc,
+				COALESCE(AVG(charge_energy_added) FILTER (WHERE NOT fast_present), 0) AS avg_energy_ac,
+				COALESCE(AVG(charge_energy_added) FILTER (WHERE fast_present), 0) AS avg_energy_dc,
+				COALESCE(AVG(cost) FILTER (WHERE NOT fast_present AND cost IS NOT NULL), 0) AS avg_session_cost_ac,
+				COALESCE(AVG(cost) FILTER (WHERE fast_present AND cost IS NOT NULL), 0) AS avg_session_cost_dc,
+				CASE WHEN SUM(charge_energy_added) FILTER (WHERE NOT fast_present) > 0
+					THEN COALESCE(SUM(cost) FILTER (WHERE NOT fast_present), 0)
+						/ NULLIF(SUM(charge_energy_added) FILTER (WHERE NOT fast_present), 0)
+					ELSE 0 END AS avg_cost_per_kwh_ac,
+				CASE WHEN SUM(charge_energy_added) FILTER (WHERE fast_present) > 0
+					THEN COALESCE(SUM(cost) FILTER (WHERE fast_present), 0)
+						/ NULLIF(SUM(charge_energy_added) FILTER (WHERE fast_present), 0)
+					ELSE 0 END AS avg_cost_per_kwh_dc,
 				COALESCE(
 					SUM(charge_energy_added) FILTER (WHERE fast_present)
 					/ NULLIF(SUM(charge_energy_added), 0),
@@ -457,6 +499,24 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			COALESCE(ch.used, 0),
 			COALESCE(ch.dur, 0),
 			COALESCE(ch.cost, 0),
+			COALESCE(ch.ac_count, 0),
+			COALESCE(ch.dc_count, 0),
+			COALESCE(ch.ac_added, 0),
+			COALESCE(ch.dc_added, 0),
+			COALESCE(ch.ac_used, 0),
+			COALESCE(ch.dc_used, 0),
+			COALESCE(ch.ac_dur, 0),
+			COALESCE(ch.dc_dur, 0),
+			COALESCE(ch.ac_cost, 0),
+			COALESCE(ch.dc_cost, 0),
+			COALESCE(ch.avg_duration_ac, 0),
+			COALESCE(ch.avg_duration_dc, 0),
+			COALESCE(ch.avg_energy_ac, 0),
+			COALESCE(ch.avg_energy_dc, 0),
+			COALESCE(ch.avg_session_cost_ac, 0),
+			COALESCE(ch.avg_session_cost_dc, 0),
+			COALESCE(ch.avg_cost_per_kwh_ac, 0),
+			COALESCE(ch.avg_cost_per_kwh_dc, 0),
 			COALESCE(ch.fast_ratio, 0),
 			COALESCE(ch.longest_session_dur, 0),
 			COALESCE(ch.largest_session_energy, 0),
@@ -531,6 +591,24 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.ChargesEnergyUsedKWh,
 			&b.ChargesDurationMin,
 			&b.ChargesCost,
+			&b.ChargesACCount,
+			&b.ChargesDCCount,
+			&b.ChargesACEnergyAddedKWh,
+			&b.ChargesDCEnergyAddedKWh,
+			&b.ChargesACEnergyUsedKWh,
+			&b.ChargesDCEnergyUsedKWh,
+			&b.ChargesACDurationMin,
+			&b.ChargesDCDurationMin,
+			&b.ChargesACCost,
+			&b.ChargesDCCost,
+			&b.ChargesAvgDurationACMin,
+			&b.ChargesAvgDurationDCMin,
+			&b.ChargesAvgEnergyPerACSessionKWh,
+			&b.ChargesAvgEnergyPerDCSessionKWh,
+			&b.ChargesAvgSessionCostAC,
+			&b.ChargesAvgSessionCostDC,
+			&b.ChargesAvgCostPerKWhAC,
+			&b.ChargesAvgCostPerKWhDC,
 			&b.FastChargeRatio,
 			&b.ChargesLongestSessionMin,
 			&b.ChargesLargestSessionKWh,

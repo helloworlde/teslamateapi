@@ -177,9 +177,21 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				CASE WHEN SUM(charge_energy_added) > 0
 					THEN SUM(cost) / NULLIF(SUM(charge_energy_added), 0)
 					ELSE 0 END AS avg_cost_per_kwh,
+				CASE WHEN SUM(charge_energy_added) FILTER (WHERE NOT fast_present) > 0
+					THEN COALESCE(SUM(cost) FILTER (WHERE NOT fast_present), 0)
+						/ NULLIF(SUM(charge_energy_added) FILTER (WHERE NOT fast_present), 0)
+					ELSE 0 END AS avg_cost_per_kwh_ac,
+				CASE WHEN SUM(charge_energy_added) FILTER (WHERE fast_present) > 0
+					THEN COALESCE(SUM(cost) FILTER (WHERE fast_present), 0)
+						/ NULLIF(SUM(charge_energy_added) FILTER (WHERE fast_present), 0)
+					ELSE 0 END AS avg_cost_per_kwh_dc,
 				COALESCE(AVG(charge_energy_added), 0) AS avg_energy_per_session,
+				COALESCE(AVG(charge_energy_added) FILTER (WHERE NOT fast_present), 0) AS avg_energy_per_ac_session,
+				COALESCE(AVG(charge_energy_added) FILTER (WHERE fast_present), 0) AS avg_energy_per_dc_session,
 				COALESCE(SUM(duration_min), 0)::int AS total_duration_min,
 				COALESCE(AVG(duration_min), 0) AS avg_duration_min,
+				COALESCE(AVG(duration_min) FILTER (WHERE NOT fast_present), 0) AS avg_duration_ac_min,
+				COALESCE(AVG(duration_min) FILTER (WHERE fast_present), 0) AS avg_duration_dc_min,
 				COUNT(*) FILTER (WHERE fast_present) AS fast_count,
 				COUNT(*) FILTER (WHERE supercharger_present) AS supercharger_count,
 				COUNT(*) FILTER (WHERE supercharger_present AND has_free_supercharging) AS free_supercharging_count,
@@ -204,6 +216,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				(array_agg(start_date ORDER BY cost DESC NULLS LAST, start_date ASC) FILTER (WHERE cost IS NOT NULL))[1] AS max_session_cost_start_date,
 				(array_agg(end_date ORDER BY cost DESC NULLS LAST, start_date ASC) FILTER (WHERE cost IS NOT NULL))[1] AS max_session_cost_end_date,
 				COALESCE(AVG(cost) FILTER (WHERE cost IS NOT NULL), 0) AS avg_session_cost,
+				COALESCE(AVG(cost) FILTER (WHERE NOT fast_present AND cost IS NOT NULL), 0) AS avg_session_cost_ac,
+				COALESCE(AVG(cost) FILTER (WHERE fast_present AND cost IS NOT NULL), 0) AS avg_session_cost_dc,
 				COALESCE(AVG(peak_power) FILTER (WHERE NOT fast_present), 0) AS avg_power_ac,
 				COALESCE(AVG(peak_power) FILTER (WHERE fast_present), 0) AS avg_power_dc,
 				COALESCE(MAX(peak_power) FILTER (WHERE NOT fast_present), 0) AS max_power_ac,
@@ -385,8 +399,11 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(d.active_days, 0), d.last_drive_date, COALESCE(d.current_odometer, 0),
 			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
 			COALESCE(ch.avg_cost_per_kwh, 0),
+			COALESCE(ch.avg_cost_per_kwh_ac, 0), COALESCE(ch.avg_cost_per_kwh_dc, 0),
 			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
 			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.total_duration_min, 0), COALESCE(ch.avg_duration_min, 0),
+			COALESCE(ch.avg_energy_per_ac_session, 0), COALESCE(ch.avg_energy_per_dc_session, 0),
+			COALESCE(ch.avg_duration_ac_min, 0), COALESCE(ch.avg_duration_dc_min, 0),
 			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0),
 			COALESCE(ch.supercharger_count, 0), COALESCE(ch.free_supercharging_count, 0),
 			COALESCE(ch.ac_count, 0), COALESCE(ch.ac_energy, 0),
@@ -396,6 +413,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			COALESCE(ch.shortest_session_dur, 0),
 			COALESCE(ch.longest_session_dur, 0), COALESCE(ch.largest_session_energy, 0),
 			COALESCE(ch.max_session_cost, 0), COALESCE(ch.avg_session_cost, 0),
+			COALESCE(ch.avg_session_cost_ac, 0), COALESCE(ch.avg_session_cost_dc, 0),
 			ch.peak_power_date, ch.peak_voltage_date,
 			ch.longest_session_start_date, ch.longest_session_end_date,
 			ch.largest_session_start_date, ch.largest_session_end_date,
@@ -450,7 +468,10 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.ActiveDays, &drives.LastDriveDate, &drives.CurrentOdometer,
 		// charges
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
-		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
+		&charges.AvgCostPerKWh, &charges.AvgCostPerKWhAC, &charges.AvgCostPerKWhDC,
+		&charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
+		&charges.AvgEnergyPerACSession, &charges.AvgEnergyPerDCSession,
+		&charges.AvgDurationACMin, &charges.AvgDurationDCMin,
 		&charges.FastChargeCount, &charges.FastChargeEnergyKWh,
 		&charges.SuperchargerCount, &charges.FreeSuperchargingCount,
 		&charges.ACChargeCount, &charges.ACChargeEnergyKWh,
@@ -460,6 +481,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&charges.ShortestSessionDurationMin,
 		&charges.LongestSessionDurationMin, &charges.LargestSessionEnergyKWh,
 		&charges.MaxSessionCost, &charges.AvgSessionCost,
+		&charges.AvgSessionCostAC, &charges.AvgSessionCostDC,
 		&charges.PeakPowerDate, &charges.PeakVoltageDate,
 		&charges.LongestSessionStartDate, &charges.LongestSessionEndDate,
 		&charges.LargestSessionStartDate, &charges.LargestSessionEndDate,

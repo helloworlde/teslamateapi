@@ -271,10 +271,12 @@ adjacent drives.
     `best_consumption`, `longest_distance`, `max_speed`,
     `total_energy_added_kwh`, `total_cost`, `fast_charge_count`,
     `supercharger_count`, `free_supercharging_count`,
-    `fast_charge_energy_kwh`, `peak_power_max_kw`,
+    `fast_charge_energy_kwh`, `ac_charge_energy_kwh`, `peak_power_max_kw`,
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
     (`Σ distance / Σ rated-range drop × 100`) and charges carry
     `cost_per_distance` (`total_cost / total_distance`, per km/mile).
+    Charge averages are also split by AC/DC, including duration, energy,
+    session cost, and cost per kWh.
   - Extremum fields also include matching timestamp fields where available
     (for example `max_speed_start_date`, `peak_power_date`,
     `longest_parking_start_date`, and OTA interval start/end dates).
@@ -285,6 +287,8 @@ adjacent drives.
     or line chart directly. Empty buckets are omitted.
   - Bucket-level drive and charge extrema include matching timestamp fields
     such as `drives_max_speed_start_date` and `charges_max_power_date`.
+  - Bucket-level charge totals and averages include AC/DC splits for count,
+    energy, duration, cost, session averages, and cost per kWh.
   - Supported parameters: `period`, `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/energy-flow`
   - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side
@@ -349,6 +353,10 @@ the denominator and which costs are folded in. Read this before charting them.
 |---|---|
 | `total_cost` | Sum of `charging_processes.cost` over all charges. |
 | `avg_cost_per_kwh` | `SUM(cost) ÷ SUM(charge_energy_added)` (battery-side). Free/zero-cost charges still contribute energy to the denominator, so this is biased low versus the rate paid for billed energy. |
+| `avg_cost_per_kwh_ac` / `avg_cost_per_kwh_dc` | Same battery-side calculation, filtered by AC sessions (`NOT fast_charger_present`) or DC sessions (`fast_charger_present`). |
+| `avg_duration_ac_min` / `avg_duration_dc_min` | Average completed charging-process duration, filtered by AC/DC. |
+| `avg_energy_per_ac_session_kwh` / `avg_energy_per_dc_session_kwh` | Average `charge_energy_added` per completed AC/DC session. |
+| `avg_session_cost_ac` / `avg_session_cost_dc` | Average non-null session cost, filtered by AC/DC. |
 | `cost_per_distance` | Total charging cost ÷ total drive distance — the all-in, out-of-pocket per-distance rate (includes charging loss, parking drain, and net battery-inventory change). Per mile when `unit_of_length` is `mi`. |
 
 ##### `/api/v2/cars/:CarID/charges/:ChargeID/usage` (single charge)

@@ -37,6 +37,24 @@ type V2SummaryBucket struct {
 	ChargesEnergyUsedKWh            float64         `json:"charges_energy_used_kwh" example:"445.0"`
 	ChargesDurationMin              int             `json:"charges_duration_min" example:"640"`
 	ChargesCost                     float64         `json:"charges_cost" example:"125.40"`
+	ChargesACCount                  int             `json:"charges_ac_count" example:"10"`
+	ChargesDCCount                  int             `json:"charges_dc_count" example:"5"`
+	ChargesACEnergyAddedKWh         float64         `json:"charges_ac_energy_added_kwh" example:"221.4"`
+	ChargesDCEnergyAddedKWh         float64         `json:"charges_dc_energy_added_kwh" example:"204.3"`
+	ChargesACEnergyUsedKWh          float64         `json:"charges_ac_energy_used_kwh" example:"232.0"`
+	ChargesDCEnergyUsedKWh          float64         `json:"charges_dc_energy_used_kwh" example:"213.0"`
+	ChargesACDurationMin            int             `json:"charges_ac_duration_min" example:"500"`
+	ChargesDCDurationMin            int             `json:"charges_dc_duration_min" example:"140"`
+	ChargesACCost                   float64         `json:"charges_ac_cost" example:"40.20"`
+	ChargesDCCost                   float64         `json:"charges_dc_cost" example:"85.20"`
+	ChargesAvgDurationACMin         float64         `json:"charges_avg_duration_ac_min" example:"50.0"`
+	ChargesAvgDurationDCMin         float64         `json:"charges_avg_duration_dc_min" example:"28.0"`
+	ChargesAvgEnergyPerACSessionKWh float64         `json:"charges_avg_energy_per_ac_session_kwh" example:"22.1"`
+	ChargesAvgEnergyPerDCSessionKWh float64         `json:"charges_avg_energy_per_dc_session_kwh" example:"40.9"`
+	ChargesAvgSessionCostAC         float64         `json:"charges_avg_session_cost_ac" example:"4.02"`
+	ChargesAvgSessionCostDC         float64         `json:"charges_avg_session_cost_dc" example:"17.04"`
+	ChargesAvgCostPerKWhAC          float64         `json:"charges_avg_cost_per_kwh_ac" example:"0.18"`
+	ChargesAvgCostPerKWhDC          float64         `json:"charges_avg_cost_per_kwh_dc" example:"0.42"`
 	FastChargeRatio                 float64         `json:"fast_charge_ratio" example:"0.32"`
 	ChargesLongestSessionMin        int             `json:"charges_longest_session_duration_min" example:"180"`
 	ChargesLargestSessionKWh        float64         `json:"charges_largest_session_kwh" example:"78.4"`
