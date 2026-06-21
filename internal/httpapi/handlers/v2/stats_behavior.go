@@ -13,10 +13,10 @@ import (
 )
 
 // tripDistEdgesKm are the lower bounds of the trip-length histogram bands in
-// kilometres. The final band (200+) is open-ended. Kept in km because the
+// kilometres. The final band (100+) is open-ended. Kept in km because the
 // underlying drives.distance is metric; edges are converted to the user's unit
 // for display, mirroring how consumption renders temperature bands.
-var tripDistEdgesKm = []float64{0, 5, 20, 50, 100, 200}
+var tripDistEdgesKm = []float64{0, 5, 10, 20, 50, 100}
 
 // TeslaMateAPICarsStatsBehaviorV2 returns three objective usage distributions
 // in one response: a weekday×hour activity heatmap, a charge-level histogram,
@@ -185,11 +185,11 @@ func (h *Handler) StatsBehavior(c *gin.Context) {
 		SELECT
 			CASE
 				WHEN d.distance <   5 THEN 0
-				WHEN d.distance <  20 THEN 5
+				WHEN d.distance <  10 THEN 5
+				WHEN d.distance <  20 THEN 10
 				WHEN d.distance <  50 THEN 20
 				WHEN d.distance < 100 THEN 50
-				WHEN d.distance < 200 THEN 100
-				ELSE 200
+				ELSE 100
 			END AS low,
 			COUNT(*)::int AS trips,
 			COALESCE(SUM(d.distance), 0) AS dist,
@@ -254,7 +254,7 @@ func (h *Handler) StatsBehavior(c *gin.Context) {
 	}
 
 	// Distance is the only unit-dependent figure; convert km→mi for display.
-	// Bucket edges convert too, so a "5–20 km" band reads "3.1–12.4 mi" — the
+	// Bucket edges convert too, so a "5–10 km" band reads "3.1–6.2 mi" — the
 	// same trade-off consumption makes for temperature bands.
 	if UnitsLength == "mi" {
 		for i := range heatmap {

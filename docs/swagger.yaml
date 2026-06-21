@@ -1520,7 +1520,7 @@ definitions:
   dto.V2BehaviorTripTypeBucket:
     properties:
       dist_high:
-        example: 20
+        example: 10
         type: number
       dist_low:
         example: 5

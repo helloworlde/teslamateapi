@@ -36,7 +36,7 @@ type V2BehaviorChargeLevelBucket struct {
 type V2BehaviorTripTypeBucket struct {
 	Key        string           `json:"key" example:"5"`
 	DistLow    float64          `json:"dist_low" example:"5"`
-	DistHigh   nullable.Float64 `json:"dist_high" swaggertype:"number" example:"20"`
+	DistHigh   nullable.Float64 `json:"dist_high" swaggertype:"number" example:"10"`
 	TripsCount int              `json:"trips_count" example:"312"`
 	Distance   float64          `json:"distance" example:"3840.0"`
 	EnergyKWh  float64          `json:"energy_kwh" example:"690.0"`

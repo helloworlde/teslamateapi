@@ -3889,7 +3889,7 @@ const docTemplate = `{
             "properties": {
                 "dist_high": {
                     "type": "number",
-                    "example": 20
+                    "example": 10
                 },
                 "dist_low": {
                     "type": "number",
