@@ -28,7 +28,7 @@ concurrency:
 jobs:
   prepare:
     name: prepare metadata
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
 
     outputs:
       image_name: ${{ steps.image.outputs.name }}
@@ -52,18 +52,16 @@ jobs:
 
   build:
     name: build (${{ matrix.platform }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: self-hosted
     needs:
       - prepare
     strategy:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu-24.04
-            platform: linux/amd64
+          - platform: linux/amd64
             arch: x86_64
-          - runner: ubuntu-24.04-arm
-            platform: linux/arm64
+          - platform: linux/arm64
             arch: aarch64
 
     steps:
@@ -133,7 +131,7 @@ jobs:
 
   manifest:
     name: manifest (multi-arch)
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs:
       - prepare
       - build
