@@ -4353,6 +4353,7 @@ const docTemplate = `{
                     "example": 42
                 },
                 "fast_charge_count": {
+                    "description": "FastChargeCount counts sessions with any DC fast charging\n(fast_charger_present), regardless of network or brand.",
                     "type": "integer",
                     "example": 73
                 },
@@ -4365,6 +4366,7 @@ const docTemplate = `{
                     "example": "2020-01-05T19:30:00+01:00"
                 },
                 "free_supercharging_count": {
+                    "description": "FreeSuperchargingCount counts Supercharger sessions covered by free\nsupercharging (car_settings.free_supercharging).",
                     "type": "integer",
                     "example": 5
                 },
@@ -4425,12 +4427,9 @@ const docTemplate = `{
                     "example": 12
                 },
                 "supercharger_count": {
+                    "description": "SuperchargerCount counts Tesla Supercharger sessions\n(fast_charger_present AND fast_charger_brand = 'Tesla'); a subset of\nfast_charge_count.",
                     "type": "integer",
-                    "example": 73
-                },
-                "tesla_supercharger_count": {
-                    "type": "integer",
-                    "example": 68
+                    "example": 70
                 },
                 "total_cost": {
                     "type": "number",

@@ -135,15 +135,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(SUM(duration_min), 0)::int AS total_duration_min,
 				COALESCE(AVG(duration_min), 0) AS avg_duration_min,
 				COUNT(*) FILTER (WHERE fast_present) AS fast_count,
-				COUNT(*) FILTER (WHERE fast_present) AS supercharger_count,
-				COUNT(*) FILTER (WHERE tesla_fast_present) AS tesla_supercharger_count,
-				COUNT(*) FILTER (WHERE fast_present AND has_free_supercharging) AS free_supercharging_count,
+				COUNT(*) FILTER (WHERE supercharger_present) AS supercharger_count,
+				COUNT(*) FILTER (WHERE supercharger_present AND has_free_supercharging) AS free_supercharging_count,
 				COUNT(*) FILTER (WHERE NOT fast_present) AS ac_count,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present), 0) AS fast_energy,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE NOT fast_present), 0) AS ac_energy,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE geofence_id IS NOT NULL), 0) AS geofenced_energy,
 				COALESCE(SUM(charge_energy_added) FILTER (WHERE geofence_id IS NULL), 0) AS non_geofenced_energy,
-				COALESCE(SUM(charge_energy_added) FILTER (WHERE fast_present AND has_free_supercharging), 0) AS free_sc_energy,
+				COALESCE(SUM(charge_energy_added) FILTER (WHERE supercharger_present AND has_free_supercharging), 0) AS free_sc_energy,
 				COALESCE(MAX(peak_power), 0) AS peak_power,
 				COALESCE(MAX(peak_voltage), 0) AS peak_voltage,
 				COALESCE(MIN(duration_min) FILTER (WHERE duration_min > 0), 0) AS shortest_session_dur,
@@ -173,7 +172,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					cp.start_date,
 					COALESCE(cs.free_supercharging, false) AS has_free_supercharging,
 					COALESCE(chg.fast_present, false) AS fast_present,
-					COALESCE(chg.tesla_fast_present, false) AS tesla_fast_present,
+					COALESCE(chg.supercharger_present, false) AS supercharger_present,
 					chg.peak_power,
 					chg.peak_voltage
 				FROM charging_processes cp
@@ -181,7 +180,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				LEFT JOIN LATERAL (
 					SELECT
 						bool_or(fast_charger_present) AS fast_present,
-						bool_or(fast_charger_present AND fast_charger_brand = 'Tesla') AS tesla_fast_present,
+						bool_or(fast_charger_present AND fast_charger_brand = 'Tesla') AS supercharger_present,
 						MAX(charger_power) AS peak_power,
 						MAX(charger_voltage) AS peak_voltage
 					FROM charges c
@@ -314,7 +313,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
 			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.total_duration_min, 0), COALESCE(ch.avg_duration_min, 0),
 			COALESCE(ch.fast_count, 0), COALESCE(ch.fast_energy, 0),
-			COALESCE(ch.supercharger_count, 0), COALESCE(ch.tesla_supercharger_count, 0), COALESCE(ch.free_supercharging_count, 0),
+			COALESCE(ch.supercharger_count, 0), COALESCE(ch.free_supercharging_count, 0),
 			COALESCE(ch.ac_count, 0), COALESCE(ch.ac_energy, 0),
 			COALESCE(ch.geofenced_energy, 0), COALESCE(ch.non_geofenced_energy, 0),
 			COALESCE(ch.free_sc_energy, 0),
@@ -363,7 +362,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
 		&charges.AvgCostPerKWh, &charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
 		&charges.FastChargeCount, &charges.FastChargeEnergyKWh,
-		&charges.SuperchargerCount, &charges.TeslaSuperchargerCount, &charges.FreeSuperchargingCount,
+		&charges.SuperchargerCount, &charges.FreeSuperchargingCount,
 		&charges.ACChargeCount, &charges.ACChargeEnergyKWh,
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
 		&charges.FreeSuperchargingKWh,

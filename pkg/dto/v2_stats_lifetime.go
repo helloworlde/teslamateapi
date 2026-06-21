@@ -63,10 +63,16 @@ type V2ChargesAgg struct {
 	AvgEnergyPerSession         float64         `json:"avg_energy_per_session_kwh" example:"38.6"`
 	TotalDurationMin            int             `json:"total_duration_min" example:"18000"`
 	AvgDurationMin              float64         `json:"avg_duration_min" example:"42.3"`
-	FastChargeCount             int             `json:"fast_charge_count" example:"73"`
-	SuperchargerCount           int             `json:"supercharger_count" example:"73"`
-	TeslaSuperchargerCount      int             `json:"tesla_supercharger_count" example:"68"`
-	FreeSuperchargingCount      int             `json:"free_supercharging_count" example:"5"`
+	// FastChargeCount counts sessions with any DC fast charging
+	// (fast_charger_present), regardless of network or brand.
+	FastChargeCount int `json:"fast_charge_count" example:"73"`
+	// SuperchargerCount counts Tesla Supercharger sessions
+	// (fast_charger_present AND fast_charger_brand = 'Tesla'); a subset of
+	// fast_charge_count.
+	SuperchargerCount int `json:"supercharger_count" example:"70"`
+	// FreeSuperchargingCount counts Supercharger sessions covered by free
+	// supercharging (car_settings.free_supercharging).
+	FreeSuperchargingCount int `json:"free_supercharging_count" example:"5"`
 	FastChargeEnergyKWh         float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
 	ACChargeCount               int             `json:"ac_charge_count" example:"354"`
 	ACChargeEnergyKWh           float64         `json:"ac_charge_energy_kwh" example:"13300.0"`

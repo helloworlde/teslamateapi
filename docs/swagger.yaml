@@ -1881,6 +1881,9 @@ definitions:
         example: 42
         type: integer
       fast_charge_count:
+        description: |-
+          FastChargeCount counts sessions with any DC fast charging
+          (fast_charger_present), regardless of network or brand.
         example: 73
         type: integer
       fast_charge_energy_kwh:
@@ -1890,6 +1893,9 @@ definitions:
         example: "2020-01-05T19:30:00+01:00"
         type: string
       free_supercharging_count:
+        description: |-
+          FreeSuperchargingCount counts Supercharger sessions covered by free
+          supercharging (car_settings.free_supercharging).
         example: 5
         type: integer
       free_supercharging_kwh:
@@ -1935,10 +1941,11 @@ definitions:
         example: 12
         type: integer
       supercharger_count:
-        example: 73
-        type: integer
-      tesla_supercharger_count:
-        example: 68
+        description: |-
+          SuperchargerCount counts Tesla Supercharger sessions
+          (fast_charger_present AND fast_charger_brand = 'Tesla'); a subset of
+          fast_charge_count.
+        example: 70
         type: integer
       total_cost:
         example: 4321.5
