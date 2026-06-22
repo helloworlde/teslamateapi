@@ -266,16 +266,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			) sub
 			GROUP BY bk
 		),
-		dp AS (
-			SELECT
-				d.id AS drive_id,
-				d.end_date AS park_start,
-				LEAD(d.start_date) OVER w AS park_end,
-				d.end_position_id,
-				LEAD(d.start_position_id) OVER w AS next_start_position_id
-			FROM drives d
-			WHERE d.car_id = $1 AND d.end_date IS NOT NULL
-			WINDOW w AS (PARTITION BY d.car_id ORDER BY d.start_date ASC)
+		dp AS (`+drivePairsCTE+`
 		),
 		park_intervals AS (
 			SELECT
@@ -283,26 +274,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				COALESCE(dp.park_end, %[6]s) AS park_end,
 				dp.end_position_id,
 				dp.next_start_position_id,
-				CASE
-					WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
-					AND sp.rated_battery_range_km > ep.rated_battery_range_km
-					AND NOT EXISTS(SELECT 1 FROM charging_processes cp
-						WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
-						AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-					THEN (sp.rated_battery_range_km - ep.rated_battery_range_km) * cars.efficiency
-					WHEN sp.rated_battery_range_km IS NOT NULL
-					AND COALESCE(sp.usable_battery_level, sp.battery_level) > 0
-					AND NOT EXISTS(SELECT 1 FROM charging_processes cp
-						WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
-						AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-					THEN GREATEST(
-						COALESCE(sp.usable_battery_level, sp.battery_level)
-						- COALESCE(ep.usable_battery_level, ep.battery_level),
-						0
-					) * sp.rated_battery_range_km * cars.efficiency
-						/ COALESCE(sp.usable_battery_level, sp.battery_level)
-					ELSE 0
-				END AS drop_kwh
+				`+parkingEnergyDropKWh+` AS drop_kwh
 			FROM dp
 			LEFT JOIN cars ON cars.id = $1
 			LEFT JOIN positions sp ON sp.id = dp.end_position_id

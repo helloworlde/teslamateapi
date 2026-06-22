@@ -222,16 +222,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL
 			) sub
 		),
-		dp AS (
-			SELECT
-				d.id AS drive_id,
-				d.end_date AS park_start,
-				LEAD(d.start_date) OVER w AS park_end,
-				d.end_position_id,
-				LEAD(d.start_position_id) OVER w AS next_start_position_id
-			FROM drives d
-			WHERE d.car_id = $1 AND d.end_date IS NOT NULL
-			WINDOW w AS (PARTITION BY d.car_id ORDER BY d.start_date ASC)
+		dp AS (`+drivePairsCTE+`
 		),
 		pk AS (
 			SELECT
@@ -241,28 +232,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				(array_agg(dp.park_start ORDER BY park_dur DESC NULLS LAST, dp.park_start ASC) FILTER (WHERE park_dur IS NOT NULL))[1] AS longest_start_date,
 				(array_agg(COALESCE(dp.park_end, %[2]s) ORDER BY park_dur DESC NULLS LAST, dp.park_start ASC) FILTER (WHERE park_dur IS NOT NULL))[1] AS longest_end_date,
 				COALESCE(AVG(park_dur), 0) AS avg_dur,
-				COALESCE(SUM(
-					CASE
-						WHEN sp.rated_battery_range_km IS NOT NULL AND ep.rated_battery_range_km IS NOT NULL
-						AND sp.rated_battery_range_km > ep.rated_battery_range_km
-						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
-							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
-							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN (sp.rated_battery_range_km - ep.rated_battery_range_km) * cars.efficiency
-						WHEN sp.rated_battery_range_km IS NOT NULL
-						AND COALESCE(sp.usable_battery_level, sp.battery_level) > 0
-						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
-							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
-							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN GREATEST(
-							COALESCE(sp.usable_battery_level, sp.battery_level)
-							- COALESCE(ep.usable_battery_level, ep.battery_level),
-							0
-						) * sp.rated_battery_range_km * cars.efficiency
-							/ COALESCE(sp.usable_battery_level, sp.battery_level)
-						ELSE 0
-					END
-				), 0) AS total_drop
+				COALESCE(SUM(`+parkingEnergyDropKWh+`), 0) AS total_drop
 			FROM dp
 			CROSS JOIN LATERAL (
 				SELECT COALESCE(EXTRACT(EPOCH FROM (dp.park_end - dp.park_start))/60,
