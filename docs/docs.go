@@ -4920,6 +4920,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "balance_status": {
+                    "description": "BalanceStatus compares recorded consumption to the vehicle-available pool\n(vehicle_added + starting inventory). One of: \"balanced\",\n\"usage_exceeds_supply\" (consumption exceeds supply on incomplete history;\nshortfall shown as the zero-cost usage gap), or\n\"has_unattributed_vehicle_energy\" (supply exceeds consumption; surplus\nshown as the unmetered vehicle-loss sink).",
                     "type": "string",
                     "example": "balanced"
                 },
@@ -5005,7 +5006,7 @@ const docTemplate = `{
                     "example": 700
                 },
                 "driving_cost": {
-                    "description": "DrivingCost is driving energy valued at the wall price. It counts only the\nenergy that moved the car; charging loss is NOT included here (it is its own\nbucket, charging_loss_cost), so this is an optimistic lower bound on the\ntrue cost of driving.",
+                    "description": "DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It\ncounts only the energy that moved the car; charging loss is NOT included\nhere (it is its own bucket, charging_loss_cost), so this is an optimistic\nlower bound on the true cost of driving.",
                     "type": "number",
                     "example": 1965
                 },
@@ -5019,7 +5020,7 @@ const docTemplate = `{
                     "example": 7825
                 },
                 "end_battery_cost": {
-                    "description": "EndBatteryCost is the energy still stored in the pack at window end, valued\nat the wall price (paid for but not yet consumed).",
+                    "description": "EndBatteryCost is the energy still stored in the pack at window end, valued\nat the accounting price (paid for but not yet consumed).",
                     "type": "number",
                     "example": 23.72
                 },
@@ -5028,7 +5029,7 @@ const docTemplate = `{
                     "example": 95
                 },
                 "parking_cost": {
-                    "description": "ParkingCost is parking/idle drain energy valued at the wall price.",
+                    "description": "ParkingCost is parking/idle drain energy valued at the accounting price.",
                     "type": "number",
                     "example": 31.41
                 },
@@ -5054,13 +5055,14 @@ const docTemplate = `{
                     "example": 0
                 },
                 "vehicle_accounting_cost_per_kwh": {
-                    "description": "VehicleAccountingCostPerKWh is the price used to value the vehicle-side\nenergy buckets below; it equals wall_cost_per_kwh.",
+                    "description": "VehicleAccountingCostPerKWh is the price used to value the vehicle-side\nenergy buckets below: vehicle_added cost spread across\nvehicle_available_energy_kwh. Because free starting inventory (and any\nzero-cost usage gap) sit in that denominator, this reads BELOW\nwall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +\n(unmetered loss) always re-sum to the vehicle-added cost.",
                     "type": "number",
-                    "example": 0.25125
+                    "example": 0.24943
                 },
                 "vehicle_available_energy_kwh": {
+                    "description": "VehicleAvailableEnergyKWh is the vehicle-side pool that destinations draw\nfrom: vehicle_energy_added_kwh + start_battery_energy_kwh, widened to the\nrecorded consumption when that is larger (incomplete history).",
                     "type": "number",
-                    "example": 16500
+                    "example": 16620
                 },
                 "vehicle_driving_share_pct": {
                     "type": "number",

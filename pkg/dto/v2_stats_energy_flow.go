@@ -21,9 +21,12 @@ type V2EnergyFlowLink struct {
 // Sankey model. Energy figures are kWh; cost figures use charging_processes.cost
 // currency; distance cost follows the user's unit_of_length.
 type V2EnergyFlowMetrics struct {
-	WallEnergyKWh                float64 `json:"wall_energy_kwh" example:"17200.0"`
-	VehicleEnergyAddedKWh        float64 `json:"vehicle_energy_added_kwh" example:"16500.0"`
-	VehicleAvailableEnergyKWh    float64 `json:"vehicle_available_energy_kwh" example:"16500.0"`
+	WallEnergyKWh         float64 `json:"wall_energy_kwh" example:"17200.0"`
+	VehicleEnergyAddedKWh float64 `json:"vehicle_energy_added_kwh" example:"16500.0"`
+	// VehicleAvailableEnergyKWh is the vehicle-side pool that destinations draw
+	// from: vehicle_energy_added_kwh + start_battery_energy_kwh, widened to the
+	// recorded consumption when that is larger (incomplete history).
+	VehicleAvailableEnergyKWh    float64 `json:"vehicle_available_energy_kwh" example:"16620.0"`
 	StartBatteryEnergyKWh        float64 `json:"start_battery_energy_kwh" example:"120.0"`
 	EndBatteryEnergyKWh          float64 `json:"end_battery_energy_kwh" example:"95.0"`
 	BatteryInventoryDeltaKWh     float64 `json:"battery_inventory_delta_kwh" example:"-25.0"`
@@ -45,38 +48,48 @@ type V2EnergyFlowMetrics struct {
 	// so it reads higher than wall_cost_per_kwh.
 	ChargingCostPerKWh float64 `json:"charging_cost_per_kwh" example:"0.26191"`
 	// VehicleAccountingCostPerKWh is the price used to value the vehicle-side
-	// energy buckets below; it equals wall_cost_per_kwh.
-	VehicleAccountingCostPerKWh float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.25125"`
-	// DrivingCost is driving energy valued at the wall price. It counts only the
-	// energy that moved the car; charging loss is NOT included here (it is its own
-	// bucket, charging_loss_cost), so this is an optimistic lower bound on the
-	// true cost of driving.
+	// energy buckets below: vehicle_added cost spread across
+	// vehicle_available_energy_kwh. Because free starting inventory (and any
+	// zero-cost usage gap) sit in that denominator, this reads BELOW
+	// wall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +
+	// (unmetered loss) always re-sum to the vehicle-added cost.
+	VehicleAccountingCostPerKWh float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.24943"`
+	// DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It
+	// counts only the energy that moved the car; charging loss is NOT included
+	// here (it is its own bucket, charging_loss_cost), so this is an optimistic
+	// lower bound on the true cost of driving.
 	DrivingCost float64 `json:"driving_cost" example:"1965.0"`
 	// DrivingCostPerDistance is driving_cost / distance (per km, or per mile when
 	// unit_of_length is mi). Same optimistic basis as driving_cost.
 	DrivingCostPerDistance float64 `json:"driving_cost_per_distance" example:"0.04624"`
-	// ParkingCost is parking/idle drain energy valued at the wall price.
+	// ParkingCost is parking/idle drain energy valued at the accounting price.
 	ParkingCost float64 `json:"parking_cost" example:"31.41"`
 	// ChargingLossCost is the charging-loss energy (wall − vehicle) valued at the
 	// wall price; carried separately so it is not amortised into driving_cost.
 	ChargingLossCost float64 `json:"charging_loss_cost" example:"175.87"`
 	// EndBatteryCost is the energy still stored in the pack at window end, valued
-	// at the wall price (paid for but not yet consumed).
-	EndBatteryCost float64 `json:"end_battery_cost" example:"23.72"`
-	ActualDrivingUsageRatePct    float64 `json:"actual_driving_usage_rate_pct" example:"45.49"`
-	ActualLossRatePct            float64 `json:"actual_loss_rate_pct" example:"4.07"`
-	ChargingEfficiencyPct        float64 `json:"charging_efficiency_pct" example:"95.93"`
-	VehicleDrivingSharePct       float64 `json:"vehicle_driving_share_pct" example:"47.42"`
+	// at the accounting price (paid for but not yet consumed).
+	EndBatteryCost            float64 `json:"end_battery_cost" example:"23.72"`
+	ActualDrivingUsageRatePct float64 `json:"actual_driving_usage_rate_pct" example:"45.49"`
+	ActualLossRatePct         float64 `json:"actual_loss_rate_pct" example:"4.07"`
+	ChargingEfficiencyPct     float64 `json:"charging_efficiency_pct" example:"95.93"`
+	VehicleDrivingSharePct    float64 `json:"vehicle_driving_share_pct" example:"47.42"`
 }
 
 // V2EnergyFlowData is the `data` field of V2EnergyFlowResponse.
 type V2EnergyFlowData struct {
-	Car           Car                 `json:"car"`
-	Nodes         []V2EnergyFlowNode  `json:"nodes"`
-	Links         []V2EnergyFlowLink  `json:"links"`
-	Metrics       V2EnergyFlowMetrics `json:"metrics"`
-	Units         TeslaMateUnits      `json:"units"`
-	BalanceStatus string              `json:"balance_status" example:"balanced"`
+	Car     Car                 `json:"car"`
+	Nodes   []V2EnergyFlowNode  `json:"nodes"`
+	Links   []V2EnergyFlowLink  `json:"links"`
+	Metrics V2EnergyFlowMetrics `json:"metrics"`
+	Units   TeslaMateUnits      `json:"units"`
+	// BalanceStatus compares recorded consumption to the vehicle-available pool
+	// (vehicle_added + starting inventory). One of: "balanced",
+	// "usage_exceeds_supply" (consumption exceeds supply on incomplete history;
+	// shortfall shown as the zero-cost usage gap), or
+	// "has_unattributed_vehicle_energy" (supply exceeds consumption; surplus
+	// shown as the unmetered vehicle-loss sink).
+	BalanceStatus string `json:"balance_status" example:"balanced"`
 }
 
 // V2EnergyFlowResponse is the envelope for

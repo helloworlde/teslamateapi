@@ -2308,6 +2308,13 @@ definitions:
   dto.V2EnergyFlowData:
     properties:
       balance_status:
+        description: |-
+          BalanceStatus compares recorded consumption to the vehicle-available pool
+          (vehicle_added + starting inventory). One of: "balanced",
+          "usage_exceeds_supply" (consumption exceeds supply on incomplete history;
+          shortfall shown as the zero-cost usage gap), or
+          "has_unattributed_vehicle_energy" (supply exceeds consumption; surplus
+          shown as the unmetered vehicle-loss sink).
         example: balanced
         type: string
       car:
@@ -2375,10 +2382,10 @@ definitions:
         type: number
       driving_cost:
         description: |-
-          DrivingCost is driving energy valued at the wall price. It counts only the
-          energy that moved the car; charging loss is NOT included here (it is its own
-          bucket, charging_loss_cost), so this is an optimistic lower bound on the
-          true cost of driving.
+          DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It
+          counts only the energy that moved the car; charging loss is NOT included
+          here (it is its own bucket, charging_loss_cost), so this is an optimistic
+          lower bound on the true cost of driving.
         example: 1965
         type: number
       driving_cost_per_distance:
@@ -2393,14 +2400,15 @@ definitions:
       end_battery_cost:
         description: |-
           EndBatteryCost is the energy still stored in the pack at window end, valued
-          at the wall price (paid for but not yet consumed).
+          at the accounting price (paid for but not yet consumed).
         example: 23.72
         type: number
       end_battery_energy_kwh:
         example: 95
         type: number
       parking_cost:
-        description: ParkingCost is parking/idle drain energy valued at the wall price.
+        description: ParkingCost is parking/idle drain energy valued at the accounting
+          price.
         example: 31.41
         type: number
       parking_energy_kwh:
@@ -2423,11 +2431,19 @@ definitions:
       vehicle_accounting_cost_per_kwh:
         description: |-
           VehicleAccountingCostPerKWh is the price used to value the vehicle-side
-          energy buckets below; it equals wall_cost_per_kwh.
-        example: 0.25125
+          energy buckets below: vehicle_added cost spread across
+          vehicle_available_energy_kwh. Because free starting inventory (and any
+          zero-cost usage gap) sit in that denominator, this reads BELOW
+          wall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +
+          (unmetered loss) always re-sum to the vehicle-added cost.
+        example: 0.24943
         type: number
       vehicle_available_energy_kwh:
-        example: 16500
+        description: |-
+          VehicleAvailableEnergyKWh is the vehicle-side pool that destinations draw
+          from: vehicle_energy_added_kwh + start_battery_energy_kwh, widened to the
+          recorded consumption when that is larger (incomplete history).
+        example: 16620
         type: number
       vehicle_driving_share_pct:
         example: 47.42

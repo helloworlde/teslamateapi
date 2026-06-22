@@ -293,16 +293,27 @@ adjacent drives.
   - Supported parameters: `period`, `startDate`, `endDate`.
 - GET `/api/v2/cars/:CarID/stats/energy-flow`
   - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side
-    charging input, splits into vehicle-added energy and charging loss, then
-    splits vehicle-added energy into driving, parking, ending battery inventory,
-    and unmetered residual loss. The first recorded battery inventory is exposed
-    as context, but it does not reduce recorded charging cost allocation. Each
-    node and link carries both `energy_kwh` and `cost`.
+    charging input, splits into vehicle-added energy and charging loss. The
+    vehicle-side available pool is vehicle-added energy **plus** the starting
+    battery inventory the car already held when tracking began (a real,
+    zero-cost energy source), and is split into driving, parking, ending battery
+    inventory, and unmetered residual loss. The destination buckets are always a
+    partition of the pool: when recorded consumption still exceeds supply
+    (incomplete history) the residual `usage gap` is a separate zero-cost source
+    feeding the pool, never energy stacked on top of the full destination nodes —
+    so node totals never double-count. Each node and link carries both
+    `energy_kwh` and `cost`, and the priced destinations reconcile to
+    `total_charging_cost`.
   - Metrics include actual driving usage rate, actual loss rate, charging
     efficiency, driving cost, driving cost per distance, total charging cost,
     wall-side cost per kWh, charge-added cost per kWh, vehicle-side accounting
     cost per kWh, starting battery inventory, ending battery inventory, and
     battery inventory delta.
+  - `balance_status` compares recorded consumption to the available pool:
+    `balanced`, `usage_exceeds_supply` (consumption exceeds supply on incomplete
+    history — shortfall shown as the zero-cost usage gap), or
+    `has_unattributed_vehicle_energy` (supply exceeds consumption — surplus shown
+    as the unmetered vehicle-loss sink).
 - GET `/api/v2/cars/:CarID/stats/by-geofence`
   - For each geofence the car has touched: `drives_arrived`,
     `drives_departed`, `charges_count`, `charges_energy_added_kwh`,
@@ -341,12 +352,12 @@ the denominator and which costs are folded in. Read this before charting them.
 | `total_charging_cost` | Sum of `charging_processes.cost` over all charges. |
 | `wall_cost_per_kwh` | Total cost ÷ wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`). Plug-side price (charging loss in the denominator). TeslaMate's `charge_energy_used` is often missing/unreliable, so the GREATEST fallback can collapse this onto the battery-side rate (`charging_cost_per_kwh`). |
 | `charging_cost_per_kwh` | Total cost ÷ `charge_energy_added` (battery-side): cost per kWh that actually entered the pack. Charging loss is baked in, so it reads higher than `wall_cost_per_kwh`. |
-| `vehicle_accounting_cost_per_kwh` | Price used to value the vehicle-side energy buckets; equals `wall_cost_per_kwh`. |
-| `driving_cost` | Driving energy valued at the wall price. Counts only the energy that moved the car; charging loss is **not** folded in (it is its own bucket, `charging_loss_cost`), so this is an optimistic lower bound on the true cost of driving. |
+| `vehicle_accounting_cost_per_kwh` | Price used to value the vehicle-side energy buckets: the vehicle-added cost spread across the available pool (`vehicle_added + starting inventory`). Free starting inventory (and any zero-cost usage gap) sit in the denominator, so it reads **below** `wall_cost_per_kwh`. `driving_cost + parking_cost + end_battery_cost + unmetered loss` re-sum to the vehicle-added cost, and together with `charging_loss_cost` reconcile to `total_charging_cost`. |
+| `driving_cost` | Driving energy valued at `vehicle_accounting_cost_per_kwh`. Counts only the energy that moved the car; charging loss is **not** folded in (it is its own bucket, `charging_loss_cost`), so this is an optimistic lower bound on the true cost of driving. |
 | `driving_cost_per_distance` | `driving_cost ÷ distance` (per km, or per mile when `unit_of_length` is `mi`). Same optimistic basis as `driving_cost`. |
-| `parking_cost` | Parking/idle drain energy valued at the wall price. |
+| `parking_cost` | Parking/idle drain energy valued at the accounting price. |
 | `charging_loss_cost` | Charging-loss energy (wall − vehicle) valued at the wall price; carried separately so it is not amortised into `driving_cost`. |
-| `end_battery_cost` | Energy still stored in the pack at window end, valued at the wall price (paid for but not yet consumed). |
+| `end_battery_cost` | Energy still stored in the pack at window end, valued at the accounting price (paid for but not yet consumed). |
 
 ##### `/api/v2/cars/:CarID/stats/lifetime`
 

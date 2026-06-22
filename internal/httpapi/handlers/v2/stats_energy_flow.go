@@ -25,18 +25,24 @@ type energyFlowInputs struct {
 }
 
 // TeslaMateAPICarsStatsEnergyFlowV2 returns a canonical energy/cost flow for
-// client Sankey visualisations. It starts from wall-side charging input, splits
-// that into vehicle-added energy and charging loss, then splits vehicle energy
-// into vehicle-side availability. Vehicle-side availability is the recorded
-// vehicle-added energy and is split into driving, parking, ending battery
-// inventory, and unmetered residual loss. Starting battery inventory is exposed
-// as context but does not reduce recorded charging cost allocation.
+// client Sankey visualisations. Wall-side charging input splits into
+// vehicle-added energy and charging loss. The vehicle-available pool is the
+// vehicle-added energy PLUS the starting battery inventory the car already held
+// when tracking began (a real, zero-cost energy source), and is split into
+// driving, parking, ending battery inventory, and unmetered residual loss.
 //
-// Cost allocation uses the wall-side average price
-// (charging_processes.cost / wall energy used), so flow costs reconcile to the
-// recorded charging bill when wall-side energy is available. The response also
-// exposes charging_cost_per_kwh based on vehicle-added energy for users who
-// prefer the TeslaMate charge-energy-added denominator.
+// The destination buckets always form a partition of the available pool: when
+// recorded consumption exceeds supply (incomplete history) the residual "usage
+// gap" is a separate zero-cost source feeding the pool, never energy stacked on
+// top of the full destination nodes — so node totals never double-count.
+//
+// Cost allocation: charging loss is valued at the wall price; the charging cost
+// that reached the pack (vehicle-added cost) is spread evenly across the
+// available pool, so the priced destinations re-sum to the vehicle-added cost
+// and the whole model reconciles to charging_processes.cost. Free starting
+// inventory and the zero-cost gap dilute this per-kWh rate below the wall price.
+// The response also exposes charging_cost_per_kwh based on vehicle-added energy
+// for users who prefer the TeslaMate charge-energy-added denominator.
 //
 // @Summary      Energy and cost flow stats
 // @Description  Lifetime energy and cost accounting model for Sankey charts.
@@ -212,42 +218,57 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 	startBatteryEnergy := nonNegative(in.startBatteryKWh)
 	endBatteryEnergy := nonNegative(in.endBatteryKWh)
 	chargingLossEnergy := nonNegative(wallEnergy - vehicleEnergy)
-	vehicleSupplyEnergy := vehicleEnergy
-	vehicleAccountedEnergy := drivingEnergy + parkingEnergy + endBatteryEnergy
-	unattributedEnergy := nonNegative(vehicleSupplyEnergy - vehicleAccountedEnergy)
-	unmatchedUsageEnergy := nonNegative(vehicleAccountedEnergy - vehicleSupplyEnergy)
 	wallCostPerKWh := ratio(chargingCost, wallEnergy)
 	chargingCostPerKWh := ratio(chargingCost, vehicleEnergy)
 	vehicleAddedCost := vehicleEnergy * wallCostPerKWh
-	vehicleAccountingCostPerKWh := wallCostPerKWh
+	lossCost := chargingLossEnergy * wallCostPerKWh
+
+	// Supply side = metered charge PLUS the battery the car already held when
+	// tracking began. Starting inventory is real energy that powers driving and
+	// parking; if it is left off the supply side it reappears as a phantom
+	// "usage gap" on the consumption side. It carries zero cost — it was not
+	// bought under this charging bill.
+	vehicleSupplyEnergy := vehicleEnergy + startBatteryEnergy
+	vehicleAccountedEnergy := drivingEnergy + parkingEnergy + endBatteryEnergy
+	unattributedEnergy := nonNegative(vehicleSupplyEnergy - vehicleAccountedEnergy)
+	unmatchedUsageEnergy := nonNegative(vehicleAccountedEnergy - vehicleSupplyEnergy)
+
+	// The available pool spans whichever side is larger so the Sankey balances.
+	// When consumption still exceeds supply (incomplete history), the residual
+	// gap is an extra zero-cost SOURCE feeding the pool — never energy layered on
+	// top of the full destination nodes, which is what double-counted before.
+	vehicleAvailableEnergy := vehicleSupplyEnergy
+	if vehicleAccountedEnergy > vehicleAvailableEnergy {
+		vehicleAvailableEnergy = vehicleAccountedEnergy
+	}
+
+	// All charging cost that reached the pack (vehicleAddedCost) is spread across
+	// the available pool, so the priced destinations always re-sum to
+	// vehicleAddedCost and the whole model reconciles to the charging bill. Free
+	// starting inventory and the zero-cost gap dilute this rate below the wall
+	// price.
+	vehicleAccountingCostPerKWh := ratio(vehicleAddedCost, vehicleAvailableEnergy)
 	drivingCost := drivingEnergy * vehicleAccountingCostPerKWh
 	parkingCost := parkingEnergy * vehicleAccountingCostPerKWh
-	lossCost := chargingLossEnergy * wallCostPerKWh
 	endBatteryCost := endBatteryEnergy * vehicleAccountingCostPerKWh
 	unattributedCost := unattributedEnergy * vehicleAccountingCostPerKWh
-	vehicleDrivingEnergy := drivingEnergy
-	vehicleParkingEnergy := parkingEnergy
-	vehicleEndBatteryEnergy := endBatteryEnergy
-	unmatchedDrivingEnergy := 0.0
-	unmatchedParkingEnergy := 0.0
-	unmatchedEndBatteryEnergy := 0.0
-	if unmatchedUsageEnergy > 0 && vehicleAccountedEnergy > 0 {
-		vehicleDrivingEnergy = drivingEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
-		vehicleParkingEnergy = parkingEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
-		vehicleEndBatteryEnergy = endBatteryEnergy * ratio(vehicleSupplyEnergy, vehicleAccountedEnergy)
-		unmatchedDrivingEnergy = drivingEnergy - vehicleDrivingEnergy
-		unmatchedParkingEnergy = parkingEnergy - vehicleParkingEnergy
-		unmatchedEndBatteryEnergy = endBatteryEnergy - vehicleEndBatteryEnergy
-	}
 
 	nodes := []dto.V2EnergyFlowNode{
 		{ID: "wall_input", Label: "Wall input", EnergyKWh: wallEnergy, Cost: chargingCost},
 		{ID: "vehicle_added", Label: "Added to vehicle", EnergyKWh: vehicleEnergy, Cost: vehicleAddedCost},
 		{ID: "charging_loss", Label: "Charging loss", EnergyKWh: chargingLossEnergy, Cost: lossCost},
-		{ID: "vehicle_available", Label: "Vehicle-side available energy", EnergyKWh: vehicleSupplyEnergy, Cost: vehicleAddedCost},
+		{ID: "vehicle_available", Label: "Vehicle-side available energy", EnergyKWh: vehicleAvailableEnergy, Cost: vehicleAddedCost},
 		{ID: "driving_usage", Label: "Driving use", EnergyKWh: drivingEnergy, Cost: drivingCost},
 		{ID: "parking_usage", Label: "Parking use", EnergyKWh: parkingEnergy, Cost: parkingCost},
 		{ID: "end_battery_inventory", Label: "Ending battery inventory", EnergyKWh: endBatteryEnergy, Cost: endBatteryCost},
+	}
+	if startBatteryEnergy > 0 {
+		nodes = append(nodes, dto.V2EnergyFlowNode{
+			ID:        "start_battery_inventory",
+			Label:     "Starting battery inventory",
+			EnergyKWh: startBatteryEnergy,
+			Cost:      0,
+		})
 	}
 	if unattributedEnergy > 0 {
 		nodes = append(nodes, dto.V2EnergyFlowNode{
@@ -262,7 +283,7 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 			ID:        "unmatched_vehicle_usage",
 			Label:     "Usage gap",
 			EnergyKWh: unmatchedUsageEnergy,
-			Cost:      unmatchedUsageEnergy * wallCostPerKWh,
+			Cost:      0,
 		})
 	}
 
@@ -270,50 +291,36 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		makeEnergyFlowLink("wall_input", "vehicle_added", vehicleEnergy, vehicleAddedCost, wallEnergy),
 		makeEnergyFlowLink("wall_input", "charging_loss", chargingLossEnergy, lossCost, wallEnergy),
 		makeEnergyFlowLink("vehicle_added", "vehicle_available", vehicleEnergy, vehicleAddedCost, vehicleEnergy),
-		makeEnergyFlowLink("vehicle_available", "driving_usage", vehicleDrivingEnergy, vehicleDrivingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
-		makeEnergyFlowLink("vehicle_available", "parking_usage", vehicleParkingEnergy, vehicleParkingEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
-		makeEnergyFlowLink("vehicle_available", "end_battery_inventory", vehicleEndBatteryEnergy, vehicleEndBatteryEnergy*vehicleAccountingCostPerKWh, vehicleSupplyEnergy),
+		makeEnergyFlowLink("vehicle_available", "driving_usage", drivingEnergy, drivingCost, vehicleAvailableEnergy),
+		makeEnergyFlowLink("vehicle_available", "parking_usage", parkingEnergy, parkingCost, vehicleAvailableEnergy),
+		makeEnergyFlowLink("vehicle_available", "end_battery_inventory", endBatteryEnergy, endBatteryCost, vehicleAvailableEnergy),
+	}
+	if startBatteryEnergy > 0 {
+		links = append(links, makeEnergyFlowLink(
+			"start_battery_inventory", "vehicle_available", startBatteryEnergy, 0, startBatteryEnergy,
+		))
+	}
+	if unmatchedUsageEnergy > 0 {
+		links = append(links, makeEnergyFlowLink(
+			"unmatched_vehicle_usage", "vehicle_available", unmatchedUsageEnergy, 0, unmatchedUsageEnergy,
+		))
 	}
 	if unattributedEnergy > 0 {
 		links = append(links, makeEnergyFlowLink(
-			"vehicle_available",
-			"unattributed_vehicle_energy",
-			unattributedEnergy,
-			unattributedCost,
-			vehicleSupplyEnergy,
-		))
-	}
-	if unmatchedDrivingEnergy > 0 {
-		links = append(links, makeEnergyFlowLink(
-			"unmatched_vehicle_usage",
-			"driving_usage",
-			unmatchedDrivingEnergy,
-			unmatchedDrivingEnergy*wallCostPerKWh,
-			unmatchedUsageEnergy,
-		))
-	}
-	if unmatchedParkingEnergy > 0 {
-		links = append(links, makeEnergyFlowLink(
-			"unmatched_vehicle_usage",
-			"parking_usage",
-			unmatchedParkingEnergy,
-			unmatchedParkingEnergy*wallCostPerKWh,
-			unmatchedUsageEnergy,
-		))
-	}
-	if unmatchedEndBatteryEnergy > 0 {
-		links = append(links, makeEnergyFlowLink(
-			"unmatched_vehicle_usage",
-			"end_battery_inventory",
-			unmatchedEndBatteryEnergy,
-			unmatchedEndBatteryEnergy*vehicleAccountingCostPerKWh,
-			unmatchedUsageEnergy,
+			"vehicle_available", "unattributed_vehicle_energy", unattributedEnergy, unattributedCost, vehicleAvailableEnergy,
 		))
 	}
 
+	// balance_status describes how recorded consumption compares to the
+	// vehicle-available pool (vehicle_added + starting inventory):
+	//   - "balanced": consumption equals supply, no residual either way.
+	//   - "usage_exceeds_supply": consumption exceeds supply (incomplete
+	//     history); the shortfall surfaces as the zero-cost usage gap source.
+	//   - "has_unattributed_vehicle_energy": supply exceeds consumption; the
+	//     surplus surfaces as the unmetered vehicle-loss sink.
 	balanceStatus := "balanced"
 	if unmatchedUsageEnergy > 0 {
-		balanceStatus = "usage_exceeds_vehicle_added"
+		balanceStatus = "usage_exceeds_supply"
 	} else if unattributedEnergy > 0 {
 		balanceStatus = "has_unattributed_vehicle_energy"
 	}
@@ -328,7 +335,7 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		Metrics: dto.V2EnergyFlowMetrics{
 			WallEnergyKWh:                wallEnergy,
 			VehicleEnergyAddedKWh:        vehicleEnergy,
-			VehicleAvailableEnergyKWh:    vehicleSupplyEnergy,
+			VehicleAvailableEnergyKWh:    vehicleAvailableEnergy,
 			StartBatteryEnergyKWh:        startBatteryEnergy,
 			EndBatteryEnergyKWh:          endBatteryEnergy,
 			BatteryInventoryDeltaKWh:     endBatteryEnergy - startBatteryEnergy,
@@ -349,7 +356,7 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 			ActualDrivingUsageRatePct:    pct(drivingEnergy, wallEnergy),
 			ActualLossRatePct:            pct(chargingLossEnergy, wallEnergy),
 			ChargingEfficiencyPct:        pct(vehicleEnergy, wallEnergy),
-			VehicleDrivingSharePct:       pct(drivingEnergy, vehicleSupplyEnergy),
+			VehicleDrivingSharePct:       pct(drivingEnergy, vehicleAvailableEnergy),
 		},
 		Units: dto.TeslaMateUnits{
 			UnitsLength:      in.unitsLength,
