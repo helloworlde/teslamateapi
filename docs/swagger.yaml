@@ -1844,6 +1844,9 @@ definitions:
       ac_charge_energy_kwh:
         example: 13300
         type: number
+      ac_charge_energy_used_kwh:
+        example: 13850
+        type: number
       avg_cost_per_kwh:
         description: |-
           AvgCostPerKWh = SUM(cost) / SUM(charge_energy_added) over all charges
@@ -1913,6 +1916,9 @@ definitions:
       fast_charge_energy_kwh:
         example: 3200
         type: number
+      fast_charge_energy_used_kwh:
+        example: 3350
+        type: number
       first_charge_date:
         example: "2020-01-05T19:30:00+01:00"
         type: string
@@ -1924,6 +1930,9 @@ definitions:
         type: integer
       free_supercharging_kwh:
         example: 125
+        type: number
+      free_supercharging_used_kwh:
+        example: 131
         type: number
       geofenced_charge_energy_kwh:
         example: 9800

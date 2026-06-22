@@ -94,11 +94,14 @@ type V2ChargesAgg struct {
 	// supercharging (car_settings.free_supercharging).
 	FreeSuperchargingCount      int             `json:"free_supercharging_count" example:"5"`
 	FastChargeEnergyKWh         float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
+	FastChargeEnergyUsedKWh     float64         `json:"fast_charge_energy_used_kwh" example:"3350.0"`
 	ACChargeCount               int             `json:"ac_charge_count" example:"354"`
 	ACChargeEnergyKWh           float64         `json:"ac_charge_energy_kwh" example:"13300.0"`
+	ACChargeEnergyUsedKWh       float64         `json:"ac_charge_energy_used_kwh" example:"13850.0"`
 	GeofencedChargeEnergyKWh    float64         `json:"geofenced_charge_energy_kwh" example:"9800.0"`
 	NonGeofencedChargeEnergyKWh float64         `json:"non_geofenced_charge_energy_kwh" example:"6700.0"`
 	FreeSuperchargingKWh        float64         `json:"free_supercharging_kwh" example:"125.0"`
+	FreeSuperchargingUsedKWh    float64         `json:"free_supercharging_used_kwh" example:"131.0"`
 	PeakPowerMaxKW              int             `json:"peak_power_max_kw" example:"250"`
 	PeakVoltageMax              int             `json:"peak_voltage_max" example:"480"`
 	ShortestSessionDurationMin  int             `json:"shortest_session_duration_min" example:"12"`

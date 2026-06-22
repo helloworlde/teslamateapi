@@ -4311,6 +4311,10 @@
                     "type": "number",
                     "example": 13300
                 },
+                "ac_charge_energy_used_kwh": {
+                    "type": "number",
+                    "example": 13850
+                },
                 "avg_cost_per_kwh": {
                     "description": "AvgCostPerKWh = SUM(cost) / SUM(charge_energy_added) over all charges\n(battery-side rate). Free/zero-cost charges still contribute energy to the\ndenominator, so this is biased low versus the rate paid for billed energy.",
                     "type": "number",
@@ -4390,6 +4394,10 @@
                     "type": "number",
                     "example": 3200
                 },
+                "fast_charge_energy_used_kwh": {
+                    "type": "number",
+                    "example": 3350
+                },
                 "first_charge_date": {
                     "type": "string",
                     "example": "2020-01-05T19:30:00+01:00"
@@ -4402,6 +4410,10 @@
                 "free_supercharging_kwh": {
                     "type": "number",
                     "example": 125
+                },
+                "free_supercharging_used_kwh": {
+                    "type": "number",
+                    "example": 131
                 },
                 "geofenced_charge_energy_kwh": {
                     "type": "number",
