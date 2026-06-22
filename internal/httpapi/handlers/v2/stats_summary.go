@@ -444,14 +444,6 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		CarName                       NullString
 	)
 
-	// NullString.Scan rendered the bucket timestamps as dbTimestampFormat
-	// (UTC); re-format into the user's timezone for display.
-	localize := func(value *NullString) {
-		if len(*value) > 0 {
-			*value = NullString(h.timeInTZ(string(*value)))
-		}
-	}
-
 	for rows.Next() {
 		b := dto.V2SummaryBucket{}
 		if err = rows.Scan(
@@ -538,29 +530,29 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			}
 		}
 
-		localize(&b.BucketStart)
-		localize(&b.BucketEnd)
-		localize(&b.DrivesLongestDistanceStartDate)
-		localize(&b.DrivesLongestDistanceEndDate)
-		localize(&b.DrivesLongestDurationStartDate)
-		localize(&b.DrivesLongestDurationEndDate)
-		localize(&b.DrivesMaxSpeedStartDate)
-		localize(&b.DrivesMaxSpeedEndDate)
-		localize(&b.DrivesBestConsumptionStartDate)
-		localize(&b.DrivesBestConsumptionEndDate)
-		localize(&b.DrivesWorstConsumptionStartDate)
-		localize(&b.DrivesWorstConsumptionEndDate)
-		localize(&b.DrivesPeakDrivePowerStartDate)
-		localize(&b.DrivesPeakDrivePowerEndDate)
-		localize(&b.DrivesPeakRegenPowerStartDate)
-		localize(&b.DrivesPeakRegenPowerEndDate)
-		localize(&b.ChargesLongestSessionStartDate)
-		localize(&b.ChargesLongestSessionEndDate)
-		localize(&b.ChargesLargestSessionStartDate)
-		localize(&b.ChargesLargestSessionEndDate)
-		localize(&b.ChargesMaxSessionCostStartDate)
-		localize(&b.ChargesMaxSessionCostEndDate)
-		localize(&b.ChargesMaxPowerDate)
+		h.localize(&b.BucketStart)
+		h.localize(&b.BucketEnd)
+		h.localize(&b.DrivesLongestDistanceStartDate)
+		h.localize(&b.DrivesLongestDistanceEndDate)
+		h.localize(&b.DrivesLongestDurationStartDate)
+		h.localize(&b.DrivesLongestDurationEndDate)
+		h.localize(&b.DrivesMaxSpeedStartDate)
+		h.localize(&b.DrivesMaxSpeedEndDate)
+		h.localize(&b.DrivesBestConsumptionStartDate)
+		h.localize(&b.DrivesBestConsumptionEndDate)
+		h.localize(&b.DrivesWorstConsumptionStartDate)
+		h.localize(&b.DrivesWorstConsumptionEndDate)
+		h.localize(&b.DrivesPeakDrivePowerStartDate)
+		h.localize(&b.DrivesPeakDrivePowerEndDate)
+		h.localize(&b.DrivesPeakRegenPowerStartDate)
+		h.localize(&b.DrivesPeakRegenPowerEndDate)
+		h.localize(&b.ChargesLongestSessionStartDate)
+		h.localize(&b.ChargesLongestSessionEndDate)
+		h.localize(&b.ChargesLargestSessionStartDate)
+		h.localize(&b.ChargesLargestSessionEndDate)
+		h.localize(&b.ChargesMaxSessionCostStartDate)
+		h.localize(&b.ChargesMaxSessionCostEndDate)
+		h.localize(&b.ChargesMaxPowerDate)
 		buckets = append(buckets, b)
 	}
 	if err = rows.Err(); err != nil {

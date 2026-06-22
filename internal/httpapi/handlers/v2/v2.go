@@ -52,3 +52,12 @@ func (h *Handler) timeInTZ(s string) string {
 func (h *Handler) parseDate(s string) (string, error) {
 	return timefmt.ParseDateParam(s, h.tz)
 }
+
+// localize rewrites a non-empty timestamp string in place from the stored
+// dbTimestampFormat (UTC) into the user's timezone for display. No-op on the
+// empty/NULL string so absent timestamps stay absent.
+func (h *Handler) localize(value *NullString) {
+	if len(*value) > 0 {
+		*value = NullString(h.timeInTZ(string(*value)))
+	}
+}
