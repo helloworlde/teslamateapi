@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
+	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
 // TeslaMateAPICarsStatsByGeofenceV2 aggregates drives / charges / parkings
@@ -49,33 +50,8 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 		return
 	}
 
-	type GeofenceRow struct {
-		GeofenceID               NullInt64 `json:"geofence_id"`
-		GeofenceName             string    `json:"geofence_name"`
-		DrivesArrived            int       `json:"drives_arrived"`
-		DrivesDeparted           int       `json:"drives_departed"`
-		ChargesCount             int       `json:"charges_count"`
-		ChargesEnergyAddedKWh    float64   `json:"charges_energy_added_kwh"`
-		ChargesCost              float64   `json:"charges_cost"`
-		ParkingsCount            int       `json:"parkings_count"`
-		ParkingsTotalDurationMin int       `json:"parkings_total_duration_min"`
-	}
-	type Car struct {
-		CarID   int        `json:"car_id"`
-		CarName NullString `json:"car_name"`
-	}
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`
-		UnitsTemperature string `json:"unit_of_temperature"`
-	}
-	type Data struct {
-		Car       Car            `json:"car"`
-		Geofences []GeofenceRow  `json:"geofences"`
-		Units     TeslaMateUnits `json:"units"`
-	}
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
+	// Response types live in pkg/dto (V2GeofenceRow / V2ByGeofenceData /
+	// V2ByGeofenceResponse), shared with the swagger annotations.
 
 	var (
 		args      = []any{CarID}
@@ -109,13 +85,13 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 	defer rows.Close()
 
 	var (
-		out                           []GeofenceRow
+		out                           []dto.V2GeofenceRow
 		UnitsLength, UnitsTemperature string
 		CarName                       NullString
 	)
 
 	for rows.Next() {
-		row := GeofenceRow{}
+		row := dto.V2GeofenceRow{}
 		var geofenceID sql.NullInt64
 		if err = rows.Scan(
 			&geofenceID,
@@ -145,11 +121,11 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 		return
 	}
 
-	respond.HandleSuccess(c, handler, JSONData{
-		Data: Data{
-			Car:       Car{CarID: CarID, CarName: CarName},
+	respond.HandleSuccess(c, handler, dto.V2ByGeofenceResponse{
+		Data: dto.V2ByGeofenceData{
+			Car:       dto.Car{CarID: CarID, CarName: CarName},
 			Geofences: out,
-			Units: TeslaMateUnits{
+			Units: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},

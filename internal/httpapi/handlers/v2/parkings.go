@@ -11,6 +11,7 @@ import (
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
+	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
 // TeslaMateAPICarsParkingsV2 derives parking sessions from gaps between
@@ -86,49 +87,12 @@ func (h *Handler) Parkings(c *gin.Context) {
 		return
 	}
 
-	type Car struct {
-		CarID   int        `json:"car_id"`
-		CarName NullString `json:"car_name"`
-	}
-	type Parking struct {
-		PrecedingDriveID  int         `json:"preceding_drive_id"`
-		StartDate         string      `json:"start_date"`
-		EndDate           NullString  `json:"end_date"`
-		DurationMin       int         `json:"duration_min"`
-		DurationStr       string      `json:"duration_str"`
-		Address           NullString  `json:"address"`
-		GeofenceID        NullInt64   `json:"geofence_id"`
-		Latitude          NullFloat64 `json:"latitude"`
-		Longitude         NullFloat64 `json:"longitude"`
-		StartBatteryLevel NullInt64   `json:"start_battery_level"`
-		EndBatteryLevel   NullInt64   `json:"end_battery_level"`
-		UsableBatteryDrop int         `json:"usable_battery_drop"`
-		EnergyConsumedKWh NullFloat64 `json:"energy_consumed_kwh"`
-		HadCharging       bool        `json:"had_charging"`
-	}
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`
-		UnitsTemperature string `json:"unit_of_temperature"`
-	}
-	type Pagination struct {
-		Page       int  `json:"page"`
-		Show       int  `json:"show"`
-		TotalCount int  `json:"total_count"`
-		HasNext    bool `json:"has_next"`
-	}
-	type Data struct {
-		Car            Car            `json:"car"`
-		Parkings       []Parking      `json:"parkings"`
-		Pagination     Pagination     `json:"pagination"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
+	// Response types live in pkg/dto (V2Parking / V2ParkingsData /
+	// V2ParkingsResponse), shared with the swagger annotations.
 
 	var (
 		CarName                       NullString
-		ParkingsData                  []Parking
+		ParkingsData                  []dto.V2Parking
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -237,7 +201,7 @@ func (h *Handler) Parkings(c *gin.Context) {
 	defer rows.Close()
 
 	for rows.Next() {
-		park := Parking{}
+		park := dto.V2Parking{}
 		err = rows.Scan(
 			&park.PrecedingDriveID,
 			&park.StartDate,
@@ -294,20 +258,20 @@ func (h *Handler) Parkings(c *gin.Context) {
 		return
 	}
 
-	jsonData := JSONData{
-		Data{
-			Car: Car{
+	jsonData := dto.V2ParkingsResponse{
+		Data: dto.V2ParkingsData{
+			Car: dto.Car{
 				CarID:   CarID,
 				CarName: CarName,
 			},
 			Parkings: ParkingsData,
-			Pagination: Pagination{
+			Pagination: dto.Pagination{
 				Page:       ResultPage,
 				Show:       ResultShow,
 				TotalCount: totalCount,
 				HasNext:    offset+len(ParkingsData) < totalCount,
 			},
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},
@@ -349,51 +313,14 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 		return
 	}
 
-	type Car struct {
-		CarID   int        `json:"car_id"`
-		CarName NullString `json:"car_name"`
-	}
-	type ParkingDetail struct {
-		Date         string      `json:"date"`
-		BatteryLevel NullInt64   `json:"battery_level"`
-		UsableLevel  NullInt64   `json:"usable_battery_level"`
-		OutsideTemp  NullFloat64 `json:"outside_temp"`
-	}
-	type Parking struct {
-		PrecedingDriveID  int             `json:"preceding_drive_id"`
-		StartDate         string          `json:"start_date"`
-		EndDate           NullString      `json:"end_date"`
-		DurationMin       int             `json:"duration_min"`
-		DurationStr       string          `json:"duration_str"`
-		Address           NullString      `json:"address"`
-		GeofenceID        NullInt64       `json:"geofence_id"`
-		Latitude          NullFloat64     `json:"latitude"`
-		Longitude         NullFloat64     `json:"longitude"`
-		StartBatteryLevel NullInt64       `json:"start_battery_level"`
-		EndBatteryLevel   NullInt64       `json:"end_battery_level"`
-		UsableBatteryDrop int             `json:"usable_battery_drop"`
-		EnergyConsumedKWh NullFloat64     `json:"energy_consumed_kwh"`
-		HadCharging       bool            `json:"had_charging"`
-		OutsideTempAvg    NullFloat64     `json:"outside_temp_avg"`
-		Details           []ParkingDetail `json:"parking_details"`
-	}
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`
-		UnitsTemperature string `json:"unit_of_temperature"`
-	}
-	type Data struct {
-		Car            Car            `json:"car"`
-		Parking        Parking        `json:"parking"`
-		TeslaMateUnits TeslaMateUnits `json:"units"`
-	}
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
+	// Response types live in pkg/dto (V2ParkingDetail / V2ParkingDetailPoint /
+	// V2ParkingDetailData / V2ParkingDetailResponse), shared with the swagger
+	// annotations.
 
 	var (
 		CarName                       NullString
-		park                          Parking
-		details                       []ParkingDetail
+		park                          dto.V2ParkingDetail
+		details                       []dto.V2ParkingDetailPoint
 		UnitsLength, UnitsTemperature string
 	)
 
@@ -534,7 +461,7 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 	defer rows.Close()
 
 	for rows.Next() {
-		d := ParkingDetail{}
+		d := dto.V2ParkingDetailPoint{}
 		if err = rows.Scan(&d.Date, &d.BatteryLevel, &d.UsableLevel, &d.OutsideTemp); err != nil {
 			respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ParkingsErr2, err.Error())
 			return
@@ -551,11 +478,11 @@ func (h *Handler) ParkingsDetails(c *gin.Context) {
 	}
 	park.Details = details
 
-	jsonData := JSONData{
-		Data{
-			Car:     Car{CarID: CarID, CarName: CarName},
+	jsonData := dto.V2ParkingDetailResponse{
+		Data: dto.V2ParkingDetailData{
+			Car:     dto.Car{CarID: CarID, CarName: CarName},
 			Parking: park,
-			TeslaMateUnits: TeslaMateUnits{
+			TeslaMateUnits: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},
