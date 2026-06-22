@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tobiasehlert/teslamateapi/internal/convert"
 	"github.com/tobiasehlert/teslamateapi/internal/respond"
+	"github.com/tobiasehlert/teslamateapi/pkg/dto"
 )
 
 // TeslaMateAPICarsStatsSummaryV2 returns aggregates bucketed by day / week
@@ -85,92 +86,9 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		return
 	}
 
-	type Bucket struct {
-		BucketStart                     NullString `json:"bucket_start"`
-		BucketEnd                       NullString `json:"bucket_end"`
-		DrivesCount                     int        `json:"drives_count"`
-		DrivesDistance                  float64    `json:"drives_distance"`
-		DrivesDurationMin               int        `json:"drives_duration_min"`
-		DrivesEnergyConsumedKWh         float64    `json:"drives_energy_consumed_kwh"`
-		DrivesAvgConsumption            float64    `json:"drives_avg_consumption"`
-		DrivesLongestDistance           float64    `json:"drives_longest_distance"`
-		DrivesLongestDurationMin        int        `json:"drives_longest_duration_min"`
-		DrivesMaxSpeed                  int        `json:"drives_max_speed"`
-		DrivesBestConsumption           float64    `json:"drives_best_consumption"`
-		DrivesWorstConsumption          float64    `json:"drives_worst_consumption"`
-		DrivesPeakDrivePowerKW          int        `json:"drives_peak_drive_power_kw"`
-		DrivesPeakRegenPowerKW          int        `json:"drives_peak_regen_power_kw"`
-		DrivesLongestDistanceStartDate  NullString `json:"drives_longest_distance_start_date"`
-		DrivesLongestDistanceEndDate    NullString `json:"drives_longest_distance_end_date"`
-		DrivesLongestDurationStartDate  NullString `json:"drives_longest_duration_start_date"`
-		DrivesLongestDurationEndDate    NullString `json:"drives_longest_duration_end_date"`
-		DrivesMaxSpeedStartDate         NullString `json:"drives_max_speed_start_date"`
-		DrivesMaxSpeedEndDate           NullString `json:"drives_max_speed_end_date"`
-		DrivesBestConsumptionStartDate  NullString `json:"drives_best_consumption_start_date"`
-		DrivesBestConsumptionEndDate    NullString `json:"drives_best_consumption_end_date"`
-		DrivesWorstConsumptionStartDate NullString `json:"drives_worst_consumption_start_date"`
-		DrivesWorstConsumptionEndDate   NullString `json:"drives_worst_consumption_end_date"`
-		DrivesPeakDrivePowerStartDate   NullString `json:"drives_peak_drive_power_start_date"`
-		DrivesPeakDrivePowerEndDate     NullString `json:"drives_peak_drive_power_end_date"`
-		DrivesPeakRegenPowerStartDate   NullString `json:"drives_peak_regen_power_start_date"`
-		DrivesPeakRegenPowerEndDate     NullString `json:"drives_peak_regen_power_end_date"`
-		ChargesCount                    int        `json:"charges_count"`
-		ChargesEnergyAddedKWh           float64    `json:"charges_energy_added_kwh"`
-		ChargesEnergyUsedKWh            float64    `json:"charges_energy_used_kwh"`
-		ChargesDurationMin              int        `json:"charges_duration_min"`
-		ChargesCost                     float64    `json:"charges_cost"`
-		ChargesACCount                  int        `json:"charges_ac_count"`
-		ChargesDCCount                  int        `json:"charges_dc_count"`
-		ChargesACEnergyAddedKWh         float64    `json:"charges_ac_energy_added_kwh"`
-		ChargesDCEnergyAddedKWh         float64    `json:"charges_dc_energy_added_kwh"`
-		ChargesACEnergyUsedKWh          float64    `json:"charges_ac_energy_used_kwh"`
-		ChargesDCEnergyUsedKWh          float64    `json:"charges_dc_energy_used_kwh"`
-		ChargesACDurationMin            int        `json:"charges_ac_duration_min"`
-		ChargesDCDurationMin            int        `json:"charges_dc_duration_min"`
-		ChargesACCost                   float64    `json:"charges_ac_cost"`
-		ChargesDCCost                   float64    `json:"charges_dc_cost"`
-		ChargesAvgDurationACMin         float64    `json:"charges_avg_duration_ac_min"`
-		ChargesAvgDurationDCMin         float64    `json:"charges_avg_duration_dc_min"`
-		ChargesAvgEnergyPerACSessionKWh float64    `json:"charges_avg_energy_per_ac_session_kwh"`
-		ChargesAvgEnergyPerDCSessionKWh float64    `json:"charges_avg_energy_per_dc_session_kwh"`
-		ChargesAvgSessionCostAC         float64    `json:"charges_avg_session_cost_ac"`
-		ChargesAvgSessionCostDC         float64    `json:"charges_avg_session_cost_dc"`
-		ChargesAvgCostPerKWhAC          float64    `json:"charges_avg_cost_per_kwh_ac"`
-		ChargesAvgCostPerKWhDC          float64    `json:"charges_avg_cost_per_kwh_dc"`
-		FastChargeRatio                 float64    `json:"fast_charge_ratio"`
-		ChargesLongestSessionMin        int        `json:"charges_longest_session_duration_min"`
-		ChargesLargestSessionKWh        float64    `json:"charges_largest_session_kwh"`
-		ChargesMaxSessionCost           float64    `json:"charges_max_session_cost"`
-		ChargesMaxPowerKW               int        `json:"charges_max_power_kw"`
-		ChargesLongestSessionStartDate  NullString `json:"charges_longest_session_start_date"`
-		ChargesLongestSessionEndDate    NullString `json:"charges_longest_session_end_date"`
-		ChargesLargestSessionStartDate  NullString `json:"charges_largest_session_start_date"`
-		ChargesLargestSessionEndDate    NullString `json:"charges_largest_session_end_date"`
-		ChargesMaxSessionCostStartDate  NullString `json:"charges_max_session_cost_start_date"`
-		ChargesMaxSessionCostEndDate    NullString `json:"charges_max_session_cost_end_date"`
-		ChargesMaxPowerDate             NullString `json:"charges_max_power_date"`
-		ChargesAvgPowerACKW             float64    `json:"charges_avg_power_ac_kw"`
-		ChargesAvgPowerDCKW             float64    `json:"charges_avg_power_dc_kw"`
-		ParkingsTotalDurationMin        int        `json:"parkings_total_duration_min"`
-		VampireDrainKWh                 float64    `json:"vampire_drain_kwh"`
-	}
-	type Car struct {
-		CarID   int        `json:"car_id"`
-		CarName NullString `json:"car_name"`
-	}
-	type TeslaMateUnits struct {
-		UnitsLength      string `json:"unit_of_length"`
-		UnitsTemperature string `json:"unit_of_temperature"`
-	}
-	type Data struct {
-		Car     Car            `json:"car"`
-		Period  string         `json:"period"`
-		Buckets []Bucket       `json:"buckets"`
-		Units   TeslaMateUnits `json:"units"`
-	}
-	type JSONData struct {
-		Data Data `json:"data"`
-	}
+	// Response types live in pkg/dto (V2SummaryBucket / V2SummaryData /
+	// V2SummaryResponse) — shared with the swagger annotations rather than
+	// redefined here.
 
 	// We collect bucket keys from drives, charges, and parking-pairs; full-outer
 	// join via a UNION-of-keys CTE.
@@ -521,13 +439,21 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 	defer rows.Close()
 
 	var (
-		buckets                       []Bucket
+		buckets                       []dto.V2SummaryBucket
 		UnitsLength, UnitsTemperature string
 		CarName                       NullString
 	)
 
+	// NullString.Scan rendered the bucket timestamps as dbTimestampFormat
+	// (UTC); re-format into the user's timezone for display.
+	localize := func(value *NullString) {
+		if len(*value) > 0 {
+			*value = NullString(h.timeInTZ(string(*value)))
+		}
+	}
+
 	for rows.Next() {
-		b := Bucket{}
+		b := dto.V2SummaryBucket{}
 		if err = rows.Scan(
 			&b.BucketStart,
 			&b.BucketEnd,
@@ -612,13 +538,6 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			}
 		}
 
-		// NullString.Scan rendered the bucket timestamps as dbTimestampFormat
-		// (UTC); re-format into the user's timezone for display.
-		localize := func(value *NullString) {
-			if len(*value) > 0 {
-				*value = NullString(h.timeInTZ(string(*value)))
-			}
-		}
 		localize(&b.BucketStart)
 		localize(&b.BucketEnd)
 		localize(&b.DrivesLongestDistanceStartDate)
@@ -649,12 +568,12 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		return
 	}
 
-	respond.HandleSuccess(c, handler, JSONData{
-		Data: Data{
-			Car:     Car{CarID: CarID, CarName: CarName},
+	respond.HandleSuccess(c, handler, dto.V2SummaryResponse{
+		Data: dto.V2SummaryData{
+			Car:     dto.Car{CarID: CarID, CarName: CarName},
 			Period:  period,
 			Buckets: buckets,
-			Units: TeslaMateUnits{
+			Units: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,
 			},
