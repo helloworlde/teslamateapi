@@ -402,27 +402,27 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&drives.ActiveDays, &drives.LastDriveDate, &drives.CurrentOdometer,
 		// charges
 		&charges.Count, &charges.TotalEnergyAddedKWh, &charges.TotalEnergyUsedKWh, &charges.TotalCost,
-		&charges.AvgCostPerKWh, &charges.AvgCostPerKWhAC, &charges.AvgCostPerKWhDC,
+		&charges.AvgCostPerKWh, &charges.ACAvgCostPerKWh, &charges.DCAvgCostPerKWh,
 		&charges.CostPerKm, &charges.AvgEnergyPerSession, &charges.TotalDurationMin, &charges.AvgDurationMin,
-		&charges.AvgEnergyPerACSession, &charges.AvgEnergyPerDCSession,
-		&charges.AvgDurationACMin, &charges.AvgDurationDCMin,
-		&charges.FastChargeCount, &charges.FastChargeEnergyKWh, &charges.FastChargeEnergyUsedKWh,
+		&charges.ACAvgEnergyPerSession, &charges.DCAvgEnergyPerSession,
+		&charges.ACAvgDurationMin, &charges.DCAvgDurationMin,
+		&charges.DCChargeCount, &charges.DCChargeEnergyAddedKWh, &charges.DCChargeEnergyUsedKWh,
 		&charges.SuperchargerCount, &charges.FreeSuperchargingCount,
-		&charges.ACChargeCount, &charges.ACChargeEnergyKWh, &charges.ACChargeEnergyUsedKWh,
+		&charges.ACChargeCount, &charges.ACChargeEnergyAddedKWh, &charges.ACChargeEnergyUsedKWh,
 		&charges.GeofencedChargeEnergyKWh, &charges.NonGeofencedChargeEnergyKWh,
-		&charges.FreeSuperchargingKWh, &charges.FreeSuperchargingUsedKWh,
+		&charges.FreeSuperchargingAddedKWh, &charges.FreeSuperchargingUsedKWh,
 		&charges.PeakPowerMaxKW, &charges.PeakVoltageMax,
 		&charges.ShortestSessionDurationMin,
 		&charges.LongestSessionDurationMin, &charges.LargestSessionEnergyKWh,
 		&charges.MaxSessionCost, &charges.AvgSessionCost,
-		&charges.AvgSessionCostAC, &charges.AvgSessionCostDC,
+		&charges.ACAvgSessionCost, &charges.DCAvgSessionCost,
 		&charges.PeakPowerDate, &charges.PeakVoltageDate,
 		&charges.LongestSessionStartDate, &charges.LongestSessionEndDate,
 		&charges.LargestSessionStartDate, &charges.LargestSessionEndDate,
 		&charges.MaxSessionCostStartDate, &charges.MaxSessionCostEndDate,
-		&charges.AvgPowerACKW, &charges.AvgPowerDCKW,
-		&charges.MaxPowerACKW, &charges.MaxPowerDCKW,
-		&charges.MaxPowerACDate, &charges.MaxPowerDCDate,
+		&charges.ACAvgPowerKW, &charges.DCAvgPowerKW,
+		&charges.ACMaxPowerKW, &charges.DCMaxPowerKW,
+		&charges.ACMaxPowerDate, &charges.DCMaxPowerDate,
 		&charges.MinStartBatteryLevel, &charges.MaxEndBatteryLevel,
 		&charges.DistinctChargeLocations,
 		&charges.FirstChargeDate, &charges.LastChargeDate,
@@ -499,8 +499,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 	h.localize(&charges.LargestSessionEndDate)
 	h.localize(&charges.MaxSessionCostStartDate)
 	h.localize(&charges.MaxSessionCostEndDate)
-	h.localize(&charges.MaxPowerACDate)
-	h.localize(&charges.MaxPowerDCDate)
+	h.localize(&charges.ACMaxPowerDate)
+	h.localize(&charges.DCMaxPowerDate)
 	h.localize(&parkings.LongestParkingStartDate)
 	h.localize(&parkings.LongestParkingEndDate)
 	h.localize(&updates.LatestUpdateDate)

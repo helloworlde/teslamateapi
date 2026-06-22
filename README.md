@@ -269,10 +269,10 @@ adjacent drives.
     derived parking sessions: `count`, `total_distance`,
     `total_duration_min`, `total_energy_consumed_kwh`, `avg_consumption`,
     `best_consumption`, `longest_distance`, `max_speed`,
-    `total_energy_added_kwh`, `total_cost`, `fast_charge_count`,
+    `total_energy_added_kwh`, `total_cost`, `dc_charge_count`,
     `supercharger_count`, `free_supercharging_count`,
-    `fast_charge_energy_kwh`, `fast_charge_energy_used_kwh`,
-    `ac_charge_energy_kwh`, `ac_charge_energy_used_kwh`, `peak_power_max_kw`,
+    `dc_charge_energy_added_kwh`, `dc_charge_energy_used_kwh`,
+    `ac_charge_energy_added_kwh`, `ac_charge_energy_used_kwh`, `peak_power_max_kw`,
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
     (`Σ distance / Σ rated-range drop × 100`) and charges carry
     `cost_per_distance` (`total_cost / total_distance`, per km/mile).
@@ -354,12 +354,12 @@ the denominator and which costs are folded in. Read this before charting them.
 |---|---|
 | `total_cost` | Sum of `charging_processes.cost` over all charges. |
 | `avg_cost_per_kwh` | `SUM(cost) ÷ SUM(charge_energy_added)` (battery-side). Free/zero-cost charges still contribute energy to the denominator, so this is biased low versus the rate paid for billed energy. |
-| `avg_cost_per_kwh_ac` / `avg_cost_per_kwh_dc` | Same battery-side calculation, filtered by AC sessions (`NOT fast_charger_present`) or DC sessions (`fast_charger_present`). |
-| `avg_duration_ac_min` / `avg_duration_dc_min` | Average completed charging-process duration, filtered by AC/DC. |
-| `avg_energy_per_ac_session_kwh` / `avg_energy_per_dc_session_kwh` | Average `charge_energy_added` per completed AC/DC session. |
-| `ac_charge_energy_used_kwh` / `fast_charge_energy_used_kwh` | Wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`) split by AC sessions (`NOT fast_charger_present`) and DC sessions (`fast_charger_present`). |
+| `ac_avg_cost_per_kwh` / `dc_avg_cost_per_kwh` | Same battery-side calculation, filtered by AC sessions (`NOT fast_charger_present`) or DC sessions (`fast_charger_present`). |
+| `ac_avg_duration_min` / `dc_avg_duration_min` | Average completed charging-process duration, filtered by AC/DC. |
+| `ac_avg_energy_per_session_kwh` / `dc_avg_energy_per_session_kwh` | Average `charge_energy_added` per completed AC/DC session. |
+| `ac_charge_energy_used_kwh` / `dc_charge_energy_used_kwh` | Wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`) split by AC sessions (`NOT fast_charger_present`) and DC sessions (`fast_charger_present`). |
 | `free_supercharging_used_kwh` | Wall-side energy for free Tesla Supercharger sessions (`fast_charger_present AND fast_charger_brand = 'Tesla'` with `free_supercharging`). |
-| `avg_session_cost_ac` / `avg_session_cost_dc` | Average non-null session cost, filtered by AC/DC. |
+| `ac_avg_session_cost` / `dc_avg_session_cost` | Average non-null session cost, filtered by AC/DC. |
 | `cost_per_distance` | Total charging cost ÷ total drive distance — the all-in, out-of-pocket per-distance rate (includes charging loss, parking drain, and net battery-inventory change). Per mile when `unit_of_length` is `mi`. |
 
 ##### `/api/v2/cars/:CarID/charges/:ChargeID/usage` (single charge)

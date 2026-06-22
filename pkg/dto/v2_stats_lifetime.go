@@ -69,41 +69,41 @@ type V2ChargesAgg struct {
 	// (battery-side rate). Free/zero-cost charges still contribute energy to the
 	// denominator, so this is biased low versus the rate paid for billed energy.
 	AvgCostPerKWh   float64 `json:"avg_cost_per_kwh" example:"0.26"`
-	AvgCostPerKWhAC float64 `json:"avg_cost_per_kwh_ac" example:"0.18"`
-	AvgCostPerKWhDC float64 `json:"avg_cost_per_kwh_dc" example:"0.42"`
+	ACAvgCostPerKWh float64 `json:"ac_avg_cost_per_kwh" example:"0.18"`
+	DCAvgCostPerKWh float64 `json:"dc_avg_cost_per_kwh" example:"0.42"`
 	// CostPerKm = total charging cost / total drive distance — the all-in,
 	// out-of-pocket per-distance rate (includes charging loss, parking drain, and
 	// net battery-inventory change). Converted to per-mile when unit_of_length is
 	// mi. Currency matches charging_processes.cost.
 	CostPerKm             float64 `json:"cost_per_distance" example:"0.05"`
 	AvgEnergyPerSession   float64 `json:"avg_energy_per_session_kwh" example:"38.6"`
-	AvgEnergyPerACSession float64 `json:"avg_energy_per_ac_session_kwh" example:"22.1"`
-	AvgEnergyPerDCSession float64 `json:"avg_energy_per_dc_session_kwh" example:"48.2"`
+	ACAvgEnergyPerSession float64 `json:"ac_avg_energy_per_session_kwh" example:"22.1"`
+	DCAvgEnergyPerSession float64 `json:"dc_avg_energy_per_session_kwh" example:"48.2"`
 	TotalDurationMin      int     `json:"total_duration_min" example:"18000"`
 	AvgDurationMin        float64 `json:"avg_duration_min" example:"42.3"`
-	AvgDurationACMin      float64 `json:"avg_duration_ac_min" example:"180.4"`
-	AvgDurationDCMin      float64 `json:"avg_duration_dc_min" example:"28.6"`
-	// FastChargeCount counts sessions with any DC fast charging
+	ACAvgDurationMin      float64 `json:"ac_avg_duration_min" example:"180.4"`
+	DCAvgDurationMin      float64 `json:"dc_avg_duration_min" example:"28.6"`
+	// DCChargeCount counts sessions with any DC fast charging
 	// (fast_charger_present), regardless of network or brand.
-	FastChargeCount int `json:"fast_charge_count" example:"73"`
+	DCChargeCount int `json:"dc_charge_count" example:"73"`
 	// SuperchargerCount counts Tesla Supercharger sessions
 	// (fast_charger_present AND fast_charger_brand = 'Tesla'); a subset of
-	// fast_charge_count.
+	// dc_charge_count.
 	SuperchargerCount int `json:"supercharger_count" example:"70"`
 	// FreeSuperchargingCount counts Supercharger sessions covered by free
 	// supercharging (car_settings.free_supercharging).
 	FreeSuperchargingCount      int             `json:"free_supercharging_count" example:"5"`
-	FastChargeEnergyKWh         float64         `json:"fast_charge_energy_kwh" example:"3200.0"`
-	FastChargeEnergyUsedKWh     float64         `json:"fast_charge_energy_used_kwh" example:"3350.0"`
+	DCChargeEnergyAddedKWh      float64         `json:"dc_charge_energy_added_kwh" example:"3200.0"`
+	DCChargeEnergyUsedKWh       float64         `json:"dc_charge_energy_used_kwh" example:"3350.0"`
 	ACChargeCount               int             `json:"ac_charge_count" example:"354"`
-	ACChargeEnergyKWh           float64         `json:"ac_charge_energy_kwh" example:"13300.0"`
+	ACChargeEnergyAddedKWh      float64         `json:"ac_charge_energy_added_kwh" example:"13300.0"`
 	ACChargeEnergyUsedKWh       float64         `json:"ac_charge_energy_used_kwh" example:"13850.0"`
 	GeofencedChargeEnergyKWh    float64         `json:"geofenced_charge_energy_kwh" example:"9800.0"`
 	NonGeofencedChargeEnergyKWh float64         `json:"non_geofenced_charge_energy_kwh" example:"6700.0"`
-	FreeSuperchargingKWh        float64         `json:"free_supercharging_kwh" example:"125.0"`
+	FreeSuperchargingAddedKWh   float64         `json:"free_supercharging_added_kwh" example:"125.0"`
 	FreeSuperchargingUsedKWh    float64         `json:"free_supercharging_used_kwh" example:"131.0"`
 	PeakPowerMaxKW              int             `json:"peak_power_max_kw" example:"250"`
-	PeakVoltageMax              int             `json:"peak_voltage_max" example:"480"`
+	PeakVoltageMax              int             `json:"peak_voltage_max_v" example:"480"`
 	ShortestSessionDurationMin  int             `json:"shortest_session_duration_min" example:"12"`
 	LongestSessionDurationMin   int             `json:"longest_session_duration_min" example:"180"`
 	LargestSessionEnergyKWh     float64         `json:"largest_session_energy_kwh" example:"78.4"`
@@ -117,14 +117,14 @@ type V2ChargesAgg struct {
 	MaxSessionCostStartDate     nullable.String `json:"max_session_cost_start_date" swaggertype:"string" example:"2026-05-30T19:30:00+01:00"`
 	MaxSessionCostEndDate       nullable.String `json:"max_session_cost_end_date" swaggertype:"string" example:"2026-05-30T22:00:00+01:00"`
 	AvgSessionCost              float64         `json:"avg_session_cost" example:"12.3"`
-	AvgSessionCostAC            float64         `json:"avg_session_cost_ac" example:"4.5"`
-	AvgSessionCostDC            float64         `json:"avg_session_cost_dc" example:"19.8"`
-	AvgPowerACKW                float64         `json:"avg_power_ac_kw" example:"7.2"`
-	AvgPowerDCKW                float64         `json:"avg_power_dc_kw" example:"120.5"`
-	MaxPowerACKW                int             `json:"max_power_ac_kw" example:"11"`
-	MaxPowerDCKW                int             `json:"max_power_dc_kw" example:"250"`
-	MaxPowerACDate              nullable.String `json:"max_power_ac_date" swaggertype:"string" example:"2026-05-30T20:15:00+01:00"`
-	MaxPowerDCDate              nullable.String `json:"max_power_dc_date" swaggertype:"string" example:"2026-05-30T20:15:00+01:00"`
+	ACAvgSessionCost            float64         `json:"ac_avg_session_cost" example:"4.5"`
+	DCAvgSessionCost            float64         `json:"dc_avg_session_cost" example:"19.8"`
+	ACAvgPowerKW                float64         `json:"ac_avg_power_kw" example:"7.2"`
+	DCAvgPowerKW                float64         `json:"dc_avg_power_kw" example:"120.5"`
+	ACMaxPowerKW                int             `json:"ac_max_power_kw" example:"11"`
+	DCMaxPowerKW                int             `json:"dc_max_power_kw" example:"250"`
+	ACMaxPowerDate              nullable.String `json:"ac_max_power_date" swaggertype:"string" example:"2026-05-30T20:15:00+01:00"`
+	DCMaxPowerDate              nullable.String `json:"dc_max_power_date" swaggertype:"string" example:"2026-05-30T20:15:00+01:00"`
 	MinStartBatteryLevel        nullable.Int64  `json:"min_start_battery_level" swaggertype:"integer" example:"3"`
 	MaxEndBatteryLevel          nullable.Int64  `json:"max_end_battery_level" swaggertype:"integer" example:"100"`
 	DistinctChargeLocations     int             `json:"distinct_charge_locations" example:"42"`
