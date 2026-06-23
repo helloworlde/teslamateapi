@@ -28,7 +28,7 @@ concurrency:
 jobs:
   prepare:
     name: prepare metadata
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     outputs:
       image_name: ${{ steps.image.outputs.name }}
