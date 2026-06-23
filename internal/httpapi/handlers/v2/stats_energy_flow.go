@@ -89,10 +89,8 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			SELECT
 				COALESCE(SUM(distance), 0) AS total_km,
 				COALESCE(SUM(
-					CASE WHEN sp.id IS NOT NULL AND ep.id IS NOT NULL
-					THEN GREATEST(
-						COALESCE(sp.usable_battery_level, sp.battery_level)
-						- COALESCE(ep.usable_battery_level, ep.battery_level), 0)
+					CASE WHEN sp.battery_level IS NOT NULL AND ep.battery_level IS NOT NULL
+					THEN GREATEST(sp.battery_level - ep.battery_level, 0)
 					ELSE 0 END
 				), 0) AS total_pct
 			FROM drives
@@ -122,14 +120,12 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			SELECT
 				COALESCE(SUM(
 					CASE
-						WHEN sp.id IS NOT NULL AND ep.id IS NOT NULL
-						AND COALESCE(sp.usable_battery_level, sp.battery_level)
-							> COALESCE(ep.usable_battery_level, ep.battery_level)
+						WHEN sp.battery_level IS NOT NULL AND ep.battery_level IS NOT NULL
+						AND sp.battery_level > ep.battery_level
 						AND NOT EXISTS(SELECT 1 FROM charging_processes cp
 							WHERE cp.car_id = $1 AND cp.start_date >= dp.park_start
 							AND (dp.park_end IS NULL OR cp.start_date < dp.park_end))
-						THEN COALESCE(sp.usable_battery_level, sp.battery_level)
-							- COALESCE(ep.usable_battery_level, ep.battery_level)
+						THEN sp.battery_level - ep.battery_level
 						ELSE 0
 					END
 				), 0) AS total_pct
@@ -145,20 +141,20 @@ func (h *Handler) StatsEnergyFlow(c *gin.Context) {
 			-- its endpoints.
 			SELECT
 				COALESCE((
-					SELECT COALESCE(p.usable_battery_level, p.battery_level)
+					SELECT p.battery_level
 					FROM positions p
 					WHERE p.car_id = $1
 						AND p.date IS NOT NULL
-						AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
+						AND p.battery_level IS NOT NULL
 					ORDER BY p.date ASC
 					LIMIT 1
 				), 0) AS start_soc,
 				COALESCE((
-					SELECT COALESCE(p.usable_battery_level, p.battery_level)
+					SELECT p.battery_level
 					FROM positions p
 					WHERE p.car_id = $1
 						AND p.date IS NOT NULL
-						AND COALESCE(p.usable_battery_level, p.battery_level) IS NOT NULL
+						AND p.battery_level IS NOT NULL
 					ORDER BY p.date DESC
 					LIMIT 1
 				), 0) AS end_soc
