@@ -52,7 +52,7 @@ jobs:
 
   build:
     name: build (${{ matrix.platform }})
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs:
       - prepare
     strategy:
@@ -131,7 +131,7 @@ jobs:
 
   manifest:
     name: manifest (multi-arch)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs:
       - prepare
       - build
