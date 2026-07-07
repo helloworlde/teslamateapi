@@ -238,13 +238,13 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		vehicleAvailableEnergy = vehicleAccountedEnergy
 	}
 
-	// All charging cost that reached the pack (vehicleAddedCost) is spread across
-	// the available pool, so the priced destinations always re-sum to
-	// vehicleAddedCost and the whole model reconciles to the charging bill. Free
-	// starting inventory and the zero-cost gap dilute this rate below the wall
-	// price.
+	// Flow node/link costs stay on the accounting pool rate so the graph remains
+	// conserved. The metrics-level drivingCost below is the product-wide
+	// drive-cost estimate: drive energy valued at the average battery-side
+	// charging price.
 	vehicleAccountingCostPerKWh := ratio(vehicleAddedCost, vehicleAvailableEnergy)
-	drivingCost := drivingEnergy * vehicleAccountingCostPerKWh
+	drivingCost := drivingEnergy * chargingCostPerKWh
+	drivingFlowCost := drivingEnergy * vehicleAccountingCostPerKWh
 	parkingCost := parkingEnergy * vehicleAccountingCostPerKWh
 	endBatteryCost := endBatteryEnergy * vehicleAccountingCostPerKWh
 	unattributedCost := unattributedEnergy * vehicleAccountingCostPerKWh
@@ -254,7 +254,7 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		{ID: "vehicle_added", Label: "Added to vehicle", EnergyKWh: vehicleEnergy, Cost: vehicleAddedCost},
 		{ID: "charging_loss", Label: "Charging loss", EnergyKWh: chargingLossEnergy, Cost: lossCost},
 		{ID: "vehicle_available", Label: "Vehicle-side available energy", EnergyKWh: vehicleAvailableEnergy, Cost: vehicleAddedCost},
-		{ID: "driving_usage", Label: "Driving use", EnergyKWh: drivingEnergy, Cost: drivingCost},
+		{ID: "driving_usage", Label: "Driving use", EnergyKWh: drivingEnergy, Cost: drivingFlowCost},
 		{ID: "parking_usage", Label: "Parking use", EnergyKWh: parkingEnergy, Cost: parkingCost},
 		{ID: "end_battery_inventory", Label: "Ending battery inventory", EnergyKWh: endBatteryEnergy, Cost: endBatteryCost},
 	}
@@ -287,7 +287,7 @@ func buildEnergyFlowData(in energyFlowInputs) dto.V2EnergyFlowData {
 		makeEnergyFlowLink("wall_input", "vehicle_added", vehicleEnergy, vehicleAddedCost, wallEnergy),
 		makeEnergyFlowLink("wall_input", "charging_loss", chargingLossEnergy, lossCost, wallEnergy),
 		makeEnergyFlowLink("vehicle_added", "vehicle_available", vehicleEnergy, vehicleAddedCost, vehicleEnergy),
-		makeEnergyFlowLink("vehicle_available", "driving_usage", drivingEnergy, drivingCost, vehicleAvailableEnergy),
+		makeEnergyFlowLink("vehicle_available", "driving_usage", drivingEnergy, drivingFlowCost, vehicleAvailableEnergy),
 		makeEnergyFlowLink("vehicle_available", "parking_usage", parkingEnergy, parkingCost, vehicleAvailableEnergy),
 		makeEnergyFlowLink("vehicle_available", "end_battery_inventory", endBatteryEnergy, endBatteryCost, vehicleAvailableEnergy),
 	}

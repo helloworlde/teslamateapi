@@ -115,8 +115,13 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	// `ver` builds firmware-version windows from the (tiny) updates table; it is
 	// only referenced when group_by=version. One row per qualifying drive is
 	// attributed to a group key, then aggregated into the energy model.
+	consumptionFilter := `d.distance > 0
+			AND d.start_rated_range_km IS NOT NULL
+			AND d.end_rated_range_km IS NOT NULL`
 	query := `
-		WITH ver AS (
+		WITH ` + accountingKWhPerPctCTE + `,
+		` + accountingChargePriceCTE + `,
+		ver AS (
 			SELECT version, start_date,
 				LEAD(start_date) OVER (ORDER BY start_date) AS next_start
 			FROM updates
@@ -124,17 +129,21 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		)
 		SELECT
 			` + keyExpr + `::text AS gkey,
-			COUNT(*) AS trips,
-			COALESCE(SUM(d.distance), 0) AS dist,
-			COALESCE(SUM(GREATEST(d.start_rated_range_km - d.end_rated_range_km, 0) * cars.efficiency), 0) AS kwh
+			COUNT(*) FILTER (WHERE ` + consumptionFilter + `) AS trips,
+			COALESCE(SUM(d.distance) FILTER (WHERE ` + consumptionFilter + `), 0) AS dist,
+			COALESCE(SUM(GREATEST(d.start_rated_range_km - d.end_rated_range_km, 0) * cars.efficiency) FILTER (WHERE ` + consumptionFilter + `), 0) AS kwh,
+			COALESCE(SUM(d.distance) FILTER (WHERE d.distance > 0), 0) AS cost_dist,
+			SUM(` + driveSOCEnergyKWh + `) FILTER (WHERE d.distance > 0) * charge_price.cost_per_kwh AS estimated_usage_cost
 		FROM drives d
 		` + joinClause + `
 		LEFT JOIN cars ON cars.id = d.car_id
+		LEFT JOIN positions sp ON sp.id = d.start_position_id
+		LEFT JOIN positions ep ON ep.id = d.end_position_id
+		CROSS JOIN cap
+		CROSS JOIN charge_price
 		WHERE d.car_id = $1 AND d.end_date IS NOT NULL
-			AND d.distance > 0
-			AND d.start_rated_range_km IS NOT NULL AND d.end_rated_range_km IS NOT NULL
 			` + whereExtra + `
-		GROUP BY ` + keyExpr + `
+		GROUP BY ` + keyExpr + `, charge_price.cost_per_kwh
 		ORDER BY ` + ordExpr + ` ASC`
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)
@@ -145,24 +154,32 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	defer rows.Close()
 
 	type rawGroup struct {
-		key   string
-		trips int
-		dist  float64
-		kwh   float64
+		key      string
+		trips    int
+		dist     float64
+		kwh      float64
+		costDist float64
+		cost     NullFloat64
 	}
 	var (
-		raw                 []rawGroup
-		totalDist, totalKWh float64
+		raw                                []rawGroup
+		totalDist, totalKWh, totalCostDist float64
+		totalCost                          NullFloat64
 	)
 	for rows.Next() {
 		var g rawGroup
-		if err = rows.Scan(&g.key, &g.trips, &g.dist, &g.kwh); err != nil {
+		if err = rows.Scan(&g.key, &g.trips, &g.dist, &g.kwh, &g.costDist, &g.cost); err != nil {
 			respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
 			return
 		}
 		raw = append(raw, g)
 		totalDist += g.dist
 		totalKWh += g.kwh
+		totalCostDist += g.costDist
+		if g.cost.Valid {
+			totalCost.Float64 += g.cost.Float64
+			totalCost.Valid = true
+		}
 	}
 	if err = rows.Err(); err != nil {
 		respond.HandleErrorV2(c, handler, http.StatusInternalServerError, ErrMsg, err.Error())
@@ -186,6 +203,11 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	if totalDist > 0 {
 		overall = totalKWh / totalDist * 1000
 	}
+	overallCostPerDistance := NullFloat64{}
+	if totalCost.Valid && totalCostDist > 0 {
+		overallCostPerDistance.Float64 = totalCost.Float64 / totalCostDist
+		overallCostPerDistance.Valid = true
+	}
 
 	groups := make([]dto.V2ConsumptionGroup, 0, len(raw))
 	for _, g := range raw {
@@ -193,17 +215,24 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		if g.dist > 0 {
 			consumption = g.kwh / g.dist * 1000
 		}
+		costPerDistance := NullFloat64{}
+		if g.cost.Valid && g.costDist > 0 {
+			costPerDistance.Float64 = g.cost.Float64 / g.costDist
+			costPerDistance.Valid = true
+		}
 		delta := 0.0
 		if overall > 0 {
 			delta = (consumption - overall) / overall * 100
 		}
 		grp := dto.V2ConsumptionGroup{
-			Key:           g.key,
-			Consumption:   consumption,
-			TripsCount:    g.trips,
-			Distance:      g.dist,
-			EnergyKWh:     g.kwh,
-			DeltaVsAvgPct: delta,
+			Key:                g.key,
+			Consumption:        consumption,
+			TripsCount:         g.trips,
+			Distance:           g.dist,
+			EnergyKWh:          g.kwh,
+			EstimatedUsageCost: g.cost,
+			CostPerDistance:    costPerDistance,
+			DeltaVsAvgPct:      delta,
 		}
 		// Temperature bands carry their numeric edges so clients can render
 		// "20~25°C" without re-parsing the key.
@@ -219,9 +248,15 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 
 	if UnitsLength == "mi" {
 		overall = convert.WhPerKmToWhPerMile(overall)
+		if overallCostPerDistance.Valid {
+			overallCostPerDistance.Float64 = overallCostPerDistance.Float64 * 1.609344
+		}
 		for i := range groups {
 			groups[i].Consumption = convert.WhPerKmToWhPerMile(groups[i].Consumption)
 			groups[i].Distance = convert.KilometersToMiles(groups[i].Distance)
+			if groups[i].CostPerDistance.Valid {
+				groups[i].CostPerDistance.Float64 = groups[i].CostPerDistance.Float64 * 1.609344
+			}
 		}
 	}
 	if UnitsTemperature == "F" {
@@ -237,10 +272,12 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 
 	respond.HandleSuccess(c, handler, dto.V2ConsumptionResponse{
 		Data: dto.V2ConsumptionData{
-			Car:                dto.Car{CarID: CarID, CarName: CarName},
-			GroupBy:            groupBy,
-			OverallConsumption: overall,
-			Groups:             groups,
+			Car:                       dto.Car{CarID: CarID, CarName: CarName},
+			GroupBy:                   groupBy,
+			OverallConsumption:        overall,
+			OverallEstimatedUsageCost: totalCost,
+			OverallCostPerDistance:    overallCostPerDistance,
+			Groups:                    groups,
 			Units: dto.TeslaMateUnits{
 				UnitsLength:      UnitsLength,
 				UnitsTemperature: UnitsTemperature,

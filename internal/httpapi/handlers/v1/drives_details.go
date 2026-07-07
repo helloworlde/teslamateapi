@@ -54,6 +54,28 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 
 	// getting data from database
 	query := `
+		WITH cap AS (
+			SELECT CASE
+				WHEN SUM(end_battery_level - start_battery_level)
+					FILTER (WHERE end_battery_level > start_battery_level) > 0
+				THEN SUM(charge_energy_added)
+						FILTER (WHERE end_battery_level > start_battery_level)
+					/ SUM(end_battery_level - start_battery_level)
+						FILTER (WHERE end_battery_level > start_battery_level)
+				ELSE NULL
+			END AS kwh_per_pct
+			FROM charging_processes
+			WHERE car_id = $1 AND end_date IS NOT NULL
+		),
+		charge_price AS (
+			SELECT CASE
+				WHEN SUM(charge_energy_added) > 0
+				THEN COALESCE(SUM(cost), 0) / NULLIF(SUM(charge_energy_added), 0)
+				ELSE NULL
+			END AS cost_per_kwh
+			FROM charging_processes
+			WHERE car_id = $1 AND end_date IS NOT NULL
+		)
 		SELECT
 			drives.id AS drive_id,
 			start_date,
@@ -100,9 +122,12 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 			END as range_achievement_pct,
 			CASE
 				WHEN distance > 0
-				THEN (SELECT COALESCE(SUM(cp.cost), 0) FROM charging_processes cp WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL)
-					/ NULLIF((SELECT SUM(dr.distance) FROM drives dr WHERE dr.car_id = $1 AND dr.end_date IS NOT NULL), 0)
-					* distance
+					AND start_position.battery_level IS NOT NULL
+					AND end_position.battery_level IS NOT NULL
+					AND cap.kwh_per_pct IS NOT NULL
+				THEN GREATEST(start_position.battery_level - end_position.battery_level, 0)
+					* cap.kwh_per_pct
+					* charge_price.cost_per_kwh
 				ELSE NULL
 			END as estimated_usage_cost,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
@@ -116,6 +141,8 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 		LEFT JOIN positions end_position ON end_position_id = end_position.id
 		LEFT JOIN geofences start_geofence ON start_geofence_id = start_geofence.id
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
+		CROSS JOIN cap
+		CROSS JOIN charge_price
 		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, DriveID)
 

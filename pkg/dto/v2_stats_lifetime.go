@@ -21,9 +21,14 @@ type V2DrivesAgg struct {
 	TotalDistance          float64 `json:"total_distance" example:"42500.5"`
 	TotalDurationMin       int     `json:"total_duration_min" example:"38000"`
 	TotalEnergyConsumedKWh float64 `json:"total_energy_consumed_kwh" example:"7825.0"`
-	AvgConsumption         float64 `json:"avg_consumption" example:"184.0"`
-	BestConsumption        float64 `json:"best_consumption" example:"120.0"`
-	WorstConsumption       float64 `json:"worst_consumption" example:"285.4"`
+	// EstimatedUsageCost = SOC-derived drive energy × average charging price
+	// (SUM(cost) / SUM(charge_energy_added)). Currency matches
+	// charging_processes.cost. Null when drive energy or charge price is not
+	// calibratable.
+	EstimatedUsageCost nullable.Float64 `json:"estimated_usage_cost" swaggertype:"number" example:"2034.50"`
+	AvgConsumption     float64          `json:"avg_consumption" example:"184.0"`
+	BestConsumption    float64          `json:"best_consumption" example:"120.0"`
+	WorstConsumption   float64          `json:"worst_consumption" example:"285.4"`
 	// RangeAchievementPct = Σ distance / Σ rated-range drop × 100 over all
 	// drives (objective). 100 = rated and real distance match; >100 beats
 	// rated, <100 falls short. Unit-independent (a ratio of distances).
@@ -71,18 +76,19 @@ type V2ChargesAgg struct {
 	AvgCostPerKWh   float64 `json:"avg_cost_per_kwh" example:"0.26"`
 	ACAvgCostPerKWh float64 `json:"ac_avg_cost_per_kwh" example:"0.18"`
 	DCAvgCostPerKWh float64 `json:"dc_avg_cost_per_kwh" example:"0.42"`
-	// CostPerKm = total charging cost / total drive distance — the all-in,
-	// out-of-pocket per-distance rate (includes charging loss, parking drain, and
-	// net battery-inventory change). Converted to per-mile when unit_of_length is
-	// mi. Currency matches charging_processes.cost.
-	CostPerKm             float64 `json:"cost_per_distance" example:"0.05"`
-	AvgEnergyPerSession   float64 `json:"avg_energy_per_session_kwh" example:"38.6"`
-	ACAvgEnergyPerSession float64 `json:"ac_avg_energy_per_session_kwh" example:"22.1"`
-	DCAvgEnergyPerSession float64 `json:"dc_avg_energy_per_session_kwh" example:"48.2"`
-	TotalDurationMin      int     `json:"total_duration_min" example:"18000"`
-	AvgDurationMin        float64 `json:"avg_duration_min" example:"42.3"`
-	ACAvgDurationMin      float64 `json:"ac_avg_duration_min" example:"180.4"`
-	DCAvgDurationMin      float64 `json:"dc_avg_duration_min" example:"28.6"`
+	// CostPerKm = estimated drive usage cost / total drive distance. Estimated
+	// drive usage cost is SOC-derived drive energy × average charging price
+	// (SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when
+	// unit_of_length is mi. Currency matches charging_processes.cost. Null when
+	// estimated drive usage cost or distance is unavailable.
+	CostPerKm             nullable.Float64 `json:"cost_per_distance" swaggertype:"number" example:"0.05"`
+	AvgEnergyPerSession   float64          `json:"avg_energy_per_session_kwh" example:"38.6"`
+	ACAvgEnergyPerSession float64          `json:"ac_avg_energy_per_session_kwh" example:"22.1"`
+	DCAvgEnergyPerSession float64          `json:"dc_avg_energy_per_session_kwh" example:"48.2"`
+	TotalDurationMin      int              `json:"total_duration_min" example:"18000"`
+	AvgDurationMin        float64          `json:"avg_duration_min" example:"42.3"`
+	ACAvgDurationMin      float64          `json:"ac_avg_duration_min" example:"180.4"`
+	DCAvgDurationMin      float64          `json:"dc_avg_duration_min" example:"28.6"`
 	// DCChargeCount counts sessions with any DC fast charging
 	// (fast_charger_present), regardless of network or brand.
 	DCChargeCount int `json:"dc_charge_count" example:"73"`

@@ -767,10 +767,10 @@ definitions:
         type: number
       estimated_usage_cost:
         description: |-
-          EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this
-          drive's distance. Semi-objective: amortises a global per-distance rate
-          onto one trip. 0 when no charging cost is configured; null when there is
-          no lifetime distance yet. In the same currency as charging_processes.cost.
+          EstimatedUsageCost = SOC-derived drive energy × average charging price
+          (SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is
+          configured; null when there is no calibratable charge/SOC basis.
+          Currency matches charging_processes.cost.
         example: 3.42
         type: number
       inside_temp_avg:
@@ -931,10 +931,10 @@ definitions:
         type: number
       estimated_usage_cost:
         description: |-
-          EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this
-          drive's distance. Semi-objective: amortises a global per-distance rate
-          onto one trip. 0 when no charging cost is configured; null when there is
-          no lifetime distance yet. In the same currency as charging_processes.cost.
+          EstimatedUsageCost = SOC-derived drive energy × average charging price
+          (SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is
+          configured; null when there is no calibratable charge/SOC basis.
+          Currency matches charging_processes.cost.
         example: 3.42
         type: number
       inside_temp_avg:
@@ -1886,10 +1886,11 @@ definitions:
         type: number
       cost_per_distance:
         description: |-
-          CostPerKm = total charging cost / total drive distance — the all-in,
-          out-of-pocket per-distance rate (includes charging loss, parking drain, and
-          net battery-inventory change). Converted to per-mile when unit_of_length is
-          mi. Currency matches charging_processes.cost.
+          CostPerKm = estimated drive usage cost / total drive distance. Estimated
+          drive usage cost is SOC-derived drive energy × average charging price
+          (SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when
+          unit_of_length is mi. Currency matches charging_processes.cost. Null when
+          estimated drive usage cost or distance is unavailable.
         example: 0.05
         type: number
       count:
@@ -2042,6 +2043,18 @@ definitions:
       overall_consumption:
         example: 174
         type: number
+      overall_cost_per_distance:
+        description: |-
+          OverallCostPerDistance = overall_estimated_usage_cost / grouped distance.
+          Null when overall drive cost or distance is unavailable.
+        example: 0.048
+        type: number
+      overall_estimated_usage_cost:
+        description: |-
+          OverallEstimatedUsageCost is the sum of group estimated_usage_cost values.
+          Null when no group has a calculable drive cost.
+        example: 2034.5
+        type: number
       units:
         $ref: '#/definitions/dto.TeslaMateUnits'
     type: object
@@ -2049,6 +2062,12 @@ definitions:
     properties:
       consumption:
         example: 135
+        type: number
+      cost_per_distance:
+        description: |-
+          CostPerDistance = estimated_usage_cost / distance. Null when drive cost
+          or distance is unavailable.
+        example: 0.035
         type: number
       delta_vs_avg_pct:
         example: -22.4
@@ -2058,6 +2077,13 @@ definitions:
         type: number
       energy_kwh:
         example: 432
+        type: number
+      estimated_usage_cost:
+        description: |-
+          EstimatedUsageCost = SOC-derived drive energy × average charging price
+          (SUM(cost) / SUM(charge_energy_added)). Currency matches
+          charging_processes.cost.
+        example: 112.32
         type: number
       key:
         example: "20"
@@ -2225,6 +2251,14 @@ definitions:
       current_odometer:
         example: 42500
         type: number
+      estimated_usage_cost:
+        description: |-
+          EstimatedUsageCost = SOC-derived drive energy × average charging price
+          (SUM(cost) / SUM(charge_energy_added)). Currency matches
+          charging_processes.cost. Null when drive energy or charge price is not
+          calibratable.
+        example: 2034.5
+        type: number
       last_drive_date:
         example: "2026-05-30T18:42:00+01:00"
         type: string
@@ -2382,16 +2416,16 @@ definitions:
         type: number
       driving_cost:
         description: |-
-          DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It
-          counts only the energy that moved the car; charging loss is NOT included
-          here (it is its own bucket, charging_loss_cost), so this is an optimistic
-          lower bound on the true cost of driving.
+          DrivingCost is driving energy valued at charging_cost_per_kwh
+          (SUM(cost) / SUM(charge_energy_added)). It counts only the energy that
+          moved the car; charging loss is NOT folded into this drive-cost estimate.
         example: 1965
         type: number
       driving_cost_per_distance:
         description: |-
-          DrivingCostPerDistance is driving_cost / distance (per km, or per mile when
-          unit_of_length is mi). Same optimistic basis as driving_cost.
+          DrivingCostPerDistance is driving_cost / distance (per km, or per mile
+          when unit_of_length is mi). Same battery-side charge-price basis as
+          driving_cost.
         example: 0.04624
         type: number
       driving_energy_kwh:
@@ -2434,8 +2468,8 @@ definitions:
           energy buckets below: vehicle_added cost spread across
           vehicle_available_energy_kwh. Because free starting inventory (and any
           zero-cost usage gap) sit in that denominator, this reads BELOW
-          wall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +
-          (unmetered loss) always re-sum to the vehicle-added cost.
+          wall_cost_per_kwh. It is used for the conserved flow graph node/link costs;
+          the metrics-level driving_cost uses charging_cost_per_kwh.
         example: 0.24943
         type: number
       vehicle_available_energy_kwh:
@@ -2848,6 +2882,12 @@ definitions:
       drives_best_consumption_start_date:
         example: "2024-01-10T08:00:00+01:00"
         type: string
+      drives_cost_per_distance:
+        description: |-
+          DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.
+          Null when drive cost or distance is unavailable.
+        example: 0.053
+        type: number
       drives_count:
         example: 42
         type: integer
@@ -2859,6 +2899,14 @@ definitions:
         type: integer
       drives_energy_consumed_kwh:
         example: 380.5
+        type: number
+      drives_estimated_usage_cost:
+        description: |-
+          DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's
+          average charging price (charges_cost / charges_energy_added_kwh). Null
+          when the bucket has no battery-side charge energy or no calibratable SOC
+          basis.
+        example: 98.93
         type: number
       drives_longest_distance:
         example: 320.4

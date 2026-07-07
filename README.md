@@ -190,8 +190,8 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
   - Each drive also carries `range_achievement_pct` (`distance / rated-range
     drop × 100`, objective; null when the drop is non-positive) and
-    `estimated_usage_cost` (`lifetime charging cost / lifetime distance ×` this
-    drive's distance; semi-objective, in the charging-cost currency).
+    `estimated_usage_cost` (SOC-derived drive energy × lifetime average
+    battery-side charging price; in the charging-cost currency).
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
   - Supported parameters:
     - `sample` (optional, `auto` by default; supported values: `auto`, `full`, `every_5s`, `every_30s`)
@@ -274,8 +274,10 @@ adjacent drives.
     `dc_charge_energy_added_kwh`, `dc_charge_energy_used_kwh`,
     `ac_charge_energy_added_kwh`, `ac_charge_energy_used_kwh`, `peak_power_max_kw`,
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
-    (`Σ distance / Σ rated-range drop × 100`) and charges carry
-    `cost_per_distance` (`total_cost / total_distance`, per km/mile).
+    (`Σ distance / Σ rated-range drop × 100`) and
+    `estimated_usage_cost` (SOC-derived drive energy × average battery-side
+    charging price). Charges carry `cost_per_distance` as drive usage cost per
+    km/mile, not total charging bill divided by distance.
     Charge averages are also split by AC/DC, including duration, energy,
     session cost, and cost per kWh.
   - Extremum fields also include matching timestamp fields where available
@@ -288,6 +290,9 @@ adjacent drives.
     or line chart directly. Empty buckets are omitted.
   - Bucket-level drive and charge extrema include matching timestamp fields
     such as `drives_max_speed_start_date` and `charges_max_power_date`.
+  - Bucket-level drive cost fields use `drives_estimated_usage_cost =
+    SOC-derived drive energy × (charges_cost / charges_energy_added_kwh)` and
+    `drives_cost_per_distance = drives_estimated_usage_cost / drives_distance`.
   - Bucket-level charge totals and averages include AC/DC splits for count,
     energy, duration, cost, session averages, and cost per kWh.
   - Supported parameters: `period`, `startDate`, `endDate`.
@@ -302,8 +307,9 @@ adjacent drives.
     (incomplete history) the residual `usage gap` is a separate zero-cost source
     feeding the pool, never energy stacked on top of the full destination nodes —
     so node totals never double-count. Each node and link carries both
-    `energy_kwh` and `cost`, and the priced destinations reconcile to
-    `total_charging_cost`.
+    `energy_kwh` and `cost`; node/link `cost` stays on the conserved vehicle
+    accounting rate, while the metrics-level `driving_cost` is a drive-cost
+    estimate valued at `charging_cost_per_kwh`.
   - Metrics include actual driving usage rate, actual loss rate, charging
     efficiency, driving cost, driving cost per distance, total charging cost,
     wall-side cost per kWh, charge-added cost per kWh, vehicle-side accounting
@@ -326,9 +332,12 @@ adjacent drives.
     dimension: `group_by=temperature|version|season|month` (default
     `temperature`).
     Each group returns `key`, `consumption`, `trips_count`, `distance`,
-    `energy_kwh`, `delta_vs_avg_pct`; temperature groups add `temp_low` /
-    `temp_high`. Single SQL over `drives` (+ tiny `updates` for `version`); no
-    `positions` scan.
+    `energy_kwh`, `estimated_usage_cost`, `cost_per_distance`,
+    `delta_vs_avg_pct`; temperature groups add `temp_low` / `temp_high`.
+    Consumption remains rated-range based; cost fields use SOC-derived drive
+    energy × lifetime average battery-side charging price. Single SQL over
+    `drives` (+ tiny `updates` for `version`) and drive endpoint positions; no
+    sampled `positions` scan.
   - Supported parameters: `group_by`.
 - GET `/api/v2/cars/:CarID/stats/behavior`
   - Behaviour profile in one response, three objective distributions:
@@ -352,9 +361,9 @@ the denominator and which costs are folded in. Read this before charting them.
 | `total_charging_cost` | Sum of `charging_processes.cost` over all charges. |
 | `wall_cost_per_kwh` | Total cost ÷ wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`). Plug-side price (charging loss in the denominator). TeslaMate's `charge_energy_used` is often missing/unreliable, so the GREATEST fallback can collapse this onto the battery-side rate (`charging_cost_per_kwh`). |
 | `charging_cost_per_kwh` | Total cost ÷ `charge_energy_added` (battery-side): cost per kWh that actually entered the pack. Charging loss is baked in, so it reads higher than `wall_cost_per_kwh`. |
-| `vehicle_accounting_cost_per_kwh` | Price used to value the vehicle-side energy buckets: the vehicle-added cost spread across the available pool (`vehicle_added + starting inventory`). Free starting inventory (and any zero-cost usage gap) sit in the denominator, so it reads **below** `wall_cost_per_kwh`. `driving_cost + parking_cost + end_battery_cost + unmetered loss` re-sum to the vehicle-added cost, and together with `charging_loss_cost` reconcile to `total_charging_cost`. |
-| `driving_cost` | Driving energy valued at `vehicle_accounting_cost_per_kwh`. Counts only the energy that moved the car; charging loss is **not** folded in (it is its own bucket, `charging_loss_cost`), so this is an optimistic lower bound on the true cost of driving. |
-| `driving_cost_per_distance` | `driving_cost ÷ distance` (per km, or per mile when `unit_of_length` is `mi`). Same optimistic basis as `driving_cost`. |
+| `vehicle_accounting_cost_per_kwh` | Price used for conserved flow node/link costs: the vehicle-added cost spread across the available pool (`vehicle_added + starting inventory`). Free starting inventory (and any zero-cost usage gap) sit in the denominator, so it reads **below** `wall_cost_per_kwh`. The metrics-level `driving_cost` uses `charging_cost_per_kwh` instead. |
+| `driving_cost` | Driving energy valued at `charging_cost_per_kwh` (`SUM(cost) ÷ SUM(charge_energy_added)`). Counts only the energy that moved the car; charging loss is **not** folded into this drive-cost estimate. |
+| `driving_cost_per_distance` | `driving_cost ÷ distance` (per km, or per mile when `unit_of_length` is `mi`). Same battery-side charge-price basis as `driving_cost`. |
 | `parking_cost` | Parking/idle drain energy valued at the accounting price. |
 | `charging_loss_cost` | Charging-loss energy (wall − vehicle) valued at the wall price; carried separately so it is not amortised into `driving_cost`. |
 | `end_battery_cost` | Energy still stored in the pack at window end, valued at the accounting price (paid for but not yet consumed). |
@@ -371,7 +380,8 @@ the denominator and which costs are folded in. Read this before charting them.
 | `ac_charge_energy_used_kwh` / `dc_charge_energy_used_kwh` | Wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`) split by AC sessions (`NOT fast_charger_present`) and DC sessions (`fast_charger_present`). |
 | `free_supercharging_used_kwh` | Wall-side energy for free Tesla Supercharger sessions (`fast_charger_present AND fast_charger_brand = 'Tesla'` with `free_supercharging`). |
 | `ac_avg_session_cost` / `dc_avg_session_cost` | Average non-null session cost, filtered by AC/DC. |
-| `cost_per_distance` | Total charging cost ÷ total drive distance — the all-in, out-of-pocket per-distance rate (includes charging loss, parking drain, and net battery-inventory change). Per mile when `unit_of_length` is `mi`. |
+| `estimated_usage_cost` | Drives section: SOC-derived drive energy × average battery-side charging price (`SUM(cost) ÷ SUM(charge_energy_added)`). |
+| `cost_per_distance` | Estimated drive usage cost ÷ total drive distance. Per mile when `unit_of_length` is `mi`. |
 
 ##### `/api/v2/cars/:CarID/charges/:ChargeID/usage` (single charge)
 

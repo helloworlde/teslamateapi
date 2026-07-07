@@ -41,8 +41,8 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			wantLossKWh:             10,
 			wantUnattributedKWh:     20,
 			wantVehicleAvailableKWh: 100,
-			wantDrivingCost:         35,
-			wantDrivingCostPerKm:    0.35,
+			wantDrivingCost:         38.5,
+			wantDrivingCostPerKm:    0.385,
 			wantDrivingUsageRatePct: 63.6363636364,
 			wantLossRatePct:         9.0909090909,
 		},
@@ -64,8 +64,8 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			wantVehicleAvailableKWh: 110,
 			wantEndBatteryKWh:       25,
 			wantEndBatteryCost:      11.3636363636,
-			wantDrivingCost:         27.2727272727,
-			wantDrivingCostPerKm:    0.2727272727,
+			wantDrivingCost:         36,
+			wantDrivingCostPerKm:    0.36,
 			wantDrivingUsageRatePct: 50,
 			wantLossRatePct:         16.6666666667,
 		},
@@ -83,8 +83,8 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			wantLossKWh:             10,
 			wantUnmatchedUsageKWh:   10,
 			wantVehicleAvailableKWh: 90,
-			wantDrivingCost:         31.1111111111,
-			wantDrivingCostPerKm:    0.6222222222,
+			wantDrivingCost:         39.375,
+			wantDrivingCostPerKm:    0.7875,
 			wantDrivingUsageRatePct: 77.7777777778,
 			wantLossRatePct:         11.1111111111,
 		},
@@ -124,9 +124,9 @@ func TestBuildEnergyFlowData(t *testing.T) {
 			assertClose(t, inboundEnergy(got.Links, "parking_usage"), got.Metrics.ParkingEnergyKWh)
 			assertClose(t, inboundEnergy(got.Links, "end_battery_inventory"), got.Metrics.EndBatteryEnergyKWh)
 			assertClose(t, outboundEnergy(got.Links, "unmatched_vehicle_usage"), got.Metrics.UnmatchedVehicleUsageKWh)
-			// The whole model must reconcile to the charging bill: every terminal
-			// sink cost (loss + the vehicle-side buckets) re-sums to total cost.
-			// Skipped when wall energy is 0, where cost cannot be priced at all.
+			// Flow node/link costs stay on the accounting basis so the graph remains
+			// a conserved cost flow. Metrics.DrivingCost is separately valued at
+			// charging_cost_per_kwh as a drive-cost estimate.
 			if tt.input.wallEnergyKWh > 0 {
 				assertClose(t, terminalCost(got.Nodes), tt.input.totalChargingCost)
 			}
@@ -134,9 +134,6 @@ func TestBuildEnergyFlowData(t *testing.T) {
 	}
 }
 
-// terminalCost sums the cost of every leaf sink in the flow. These must add up
-// to the total charging cost — no destination may be double-counted and no
-// phantom (free) energy may carry cost.
 func terminalCost(nodes []dto.V2EnergyFlowNode) float64 {
 	var total float64
 	for _, n := range nodes {

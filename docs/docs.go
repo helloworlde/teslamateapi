@@ -2840,7 +2840,7 @@ const docTemplate = `{
                     "example": 22.5
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this\ndrive's distance. Semi-objective: amortises a global per-distance rate\nonto one trip. 0 when no charging cost is configured; null when there is\nno lifetime distance yet. In the same currency as charging_processes.cost.",
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is\nconfigured; null when there is no calibratable charge/SOC basis.\nCurrency matches charging_processes.cost.",
                     "type": "number",
                     "example": 3.42
                 },
@@ -3060,7 +3060,7 @@ const docTemplate = `{
                     "example": 22.5
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = (lifetime charging cost / lifetime distance) × this\ndrive's distance. Semi-objective: amortises a global per-distance rate\nonto one trip. 0 when no charging cost is configured; null when there is\nno lifetime distance yet. In the same currency as charging_processes.cost.",
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is\nconfigured; null when there is no calibratable charge/SOC basis.\nCurrency matches charging_processes.cost.",
                     "type": "number",
                     "example": 3.42
                 },
@@ -4364,7 +4364,7 @@ const docTemplate = `{
                     "example": 12.3
                 },
                 "cost_per_distance": {
-                    "description": "CostPerKm = total charging cost / total drive distance — the all-in,\nout-of-pocket per-distance rate (includes charging loss, parking drain, and\nnet battery-inventory change). Converted to per-mile when unit_of_length is\nmi. Currency matches charging_processes.cost.",
+                    "description": "CostPerKm = estimated drive usage cost / total drive distance. Estimated\ndrive usage cost is SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when\nunit_of_length is mi. Currency matches charging_processes.cost. Null when\nestimated drive usage cost or distance is unavailable.",
                     "type": "number",
                     "example": 0.05
                 },
@@ -4559,6 +4559,16 @@ const docTemplate = `{
                     "type": "number",
                     "example": 174
                 },
+                "overall_cost_per_distance": {
+                    "description": "OverallCostPerDistance = overall_estimated_usage_cost / grouped distance.\nNull when overall drive cost or distance is unavailable.",
+                    "type": "number",
+                    "example": 0.048
+                },
+                "overall_estimated_usage_cost": {
+                    "description": "OverallEstimatedUsageCost is the sum of group estimated_usage_cost values.\nNull when no group has a calculable drive cost.",
+                    "type": "number",
+                    "example": 2034.5
+                },
                 "units": {
                     "$ref": "#/definitions/dto.TeslaMateUnits"
                 }
@@ -4571,6 +4581,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 135
                 },
+                "cost_per_distance": {
+                    "description": "CostPerDistance = estimated_usage_cost / distance. Null when drive cost\nor distance is unavailable.",
+                    "type": "number",
+                    "example": 0.035
+                },
                 "delta_vs_avg_pct": {
                     "type": "number",
                     "example": -22.4
@@ -4582,6 +4597,11 @@ const docTemplate = `{
                 "energy_kwh": {
                     "type": "number",
                     "example": 432
+                },
+                "estimated_usage_cost": {
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost.",
+                    "type": "number",
+                    "example": 112.32
                 },
                 "key": {
                     "type": "string",
@@ -4813,6 +4833,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 42500
                 },
+                "estimated_usage_cost": {
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost. Null when drive energy or charge price is not\ncalibratable.",
+                    "type": "number",
+                    "example": 2034.5
+                },
                 "last_drive_date": {
                     "type": "string",
                     "example": "2026-05-30T18:42:00+01:00"
@@ -5006,12 +5031,12 @@ const docTemplate = `{
                     "example": 700
                 },
                 "driving_cost": {
-                    "description": "DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It\ncounts only the energy that moved the car; charging loss is NOT included\nhere (it is its own bucket, charging_loss_cost), so this is an optimistic\nlower bound on the true cost of driving.",
+                    "description": "DrivingCost is driving energy valued at charging_cost_per_kwh\n(SUM(cost) / SUM(charge_energy_added)). It counts only the energy that\nmoved the car; charging loss is NOT folded into this drive-cost estimate.",
                     "type": "number",
                     "example": 1965
                 },
                 "driving_cost_per_distance": {
-                    "description": "DrivingCostPerDistance is driving_cost / distance (per km, or per mile when\nunit_of_length is mi). Same optimistic basis as driving_cost.",
+                    "description": "DrivingCostPerDistance is driving_cost / distance (per km, or per mile\nwhen unit_of_length is mi). Same battery-side charge-price basis as\ndriving_cost.",
                     "type": "number",
                     "example": 0.04624
                 },
@@ -5055,7 +5080,7 @@ const docTemplate = `{
                     "example": 0
                 },
                 "vehicle_accounting_cost_per_kwh": {
-                    "description": "VehicleAccountingCostPerKWh is the price used to value the vehicle-side\nenergy buckets below: vehicle_added cost spread across\nvehicle_available_energy_kwh. Because free starting inventory (and any\nzero-cost usage gap) sit in that denominator, this reads BELOW\nwall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +\n(unmetered loss) always re-sum to the vehicle-added cost.",
+                    "description": "VehicleAccountingCostPerKWh is the price used to value the vehicle-side\nenergy buckets below: vehicle_added cost spread across\nvehicle_available_energy_kwh. Because free starting inventory (and any\nzero-cost usage gap) sit in that denominator, this reads BELOW\nwall_cost_per_kwh. It is used for the conserved flow graph node/link costs;\nthe metrics-level driving_cost uses charging_cost_per_kwh.",
                     "type": "number",
                     "example": 0.24943
                 },
@@ -5615,6 +5640,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-10T08:00:00+01:00"
                 },
+                "drives_cost_per_distance": {
+                    "description": "DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.\nNull when drive cost or distance is unavailable.",
+                    "type": "number",
+                    "example": 0.053
+                },
                 "drives_count": {
                     "type": "integer",
                     "example": 42
@@ -5630,6 +5660,11 @@ const docTemplate = `{
                 "drives_energy_consumed_kwh": {
                     "type": "number",
                     "example": 380.5
+                },
+                "drives_estimated_usage_cost": {
+                    "description": "DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's\naverage charging price (charges_cost / charges_energy_added_kwh). Null\nwhen the bucket has no battery-side charge energy or no calibratable SOC\nbasis.",
+                    "type": "number",
+                    "example": 98.93
                 },
                 "drives_longest_distance": {
                     "type": "number",

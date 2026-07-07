@@ -51,16 +51,16 @@ type V2EnergyFlowMetrics struct {
 	// energy buckets below: vehicle_added cost spread across
 	// vehicle_available_energy_kwh. Because free starting inventory (and any
 	// zero-cost usage gap) sit in that denominator, this reads BELOW
-	// wall_cost_per_kwh. driving_cost + parking_cost + end_battery_cost +
-	// (unmetered loss) always re-sum to the vehicle-added cost.
+	// wall_cost_per_kwh. It is used for the conserved flow graph node/link costs;
+	// the metrics-level driving_cost uses charging_cost_per_kwh.
 	VehicleAccountingCostPerKWh float64 `json:"vehicle_accounting_cost_per_kwh" example:"0.24943"`
-	// DrivingCost is driving energy valued at vehicle_accounting_cost_per_kwh. It
-	// counts only the energy that moved the car; charging loss is NOT included
-	// here (it is its own bucket, charging_loss_cost), so this is an optimistic
-	// lower bound on the true cost of driving.
+	// DrivingCost is driving energy valued at charging_cost_per_kwh
+	// (SUM(cost) / SUM(charge_energy_added)). It counts only the energy that
+	// moved the car; charging loss is NOT folded into this drive-cost estimate.
 	DrivingCost float64 `json:"driving_cost" example:"1965.0"`
-	// DrivingCostPerDistance is driving_cost / distance (per km, or per mile when
-	// unit_of_length is mi). Same optimistic basis as driving_cost.
+	// DrivingCostPerDistance is driving_cost / distance (per km, or per mile
+	// when unit_of_length is mi). Same battery-side charge-price basis as
+	// driving_cost.
 	DrivingCostPerDistance float64 `json:"driving_cost_per_distance" example:"0.04624"`
 	// ParkingCost is parking/idle drain energy valued at the accounting price.
 	ParkingCost float64 `json:"parking_cost" example:"31.41"`

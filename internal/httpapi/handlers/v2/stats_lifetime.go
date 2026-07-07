@@ -69,10 +69,12 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 	// response (otherwise the empty `d` CTE would yield zero rows and the
 	// handler would surface ErrNoRows).
 	query := fmt.Sprintf(`
-		WITH d AS (
-			SELECT
-				MIN(start_date) AS since,
-				MAX(start_date) AS last_drive_date,
+			WITH %[8]s,
+			%[9]s,
+			d AS (
+				SELECT
+					MIN(start_date) AS since,
+					MAX(start_date) AS last_drive_date,
 				MAX(end_km) AS current_odometer,
 				COUNT(*) AS cnt,
 				COUNT(DISTINCT date_trunc('day', %[1]s)) AS active_days,
@@ -86,14 +88,15 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(MAX(distance), 0) AS longest_km,
 				COALESCE(MIN(distance) FILTER (WHERE distance > 0), 0) AS shortest_km,
 				COALESCE(MAX(duration_min), 0) AS longest_dur,
-				COALESCE(MAX(power_max), 0) AS peak_drive_power,
-				COALESCE(-MIN(power_min), 0) AS max_regen_power,
-				AVG(outside_temp_avg) AS avg_outside_temp,
-				AVG(inside_temp_avg) AS avg_inside_temp,
-				COALESCE(SUM(%[5]s), 0) AS total_kwh,
-				CASE WHEN SUM(distance) > 0 THEN
-					SUM(%[5]s) / NULLIF(SUM(distance), 0) * 1000
-				ELSE 0 END AS avg_consumption,
+					COALESCE(MAX(power_max), 0) AS peak_drive_power,
+					COALESCE(-MIN(power_min), 0) AS max_regen_power,
+					AVG(outside_temp_avg) AS avg_outside_temp,
+					AVG(inside_temp_avg) AS avg_inside_temp,
+					COALESCE(SUM(%[5]s), 0) AS total_kwh,
+					SUM(%[10]s) AS total_accounting_kwh,
+					CASE WHEN SUM(distance) > 0 THEN
+						SUM(%[5]s) / NULLIF(SUM(distance), 0) * 1000
+					ELSE 0 END AS avg_consumption,
 				MIN(%[6]s) AS best_consumption,
 				MAX(%[6]s) AS worst_consumption,
 				CASE WHEN SUM(GREATEST(start_rated_range_km - end_rated_range_km, 0)) > 0
@@ -121,11 +124,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				(array_agg(end_date ORDER BY (%[6]s) DESC NULLS LAST, start_date ASC) FILTER (
 					WHERE %[7]s
 				))[1] AS worst_consumption_end_date
-			FROM drives
-			LEFT JOIN cars ON cars.id = drives.car_id
-			WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
-			GROUP BY cars.id
-		),
+				FROM drives
+				LEFT JOIN cars ON cars.id = drives.car_id
+				LEFT JOIN positions sp ON sp.id = drives.start_position_id
+				LEFT JOIN positions ep ON ep.id = drives.end_position_id
+				CROSS JOIN cap
+				WHERE drives.car_id = $1 AND drives.end_date IS NOT NULL
+				GROUP BY cars.id
+			),
 		ch AS (
 			SELECT
 				COUNT(*) AS cnt,
@@ -309,8 +315,12 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			CASE WHEN COALESCE(d.active_months, 0) > 0
 				THEN COALESCE(d.total_km, 0) / d.active_months
 				ELSE 0 END AS avg_monthly_distance,
-			COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
-			COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
+				COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
+				CASE WHEN d.total_accounting_kwh IS NOT NULL
+					AND charge_price.cost_per_kwh IS NOT NULL
+					THEN d.total_accounting_kwh * charge_price.cost_per_kwh
+					ELSE NULL END,
+				COALESCE(d.avg_consumption, 0), COALESCE(d.best_consumption, 0), COALESCE(d.worst_consumption, 0),
 			COALESCE(d.range_achievement_pct, 0),
 			CASE WHEN COALESCE(d.current_odometer, 0) > 0 AND COALESCE(d.total_km, 0) > 0
 				THEN LEAST(d.total_km / d.current_odometer, 1) * 100
@@ -330,10 +340,14 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 			d.worst_consumption_start_date, d.worst_consumption_end_date,
 			d.avg_outside_temp, d.avg_inside_temp,
 			COALESCE(d.active_days, 0), d.last_drive_date, COALESCE(d.current_odometer, 0),
-			COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
-			COALESCE(ch.avg_cost_per_kwh, 0),
-			COALESCE(ch.avg_cost_per_kwh_ac, 0), COALESCE(ch.avg_cost_per_kwh_dc, 0),
-			CASE WHEN COALESCE(d.total_km, 0) > 0 THEN COALESCE(ch.total_cost, 0) / d.total_km ELSE 0 END,
+				COALESCE(ch.cnt, 0), COALESCE(ch.total_added, 0), COALESCE(ch.total_used, 0), COALESCE(ch.total_cost, 0),
+				COALESCE(ch.avg_cost_per_kwh, 0),
+				COALESCE(ch.avg_cost_per_kwh_ac, 0), COALESCE(ch.avg_cost_per_kwh_dc, 0),
+				CASE WHEN COALESCE(d.total_km, 0) > 0
+					AND d.total_accounting_kwh IS NOT NULL
+					AND charge_price.cost_per_kwh IS NOT NULL
+					THEN d.total_accounting_kwh * charge_price.cost_per_kwh / d.total_km
+					ELSE NULL END,
 			COALESCE(ch.avg_energy_per_session, 0), COALESCE(ch.total_duration_min, 0), COALESCE(ch.avg_duration_min, 0),
 			COALESCE(ch.avg_energy_per_ac_session, 0), COALESCE(ch.avg_energy_per_dc_session, 0),
 			COALESCE(ch.avg_duration_ac_min, 0), COALESCE(ch.avg_duration_dc_min, 0),
@@ -370,10 +384,12 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		LEFT JOIN d ON true
 		LEFT JOIN ch ON true
 		LEFT JOIN pk ON true
-		LEFT JOIN up ON true
-		LEFT JOIN cm ON true
-		LEFT JOIN rd ON true;`, localDriveStart, utcNow, localDriveStart, localPreviousUpdateStart,
-		driveEnergyKWh, driveConsumptionWhPerKm, driveConsumptionFilter)
+			LEFT JOIN up ON true
+			LEFT JOIN cm ON true
+			LEFT JOIN rd ON true
+			LEFT JOIN charge_price ON true;`, localDriveStart, utcNow, localDriveStart, localPreviousUpdateStart,
+		driveEnergyKWh, driveConsumptionWhPerKm, driveConsumptionFilter,
+		accountingKWhPerPctCTE, accountingChargePriceCTE, driveSOCEnergyKWh)
 
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, tzName)
 	err := row.Scan(
@@ -381,7 +397,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		&Since,
 		&recordedDays, &avgDailyDistance, &avgMonthlyDistance,
 		// drives
-		&drives.Count, &drives.TotalDistance, &drives.TotalDurationMin, &drives.TotalEnergyConsumedKWh,
+		&drives.Count, &drives.TotalDistance, &drives.TotalDurationMin,
+		&drives.TotalEnergyConsumedKWh, &drives.EstimatedUsageCost,
 		&drives.AvgConsumption, &drives.BestConsumption, &drives.WorstConsumption,
 		&drives.RangeAchievementPct,
 		&drives.TrackingRatePct,
@@ -462,7 +479,9 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 		avgDailyDistance = convert.KilometersToMiles(avgDailyDistance)
 		avgMonthlyDistance = convert.KilometersToMiles(avgMonthlyDistance)
 		// cost-per-distance: a mile spans 1.609344 km, so it costs that much more.
-		charges.CostPerKm = charges.CostPerKm * 1.609344
+		if charges.CostPerKm.Valid {
+			charges.CostPerKm.Float64 = charges.CostPerKm.Float64 * 1.609344
+		}
 	}
 	if UnitsTemperature == "F" {
 		if drives.AvgOutsideTemp.Valid {

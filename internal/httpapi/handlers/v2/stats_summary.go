@@ -150,14 +150,16 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		seriesEnd = fmt.Sprintf("LEAST(%s, date_trunc($2, %s))", seriesEnd, endLocal)
 	}
 	query := fmt.Sprintf(`
-		WITH drv AS (
-			SELECT
-				date_trunc($2, %[1]s) AS bk,
-				COUNT(*) AS cnt,
-				SUM(distance) AS dist,
-				SUM(duration_min) AS dur,
-				SUM(%[10]s) AS kwh,
-				COALESCE(MAX(distance), 0) AS longest_dist,
+			WITH %[13]s,
+			drv AS (
+				SELECT
+					date_trunc($2, %[1]s) AS bk,
+					COUNT(*) AS cnt,
+					SUM(distance) AS dist,
+					SUM(duration_min) AS dur,
+					SUM(%[10]s) AS kwh,
+					SUM(%[14]s) AS accounting_kwh,
+					COALESCE(MAX(distance), 0) AS longest_dist,
 				COALESCE(MAX(duration_min), 0) AS longest_dur,
 				COALESCE(MAX(speed_max), 0) AS max_speed,
 				COALESCE(MAX(power_max), 0) AS peak_drive_power,
@@ -186,11 +188,14 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				(array_agg(d.end_date ORDER BY power_max DESC NULLS LAST, d.start_date ASC) FILTER (WHERE power_max IS NOT NULL))[1] AS peak_drive_power_end_date,
 				(array_agg(d.start_date ORDER BY power_min ASC NULLS LAST, d.start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS peak_regen_power_start_date,
 				(array_agg(d.end_date ORDER BY power_min ASC NULLS LAST, d.start_date ASC) FILTER (WHERE power_min IS NOT NULL))[1] AS peak_regen_power_end_date
-			FROM drives d
-			LEFT JOIN cars ON cars.id = d.car_id
-			WHERE d.car_id = $1 AND d.end_date IS NOT NULL %[7]s
-			GROUP BY 1
-		),
+				FROM drives d
+				LEFT JOIN cars ON cars.id = d.car_id
+				LEFT JOIN positions sp ON sp.id = d.start_position_id
+				LEFT JOIN positions ep ON ep.id = d.end_position_id
+				CROSS JOIN cap
+				WHERE d.car_id = $1 AND d.end_date IS NOT NULL %[7]s
+				GROUP BY 1
+			),
 		ch AS (
 			SELECT
 				bk,
@@ -328,9 +333,18 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			END)) AT TIME ZONE $3) AS bucket_end,
 			COALESCE(drv.cnt, 0),
 			COALESCE(drv.dist, 0),
-			COALESCE(drv.dur, 0),
-			COALESCE(drv.kwh, 0),
-			CASE WHEN COALESCE(drv.dist, 0) > 0 THEN drv.kwh / drv.dist * 1000 ELSE 0 END AS avg_consumption,
+				COALESCE(drv.dur, 0),
+				COALESCE(drv.kwh, 0),
+				CASE WHEN drv.accounting_kwh IS NOT NULL
+					AND COALESCE(ch.added, 0) > 0
+					THEN drv.accounting_kwh * COALESCE(ch.cost, 0) / ch.added
+					ELSE NULL END AS drive_cost,
+				CASE WHEN COALESCE(drv.dist, 0) > 0
+					AND drv.accounting_kwh IS NOT NULL
+					AND COALESCE(ch.added, 0) > 0
+					THEN drv.accounting_kwh * COALESCE(ch.cost, 0) / ch.added / drv.dist
+					ELSE NULL END AS drive_cost_per_distance,
+				CASE WHEN COALESCE(drv.dist, 0) > 0 THEN drv.kwh / drv.dist * 1000 ELSE 0 END AS avg_consumption,
 			COALESCE(drv.longest_dist, 0),
 			COALESCE(drv.longest_dur, 0),
 			COALESCE(drv.max_speed, 0),
@@ -401,6 +415,8 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		driveEnergyKWh,
 		driveConsumptionWhPerKm,
 		driveConsumptionFilter,
+		accountingKWhPerPctCTE,
+		driveSOCEnergyKWh,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)
@@ -425,6 +441,8 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.DrivesDistance,
 			&b.DrivesDurationMin,
 			&b.DrivesEnergyConsumedKWh,
+			&b.DrivesEstimatedUsageCost,
+			&b.DrivesCostPerDistance,
 			&b.DrivesAvgConsumption,
 			&b.DrivesLongestDistance,
 			&b.DrivesLongestDurationMin,
@@ -499,6 +517,9 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			}
 			if b.DrivesWorstConsumption > 0 {
 				b.DrivesWorstConsumption = b.DrivesWorstConsumption / 0.62137119223733
+			}
+			if b.DrivesCostPerDistance.Valid {
+				b.DrivesCostPerDistance.Float64 = b.DrivesCostPerDistance.Float64 * 1.609344
 			}
 		}
 
