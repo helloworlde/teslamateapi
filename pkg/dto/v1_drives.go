@@ -50,10 +50,10 @@ type V1DriveListItem struct {
 	// Null when the rated-range drop is non-positive (charging mid-drive,
 	// missing range readings). Unit-independent: a ratio of two distances.
 	RangeAchievementPct *float64 `json:"range_achievement_pct" example:"92.5"`
-	// EstimatedUsageCost = SOC-derived drive energy × average charging price
-	// (SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is
-	// configured; null when there is no calibratable charge/SOC basis.
-	// Currency matches charging_processes.cost.
+	// EstimatedUsageCost = energy_consumed_net × average charging price
+	// (SUM(cost) / SUM(charge_energy_added)). 0 when charge energy exists but
+	// no charging cost is configured; null when energy_consumed_net or average
+	// charging price is unavailable. Currency matches charging_processes.cost.
 	EstimatedUsageCost *float64 `json:"estimated_usage_cost" example:"3.42"`
 }
 

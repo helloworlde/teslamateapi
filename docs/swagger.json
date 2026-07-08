@@ -2837,7 +2837,7 @@
                     "example": 22.5
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is\nconfigured; null when there is no calibratable charge/SOC basis.\nCurrency matches charging_processes.cost.",
+                    "description": "EstimatedUsageCost = energy_consumed_net × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when charge energy exists but\nno charging cost is configured; null when energy_consumed_net or average\ncharging price is unavailable. Currency matches charging_processes.cost.",
                     "type": "number",
                     "example": 3.42
                 },
@@ -3057,7 +3057,7 @@
                     "example": 22.5
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when no charging cost is\nconfigured; null when there is no calibratable charge/SOC basis.\nCurrency matches charging_processes.cost.",
+                    "description": "EstimatedUsageCost = energy_consumed_net × average charging price\n(SUM(cost) / SUM(charge_energy_added)). 0 when charge energy exists but\nno charging cost is configured; null when energy_consumed_net or average\ncharging price is unavailable. Currency matches charging_processes.cost.",
                     "type": "number",
                     "example": 3.42
                 },

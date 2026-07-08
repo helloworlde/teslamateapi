@@ -2,6 +2,7 @@ package v1
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 
@@ -53,21 +54,8 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 	)
 
 	// getting data from database
-	query := `
-		WITH cap AS (
-			SELECT CASE
-				WHEN SUM(end_battery_level - start_battery_level)
-					FILTER (WHERE end_battery_level > start_battery_level) > 0
-				THEN SUM(charge_energy_added)
-						FILTER (WHERE end_battery_level > start_battery_level)
-					/ SUM(end_battery_level - start_battery_level)
-						FILTER (WHERE end_battery_level > start_battery_level)
-				ELSE NULL
-			END AS kwh_per_pct
-			FROM charging_processes
-			WHERE car_id = $1 AND end_date IS NOT NULL
-		),
-		charge_price AS (
+	query := fmt.Sprintf(`
+		WITH charge_price AS (
 			SELECT CASE
 				WHEN SUM(charge_energy_added) > 0
 				THEN COALESCE(SUM(cost), 0) / NULLIF(SUM(charge_energy_added), 0)
@@ -105,11 +93,7 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 			COALESCE( NULLIF ( GREATEST ( start_rated_range_km - end_rated_range_km, 0 ), 0 ),0 ) as range_diff_rated_km,
 			outside_temp_avg,
 			inside_temp_avg,
-			CASE 
-				WHEN (start_rated_range_km - end_rated_range_km) > 0 
-				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency 
-				ELSE NULL 
-			END as energy_consumed_net,
+			%[1]s as energy_consumed_net,
 			CASE
 				WHEN (start_rated_range_km - end_rated_range_km) > 0 AND NULLIF(distance, 0) IS NOT NULL
 				THEN (start_rated_range_km - end_rated_range_km) * cars.efficiency / NULLIF(distance, 0) * 1000
@@ -120,16 +104,7 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 				THEN distance / (start_rated_range_km - end_rated_range_km) * 100
 				ELSE NULL
 			END as range_achievement_pct,
-			CASE
-				WHEN distance > 0
-					AND start_position.battery_level IS NOT NULL
-					AND end_position.battery_level IS NOT NULL
-					AND cap.kwh_per_pct IS NOT NULL
-				THEN GREATEST(start_position.battery_level - end_position.battery_level, 0)
-					* cap.kwh_per_pct
-					* charge_price.cost_per_kwh
-				ELSE NULL
-			END as estimated_usage_cost,
+			%[2]s as estimated_usage_cost,
 			(SELECT unit_of_length FROM settings LIMIT 1) as unit_of_length,
 			(SELECT unit_of_temperature FROM settings LIMIT 1) as unit_of_temperature,
 			cars.name
@@ -141,9 +116,8 @@ func (h *Handler) DrivesDetails(c *gin.Context) {
 		LEFT JOIN positions end_position ON end_position_id = end_position.id
 		LEFT JOIN geofences start_geofence ON start_geofence_id = start_geofence.id
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
-		CROSS JOIN cap
 		CROSS JOIN charge_price
-		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`
+		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND drives.id = $2;`, v1DriveEnergyConsumedNetSQL, v1EstimatedUsageCostSQL)
 	row := h.db.QueryRowContext(c.Request.Context(), query, CarID, DriveID)
 
 	// scanning row and putting values into the drive
