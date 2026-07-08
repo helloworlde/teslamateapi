@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,11 +31,18 @@ type v2LifetimeCostResponse struct {
 
 type v2SummaryCostResponse struct {
 	Data struct {
-		Buckets []struct {
-			DrivesEstimatedUsageCost *float64 `json:"drives_estimated_usage_cost"`
-			DrivesCostPerDistance    *float64 `json:"drives_cost_per_distance"`
-		} `json:"buckets"`
+		Buckets []v2SummaryCostBucket `json:"buckets"`
 	} `json:"data"`
+}
+
+type v2SummaryCostBucket struct {
+	DrivesEstimatedUsageCost                *float64 `json:"drives_estimated_usage_cost"`
+	DrivesCostPerDistance                   *float64 `json:"drives_cost_per_distance"`
+	DrivesDistanceLifetimeCumulative        float64  `json:"drives_distance_lifetime_cumulative"`
+	ChargesEnergyAddedKWhLifetimeCumulative float64  `json:"charges_energy_added_kwh_lifetime_cumulative"`
+	ChargesEnergyUsedKWhLifetimeCumulative  float64  `json:"charges_energy_used_kwh_lifetime_cumulative"`
+	ChargesCostLifetimeCumulative           float64  `json:"charges_cost_lifetime_cumulative"`
+	VampireDrainKWhLifetimeCumulative       float64  `json:"vampire_drain_kwh_lifetime_cumulative"`
 }
 
 type v2ConsumptionCostResponse struct {
@@ -136,6 +144,41 @@ func TestV2DriveCostIntegrationNullsPartialSOC(t *testing.T) {
 			mixedConsumption.Data.OverallEstimatedUsageCost,
 			mixedConsumption.Data.OverallCostPerDistance)
 	}
+
+	windowedMixedSummary := requestV2SummaryForCost(
+		t,
+		handler,
+		95,
+		"start_date=2026-07-01T08:00:00Z",
+		"end_date=2026-07-01T08:00:00Z",
+	)
+	if len(windowedMixedSummary.Data.Buckets) != 1 {
+		t.Fatalf("windowed mixed summary buckets = %d; want 1", len(windowedMixedSummary.Data.Buckets))
+	}
+	windowedBucket := windowedMixedSummary.Data.Buckets[0]
+	if windowedBucket.DrivesDistanceLifetimeCumulative != 20 ||
+		windowedBucket.ChargesEnergyAddedKWhLifetimeCumulative != 10 ||
+		windowedBucket.ChargesEnergyUsedKWhLifetimeCumulative != 11 ||
+		windowedBucket.ChargesCostLifetimeCumulative != 5 ||
+		math.Abs(windowedBucket.VampireDrainKWhLifetimeCumulative-3) > 0.000001 {
+		t.Fatalf("windowed mixed cumulative summary = %+v; want lifetime totals through returned bucket", windowedBucket)
+	}
+
+	windowedParkingSummary := requestV2SummaryForCost(
+		t,
+		handler,
+		96,
+		"start_date=2026-07-02T00:00:00Z",
+		"end_date=2026-07-02T00:00:00Z",
+	)
+	if len(windowedParkingSummary.Data.Buckets) != 1 {
+		t.Fatalf("windowed parking summary buckets = %d; want 1", len(windowedParkingSummary.Data.Buckets))
+	}
+	windowedParkingBucket := windowedParkingSummary.Data.Buckets[0]
+	if math.Abs(windowedParkingBucket.VampireDrainKWhLifetimeCumulative-3) > 0.000001 {
+		t.Fatalf("windowed parking cumulative drain = %v; want 3.0 including pre-window baseline",
+			windowedParkingBucket.VampireDrainKWhLifetimeCumulative)
+	}
 }
 
 func openV2DriveCostIntegrationDB(t *testing.T) *sql.DB {
@@ -174,10 +217,10 @@ func resetV2DriveCostFixture(t *testing.T, db *sql.DB) {
 	t.Helper()
 
 	statements := []string{
-		`DELETE FROM drives WHERE id IN (93001, 94001, 95001, 95002)`,
+		`DELETE FROM drives WHERE id IN (93001, 94001, 95001, 95002, 96001, 96002)`,
 		`DELETE FROM charging_processes WHERE id IN (93001, 94001, 95001)`,
-		`DELETE FROM positions WHERE id IN (93001, 93002, 94001, 94002, 95001, 95002, 95003, 95004)`,
-		`DELETE FROM cars WHERE id IN (93, 94, 95)`,
+		`DELETE FROM positions WHERE id IN (93001, 93002, 94001, 94002, 95001, 95002, 95003, 95004, 96001, 96002, 96003, 96004)`,
+		`DELETE FROM cars WHERE id IN (93, 94, 95, 96)`,
 		`INSERT INTO settings (id, unit_of_length, unit_of_temperature, preferred_range)
 		 VALUES (1, 'km', 'C', 'rated')
 		 ON CONFLICT (id) DO NOTHING`,
@@ -196,7 +239,8 @@ func insertV2DriveCostFixture(t *testing.T, db *sql.DB) {
 		`INSERT INTO cars (id, name, model, efficiency, vin) VALUES
 			(93, 'Complete Cost Fixture', 'Y', 0.15, 'V2COMPLETECOST00093'),
 			(94, 'Partial Cost Fixture', 'Y', 0.15, 'V2PARTIALCOST00094'),
-			(95, 'Mixed Cost Fixture', 'Y', 0.15, 'V2MIXEDCOST000095')`,
+			(95, 'Mixed Cost Fixture', 'Y', 0.15, 'V2MIXEDCOST000095'),
+			(96, 'Windowed Parking Fixture', 'Y', 0.15, 'V2PARKINGCOST000096')`,
 		`INSERT INTO positions (id, car_id, date, battery_level, usable_battery_level, rated_battery_range_km, ideal_battery_range_km, odometer, speed, power) VALUES
 			(93001, 93, '2026-07-01 08:00:00', 60, 60, 300.0, 320.0, 1000.0, 0, 0),
 			(93002, 93, '2026-07-01 08:20:00', 58, 58, 288.0, 308.0, 1010.0, 0, 0),
@@ -204,13 +248,19 @@ func insertV2DriveCostFixture(t *testing.T, db *sql.DB) {
 			(94002, 94, '2026-07-01 08:20:00', NULL, NULL, 288.0, 308.0, 2010.0, 0, 0),
 			(95001, 95, '2026-06-01 08:00:00', 60, 60, 300.0, 320.0, 3000.0, 0, 0),
 			(95002, 95, '2026-06-01 08:20:00', 58, 58, 288.0, 308.0, 3010.0, 0, 0),
-			(95003, 95, '2026-07-01 08:00:00', 58, 58, 288.0, 308.0, 3010.0, 0, 0),
-			(95004, 95, '2026-07-01 08:20:00', NULL, NULL, 276.0, 296.0, 3020.0, 0, 0)`,
+			(95003, 95, '2026-07-01 08:00:00', 57, 57, 268.0, 288.0, 3010.0, 0, 0),
+			(95004, 95, '2026-07-01 08:20:00', NULL, NULL, 256.0, 276.0, 3020.0, 0, 0),
+			(96001, 96, '2026-06-30 23:40:00', 62, 62, 312.0, 332.0, 4000.0, 0, 0),
+			(96002, 96, '2026-07-01 00:00:00', 60, 60, 300.0, 320.0, 4010.0, 0, 0),
+			(96003, 96, '2026-07-03 00:00:00', 56, 56, 280.0, 300.0, 4010.0, 0, 0),
+			(96004, 96, '2026-07-03 00:20:00', 54, 54, 268.0, 288.0, 4020.0, 0, 0)`,
 		`INSERT INTO drives (id, car_id, start_date, end_date, start_position_id, end_position_id, distance, duration_min, speed_max, power_max, power_min, start_km, end_km, start_ideal_range_km, end_ideal_range_km, start_rated_range_km, end_rated_range_km, outside_temp_avg, inside_temp_avg) VALUES
 			(93001, 93, '2026-07-01 08:00:00', '2026-07-01 08:20:00', 93001, 93002, 10.0, 20, 80, 100, -10, 1000.0, 1010.0, 320.0, 308.0, 300.0, 288.0, 25.0, 21.0),
 			(94001, 94, '2026-07-01 08:00:00', '2026-07-01 08:20:00', 94001, 94002, 10.0, 20, 80, 100, -10, 2000.0, 2010.0, 320.0, 308.0, 300.0, 288.0, 25.0, 21.0),
 			(95001, 95, '2026-06-01 08:00:00', '2026-06-01 08:20:00', 95001, 95002, 10.0, 20, 80, 100, -10, 3000.0, 3010.0, 320.0, 308.0, 300.0, 288.0, 25.0, 21.0),
-			(95002, 95, '2026-07-01 08:00:00', '2026-07-01 08:20:00', 95003, 95004, 10.0, 20, 80, 100, -10, 3010.0, 3020.0, 308.0, 296.0, 288.0, 276.0, 25.0, 21.0)`,
+			(95002, 95, '2026-07-01 08:00:00', '2026-07-01 08:20:00', 95003, 95004, 10.0, 20, 80, 100, -10, 3010.0, 3020.0, 288.0, 276.0, 268.0, 256.0, 25.0, 21.0),
+			(96001, 96, '2026-06-30 23:40:00', '2026-07-01 00:00:00', 96001, 96002, 10.0, 20, 80, 100, -10, 4000.0, 4010.0, 332.0, 320.0, 312.0, 300.0, 25.0, 21.0),
+			(96002, 96, '2026-07-03 00:00:00', '2026-07-03 00:20:00', 96003, 96004, 10.0, 20, 80, 100, -10, 4010.0, 4020.0, 300.0, 288.0, 280.0, 268.0, 25.0, 21.0)`,
 		`INSERT INTO charging_processes (id, car_id, start_date, end_date, position_id, charge_energy_added, charge_energy_used, cost, start_battery_level, end_battery_level, duration_min) VALUES
 			(93001, 93, '2026-07-01 07:00:00', '2026-07-01 07:30:00', 93001, 10.0, 11.0, 5.0, 50, 60, 30),
 			(94001, 94, '2026-07-01 07:00:00', '2026-07-01 07:30:00', 94001, 10.0, 11.0, 5.0, 50, 60, 30),
@@ -243,12 +293,16 @@ func requestV2LifetimeForCost(t *testing.T, handler *Handler, carID int) v2Lifet
 	return response
 }
 
-func requestV2SummaryForCost(t *testing.T, handler *Handler, carID int) v2SummaryCostResponse {
+func requestV2SummaryForCost(t *testing.T, handler *Handler, carID int, extraQuery ...string) v2SummaryCostResponse {
 	t.Helper()
 
 	recorder := httptest.NewRecorder()
 	context, _ := gin.CreateTestContext(recorder)
-	context.Request = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v2/cars/%d/stats/summary?period=day", carID), nil)
+	path := fmt.Sprintf("/api/v2/cars/%d/stats/summary?period=day", carID)
+	for _, query := range extraQuery {
+		path += "&" + query
+	}
+	context.Request = httptest.NewRequest(http.MethodGet, path, nil)
 	context.Params = gin.Params{{Key: "CarID", Value: strconv.Itoa(carID)}}
 
 	handler.StatsSummary(context)
@@ -283,10 +337,7 @@ func requestV2ConsumptionForCost(t *testing.T, handler *Handler, carID int) v2Co
 	return response
 }
 
-func mustFirstV2SummaryBucket(t *testing.T, response v2SummaryCostResponse) struct {
-	DrivesEstimatedUsageCost *float64 `json:"drives_estimated_usage_cost"`
-	DrivesCostPerDistance    *float64 `json:"drives_cost_per_distance"`
-} {
+func mustFirstV2SummaryBucket(t *testing.T, response v2SummaryCostResponse) v2SummaryCostBucket {
 	t.Helper()
 
 	if len(response.Data.Buckets) == 0 {

@@ -18,8 +18,8 @@ import (
 // Query params:
 //
 //	period     day | week | month | year   (default: month)
-//	startDate  RFC3339 (or YYYY-MM-DD HH:MM:SS in user TZ)
-//	endDate    RFC3339
+//	start_date  RFC3339 (or YYYY-MM-DD HH:MM:SS in user TZ)
+//	end_date    RFC3339
 //
 // Each bucket carries drive / charge / parking aggregates so the client can
 // render a single bar / line chart without further joins. Empty buckets are
@@ -33,6 +33,10 @@ import (
 // charges_count = 0). The `start_date` / `end_date` filter clamps both the
 // drive/charge events and the parking bucket series, so a parking that
 // straddles the window edge only contributes inside the requested range.
+//
+// `*_lifetime_cumulative` fields are lifetime totals through each returned
+// bucket. When `start_date` is supplied, they include the pre-window baseline
+// rather than resetting to zero at the start of the response.
 //
 // @Summary      Period summary stats
 // @Description  Aggregates bucketed by day / week / month / year in the user's timezone.
@@ -149,8 +153,68 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		endLocal := localTimestampSQL(fmt.Sprintf("$%d::timestamp", endIdx), "$3")
 		seriesEnd = fmt.Sprintf("LEAST(%s, date_trunc($2, %s))", seriesEnd, endLocal)
 	}
+
+	cumulativeBaselineCTE := `baseline AS (
+				SELECT
+					0::double precision AS drives_distance,
+					0::double precision AS charges_energy_added,
+					0::double precision AS charges_energy_used,
+					0::double precision AS charges_cost,
+					0::double precision AS vampire_drain
+			)`
+	if startIdx > 0 {
+		startParam := fmt.Sprintf("$%d::timestamp", startIdx)
+		cumulativeBaselineCTE = fmt.Sprintf(`baseline AS (
+				SELECT
+					COALESCE(drv.drives_distance, 0) AS drives_distance,
+					COALESCE(ch.charges_energy_added, 0) AS charges_energy_added,
+					COALESCE(ch.charges_energy_used, 0) AS charges_energy_used,
+					COALESCE(ch.charges_cost, 0) AS charges_cost,
+					COALESCE(pk.vampire_drain, 0) AS vampire_drain
+				FROM (
+					SELECT SUM(d.distance) AS drives_distance
+					FROM drives d
+					WHERE d.car_id = $1
+						AND d.end_date IS NOT NULL
+						AND d.start_date < %[1]s
+				) drv
+				CROSS JOIN (
+					SELECT
+						SUM(cp.charge_energy_added) AS charges_energy_added,
+						SUM(GREATEST(cp.charge_energy_used, cp.charge_energy_added)) AS charges_energy_used,
+						SUM(cp.cost) AS charges_cost
+					FROM charging_processes cp
+					WHERE cp.car_id = $1
+						AND cp.end_date IS NOT NULL
+						AND cp.start_date < %[1]s
+				) ch
+				CROSS JOIN (
+					SELECT SUM(
+						CASE WHEN total_seconds > 0
+						THEN drop_kwh * EXTRACT(EPOCH FROM (LEAST(park_end, %[1]s) - park_start)) / total_seconds
+						ELSE 0 END
+					) AS vampire_drain
+					FROM (
+						SELECT
+							dp.park_start,
+							COALESCE(dp.park_end, %[2]s) AS park_end,
+							`+parkingEnergyDropKWh+` AS drop_kwh,
+							EXTRACT(EPOCH FROM (COALESCE(dp.park_end, %[2]s) - dp.park_start)) AS total_seconds
+						FROM (`+drivePairsCTE+`
+						) dp
+						LEFT JOIN cars ON cars.id = $1
+						LEFT JOIN positions sp ON sp.id = dp.end_position_id
+						LEFT JOIN positions ep ON ep.id = dp.next_start_position_id
+						WHERE dp.park_start < %[1]s
+							AND COALESCE(dp.park_end, %[2]s) > dp.park_start
+					) pre
+					WHERE LEAST(park_end, %[1]s) > park_start
+				) pk
+			)`, startParam, utcNow)
+	}
 	query := fmt.Sprintf(`
 			WITH %[13]s,
+			%[15]s,
 			drv AS (
 				SELECT
 					date_trunc($2, %[1]s) AS bk,
@@ -335,12 +399,13 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 				WHEN 'week' THEN INTERVAL '1 week'
 				WHEN 'month' THEN INTERVAL '1 month'
 				WHEN 'year' THEN INTERVAL '1 year'
-			END)) AT TIME ZONE $3) AS bucket_end,
-			COALESCE(drv.cnt, 0),
-			COALESCE(drv.dist, 0),
-				COALESCE(drv.dur, 0),
-				COALESCE(drv.kwh, 0),
-				CASE WHEN drv.accounting_complete
+				END)) AT TIME ZONE $3) AS bucket_end,
+				COALESCE(drv.cnt, 0),
+				COALESCE(drv.dist, 0),
+				baseline.drives_distance + SUM(COALESCE(drv.dist, 0)) OVER (ORDER BY k.bk ASC) AS drives_distance_lifetime_cumulative,
+					COALESCE(drv.dur, 0),
+					COALESCE(drv.kwh, 0),
+					CASE WHEN drv.accounting_complete
 					AND drv.accounting_kwh IS NOT NULL
 					AND COALESCE(ch.added, 0) > 0
 					THEN drv.accounting_kwh * COALESCE(ch.cost, 0) / ch.added
@@ -365,14 +430,17 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			drv.best_consumption_start_date, drv.best_consumption_end_date,
 			drv.worst_consumption_start_date, drv.worst_consumption_end_date,
 			drv.peak_drive_power_start_date, drv.peak_drive_power_end_date,
-			drv.peak_regen_power_start_date, drv.peak_regen_power_end_date,
-			COALESCE(ch.cnt, 0),
-			COALESCE(ch.added, 0),
-			COALESCE(ch.used, 0),
-			COALESCE(ch.dur, 0),
-			COALESCE(ch.cost, 0),
-			COALESCE(ch.ac_count, 0),
-			COALESCE(ch.dc_count, 0),
+				drv.peak_regen_power_start_date, drv.peak_regen_power_end_date,
+				COALESCE(ch.cnt, 0),
+				COALESCE(ch.added, 0),
+				baseline.charges_energy_added + SUM(COALESCE(ch.added, 0)) OVER (ORDER BY k.bk ASC) AS charges_energy_added_lifetime_cumulative,
+				COALESCE(ch.used, 0),
+				baseline.charges_energy_used + SUM(COALESCE(ch.used, 0)) OVER (ORDER BY k.bk ASC) AS charges_energy_used_lifetime_cumulative,
+				COALESCE(ch.dur, 0),
+				COALESCE(ch.cost, 0),
+				baseline.charges_cost + SUM(COALESCE(ch.cost, 0)) OVER (ORDER BY k.bk ASC) AS charges_cost_lifetime_cumulative,
+				COALESCE(ch.ac_count, 0),
+				COALESCE(ch.dc_count, 0),
 			COALESCE(ch.ac_added, 0),
 			COALESCE(ch.dc_added, 0),
 			COALESCE(ch.ac_used, 0),
@@ -399,16 +467,18 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			ch.max_session_cost_start_date, ch.max_session_cost_end_date,
 			ch.max_power_date,
 			COALESCE(ch.avg_power_ac, 0),
-			COALESCE(ch.avg_power_dc, 0),
-			COALESCE(pk.dur, 0)::int,
-			COALESCE(pk.drop_kwh, 0),
-			(SELECT unit_of_length FROM settings LIMIT 1),
-			(SELECT unit_of_temperature FROM settings LIMIT 1),
-			(SELECT name FROM cars WHERE id = $1)
-		FROM keys k
-		LEFT JOIN drv ON drv.bk = k.bk
-		LEFT JOIN ch  ON ch.bk  = k.bk
-		LEFT JOIN pk  ON pk.bk  = k.bk
+				COALESCE(ch.avg_power_dc, 0),
+				COALESCE(pk.dur, 0)::int,
+				COALESCE(pk.drop_kwh, 0),
+				baseline.vampire_drain + SUM(COALESCE(pk.drop_kwh, 0)) OVER (ORDER BY k.bk ASC) AS vampire_drain_lifetime_cumulative,
+				(SELECT unit_of_length FROM settings LIMIT 1),
+				(SELECT unit_of_temperature FROM settings LIMIT 1),
+				(SELECT name FROM cars WHERE id = $1)
+			FROM keys k
+			CROSS JOIN baseline
+			LEFT JOIN drv ON drv.bk = k.bk
+			LEFT JOIN ch  ON ch.bk  = k.bk
+			LEFT JOIN pk  ON pk.bk  = k.bk
 		ORDER BY k.bk ASC;`,
 		localDriveStart,
 		localChargeStart,
@@ -424,6 +494,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		driveConsumptionFilter,
 		accountingKWhPerPctCTE,
 		driveSOCEnergyKWh,
+		cumulativeBaselineCTE,
 	)
 
 	rows, err := h.db.QueryContext(c.Request.Context(), query, args...)
@@ -446,6 +517,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.BucketEnd,
 			&b.DrivesCount,
 			&b.DrivesDistance,
+			&b.DrivesDistanceLifetimeCumulative,
 			&b.DrivesDurationMin,
 			&b.DrivesEnergyConsumedKWh,
 			&b.DrivesEstimatedUsageCost,
@@ -467,9 +539,12 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.DrivesPeakRegenPowerStartDate, &b.DrivesPeakRegenPowerEndDate,
 			&b.ChargesCount,
 			&b.ChargesEnergyAddedKWh,
+			&b.ChargesEnergyAddedKWhLifetimeCumulative,
 			&b.ChargesEnergyUsedKWh,
+			&b.ChargesEnergyUsedKWhLifetimeCumulative,
 			&b.ChargesDurationMin,
 			&b.ChargesCost,
+			&b.ChargesCostLifetimeCumulative,
 			&b.ChargesACCount,
 			&b.ChargesDCCount,
 			&b.ChargesACEnergyAddedKWh,
@@ -501,6 +576,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			&b.ChargesDCAvgPowerKW,
 			&b.ParkingsTotalDurationMin,
 			&b.VampireDrainKWh,
+			&b.VampireDrainKWhLifetimeCumulative,
 			&UnitsLength,
 			&UnitsTemperature,
 			&CarName,
@@ -514,6 +590,7 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 		// stretches, energy stays).
 		if UnitsLength == "mi" {
 			b.DrivesDistance = convert.KilometersToMiles(b.DrivesDistance)
+			b.DrivesDistanceLifetimeCumulative = convert.KilometersToMiles(b.DrivesDistanceLifetimeCumulative)
 			b.DrivesLongestDistance = convert.KilometersToMiles(b.DrivesLongestDistance)
 			b.DrivesMaxSpeed = convert.KilometersToMilesInteger(b.DrivesMaxSpeed)
 			if b.DrivesAvgConsumption > 0 {

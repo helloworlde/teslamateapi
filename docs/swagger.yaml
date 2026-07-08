@@ -2796,6 +2796,9 @@ definitions:
       charges_cost:
         example: 125.4
         type: number
+      charges_cost_lifetime_cumulative:
+        example: 1678.74
+        type: number
       charges_count:
         example: 15
         type: integer
@@ -2838,8 +2841,14 @@ definitions:
       charges_energy_added_kwh:
         example: 425.7
         type: number
+      charges_energy_added_kwh_lifetime_cumulative:
+        example: 5820.4
+        type: number
       charges_energy_used_kwh:
         example: 445
+        type: number
+      charges_energy_used_kwh_lifetime_cumulative:
+        example: 6104.8
         type: number
       charges_largest_session_end_date:
         example: "2024-01-10T22:00:00+01:00"
@@ -2898,6 +2907,9 @@ definitions:
         type: integer
       drives_distance:
         example: 1850.5
+        type: number
+      drives_distance_lifetime_cumulative:
+        example: 24500.7
         type: number
       drives_duration_min:
         example: 2200
@@ -2972,6 +2984,9 @@ definitions:
         type: integer
       vampire_drain_kwh:
         example: 5.2
+        type: number
+      vampire_drain_kwh_lifetime_cumulative:
+        example: 125
         type: number
     type: object
   dto.V2SummaryData:

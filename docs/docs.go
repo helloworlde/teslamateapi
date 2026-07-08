@@ -5520,6 +5520,10 @@ const docTemplate = `{
                     "type": "number",
                     "example": 125.4
                 },
+                "charges_cost_lifetime_cumulative": {
+                    "type": "number",
+                    "example": 1678.74
+                },
                 "charges_count": {
                     "type": "integer",
                     "example": 15
@@ -5576,9 +5580,17 @@ const docTemplate = `{
                     "type": "number",
                     "example": 425.7
                 },
+                "charges_energy_added_kwh_lifetime_cumulative": {
+                    "type": "number",
+                    "example": 5820.4
+                },
                 "charges_energy_used_kwh": {
                     "type": "number",
                     "example": 445
+                },
+                "charges_energy_used_kwh_lifetime_cumulative": {
+                    "type": "number",
+                    "example": 6104.8
                 },
                 "charges_largest_session_end_date": {
                     "type": "string",
@@ -5652,6 +5664,10 @@ const docTemplate = `{
                 "drives_distance": {
                     "type": "number",
                     "example": 1850.5
+                },
+                "drives_distance_lifetime_cumulative": {
+                    "type": "number",
+                    "example": 24500.7
                 },
                 "drives_duration_min": {
                     "type": "integer",
@@ -5745,6 +5761,10 @@ const docTemplate = `{
                 "vampire_drain_kwh": {
                     "type": "number",
                     "example": 5.2
+                },
+                "vampire_drain_kwh_lifetime_cumulative": {
+                    "type": "number",
+                    "example": 125
                 }
             }
         },

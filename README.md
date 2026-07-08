@@ -297,7 +297,15 @@ adjacent drives.
     both are null when any positive-distance drive in the bucket lacks SOC data.
   - Bucket-level charge totals and averages include AC/DC splits for count,
     energy, duration, cost, session averages, and cost per kWh.
-  - Supported parameters: `period`, `startDate`, `endDate`.
+  - Buckets also include server-side lifetime cumulative totals through the
+    current bucket for long-running trend lines:
+    `drives_distance_lifetime_cumulative`,
+    `charges_energy_added_kwh_lifetime_cumulative`,
+    `charges_energy_used_kwh_lifetime_cumulative`,
+    `charges_cost_lifetime_cumulative`, and
+    `vampire_drain_kwh_lifetime_cumulative`. When `start_date` is supplied, these fields
+    still include the pre-window baseline instead of resetting to zero.
+  - Supported parameters: `period`, `start_date`, `end_date`.
 - GET `/api/v2/cars/:CarID/stats/energy-flow`
   - Lifetime energy/cost accounting for Sankey charts. Starts from wall-side
     charging input, splits into vehicle-added energy and charging loss. The
