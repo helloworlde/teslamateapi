@@ -4364,7 +4364,7 @@ const docTemplate = `{
                     "example": 12.3
                 },
                 "cost_per_distance": {
-                    "description": "CostPerKm = estimated drive usage cost / total drive distance. Estimated\ndrive usage cost is SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when\nunit_of_length is mi. Currency matches charging_processes.cost. Null when\nestimated drive usage cost or distance is unavailable.",
+                    "description": "CostPerKm = estimated drive usage cost / total drive distance. Estimated\ndrive usage cost is SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when\nunit_of_length is mi. Currency matches charging_processes.cost. Null when\nestimated drive usage cost or distance is unavailable, including partial\ndrive SOC data.",
                     "type": "number",
                     "example": 0.05
                 },
@@ -4560,12 +4560,12 @@ const docTemplate = `{
                     "example": 174
                 },
                 "overall_cost_per_distance": {
-                    "description": "OverallCostPerDistance = overall_estimated_usage_cost / grouped distance.\nNull when overall drive cost or distance is unavailable.",
+                    "description": "OverallCostPerDistance = overall_estimated_usage_cost / grouped distance.\nNull when overall drive cost or distance is unavailable, including partial\ndrive SOC data in any positive-distance group.",
                     "type": "number",
                     "example": 0.048
                 },
                 "overall_estimated_usage_cost": {
-                    "description": "OverallEstimatedUsageCost is the sum of group estimated_usage_cost values.\nNull when no group has a calculable drive cost.",
+                    "description": "OverallEstimatedUsageCost is the sum of group estimated_usage_cost values.\nNull when no group has a calculable drive cost, or when any group with\npositive-distance drives lacks a complete SOC basis.",
                     "type": "number",
                     "example": 2034.5
                 },
@@ -4582,7 +4582,7 @@ const docTemplate = `{
                     "example": 135
                 },
                 "cost_per_distance": {
-                    "description": "CostPerDistance = estimated_usage_cost / distance. Null when drive cost\nor distance is unavailable.",
+                    "description": "CostPerDistance = estimated_usage_cost / distance. Null when drive cost\nor distance is unavailable, including partial drive SOC data.",
                     "type": "number",
                     "example": 0.035
                 },
@@ -4599,7 +4599,7 @@ const docTemplate = `{
                     "example": 432
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost.",
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost. Null when any positive-distance drive in the\ngroup lacks a calibratable SOC basis.",
                     "type": "number",
                     "example": 112.32
                 },
@@ -4834,7 +4834,7 @@ const docTemplate = `{
                     "example": 42500
                 },
                 "estimated_usage_cost": {
-                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost. Null when drive energy or charge price is not\ncalibratable.",
+                    "description": "EstimatedUsageCost = SOC-derived drive energy × average charging price\n(SUM(cost) / SUM(charge_energy_added)). Currency matches\ncharging_processes.cost. Null when drive energy or charge price is not\nfully calibratable for every positive-distance drive.",
                     "type": "number",
                     "example": 2034.5
                 },
@@ -5641,7 +5641,7 @@ const docTemplate = `{
                     "example": "2024-01-10T08:00:00+01:00"
                 },
                 "drives_cost_per_distance": {
-                    "description": "DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.\nNull when drive cost or distance is unavailable.",
+                    "description": "DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.\nNull when drive cost or distance is unavailable, including partial drive\nSOC data.",
                     "type": "number",
                     "example": 0.053
                 },
@@ -5662,7 +5662,7 @@ const docTemplate = `{
                     "example": 380.5
                 },
                 "drives_estimated_usage_cost": {
-                    "description": "DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's\naverage charging price (charges_cost / charges_energy_added_kwh). Null\nwhen the bucket has no battery-side charge energy or no calibratable SOC\nbasis.",
+                    "description": "DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's\naverage charging price (charges_cost / charges_energy_added_kwh). Null\nwhen the bucket has no battery-side charge energy or when any\npositive-distance drive lacks a calibratable SOC basis.",
                     "type": "number",
                     "example": 98.93
                 },

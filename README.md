@@ -190,7 +190,7 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
   - Each drive also carries `range_achievement_pct` (`distance / rated-range
     drop × 100`, objective; null when the drop is non-positive) and
-    `estimated_usage_cost` (SOC-derived drive energy × lifetime average
+    `estimated_usage_cost` (the row's `energy_consumed_net` × average
     battery-side charging price; in the charging-cost currency).
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
   - Supported parameters:
@@ -276,8 +276,9 @@ adjacent drives.
     `total_vampire_drain_kwh`. Drives also carry `range_achievement_pct`
     (`Σ distance / Σ rated-range drop × 100`) and
     `estimated_usage_cost` (SOC-derived drive energy × average battery-side
-    charging price). Charges carry `cost_per_distance` as drive usage cost per
-    km/mile, not total charging bill divided by distance.
+    charging price; null if any positive-distance drive is missing SOC data).
+    Charges carry `cost_per_distance` as drive usage cost per km/mile, not total
+    charging bill divided by distance.
     Charge averages are also split by AC/DC, including duration, energy,
     session cost, and cost per kWh.
   - Extremum fields also include matching timestamp fields where available
@@ -292,7 +293,8 @@ adjacent drives.
     such as `drives_max_speed_start_date` and `charges_max_power_date`.
   - Bucket-level drive cost fields use `drives_estimated_usage_cost =
     SOC-derived drive energy × (charges_cost / charges_energy_added_kwh)` and
-    `drives_cost_per_distance = drives_estimated_usage_cost / drives_distance`.
+    `drives_cost_per_distance = drives_estimated_usage_cost / drives_distance`;
+    both are null when any positive-distance drive in the bucket lacks SOC data.
   - Bucket-level charge totals and averages include AC/DC splits for count,
     energy, duration, cost, session averages, and cost per kWh.
   - Supported parameters: `period`, `startDate`, `endDate`.
@@ -335,9 +337,10 @@ adjacent drives.
     `energy_kwh`, `estimated_usage_cost`, `cost_per_distance`,
     `delta_vs_avg_pct`; temperature groups add `temp_low` / `temp_high`.
     Consumption remains rated-range based; cost fields use SOC-derived drive
-    energy × lifetime average battery-side charging price. Single SQL over
-    `drives` (+ tiny `updates` for `version`) and drive endpoint positions; no
-    sampled `positions` scan.
+    energy × lifetime average battery-side charging price and are null when any
+    positive-distance drive in the group lacks SOC data. Single SQL over `drives`
+    (+ tiny `updates` for `version`) and drive endpoint positions; no sampled
+    `positions` scan.
   - Supported parameters: `group_by`.
 - GET `/api/v2/cars/:CarID/stats/behavior`
   - Behaviour profile in one response, three objective distributions:
@@ -380,8 +383,8 @@ the denominator and which costs are folded in. Read this before charting them.
 | `ac_charge_energy_used_kwh` / `dc_charge_energy_used_kwh` | Wall-side energy (`GREATEST(charge_energy_used, charge_energy_added)`) split by AC sessions (`NOT fast_charger_present`) and DC sessions (`fast_charger_present`). |
 | `free_supercharging_used_kwh` | Wall-side energy for free Tesla Supercharger sessions (`fast_charger_present AND fast_charger_brand = 'Tesla'` with `free_supercharging`). |
 | `ac_avg_session_cost` / `dc_avg_session_cost` | Average non-null session cost, filtered by AC/DC. |
-| `estimated_usage_cost` | Drives section: SOC-derived drive energy × average battery-side charging price (`SUM(cost) ÷ SUM(charge_energy_added)`). |
-| `cost_per_distance` | Estimated drive usage cost ÷ total drive distance. Per mile when `unit_of_length` is `mi`. |
+| `estimated_usage_cost` | Drives section: SOC-derived drive energy × average battery-side charging price (`SUM(cost) ÷ SUM(charge_energy_added)`). Null instead of underestimated when any positive-distance drive lacks start/end SOC data. |
+| `cost_per_distance` | Estimated drive usage cost ÷ total drive distance. Per mile when `unit_of_length` is `mi`; null when drive cost is null. |
 
 ##### `/api/v2/cars/:CarID/charges/:ChargeID/usage` (single charge)
 

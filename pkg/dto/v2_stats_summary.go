@@ -12,11 +12,12 @@ type V2SummaryBucket struct {
 	DrivesEnergyConsumedKWh float64         `json:"drives_energy_consumed_kwh" example:"380.5"`
 	// DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's
 	// average charging price (charges_cost / charges_energy_added_kwh). Null
-	// when the bucket has no battery-side charge energy or no calibratable SOC
-	// basis.
+	// when the bucket has no battery-side charge energy or when any
+	// positive-distance drive lacks a calibratable SOC basis.
 	DrivesEstimatedUsageCost nullable.Float64 `json:"drives_estimated_usage_cost" swaggertype:"number" example:"98.93"`
 	// DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.
-	// Null when drive cost or distance is unavailable.
+	// Null when drive cost or distance is unavailable, including partial drive
+	// SOC data.
 	DrivesCostPerDistance           nullable.Float64 `json:"drives_cost_per_distance" swaggertype:"number" example:"0.053"`
 	DrivesAvgConsumption            float64          `json:"drives_avg_consumption" example:"205.6"`
 	DrivesLongestDistance           float64          `json:"drives_longest_distance" example:"320.4"`

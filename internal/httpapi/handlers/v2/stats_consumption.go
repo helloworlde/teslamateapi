@@ -133,7 +133,15 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 			COALESCE(SUM(d.distance) FILTER (WHERE ` + consumptionFilter + `), 0) AS dist,
 			COALESCE(SUM(GREATEST(d.start_rated_range_km - d.end_rated_range_km, 0) * cars.efficiency) FILTER (WHERE ` + consumptionFilter + `), 0) AS kwh,
 			COALESCE(SUM(d.distance) FILTER (WHERE d.distance > 0), 0) AS cost_dist,
-			SUM(` + driveSOCEnergyKWh + `) FILTER (WHERE d.distance > 0) * charge_price.cost_per_kwh AS estimated_usage_cost
+			CASE WHEN COALESCE(bool_and(
+					sp.battery_level IS NOT NULL
+					AND ep.battery_level IS NOT NULL
+					AND cap.kwh_per_pct IS NOT NULL
+				) FILTER (WHERE d.distance > 0), false)
+				AND charge_price.cost_per_kwh IS NOT NULL
+				THEN SUM(` + driveSOCEnergyKWh + `) FILTER (WHERE d.distance > 0) * charge_price.cost_per_kwh
+				ELSE NULL
+			END AS estimated_usage_cost
 		FROM drives d
 		` + joinClause + `
 		LEFT JOIN cars ON cars.id = d.car_id
@@ -165,6 +173,7 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		raw                                []rawGroup
 		totalDist, totalKWh, totalCostDist float64
 		totalCost                          NullFloat64
+		totalCostComplete                  = true
 	)
 	for rows.Next() {
 		var g rawGroup
@@ -176,6 +185,9 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 		totalDist += g.dist
 		totalKWh += g.kwh
 		totalCostDist += g.costDist
+		if g.costDist > 0 && !g.cost.Valid {
+			totalCostComplete = false
+		}
 		if g.cost.Valid {
 			totalCost.Float64 += g.cost.Float64
 			totalCost.Valid = true
@@ -202,6 +214,9 @@ func (h *Handler) StatsConsumption(c *gin.Context) {
 	overall := 0.0
 	if totalDist > 0 {
 		overall = totalKWh / totalDist * 1000
+	}
+	if !totalCostComplete {
+		totalCost = NullFloat64{}
 	}
 	overallCostPerDistance := NullFloat64{}
 	if totalCost.Valid && totalCostDist > 0 {

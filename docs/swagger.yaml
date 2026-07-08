@@ -1890,7 +1890,8 @@ definitions:
           drive usage cost is SOC-derived drive energy × average charging price
           (SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when
           unit_of_length is mi. Currency matches charging_processes.cost. Null when
-          estimated drive usage cost or distance is unavailable.
+          estimated drive usage cost or distance is unavailable, including partial
+          drive SOC data.
         example: 0.05
         type: number
       count:
@@ -2046,13 +2047,15 @@ definitions:
       overall_cost_per_distance:
         description: |-
           OverallCostPerDistance = overall_estimated_usage_cost / grouped distance.
-          Null when overall drive cost or distance is unavailable.
+          Null when overall drive cost or distance is unavailable, including partial
+          drive SOC data in any positive-distance group.
         example: 0.048
         type: number
       overall_estimated_usage_cost:
         description: |-
           OverallEstimatedUsageCost is the sum of group estimated_usage_cost values.
-          Null when no group has a calculable drive cost.
+          Null when no group has a calculable drive cost, or when any group with
+          positive-distance drives lacks a complete SOC basis.
         example: 2034.5
         type: number
       units:
@@ -2066,7 +2069,7 @@ definitions:
       cost_per_distance:
         description: |-
           CostPerDistance = estimated_usage_cost / distance. Null when drive cost
-          or distance is unavailable.
+          or distance is unavailable, including partial drive SOC data.
         example: 0.035
         type: number
       delta_vs_avg_pct:
@@ -2082,7 +2085,8 @@ definitions:
         description: |-
           EstimatedUsageCost = SOC-derived drive energy × average charging price
           (SUM(cost) / SUM(charge_energy_added)). Currency matches
-          charging_processes.cost.
+          charging_processes.cost. Null when any positive-distance drive in the
+          group lacks a calibratable SOC basis.
         example: 112.32
         type: number
       key:
@@ -2256,7 +2260,7 @@ definitions:
           EstimatedUsageCost = SOC-derived drive energy × average charging price
           (SUM(cost) / SUM(charge_energy_added)). Currency matches
           charging_processes.cost. Null when drive energy or charge price is not
-          calibratable.
+          fully calibratable for every positive-distance drive.
         example: 2034.5
         type: number
       last_drive_date:
@@ -2885,7 +2889,8 @@ definitions:
       drives_cost_per_distance:
         description: |-
           DrivesCostPerDistance = drives_estimated_usage_cost / drives_distance.
-          Null when drive cost or distance is unavailable.
+          Null when drive cost or distance is unavailable, including partial drive
+          SOC data.
         example: 0.053
         type: number
       drives_count:
@@ -2904,8 +2909,8 @@ definitions:
         description: |-
           DrivesEstimatedUsageCost = SOC-derived drive energy × this bucket's
           average charging price (charges_cost / charges_energy_added_kwh). Null
-          when the bucket has no battery-side charge energy or no calibratable SOC
-          basis.
+          when the bucket has no battery-side charge energy or when any
+          positive-distance drive lacks a calibratable SOC basis.
         example: 98.93
         type: number
       drives_longest_distance:

@@ -24,7 +24,7 @@ type V2DrivesAgg struct {
 	// EstimatedUsageCost = SOC-derived drive energy × average charging price
 	// (SUM(cost) / SUM(charge_energy_added)). Currency matches
 	// charging_processes.cost. Null when drive energy or charge price is not
-	// calibratable.
+	// fully calibratable for every positive-distance drive.
 	EstimatedUsageCost nullable.Float64 `json:"estimated_usage_cost" swaggertype:"number" example:"2034.50"`
 	AvgConsumption     float64          `json:"avg_consumption" example:"184.0"`
 	BestConsumption    float64          `json:"best_consumption" example:"120.0"`
@@ -80,7 +80,8 @@ type V2ChargesAgg struct {
 	// drive usage cost is SOC-derived drive energy × average charging price
 	// (SUM(cost) / SUM(charge_energy_added)). Converted to per-mile when
 	// unit_of_length is mi. Currency matches charging_processes.cost. Null when
-	// estimated drive usage cost or distance is unavailable.
+	// estimated drive usage cost or distance is unavailable, including partial
+	// drive SOC data.
 	CostPerKm             nullable.Float64 `json:"cost_per_distance" swaggertype:"number" example:"0.05"`
 	AvgEnergyPerSession   float64          `json:"avg_energy_per_session_kwh" example:"38.6"`
 	ACAvgEnergyPerSession float64          `json:"ac_avg_energy_per_session_kwh" example:"22.1"`

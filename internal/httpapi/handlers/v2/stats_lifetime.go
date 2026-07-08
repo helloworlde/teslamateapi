@@ -94,6 +94,11 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 					AVG(inside_temp_avg) AS avg_inside_temp,
 					COALESCE(SUM(%[5]s), 0) AS total_kwh,
 					SUM(%[10]s) AS total_accounting_kwh,
+					COALESCE(bool_and(
+						sp.battery_level IS NOT NULL
+						AND ep.battery_level IS NOT NULL
+						AND cap.kwh_per_pct IS NOT NULL
+					) FILTER (WHERE distance > 0), false) AS accounting_complete,
 					CASE WHEN SUM(distance) > 0 THEN
 						SUM(%[5]s) / NULLIF(SUM(distance), 0) * 1000
 					ELSE 0 END AS avg_consumption,
@@ -316,7 +321,8 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				THEN COALESCE(d.total_km, 0) / d.active_months
 				ELSE 0 END AS avg_monthly_distance,
 				COALESCE(d.cnt, 0), COALESCE(d.total_km, 0), COALESCE(d.total_dur, 0), COALESCE(d.total_kwh, 0),
-				CASE WHEN d.total_accounting_kwh IS NOT NULL
+				CASE WHEN d.accounting_complete
+					AND d.total_accounting_kwh IS NOT NULL
 					AND charge_price.cost_per_kwh IS NOT NULL
 					THEN d.total_accounting_kwh * charge_price.cost_per_kwh
 					ELSE NULL END,
@@ -344,6 +350,7 @@ func (h *Handler) StatsLifetime(c *gin.Context) {
 				COALESCE(ch.avg_cost_per_kwh, 0),
 				COALESCE(ch.avg_cost_per_kwh_ac, 0), COALESCE(ch.avg_cost_per_kwh_dc, 0),
 				CASE WHEN COALESCE(d.total_km, 0) > 0
+					AND d.accounting_complete
 					AND d.total_accounting_kwh IS NOT NULL
 					AND charge_price.cost_per_kwh IS NOT NULL
 					THEN d.total_accounting_kwh * charge_price.cost_per_kwh / d.total_km

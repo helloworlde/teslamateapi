@@ -47,6 +47,10 @@ drive_cost = drive_energy_kwh * charge_price_per_kwh
 `charge_energy_added` is battery-side energy that entered the vehicle. Drive
 energy uses the same SOC-derived battery-side basis, so cost and energy are
 both on the vehicle-side accounting basis for those aggregate endpoints.
+Aggregate endpoints return `null` for drive-cost fields when any
+positive-distance drive in scope lacks start/end SOC data or when the
+kWh-per-SOC calibration cannot be computed. They should not silently treat
+missing SOC energy as zero and understate cost.
 
 ## Explicit Non-Goals
 
@@ -70,6 +74,7 @@ both on the vehicle-side accounting basis for those aggregate endpoints.
 | v2 summary buckets | Add period drive cost from bucket drive energy and bucket charge price | Complete |
 | v2 consumption groups | Add drive cost using each group's drive energy and global charge price | Complete |
 | v2 energy-flow | Use `charging_cost_per_kwh` for `driving_cost` | Complete |
+| v2 partial-SOC cost guard | Return null instead of underestimating aggregate drive costs | Complete |
 | DTO comments | Replace distance-amortised cost descriptions | Complete |
 | README | Document the new drive-cost basis | Complete |
 | Swagger | Regenerate generated OpenAPI docs | Complete |
@@ -88,14 +93,16 @@ work progresses.
   `startDate` / `endDate` filters also scope the charging price CTE.
 - v2 lifetime now exposes drive-side `estimated_usage_cost`; `cost_per_distance`
   is derived from drive usage cost divided by total drive distance. These fields
-  are `null` when the SOC energy basis or charge price cannot be calculated.
+  are `null` when the SOC energy basis or charge price cannot be calculated, or
+  when any positive-distance drive in scope lacks start/end SOC data.
 - v2 summary now exposes `drives_estimated_usage_cost` and
   `drives_cost_per_distance` per bucket. Buckets with driving but no
-  battery-side charge energy return `null` for drive cost instead of `0`.
+  battery-side charge energy or partial drive SOC data return `null` for drive
+  cost instead of `0`.
 - v2 consumption groups now expose `estimated_usage_cost` and
   `cost_per_distance`; the underlying Wh/distance ranking remains descriptive
-  rated-range consumption, while cost uses SOC-derived drive energy and does not
-  require rated-range readings.
+  rated-range consumption, while cost uses SOC-derived drive energy and returns
+  `null` for groups with partial drive SOC data.
 - v2 energy-flow metrics-level `driving_cost` now uses
   `charging_cost_per_kwh`; node/link costs stay on the vehicle accounting pool
   rate so the graph remains cost-conserved.

@@ -159,6 +159,11 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 					SUM(duration_min) AS dur,
 					SUM(%[10]s) AS kwh,
 					SUM(%[14]s) AS accounting_kwh,
+					COALESCE(bool_and(
+						sp.battery_level IS NOT NULL
+						AND ep.battery_level IS NOT NULL
+						AND cap.kwh_per_pct IS NOT NULL
+					) FILTER (WHERE distance > 0), false) AS accounting_complete,
 					COALESCE(MAX(distance), 0) AS longest_dist,
 				COALESCE(MAX(duration_min), 0) AS longest_dur,
 				COALESCE(MAX(speed_max), 0) AS max_speed,
@@ -335,11 +340,13 @@ func (h *Handler) StatsSummary(c *gin.Context) {
 			COALESCE(drv.dist, 0),
 				COALESCE(drv.dur, 0),
 				COALESCE(drv.kwh, 0),
-				CASE WHEN drv.accounting_kwh IS NOT NULL
+				CASE WHEN drv.accounting_complete
+					AND drv.accounting_kwh IS NOT NULL
 					AND COALESCE(ch.added, 0) > 0
 					THEN drv.accounting_kwh * COALESCE(ch.cost, 0) / ch.added
 					ELSE NULL END AS drive_cost,
 				CASE WHEN COALESCE(drv.dist, 0) > 0
+					AND drv.accounting_complete
 					AND drv.accounting_kwh IS NOT NULL
 					AND COALESCE(ch.added, 0) > 0
 					THEN drv.accounting_kwh * COALESCE(ch.cost, 0) / ch.added / drv.dist
