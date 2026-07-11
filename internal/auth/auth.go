@@ -22,8 +22,8 @@ type Token struct {
 	disable bool
 }
 
-// New constructs a Token from cfg, logging the same warnings as the legacy
-// initAuthToken func.
+// New constructs a Token from cfg, logging a warning when the token is
+// missing or too short.
 func New(cfg config.Config) *Token {
 	if cfg.APIToken == "" {
 		log.Println("[warning] initAuthToken - environment variable API_TOKEN not set or is empty.")
@@ -35,12 +35,6 @@ func New(cfg config.Config) *Token {
 	return &Token{value: cfg.APIToken, disable: cfg.APITokenDisable}
 }
 
-// Configured reports whether an API_TOKEN was set.
-func (t *Token) Configured() bool { return t.value != "" }
-
-// Disabled reports whether API_TOKEN_DISABLE was set.
-func (t *Token) Disabled() bool { return t.disable }
-
 // Validate checks the request for a valid Authorization: Bearer header or
 // ?token= query value. Returns (false, message) on failure.
 func (t *Token) Validate(c *gin.Context) (bool, string) {
@@ -51,14 +45,20 @@ func (t *Token) Validate(c *gin.Context) (bool, string) {
 
 	reqHeaderToken := c.Request.Header.Get("Authorization")
 	if len(reqHeaderToken) > 0 {
-		splitToken := strings.Split(reqHeaderToken, "Bearer")
-		if len(splitToken) != 2 {
+		// Strict prefix match: the scheme must lead the header. The previous
+		// strings.Split(header, "Bearer") accepted the scheme anywhere in the
+		// value (e.g. "foo Bearer <token>").
+		rest, isBearer := strings.CutPrefix(reqHeaderToken, "Bearer")
+		if !isBearer {
 			log.Println("[info] validateAuthToken - header authorization bearer token is not proper formatted.. returning 401")
 			return false, "header authorization bearer token is not proper formatted"
-		} else if strings.TrimSpace(splitToken[1]) == "" {
+		}
+		token := strings.TrimSpace(rest)
+		if token == "" {
 			log.Println("[info] validateAuthToken - header authorization bearer token is empty.. returning 401")
 			return false, "header authorization bearer token is empty"
-		} else if t.check(strings.TrimSpace(splitToken[1])) {
+		}
+		if t.check(token) {
 			log.Println("[debug] validateAuthToken - header authorization bearer token valid.")
 			return true, ""
 		}
