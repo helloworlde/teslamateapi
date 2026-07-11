@@ -152,7 +152,7 @@ func main() {
 		CommandsEnabled: cfg.CommandsEnabled,
 	})
 
-	const listenAddr = ":8080"
+	listenAddr := cfg.ListenAddr
 	server := &http.Server{
 		Addr:              listenAddr,
 		Handler:           router,

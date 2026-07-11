@@ -66,6 +66,9 @@ func New(cfg config.Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("database open: %w", err)
 	}
+	db.SetMaxOpenConns(cfg.DBMaxOpenConns)
+	db.SetMaxIdleConns(cfg.DBMaxIdleConns)
+	db.SetConnMaxLifetime(cfg.DBConnMaxLifetime)
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("database ping: %w", err)

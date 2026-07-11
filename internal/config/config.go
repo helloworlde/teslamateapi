@@ -12,20 +12,24 @@ import (
 // need rather than the whole struct.
 type Config struct {
 	// Process / runtime
-	DebugMode bool
-	TZName    string
-	Language  string
+	DebugMode  bool
+	TZName     string
+	Language   string
+	ListenAddr string
 
 	// Database
-	DBHost        string
-	DBPort        int
-	DBUser        string
-	DBPass        string
-	DBName        string
-	DBTimeoutMS   int
-	DBSSLMode     string
-	DBSSLRootCert string
-	DBDisableJIT  bool
+	DBHost            string
+	DBPort            int
+	DBUser            string
+	DBPass            string
+	DBName            string
+	DBTimeoutMS       int
+	DBSSLMode         string
+	DBSSLRootCert     string
+	DBDisableJIT      bool
+	DBMaxOpenConns    int
+	DBMaxIdleConns    int
+	DBConnMaxLifetime time.Duration
 
 	// Auth
 	APIToken        string
@@ -74,17 +78,18 @@ type Config struct {
 
 // Load reads every supported environment variable once and returns a Config.
 //
-// Defaults match the historical behaviour from src/webserver.go and friends:
-// nothing in the new layout silently changes a default.
+// Defaults are a compatibility contract: existing deployments rely on them,
+// so changing one is a breaking change.
 func Load() Config {
 	mqttPortDefault := 1883
 	if getEnvAsBool("MQTT_TLS", false) {
 		mqttPortDefault = 8883
 	}
 	return Config{
-		DebugMode: getEnvAsBool("DEBUG_MODE", false),
-		TZName:    getEnv("TZ", "Europe/Berlin"),
-		Language:  getEnv("LANGUAGE", getEnv("LANG", "en")),
+		DebugMode:  getEnvAsBool("DEBUG_MODE", false),
+		TZName:     getEnv("TZ", "Europe/Berlin"),
+		Language:   getEnv("LANGUAGE", getEnv("LANG", "en")),
+		ListenAddr: getEnv("LISTEN_ADDRESS", ":8080"),
 
 		DBHost:        getEnv("DATABASE_HOST", "database"),
 		DBPort:        getEnvAsInt("DATABASE_PORT", 5432),
@@ -95,6 +100,11 @@ func Load() Config {
 		DBSSLMode:     getEnv("DATABASE_SSL", "disable"),
 		DBSSLRootCert: getEnv("DATABASE_SSL_CA_CERT_FILE", ""),
 		DBDisableJIT:  getEnvAsBool("TM_DB_DISABLE_JIT", true),
+		// The API shares Postgres with TeslaMate itself; an uncapped pool can
+		// eat into max_connections during bursts of slow stats queries.
+		DBMaxOpenConns:    getEnvAsInt("DATABASE_MAX_OPEN_CONNS", 10),
+		DBMaxIdleConns:    getEnvAsInt("DATABASE_MAX_IDLE_CONNS", 5),
+		DBConnMaxLifetime: time.Duration(getEnvAsInt("DATABASE_CONN_MAX_LIFETIME", 30)) * time.Minute,
 
 		APIToken:        getEnv("API_TOKEN", ""),
 		APITokenDisable: getEnvAsBool("API_TOKEN_DISABLE", false),
@@ -139,8 +149,8 @@ func Load() Config {
 }
 
 // LoadTZ parses tzName into a *time.Location, falling back to UTC with a
-// warning log if the name is unrecognised. Mirrors the original behaviour
-// of webserver.go which guarded against `time.Time.In(nil)` panics.
+// warning log if the name is unrecognised (a nil location would panic in
+// `time.Time.In`).
 func LoadTZ(tzName string) *time.Location {
 	loc, err := time.LoadLocation(tzName)
 	if err != nil || loc == nil {
