@@ -37,7 +37,6 @@ import (
 // phases=NULL / cable='<invalid>' throughout, brand/type set after
 // handshake). A single LATERAL pass picking the first non-null value
 // ordered by sample time is sufficient.
-// TeslaMateAPICarsChargesV1 returns the per-session charging history.
 //
 // @Summary      List charging sessions
 // @Description  Returns charging sessions with charger-shape aggregates.

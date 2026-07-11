@@ -18,8 +18,6 @@ import (
 type (
 	// NullInt64 mirrors nullable.Int64.
 	NullInt64 = nullable.Int64
-	// NullBool mirrors nullable.Bool.
-	NullBool = nullable.Bool
 	// NullFloat64 mirrors nullable.Float64.
 	NullFloat64 = nullable.Float64
 	// NullString mirrors nullable.String.

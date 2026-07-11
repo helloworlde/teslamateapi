@@ -25,9 +25,9 @@ type Deps struct {
 	CommandsEnabled bool
 }
 
-// NewRouter builds the gin engine with the same routes as the legacy
-// src/webserver.go. External HTTP behaviour (paths, methods, redirects,
-// 404 shape) is preserved byte-identical.
+// NewRouter builds the gin engine. External HTTP behaviour (paths,
+// methods, redirects, 404 shape) is a compatibility contract with existing
+// clients — do not change it without a version bump.
 func NewRouter(d Deps) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {

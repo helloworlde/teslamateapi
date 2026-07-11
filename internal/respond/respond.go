@@ -16,8 +16,8 @@ import (
 	"github.com/tobiasehlert/teslamateapi/internal/httpparams"
 )
 
-// HandleSuccess emits a 200 with j and logs the request URI. Mirrors the
-// legacy TeslaMateAPIHandleSuccessResponse helper.
+// HandleSuccess emits a 200 with j and, in debug mode, logs the request
+// URI and payload.
 func HandleSuccess(c *gin.Context, handler string, j any) {
 	if gin.IsDebugging() {
 		log.Println("[debug] " + handler + " - (" + SafeRequestURI(c) + ") returned data:")
@@ -28,9 +28,8 @@ func HandleSuccess(c *gin.Context, handler string, j any) {
 }
 
 // HandleOther emits an arbitrary status with j; used for command/logging
-// pass-through and for the legacy 200+error envelope variants. Mirrors
-// TeslaMateAPIHandleOtherResponse.
-func HandleOther(c *gin.Context, httpCode int, handler string, j any) {
+// pass-through and for the legacy 200+error envelope variants.
+func HandleOther(c *gin.Context, httpCode int, j any) {
 	c.JSON(httpCode, j)
 }
 

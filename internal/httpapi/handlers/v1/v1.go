@@ -30,8 +30,6 @@ import (
 type (
 	// NullInt64 mirrors nullable.Int64.
 	NullInt64 = nullable.Int64
-	// NullBool mirrors nullable.Bool.
-	NullBool = nullable.Bool
 	// NullFloat64 mirrors nullable.Float64.
 	NullFloat64 = nullable.Float64
 	// NullString mirrors nullable.String.
@@ -140,10 +138,10 @@ func requirePositiveIntParam(c *gin.Context, handler, name, raw string) (int, bo
 	return v, true
 }
 
-func requirePositiveIntParamStatus(c *gin.Context, handler, name, raw string) (int, bool) {
+func requirePositiveIntParamStatus(c *gin.Context, name, raw string) (int, bool) {
 	v, err := httpparams.PositiveInt(raw)
 	if err != nil {
-		respond.HandleOther(c, http.StatusBadRequest, handler, gin.H{"error": name + " invalid"})
+		respond.HandleOther(c, http.StatusBadRequest, gin.H{"error": name + " invalid"})
 		return 0, false
 	}
 	return v, true

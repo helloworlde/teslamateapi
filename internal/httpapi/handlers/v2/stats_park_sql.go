@@ -25,6 +25,7 @@ const drivePairsCTE = `
 // drain to intervals with no charging session inside them. Two branches:
 //   - rated-range delta available → (range drop) × efficiency;
 //   - else fall back to usable-battery-level delta scaled into range × efficiency.
+//
 // Composes where sp, ep, cars.efficiency and dp.park_start/park_end are in
 // scope, bound to car_id $1.
 const parkingEnergyDropKWh = `CASE

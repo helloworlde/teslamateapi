@@ -91,7 +91,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Outcome = audit.OutcomeDenied
 		ev.Reason = audit.ReasonCommandsDisabled
 		emit()
-		respond.HandleOther(c, http.StatusForbidden, handler, gin.H{"error": "You are not allowed to access commands"})
+		respond.HandleOther(c, http.StatusForbidden, gin.H{"error": "You are not allowed to access commands"})
 		return
 	}
 
@@ -110,12 +110,12 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Reason = audit.ReasonUnauthorized
 		ev.ErrDetail = errorMessage
 		emit()
-		respond.HandleOther(c, http.StatusUnauthorized, handler, gin.H{"error": errorMessage})
+		respond.HandleOther(c, http.StatusUnauthorized, gin.H{"error": errorMessage})
 		return
 	}
 
 	// getting CarID param from URL and validating that it's not zero
-	CarID, ok := requirePositiveIntParamStatus(c, handler, "CarID", c.Param("CarID"))
+	CarID, ok := requirePositiveIntParamStatus(c, "CarID", c.Param("CarID"))
 	if !ok {
 		ev.Outcome = audit.OutcomeDenied
 		ev.Reason = audit.ReasonInvalidCarID
@@ -133,10 +133,10 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.ErrDetail = err.Error()
 		emit()
 		if bodyTooLarge(err) {
-			respond.HandleOther(c, http.StatusRequestEntityTooLarge, handler, gin.H{"error": "request body too large"})
+			respond.HandleOther(c, http.StatusRequestEntityTooLarge, gin.H{"error": "request body too large"})
 			return
 		}
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "internal io reading error"})
 		return
 	}
 	ev.ReqBytes = len(reqBody)
@@ -154,7 +154,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Outcome = audit.OutcomeDenied
 		ev.Reason = audit.ReasonNotInAllowList
 		emit()
-		respond.HandleOther(c, http.StatusUnauthorized, handler, gin.H{"error": "unauthorized"})
+		respond.HandleOther(c, http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
@@ -200,7 +200,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Outcome = audit.OutcomeError
 		ev.Reason = audit.ReasonMissingEncKey
 		emit()
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "missing ENCRYPTION_KEY env variable"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "missing ENCRYPTION_KEY env variable"})
 		return
 	}
 
@@ -212,7 +212,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Reason = audit.ReasonTokenDecryptFail
 		ev.ErrDetail = err.Error()
 		emit()
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "unable to decrypt access token"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "unable to decrypt access token"})
 		return
 	}
 
@@ -244,7 +244,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Reason = audit.ReasonRequestBuildFail
 		ev.ErrDetail = err.Error()
 		emit()
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal http request error"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "internal http request error"})
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+TeslaAccessToken)
@@ -259,7 +259,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Reason = audit.ReasonUpstreamReachFail
 		ev.ErrDetail = err.Error()
 		emit()
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal http request error"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "internal http request error"})
 		return
 	}
 
@@ -274,10 +274,10 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.ErrDetail = err.Error()
 		emit()
 		if errors.Is(err, errBodyTooLarge) {
-			respond.HandleOther(c, http.StatusBadGateway, handler, gin.H{"error": "upstream response too large"})
+			respond.HandleOther(c, http.StatusBadGateway, gin.H{"error": "upstream response too large"})
 			return
 		}
-		respond.HandleOther(c, http.StatusInternalServerError, handler, gin.H{"error": "internal io reading error"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "internal io reading error"})
 		return
 	}
 	ev.UpstreamCode = resp.StatusCode
@@ -291,7 +291,7 @@ func (h *Handler) Command(c *gin.Context) {
 		ev.Reason = audit.ReasonUpstreamNonJSON
 		ev.ErrDetail = jsonErr.Error()
 		emit()
-		respond.HandleOther(c, resp.StatusCode, handler, dto.V1CommandRawResponse{Raw: string(respBody)})
+		respond.HandleOther(c, resp.StatusCode, dto.V1CommandRawResponse{Raw: string(respBody)})
 		return
 	}
 
@@ -305,5 +305,5 @@ func (h *Handler) Command(c *gin.Context) {
 
 	// return jsonData
 	// use respond.HandleOther since we use the statusCode from Tesla API
-	respond.HandleOther(c, resp.StatusCode, handler, jsonData)
+	respond.HandleOther(c, resp.StatusCode, jsonData)
 }

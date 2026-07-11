@@ -27,13 +27,13 @@ import (
 func (h *Handler) Status(c *gin.Context) {
 	if h.statusCache == nil || h.statusCache.Disabled() {
 		log.Println("[notice] TeslaMateAPICarsStatusV1 DISABLE_MQTT is set to true.. can not return status for car without mqtt!")
-		respond.HandleOther(c, http.StatusNotImplemented, "TeslaMateAPICarsStatusV1", gin.H{"error": "mqtt disabled.. status not accessible!"})
+		respond.HandleOther(c, http.StatusNotImplemented, gin.H{"error": "mqtt disabled.. status not accessible!"})
 		return
 	}
 
 	if !h.statusCache.Connected() {
 		log.Println("[notice] TeslaMateAPICarsStatusV1 mqtt is disconnected.. can not return status for car without mqtt!")
-		respond.HandleOther(c, http.StatusInternalServerError, "TeslaMateAPICarsStatusV1", gin.H{"error": "mqtt disconnected.. status not accessible!"})
+		respond.HandleOther(c, http.StatusInternalServerError, gin.H{"error": "mqtt disconnected.. status not accessible!"})
 		return
 	}
 
