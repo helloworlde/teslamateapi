@@ -192,6 +192,8 @@ For V1 detail endpoint downsampling and client migration notes, see [`docs/v1-de
     - `endDate` (optional, use canonical UTC format in RFC3339)
     - `minDistance` (optional, filter by minimum trip distance, units based on TeslaMate settings)
     - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
+    - `include_route` (optional, set to `true` or `1` to attach each drive's downsampled `route` as `[latitude, longitude]` pairs; requires `show` ≤ `200`, since the route query reads every position of every drive on the page)
+    - `max_points_per_drive` (optional, per-drive route sampling target; valid range `20`-`800`, default `120`; first/last point and route extrema are always preserved, and the target is lowered automatically so one page stays within 40000 points)
   - Each drive also carries `range_achievement_pct` (`distance / rated-range
     drop × 100`, objective; null when the drop is non-positive) and
     `estimated_usage_cost` (the row's `energy_consumed_net` × average

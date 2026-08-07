@@ -693,6 +693,20 @@ const docTemplate = `{
                         "description": "max distance (user units)",
                         "name": "maxDistance",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "attach each drive's downsampled lat/lon path; requires show \u003c= 200",
+                        "name": "include_route",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 120,
+                        "description": "per-drive route sampling target (20..800), lowered to keep the page within 40000 points",
+                        "name": "max_points_per_drive",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3093,6 +3107,17 @@ const docTemplate = `{
                 },
                 "range_rated": {
                     "$ref": "#/definitions/dto.V1DrivesPreferredRange"
+                },
+                "route": {
+                    "description": "Route is the drive's downsampled path as [latitude, longitude] pairs,\nrequested with include_route=true. Absent otherwise — and also absent\nfor a drive whose positions carry no coordinates, so a client must\nhandle a missing route even on a request that asked for one. Pairs\nrather than objects because a map view fetches hundreds of routes at\nonce and repeated key names would dominate the payload.\n\nSampled, not raw: it keeps the first and last point plus the\nlatitude/longitude extrema so a client can frame a map camera from it,\nbut it must not be used for distance or duration maths — the top-level\nsummary fields remain authoritative for those.\n\nmax_points_per_drive is a target, not a guarantee: a page holding many\ndrives lowers it so the whole response stays within a fixed point\nbudget.",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float64"
+                        }
+                    }
                 },
                 "speed_avg": {
                     "type": "number",

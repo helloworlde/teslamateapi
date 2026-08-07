@@ -7,6 +7,7 @@
 - feat: new `GET /api/v2/cars/:CarID/stats/consumption` — energy consumption broken down by temperature band, firmware version, season, or month (`group_by`), objective data only, small-table aggregation with no `positions` scan
 - feat: new `GET /api/v2/cars/:CarID/stats/behavior` — behaviour profile in one response: weekday×hour heatmap, charge-level (SOC) histogram, and trip-length histogram
 - feat: `battery-health` now returns `current_battery_level` and `predicted_range` (currently drivable range at the latest SOC)
+- feat: v1 `drives` list accepts `include_route=true` (with `max_points_per_drive`) to attach each drive's downsampled `[latitude, longitude]` path, so a map view fetches a whole window's routes in one request instead of one detail call per drive
 - feat: v1 `drives` list/detail now return per-trip `range_achievement_pct` (distance vs rated-range drop) and `estimated_usage_cost` (amortised charging cost)
 - feat: v2 `stats/lifetime` now returns `drives.range_achievement_pct` and `charges.cost_per_distance`
 

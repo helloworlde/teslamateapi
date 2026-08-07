@@ -55,6 +55,22 @@ type V1DriveListItem struct {
 	// no charging cost is configured; null when energy_consumed_net or average
 	// charging price is unavailable. Currency matches charging_processes.cost.
 	EstimatedUsageCost *float64 `json:"estimated_usage_cost" example:"3.42"`
+	// Route is the drive's downsampled path as [latitude, longitude] pairs,
+	// requested with include_route=true. Absent otherwise — and also absent
+	// for a drive whose positions carry no coordinates, so a client must
+	// handle a missing route even on a request that asked for one. Pairs
+	// rather than objects because a map view fetches hundreds of routes at
+	// once and repeated key names would dominate the payload.
+	//
+	// Sampled, not raw: it keeps the first and last point plus the
+	// latitude/longitude extrema so a client can frame a map camera from it,
+	// but it must not be used for distance or duration maths — the top-level
+	// summary fields remain authoritative for those.
+	//
+	// max_points_per_drive is a target, not a guarantee: a page holding many
+	// drives lowers it so the whole response stays within a fixed point
+	// budget.
+	Route [][2]float64 `json:"route,omitempty"`
 }
 
 // V1DrivesData is the `data` field of V1DrivesResponse.

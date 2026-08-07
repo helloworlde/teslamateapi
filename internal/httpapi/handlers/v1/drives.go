@@ -25,6 +25,8 @@ import (
 // @Param        endDate      query  string  false  "RFC3339 upper bound"
 // @Param        minDistance  query  number  false  "min distance (user units)"
 // @Param        maxDistance  query  number  false  "max distance (user units)"
+// @Param        include_route         query  bool  false  "attach each drive's downsampled lat/lon path; requires show <= 200"  default(false)
+// @Param        max_points_per_drive  query  int   false  "per-drive route sampling target (20..800), lowered to keep the page within 40000 points"  default(120)
 // @Success      200          {object}  dto.V1DrivesResponse
 // @Failure      401          {object}  dto.ErrorEnvelope
 // @Router       /api/v1/cars/{CarID}/drives [get]
@@ -65,6 +67,36 @@ func (h *Handler) Drives(c *gin.Context) {
 	minDistanceParam := c.Query("minDistance")
 	minDistance, ok := optionalFloatMin(c, handler, "minDistance", minDistanceParam, 0)
 	if !ok {
+		return
+	}
+	// Opt-in route paths. Off by default so the ordinary list stays lean —
+	// the extra positions query is only worth it for map views. Truthiness
+	// matches the opt-out spelling on the detail endpoint, which reads
+	// "false"/"0".
+	includeRouteParam := c.Query("include_route")
+	includeRoute := includeRouteParam == "true" || includeRouteParam == "1"
+	maxPointsPerDrive, ok := optionalIntInRange(
+		c,
+		handler,
+		"max_points_per_drive",
+		c.Query("max_points_per_drive"),
+		drivesRouteMaxPoints,
+		drivesRouteMinPointsPerDrive,
+		drivesRouteMaxPointsPerDrive,
+	)
+	if !ok {
+		return
+	}
+	// Reject an oversized route page before running any query: the route query
+	// reads every position of every drive on the page, so `show` — not the
+	// sampling target — is what bounds its work.
+	if includeRoute && ResultShow > drivesRouteMaxDrives {
+		respond.HandleError(
+			c,
+			handler,
+			fmt.Sprintf("show must be <= %d when include_route is set.", drivesRouteMaxDrives),
+			"got: "+c.Query("show"),
+		)
 		return
 	}
 	maxDistanceParam := c.Query("maxDistance")
@@ -307,6 +339,47 @@ func (h *Handler) Drives(c *gin.Context) {
 	if err != nil {
 		respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
 		return
+	}
+
+	// Attach route paths in one extra query over the drives already on this
+	// page, so the cost stays bounded by `show` rather than by the car's whole
+	// history. Coordinates are the raw positions values — no unit conversion
+	// applies to degrees, and no corrected_* offsetting is done here.
+	if includeRoute && len(DrivesData) > 0 {
+		driveIDs := make([]int, 0, len(DrivesData))
+		routeIndex := make(map[int]int, len(DrivesData))
+		for i := range DrivesData {
+			driveIDs = append(driveIDs, DrivesData[i].DriveID)
+			routeIndex[DrivesData[i].DriveID] = i
+		}
+
+		routeRows, err := h.db.QueryContext(
+			c.Request.Context(),
+			drivesRouteQuery(driveIDs, drivesRoutePointsPerDrive(maxPointsPerDrive, len(driveIDs))),
+		)
+		if err != nil {
+			respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
+			return
+		}
+		defer routeRows.Close()
+
+		for routeRows.Next() {
+			var (
+				driveID             int
+				latitude, longitude float64
+			)
+			if err := routeRows.Scan(&driveID, &latitude, &longitude); err != nil {
+				respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
+				return
+			}
+			if i, found := routeIndex[driveID]; found {
+				DrivesData[i].Route = append(DrivesData[i].Route, [2]float64{latitude, longitude})
+			}
+		}
+		if err := routeRows.Err(); err != nil {
+			respond.HandleError(c, "TeslaMateAPICarsDrivesV1", CarsDrivesError1, err.Error())
+			return
+		}
 	}
 
 	//
