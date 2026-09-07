@@ -24,8 +24,36 @@ TeslaMateApi is a RESTful API to get data collected by self-hosted data logger *
   - [Authentication](#authentication)
   - [Commands](#commands)
   - [代码审查结论与功能模块索引](#代码审查结论与功能模块索引)
+- [Local verification](#local-verification)
 - [Security information](#security-information)
 - [Credits](#credits)
+
+## Local verification
+
+Run `make test` for unit tests. Run `make test-integration` for the by-geofence
+SQL/HTTP integration suite; it requires Go and PostgreSQL server binaries
+(`initdb`, `pg_ctl`, `createdb`) and a non-root user. Set `PG_BIN` when the tools
+are not discoverable through `pg_config`, for example:
+
+```sh
+make test-integration PG_BIN=/usr/lib/postgresql/16/bin TEST_INTEGRATION_FLAGS=-race
+```
+
+The same target runs in `.github/workflows/tests.yml` on pull requests and main
+branch pushes. It creates a unique temporary cluster, listens only on its private
+Unix socket, runs uncached tests, and stops/removes the cluster on success. On
+failure it stops the cluster and retains logs at the printed temporary path.
+It never reads `DATABASE_*`, connects to an existing database, or starts a system
+PostgreSQL service. It does not install PostgreSQL for local users.
+
+The SQL suite has the `integration` build tag. Running it directly without the
+runner-provided socket fails instead of silently skipping. The committed fixture
+`internal/httpapi/handlers/v2/testdata/stats_by_geofence.sql` tracks the charging
+metric types and relevant indexes from TeslaMate v4.1.1; it is a query-facing
+subset, not a full database clone. Unlike the older generic dev seed, it uses
+`numeric(8,2)` energy, `numeric(6,2)` cost, and `smallint` session duration. The
+suite covers decimal storage/decoding, nulls, free charging, schema limits, large
+duration totals, date boundaries, and per-car/geofence isolation.
 
 ## How to use
 

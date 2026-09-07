@@ -1,4 +1,4 @@
-.PHONY: help build run docs docs-clean tidy fmt vet test lint clean docker-build docker-run install-tools
+.PHONY: help build run docs docs-clean tidy fmt vet test test-integration lint clean docker-build docker-run install-tools
 
 # Pinned to match the swaggo runtime locked in go.mod
 SWAG_VERSION := v1.16.6
@@ -36,8 +36,11 @@ fmt: ## gofmt all sources
 vet: ## go vet
 	go vet ./...
 
-test: ## go test
+test: ## Unit tests (no database required)
 	go test ./...
+
+test-integration: ## PostgreSQL integration tests in an automatically cleaned, isolated cluster (PG_BIN optional)
+	./scripts/test-geofence-integration.sh $(TEST_INTEGRATION_FLAGS)
 
 lint: fmt vet ## fmt + vet
 

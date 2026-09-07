@@ -18,6 +18,7 @@ import (
 //
 // @Summary      Stats by geofence
 // @Description  Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an "Other" row with geofence_id = null.
+// @Description  Charging duration and recorded charger energy require complete nonnegative inputs. Unit cost additionally requires every session cost; efficiency additionally requires valid vehicle energy not exceeding charger energy. Missing or invalid inputs and zero denominators produce null ratios. No charging sessions produce zero totals and null ratios. Legacy cost/vehicle-energy totals retain their existing null-to-zero behavior.
 // @Tags         v2
 // @Security     BearerAuth
 // @Produce      json
@@ -101,6 +102,10 @@ func (h *Handler) StatsByGeofence(c *gin.Context) {
 			&row.ChargesCount,
 			&row.ChargesEnergyAddedKWh,
 			&row.ChargesCost,
+			&row.ChargesEnergyUsedKWh,
+			&row.ChargesDurationMin,
+			&row.ChargesUnitCostPerKWh,
+			&row.ChargesEfficiencyPct,
 			&row.ParkingsCount,
 			&row.ParkingsTotalDurationMin,
 			&UnitsLength,
@@ -150,8 +155,27 @@ func statsByGeofenceSQL(drvFilter, chFilter, pkFilter string) string {
 		ch AS (
 			SELECT cp.geofence_id AS gid,
 				COUNT(*) AS cnt,
-				COALESCE(SUM(charge_energy_added), 0) AS added,
-				COALESCE(SUM(cost), 0) AS cost
+				-- Keep legacy totals JSON-safe without changing their null-to-zero contract.
+				COALESCE(SUM(charge_energy_added) FILTER (
+					WHERE charge_energy_added > '-Infinity'::numeric AND charge_energy_added < 'Infinity'::numeric
+				), 0) AS added,
+				COALESCE(SUM(cost) FILTER (
+					WHERE cost > '-Infinity'::numeric AND cost < 'Infinity'::numeric
+				), 0) AS cost,
+				-- COUNT comparisons include NULL rows, unlike BOOL_AND, which skips them.
+				CASE WHEN COUNT(*) = COUNT(*) FILTER (
+					WHERE charge_energy_used >= 0 AND charge_energy_used < 'Infinity'::numeric
+				) THEN SUM(charge_energy_used) END AS used,
+				CASE WHEN COUNT(*) = COUNT(*) FILTER (
+					WHERE duration_min >= 0
+				) THEN SUM(duration_min) END AS duration_min,
+				COUNT(*) = COUNT(*) FILTER (
+					WHERE cost >= 0 AND cost < 'Infinity'::numeric
+				) AS cost_complete,
+				COUNT(*) = COUNT(*) FILTER (
+					WHERE charge_energy_added >= 0 AND charge_energy_added < 'Infinity'::numeric
+						AND charge_energy_added <= charge_energy_used
+				) AS efficiency_complete
 			FROM charging_processes cp
 			WHERE cp.car_id = $1 AND cp.end_date IS NOT NULL %s
 			GROUP BY 1
@@ -190,6 +214,10 @@ func statsByGeofenceSQL(drvFilter, chFilter, pkFilter string) string {
 			COALESCE(ch.cnt, 0),
 			COALESCE(ch.added, 0),
 			COALESCE(ch.cost, 0),
+			CASE WHEN ch.cnt IS NULL THEN 0 ELSE ch.used END,
+			CASE WHEN ch.cnt IS NULL THEN 0 ELSE ch.duration_min END,
+			CASE WHEN ch.cost_complete THEN ch.cost / NULLIF(ch.used, 0) END,
+			CASE WHEN ch.efficiency_complete THEN ch.added / NULLIF(ch.used, 0) * 100 END,
 			COALESCE(pk.cnt, 0),
 			COALESCE(pk.dur, 0),
 			(SELECT unit_of_length FROM settings LIMIT 1),

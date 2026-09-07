@@ -2553,9 +2553,36 @@ definitions:
       charges_count:
         example: 42
         type: integer
+      charges_duration_min:
+        example: 12600
+        format: int64
+        type: integer
+        x-nullable: true
+      charges_efficiency_pct:
+        description: ChargesEfficiencyPct is vehicle energy / charger energy * 100;
+          never averaged per session.
+        example: 91.025
+        format: double
+        type: number
+        x-nullable: true
       charges_energy_added_kwh:
         example: 1820.5
         type: number
+      charges_energy_used_kwh:
+        description: |-
+          Charging metrics use completed sessions and recorded charger energy (no battery-side fallback).
+          A missing/invalid input in any session nulls only the metrics that depend on it.
+        example: 2000
+        format: double
+        type: number
+        x-nullable: true
+      charges_unit_cost_per_kwh:
+        description: ChargesUnitCostPerKWh is total recorded cost / charger energy;
+          explicit zero cost is valid.
+        example: 0.21265
+        format: double
+        type: number
+        x-nullable: true
       drives_arrived:
         example: 125
         type: integer
@@ -2820,6 +2847,9 @@ definitions:
         example: 125.4
         type: number
       charges_cost_lifetime_cumulative:
+        description: |-
+          ChargesCostLifetimeCumulative is lifetime charging cost through this
+          bucket, including any pre-window baseline.
         example: 1678.74
         type: number
       charges_count:
@@ -2865,12 +2895,18 @@ definitions:
         example: 425.7
         type: number
       charges_energy_added_kwh_lifetime_cumulative:
+        description: |-
+          ChargesEnergyAddedKWhLifetimeCumulative is lifetime battery-side charge
+          energy added through this bucket, including any pre-window baseline.
         example: 5820.4
         type: number
       charges_energy_used_kwh:
         example: 445
         type: number
       charges_energy_used_kwh_lifetime_cumulative:
+        description: |-
+          ChargesEnergyUsedKWhLifetimeCumulative is lifetime wall-side charge
+          energy used through this bucket, including any pre-window baseline.
         example: 6104.8
         type: number
       charges_largest_session_end_date:
@@ -2932,6 +2968,9 @@ definitions:
         example: 1850.5
         type: number
       drives_distance_lifetime_cumulative:
+        description: |-
+          DrivesDistanceLifetimeCumulative is lifetime drive distance through this
+          bucket, including any pre-window baseline.
         example: 24500.7
         type: number
       drives_duration_min:
@@ -3009,6 +3048,9 @@ definitions:
         example: 5.2
         type: number
       vampire_drain_kwh_lifetime_cumulative:
+        description: |-
+          VampireDrainKWhLifetimeCumulative is lifetime vampire-drain energy through
+          this bucket, including any pre-window parking baseline.
         example: 125
         type: number
     type: object
@@ -4059,9 +4101,9 @@ paths:
       - v2
   /api/v2/cars/{CarID}/stats/by-geofence:
     get:
-      description: Aggregates drives, charges, and parking sessions grouped by geofence.
-        Records without a geofence are grouped under an "Other" row with geofence_id
-        = null.
+      description: |-
+        Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an "Other" row with geofence_id = null.
+        Charging duration and recorded charger energy require complete nonnegative inputs. Unit cost additionally requires every session cost; efficiency additionally requires valid vehicle energy not exceeding charger energy. Missing or invalid inputs and zero denominators produce null ratios. No charging sessions produce zero totals and null ratios. Legacy cost/vehicle-energy totals retain their existing null-to-zero behavior.
       parameters:
       - description: TeslaMate cars.id
         in: path

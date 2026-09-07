@@ -1442,7 +1442,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an \"Other\" row with geofence_id = null.",
+                "description": "Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an \"Other\" row with geofence_id = null.\nCharging duration and recorded charger energy require complete nonnegative inputs. Unit cost additionally requires every session cost; efficiency additionally requires valid vehicle energy not exceeding charger energy. Missing or invalid inputs and zero denominators produce null ratios. No charging sessions produce zero totals and null ratios. Legacy cost/vehicle-energy totals retain their existing null-to-zero behavior.",
                 "produces": [
                     "application/json"
                 ],
@@ -5173,9 +5173,36 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 42
                 },
+                "charges_duration_min": {
+                    "type": "integer",
+                    "format": "int64",
+                    "x-nullable": true,
+                    "example": 12600
+                },
+                "charges_efficiency_pct": {
+                    "description": "ChargesEfficiencyPct is vehicle energy / charger energy * 100; never averaged per session.",
+                    "type": "number",
+                    "format": "double",
+                    "x-nullable": true,
+                    "example": 91.025
+                },
                 "charges_energy_added_kwh": {
                     "type": "number",
                     "example": 1820.5
+                },
+                "charges_energy_used_kwh": {
+                    "description": "Charging metrics use completed sessions and recorded charger energy (no battery-side fallback).\nA missing/invalid input in any session nulls only the metrics that depend on it.",
+                    "type": "number",
+                    "format": "double",
+                    "x-nullable": true,
+                    "example": 2000
+                },
+                "charges_unit_cost_per_kwh": {
+                    "description": "ChargesUnitCostPerKWh is total recorded cost / charger energy; explicit zero cost is valid.",
+                    "type": "number",
+                    "format": "double",
+                    "x-nullable": true,
+                    "example": 0.21265
                 },
                 "drives_arrived": {
                     "type": "integer",
@@ -5546,6 +5573,7 @@ const docTemplate = `{
                     "example": 125.4
                 },
                 "charges_cost_lifetime_cumulative": {
+                    "description": "ChargesCostLifetimeCumulative is lifetime charging cost through this\nbucket, including any pre-window baseline.",
                     "type": "number",
                     "example": 1678.74
                 },
@@ -5606,6 +5634,7 @@ const docTemplate = `{
                     "example": 425.7
                 },
                 "charges_energy_added_kwh_lifetime_cumulative": {
+                    "description": "ChargesEnergyAddedKWhLifetimeCumulative is lifetime battery-side charge\nenergy added through this bucket, including any pre-window baseline.",
                     "type": "number",
                     "example": 5820.4
                 },
@@ -5614,6 +5643,7 @@ const docTemplate = `{
                     "example": 445
                 },
                 "charges_energy_used_kwh_lifetime_cumulative": {
+                    "description": "ChargesEnergyUsedKWhLifetimeCumulative is lifetime wall-side charge\nenergy used through this bucket, including any pre-window baseline.",
                     "type": "number",
                     "example": 6104.8
                 },
@@ -5691,6 +5721,7 @@ const docTemplate = `{
                     "example": 1850.5
                 },
                 "drives_distance_lifetime_cumulative": {
+                    "description": "DrivesDistanceLifetimeCumulative is lifetime drive distance through this\nbucket, including any pre-window baseline.",
                     "type": "number",
                     "example": 24500.7
                 },
@@ -5788,6 +5819,7 @@ const docTemplate = `{
                     "example": 5.2
                 },
                 "vampire_drain_kwh_lifetime_cumulative": {
+                    "description": "VampireDrainKWhLifetimeCumulative is lifetime vampire-drain energy through\nthis bucket, including any pre-window parking baseline.",
                     "type": "number",
                     "example": 125
                 }
