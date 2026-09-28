@@ -91,15 +91,23 @@ func execGeofenceFixture(t *testing.T, db *sql.DB, query string) {
 }
 
 type geofenceTestRow struct {
-	ID         *int     `json:"geofence_id"`
-	Name       string   `json:"geofence_name"`
-	Count      int      `json:"charges_count"`
-	Added      float64  `json:"charges_energy_added_kwh"`
-	Cost       float64  `json:"charges_cost"`
-	Used       *float64 `json:"charges_energy_used_kwh"`
-	Duration   *int64   `json:"charges_duration_min"`
-	UnitCost   *float64 `json:"charges_unit_cost_per_kwh"`
-	Efficiency *float64 `json:"charges_efficiency_pct"`
+	ID              *int     `json:"geofence_id"`
+	Name            string   `json:"geofence_name"`
+	Count           int      `json:"charges_count"`
+	Added           *float64 `json:"charges_energy_added_kwh"`
+	Cost            *float64 `json:"charges_cost"`
+	Used            *float64 `json:"charges_energy_used_kwh"`
+	UsedCount       int      `json:"charges_energy_used_session_count"`
+	Duration        *int64   `json:"charges_duration_min"`
+	DurationCount   int      `json:"charges_duration_session_count"`
+	UnitCost        *float64 `json:"charges_unit_cost_per_kwh"`
+	UnitCostCount   int      `json:"charges_unit_cost_session_count"`
+	UnitCostUsed    float64  `json:"charges_unit_cost_energy_used_kwh"`
+	Efficiency      *float64 `json:"charges_efficiency_pct"`
+	EfficiencyCount int      `json:"charges_efficiency_session_count"`
+	EfficiencyUsed  float64  `json:"charges_efficiency_energy_used_kwh"`
+	CostCount       int      `json:"charges_cost_session_count"`
+	AddedCount      int      `json:"charges_energy_added_session_count"`
 }
 
 func requestGeofenceTest(t *testing.T, db *sql.DB, suffix string, status int) []geofenceTestRow {
@@ -150,16 +158,16 @@ func TestStatsByGeofenceIntegrationMetrics(t *testing.T) {
 		{"stored decimal precision", "(0.105, 0.095, 0.035, 1)", f(0.11), i(1), f(4.0 / 11), f(10.0 / 11 * 100)},
 		{"nan cost", "(40, 30, 'NaN'::numeric, 60)", f(40), i(60), nil, f(75)},
 		{"free charging", "(100, 90, 0, 150)", f(100), i(150), f(0), f(90)},
-		{"missing cost", "(40, 30, NULL, 60), (60, 60, 80, 90)", f(100), i(150), nil, f(90)},
+		{"missing cost", "(40, 30, NULL, 60), (60, 60, 80, 90)", f(100), i(150), f(80.0 / 60), f(90)},
 		{"all missing cost", "(100, 90, NULL, 150)", f(100), i(150), nil, f(90)},
-		{"missing charger energy", "(NULL, 30, 20, 60), (60, 60, 80, 90)", nil, i(150), nil, nil},
-		{"missing duration", "(40, 30, 20, NULL), (60, 60, 80, 90)", f(100), nil, f(1), f(90)},
-		{"missing vehicle energy", "(40, NULL, 20, 60), (60, 60, 80, 90)", f(100), i(150), f(1), nil},
+		{"missing charger energy", "(NULL, 30, 20, 60), (60, 60, 80, 90)", f(60), i(150), f(80.0 / 60), f(100)},
+		{"missing duration", "(40, 30, 20, NULL), (60, 60, 80, 90)", f(100), i(90), f(1), f(90)},
+		{"missing vehicle energy", "(40, NULL, 20, 60), (60, 60, 80, 90)", f(100), i(150), f(1), f(100)},
 		{"zero denominator", "(0, 0, 0, 0)", f(0), i(0), nil, nil},
 		{"negative charger energy", "(-1, 0, 20, 60)", nil, i(60), nil, nil},
 		{"negative cost", "(40, 30, -20, 60)", f(40), i(60), nil, f(75)},
 		{"negative duration", "(40, 30, 20, -1)", f(40), nil, f(0.5), f(75)},
-		{"invalid session efficiency", "(40, 45, 20, 60), (60, 45, 80, 90)", f(100), i(150), f(1), nil},
+		{"invalid session efficiency", "(40, 45, 20, 60), (60, 45, 80, 90)", f(100), i(150), f(1), f(75)},
 		{"nan charger energy", "('NaN'::numeric, 30, 20, 60)", nil, i(60), nil, nil},
 		{"nan vehicle energy", "(40, 'NaN'::numeric, 20, 60)", f(40), i(60), f(0.5), nil},
 		{"all missing", "(NULL::numeric, NULL::numeric, NULL::numeric, NULL::int)", nil, nil, nil, nil},
@@ -197,6 +205,68 @@ func TestStatsByGeofenceIntegrationMetrics(t *testing.T) {
 	}
 }
 
+func TestStatsByGeofenceIntegrationPartialCoverage(t *testing.T) {
+	db := openGeofenceTestDB(t)
+	gin.SetMode(gin.TestMode)
+	execGeofenceFixture(t, db, `INSERT INTO charging_processes
+		(car_id, geofence_id, start_date, end_date, charge_energy_used, charge_energy_added, cost, duration_min) VALUES
+		(1, 1, '2026-01-01', '2026-01-02', 40, 30, NULL, 60),
+		(1, 1, '2026-01-03', '2026-01-04', 60, 70, 80, NULL),
+		(1, 1, '2026-01-05', '2026-01-06', 100, 90, 50, 120);`)
+	rows := requestGeofenceTest(t, db, "1/stats/by-geofence", http.StatusOK)
+	if len(rows) != 1 {
+		t.Fatalf("got %d locations, want 1", len(rows))
+	}
+	row := rows[0]
+	if row.Count != 3 || row.Duration == nil || *row.Duration != 180 || row.DurationCount != 2 {
+		t.Errorf("duration coverage: %+v", row)
+	}
+	if row.UnitCost == nil || math.Abs(*row.UnitCost-130.0/160) > 1e-9 ||
+		row.UnitCostCount != 2 || math.Abs(row.UnitCostUsed-160) > 1e-9 {
+		t.Errorf("unit cost coverage: %+v", row)
+	}
+	if row.Efficiency == nil || math.Abs(*row.Efficiency-120.0/140*100) > 1e-9 ||
+		row.EfficiencyCount != 2 || math.Abs(row.EfficiencyUsed-140) > 1e-9 {
+		t.Errorf("efficiency coverage: %+v", row)
+	}
+	if row.Cost == nil || *row.Cost != 130 || row.CostCount != 2 ||
+		row.Added == nil || *row.Added != 190 || row.AddedCount != 3 ||
+		row.Used == nil || *row.Used != 200 || row.UsedCount != 3 {
+		t.Errorf("cost/energy coverage: %+v", row)
+	}
+}
+
+func TestStatsByGeofenceIntegrationUnknownAndFreeCost(t *testing.T) {
+	db := openGeofenceTestDB(t)
+	gin.SetMode(gin.TestMode)
+	execGeofenceFixture(t, db, `INSERT INTO charging_processes
+		(car_id, geofence_id, start_date, end_date, charge_energy_used, charge_energy_added, cost, duration_min) VALUES
+		(1, 1, '2026-01-01', '2026-01-02', 10, 9, NULL, 30),
+		(1, 2, '2026-01-01', '2026-01-02', 10, 9, 0, 30);`)
+	rows := requestGeofenceTest(t, db, "1/stats/by-geofence", http.StatusOK)
+	if len(rows) != 2 {
+		t.Fatalf("got %d locations, want 2", len(rows))
+	}
+	for _, row := range rows {
+		if row.ID == nil {
+			t.Fatalf("missing geofence id: %+v", row)
+		}
+		switch *row.ID {
+		case 1:
+			if row.Cost != nil || row.CostCount != 0 || row.UnitCost != nil {
+				t.Errorf("unknown cost exposed as free: %+v", row)
+			}
+		case 2:
+			if row.Cost == nil || *row.Cost != 0 || row.CostCount != 1 ||
+				row.UnitCost == nil || *row.UnitCost != 0 {
+				t.Errorf("free charging hidden as unknown: %+v", row)
+			}
+		default:
+			t.Errorf("unexpected geofence: %+v", row)
+		}
+	}
+}
+
 func TestStatsByGeofenceIntegrationBoundaries(t *testing.T) {
 	db := openGeofenceTestDB(t)
 	gin.SetMode(gin.TestMode)
@@ -214,10 +284,12 @@ func TestStatsByGeofenceIntegrationBoundaries(t *testing.T) {
 	}
 	for _, row := range rows {
 		if row.ID == nil {
-			if row.Name != "Other" || row.Count != 1 || row.Used == nil || *row.Used != 40 || row.Cost != 20 || row.Added != 30 {
+			if row.Name != "Other" || row.Count != 1 || row.Used == nil || *row.Used != 40 ||
+				row.Cost == nil || *row.Cost != 20 || row.Added == nil || *row.Added != 30 {
 				t.Errorf("incorrect Other/window aggregate: %+v", row)
 			}
-		} else if *row.ID != 2 || row.Count != 0 || row.Used == nil || *row.Used != 0 || row.Duration == nil || *row.Duration != 0 || row.UnitCost != nil || row.Efficiency != nil {
+		} else if *row.ID != 2 || row.Count != 0 || row.Used != nil || row.Duration != nil ||
+			row.Cost != nil || row.Added != nil || row.UnitCost != nil || row.Efficiency != nil {
 			t.Errorf("incorrect no-charge aggregate: %+v", row)
 		}
 	}

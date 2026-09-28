@@ -1442,7 +1442,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an \"Other\" row with geofence_id = null.\nCharging duration and recorded charger energy require complete nonnegative inputs. Unit cost additionally requires every session cost; efficiency additionally requires valid vehicle energy not exceeding charger energy. Missing or invalid inputs and zero denominators produce null ratios. No charging sessions produce zero totals and null ratios. Legacy cost/vehicle-energy totals retain their existing null-to-zero behavior.",
+                "description": "Aggregates drives, charges, and parking sessions grouped by geofence. Records without a geofence are grouped under an \"Other\" row with geofence_id = null.\nEach charging metric uses only completed sessions with valid inputs for that metric. Missing values remain null, including unknown cost; explicit zero cost remains zero. Session counts show coverage against charges_count, and unit cost/efficiency have their own charger-energy weights. Ratios are null when no qualifying positive charger energy exists.",
                 "produces": [
                     "application/json"
                 ],
@@ -5167,7 +5167,13 @@ const docTemplate = `{
             "properties": {
                 "charges_cost": {
                     "type": "number",
+                    "format": "double",
+                    "x-nullable": true,
                     "example": 425.3
+                },
+                "charges_cost_session_count": {
+                    "type": "integer",
+                    "example": 40
                 },
                 "charges_count": {
                     "type": "integer",
@@ -5179,30 +5185,60 @@ const docTemplate = `{
                     "x-nullable": true,
                     "example": 12600
                 },
+                "charges_duration_session_count": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "charges_efficiency_energy_used_kwh": {
+                    "type": "number",
+                    "example": 1900
+                },
                 "charges_efficiency_pct": {
-                    "description": "ChargesEfficiencyPct is vehicle energy / charger energy * 100; never averaged per session.",
+                    "description": "ChargesEfficiencyPct uses only sessions with valid paired vehicle/charger\nenergy. It is a ratio of sums, never an average of per-session ratios.",
                     "type": "number",
                     "format": "double",
                     "x-nullable": true,
                     "example": 91.025
                 },
+                "charges_efficiency_session_count": {
+                    "type": "integer",
+                    "example": 39
+                },
                 "charges_energy_added_kwh": {
                     "type": "number",
+                    "format": "double",
+                    "x-nullable": true,
                     "example": 1820.5
                 },
+                "charges_energy_added_session_count": {
+                    "type": "integer",
+                    "example": 41
+                },
                 "charges_energy_used_kwh": {
-                    "description": "Charging metrics use completed sessions and recorded charger energy (no battery-side fallback).\nA missing/invalid input in any session nulls only the metrics that depend on it.",
+                    "description": "Every charging metric uses its own valid samples; a missing result is null,\nwhile a recorded zero remains zero. Session counts expose partial coverage.",
                     "type": "number",
                     "format": "double",
                     "x-nullable": true,
                     "example": 2000
                 },
+                "charges_energy_used_session_count": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "charges_unit_cost_energy_used_kwh": {
+                    "type": "number",
+                    "example": 1950
+                },
                 "charges_unit_cost_per_kwh": {
-                    "description": "ChargesUnitCostPerKWh is total recorded cost / charger energy; explicit zero cost is valid.",
+                    "description": "ChargesUnitCostPerKWh uses only sessions with valid cost and positive\ncharger energy; explicit zero cost is valid.",
                     "type": "number",
                     "format": "double",
                     "x-nullable": true,
                     "example": 0.21265
+                },
+                "charges_unit_cost_session_count": {
+                    "type": "integer",
+                    "example": 40
                 },
                 "drives_arrived": {
                     "type": "integer",

@@ -367,10 +367,17 @@ adjacent drives.
 - GET `/api/v2/cars/:CarID/stats/by-geofence`
   - For each geofence the car has touched: `drives_arrived`,
     `drives_departed`, `charges_count`, `charges_energy_added_kwh`,
-    `charges_cost`, `parkings_count`, `parkings_total_duration_min`. Sorted
-    by total activity. Records without a geofence are grouped under an `Other`
-    row with `geofence_id: null`.
-  - Supported parameters: `startDate`, `endDate`.
+    `charges_cost`, `charges_duration_min`, `charges_unit_cost_per_kwh`,
+    `charges_efficiency_pct`, `parkings_count`, `parkings_total_duration_min`.
+    Every charging metric uses only sessions with valid inputs for that metric.
+    `charges_cost` and `charges_energy_added_kwh` are null when no valid
+    samples exist; recorded zero values remain zero. The corresponding session
+    counts expose coverage against `charges_count`; unit cost and efficiency
+    have their own `charges_*_energy_used_kwh` weights. Ratios are null when
+    no qualifying positive charger energy exists.
+    Sorted by total activity. Records without a geofence are grouped under
+    an `Other` row with `geofence_id: null`.
+  - Supported parameters: `start_date`, `end_date`.
 - GET `/api/v2/cars/:CarID/stats/consumption`
   - Energy consumption (Wh/distance) broken down along one objective
     dimension: `group_by=temperature|version|season|month` (default
